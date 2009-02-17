@@ -1,0 +1,50 @@
+Data for MPI rank 0 of 4:
+Times and statistics from MPI_Init() to MPI_Finalize().
+-----------------------------------------------------------------
+MPI Routine                  #calls     avg. bytes      time(sec)
+-----------------------------------------------------------------
+MPI_Comm_size                     1            0.0          0.000
+MPI_Comm_rank                     1            0.0          0.000
+MPI_Allreduce                     1            8.0          0.000
+-----------------------------------------------------------------
+total communication time = 0.000 seconds.
+total elapsed time       = 0.009 seconds.
+user cpu time            = 0.008 seconds.
+system time              = 0.002 seconds.
+maximum memory size      = 6852 KBytes.
+
+-----------------------------------------------------------------
+Message size distributions:
+
+MPI_Allreduce             #calls    avg. bytes      time(sec)
+                               1           8.0          0.000
+
+
+
+-----------------------------------------------------------------
+
+Communication summary for all tasks:
+
+  minimum communication time = 0.000 sec for task 1
+  median  communication time = 0.000 sec for task 3
+  maximum communication time = 0.000 sec for task 2
+
+
+MPI tasks sorted by communication time:
+taskid      comm(s)  elapsed(s)     user(s)     size(KB)   switches
+     1        0.00        0.01        0.01         6812         247
+     3        0.00        0.01        0.01         6812         230
+     0        0.00        0.01        0.01         6852         253
+     2        0.00        0.01        0.00         6812         265
+
+--------------------------------------------------------------------------
+Power5 counter report for group 0.
+ pm_utilization, CPI and utilization data
+--------------------------------------------------------------------------
+       14441895  Run cycles (PM_RUN_CYC)
+        5834715  IOPS instructions completed (PM_IOPS_CMPL)
+        5509000  Instructions dispatched (PM_INST_DISP)
+       14441895  Processor cycles [shared] (PM_CYC)
+        5486308  Instructions completed (PM_INST_CMPL)
+       14442038  Run cycles (PM_RUN_CYC)
+

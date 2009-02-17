@@ -1,0 +1,1223 @@
+group 0: pm_utilization, CPI and utilization data
+counter 1, event #312,v: Run cycles (PM_RUN_CYC)
+counter 2, event #302,v: Instructions completed (PM_INST_CMPL)
+counter 3, event #113,v: Instructions dispatched (PM_INST_DISP)
+counter 4, event  #21,v: Processor cycles [shared] (PM_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 1: pm_completion, Completion and cycle counts
+counter 1, event   #2,v: One or more PPC instruction completed (PM_1PLUS_PPC_CMPL)
+counter 2, event  #95,v: Cycles GCT empty [shared] (PM_GCT_EMPTY_CYC)
+counter 3, event #100,v: Group completed (PM_GRP_CMPL)
+counter 4, event  #21,v: Processor cycles [shared] (PM_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 2: pm_group_dispatch, Group dispatch events
+counter 1, event #105,v: Group dispatch valid (PM_GRP_DISP_VALID)
+counter 2, event #104,v: Group dispatch rejected (PM_GRP_DISP_REJECT)
+counter 3, event #101,v: Cycles group dispatch blocked by scoreboard (PM_GRP_DISP_BLK_SB_CYC)
+counter 4, event #113,v: Instructions dispatched (PM_INST_DISP)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 3: pm_clb1, CLB fullness
+counter 1, event   #0,v: Cycles no instructions in CLB (PM_0INST_CLB_CYC)
+counter 2, event   #2,v: Cycles 2 instructions in CLB (PM_2INST_CLB_CYC)
+counter 3, event  #12,v: Cycles CLB empty [shared] (PM_CLB_EMPTY_CYC)
+counter 4, event #267,v: Marked load latency from L3.5 modified (PM_MRK_DATA_FROM_L35_MOD_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 4: pm_clb2, CLB fullness
+counter 1, event   #6,v: Cycles 5 instructions in CLB (PM_5INST_CLB_CYC)
+counter 2, event   #6,v: Cycles 6 instructions in CLB (PM_6INST_CLB_CYC)
+counter 3, event #292,u: Marked instruction valid in SRQ (PM_MRK_LSU_SRQ_INST_VALID)
+counter 4, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 5: pm_gct_empty, GCT empty reasons
+counter 1, event  #98,v: Cycles no GCT slot allocated (PM_GCT_NOSLOT_CYC)
+counter 2, event  #97,v: No slot in GCT caused by I cache miss (PM_GCT_NOSLOT_IC_MISS)
+counter 3, event  #95,v: No slot in GCT caused by SRQ full (PM_GCT_NOSLOT_SRQ_FULL)
+counter 4, event  #98,v: No slot in GCT caused by branch mispredict (PM_GCT_NOSLOT_BR_MPRED)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 6: pm_gct_usage, GCT Usage
+counter 1, event  #99,v: Cycles GCT less than 60% full [shared] (PM_GCT_USAGE_00to59_CYC)
+counter 2, event  #98,v: Cycles GCT 60-79% full [shared] (PM_GCT_USAGE_60to79_CYC)
+counter 3, event  #96,v: Cycles GCT 80-99% full [shared] (PM_GCT_USAGE_80to99_CYC)
+counter 4, event  #97,v: Cycles GCT full (PM_GCT_FULL_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 7: pm_lsu1, LSU LRQ and LMQ events
+counter 1, event #242,v: LRQ slot 0 allocated (PM_LSU_LRQ_S0_ALLOC)
+counter 2, event #241,v: LRQ slot 0 valid (PM_LSU_LRQ_S0_VALID)
+counter 3, event #234,v: LMQ slot 0 allocated [shared] (PM_LSU_LMQ_S0_ALLOC)
+counter 4, event #234,v: LMQ slot 0 valid (PM_LSU_LMQ_S0_VALID)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 8: pm_lsu2, LSU SRQ events
+counter 1, event #247,v: SRQ slot 0 allocated (PM_LSU_SRQ_S0_ALLOC)
+counter 2, event #246,v: SRQ slot 0 valid (PM_LSU_SRQ_S0_VALID)
+counter 3, event #244,u: SRQ sync duration (PM_LSU_SRQ_SYNC_CYC)
+counter 4, event #240,v: Cycles SRQ full [shared] (PM_LSU_SRQ_FULL_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 9: pm_lsu3, LSU SRQ and LMQ events
+counter 1, event #238,v: LMQ LHR merges (PM_LSU_LMQ_LHR_MERGE)
+counter 2, event #247,c: SRQ store forwarded (PM_LSU_SRQ_STFWD)
+counter 3, event #236,u: Cycles LMQ and SRQ empty (PM_LSU_LMQ_SRQ_EMPTY_CYC)
+counter 4, event #239,u: Cycles SRQ empty (PM_LSU_SRQ_EMPTY_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 10: pm_lsu4, LSU SRQ and LMQ events
+counter 1, event #237,u: Cycles LMQ full [shared] (PM_LSU_LMQ_FULL_CYC)
+counter 2, event #244,v: Cycles SRQ full [shared] (PM_LSU_SRQ_FULL_CYC)
+counter 3, event #236,u: Cycles LMQ and SRQ empty (PM_LSU_LMQ_SRQ_EMPTY_CYC)
+counter 4, event #239,u: Cycles SRQ empty (PM_LSU_SRQ_EMPTY_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 11: pm_prefetch1, Prefetch stream allocation
+counter 1, event #120,v: Instructions fetched missed L2 (PM_INST_FROM_L2MISS)
+counter 2, event #115,v: Cycles at least 1 instruction fetched (PM_INST_FETCH_CYC)
+counter 3, event  #26,v: LSU Data prefetch out of streams (PM_DC_OUT_OF_STREAMS)
+counter 4, event  #29,v: D cache new prefetch stream allocated (PM_DC_PREF_STREAM_ALLOC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 12: pm_prefetch2, Prefetch events
+counter 1, event #115,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 2, event  #13,v: Cycles CLB full (PM_CLB_FULL_CYC)
+counter 3, event #122,v: L1 cache data prefetches (PM_L1_PREF)
+counter 4, event #108,v: Instruction prefetched installed in prefetch (PM_IC_PREF_INSTALL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 13: pm_prefetch3, L2 prefetch and misc events
+counter 1, event   #1,v: Cycles 1 instruction in CLB (PM_1INST_CLB_CYC)
+counter 2, event #227,v: LSU busy due to reject (PM_LSU_BUSY_REJECT)
+counter 3, event #172,v: L2 cache prefetches (PM_L2_PREF)
+counter 4, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 14: pm_prefetch4, Misc prefetch and reject events
+counter 1, event #216,v: LSU0 SRQ rejects (PM_LSU0_REJECT_SRQ_LHS)
+counter 2, event #225,v: LSU1 SRQ rejects (PM_LSU1_REJECT_SRQ_LHS)
+counter 3, event  #27,v: DST (Data Stream Touch) stream start (PM_DC_PREF_DST)
+counter 4, event #171,v: L2 cache prefetches (PM_L2_PREF)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 15: pm_lsu_reject1, LSU reject events
+counter 1, event #244,v: LSU reject due to ERAT miss (PM_LSU_REJECT_ERAT_MISS)
+counter 2, event #242,v: LSU reject due to LMQ full or missed data coming (PM_LSU_REJECT_LMQ_FULL)
+counter 3, event  #53,v: Flush caused by thread GCT imbalance [shared] (PM_FLUSH_IMBAL)
+counter 4, event #294,v: Marked SRQ flushes (PM_MRK_LSU_FLUSH_SRQ)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 16: pm_lsu_reject2, LSU rejects due to reload CDF or tag update collision
+counter 1, event #215,v: LSU0 reject due to reload CDF or tag update collision (PM_LSU0_REJECT_RELOAD_CDF)
+counter 2, event #224,v: LSU1 reject due to reload CDF or tag update collision (PM_LSU1_REJECT_RELOAD_CDF)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event #122,v: Cycles writing to instruction L1 (PM_L1_WRITE_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 17: pm_lsu_reject3, LSU rejects due to ERAT, held instuctions
+counter 1, event #213,v: LSU0 reject due to ERAT miss (PM_LSU0_REJECT_ERAT_MISS)
+counter 2, event #222,v: LSU1 reject due to ERAT miss (PM_LSU1_REJECT_ERAT_MISS)
+counter 3, event #245,v: LWSYNC held at dispatch (PM_LWSYNC_HELD)
+counter 4, event #344,v: TLBIE held at dispatch (PM_TLBIE_HELD)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 18: pm_lsu_reject4, LSU0/1 reject LMQ full
+counter 1, event #214,v: LSU0 reject due to LMQ full or missed data coming (PM_LSU0_REJECT_LMQ_FULL)
+counter 2, event #223,v: LSU1 reject due to LMQ full or missed data coming (PM_LSU1_REJECT_LMQ_FULL)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event   #9,v: Branches issued (PM_BR_ISSUED)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 19: pm_lsu_reject5, LSU misc reject and flush events
+counter 1, event #245,v: LSU SRQ rejects (PM_LSU_REJECT_SRQ_LHS)
+counter 2, event #243,v: LSU reject due to reload CDF or tag update collision (PM_LSU_REJECT_RELOAD_CDF)
+counter 3, event #228,v: Flush initiated by LSU (PM_LSU_FLUSH)
+counter 4, event  #53,v: Flushes (PM_FLUSH)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 20: pm_flush1, Misc flush events
+counter 1, event #115,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 2, event #233,v: SRQ unaligned store flushes (PM_LSU_FLUSH_UST)
+counter 3, event  #53,v: Flush caused by thread GCT imbalance [shared] (PM_FLUSH_IMBAL)
+counter 4, event  #26,u: L1 D cache entries invalidated from L2 [shared] (PM_DC_INV_L2)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 21: pm_flush2, Flushes due to scoreboard and sync
+counter 1, event #124,v: Instruction TLB misses (PM_ITLB_MISS)
+counter 2, event #113,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 3, event  #54,v: Flush caused by scoreboard operation [shared] (PM_FLUSH_SB)
+counter 4, event  #57,v: Flush caused by sync [shared] (PM_FLUSH_SYNC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 22: pm_lsu_flush_srq_lrq, LSU flush by SRQ and LRQ events
+counter 1, event #233,u: SRQ flushes (PM_LSU_FLUSH_SRQ)
+counter 2, event #230,v: LRQ flushes (PM_LSU_FLUSH_LRQ)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event #226,v: Flush initiated by LSU (PM_LSU_FLUSH)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 23: pm_lsu_flush_lrq, LSU0/1 flush due to LRQ
+counter 1, event #207,v: LSU0 LRQ flushes (PM_LSU0_FLUSH_LRQ)
+counter 2, event #216,v: LSU1 LRQ flushes (PM_LSU1_FLUSH_LRQ)
+counter 3, event #228,v: Flush initiated by LSU (PM_LSU_FLUSH)
+counter 4, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 24: pm_lsu_flush_srq, LSU0/1 flush due to SRQ
+counter 1, event #208,u: LSU0 SRQ flushes (PM_LSU0_FLUSH_SRQ)
+counter 2, event #217,u: LSU1 SRQ flushes (PM_LSU1_FLUSH_SRQ)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event #226,v: Flush initiated by LSU (PM_LSU_FLUSH)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 25: pm_lsu_flush_unaligned, LSU flush due to unaligned data
+counter 1, event #235,v: LRQ unaligned load flushes (PM_LSU_FLUSH_ULD)
+counter 2, event #233,v: SRQ unaligned store flushes (PM_LSU_FLUSH_UST)
+counter 3, event   #8,v: Branches issued (PM_BR_ISSUED)
+counter 4, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 26: pm_lsu_flush_uld, LSU0/1 flush due to unaligned load
+counter 1, event #209,v: LSU0 unaligned load flushes (PM_LSU0_FLUSH_ULD)
+counter 2, event #218,v: LSU1 unaligned load flushes (PM_LSU1_FLUSH_ULD)
+counter 3, event #228,v: Flush initiated by LSU (PM_LSU_FLUSH)
+counter 4, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 27: pm_lsu_flush_ust, LSU0/1 flush due to unaligned store
+counter 1, event #210,v: LSU0 unaligned store flushes (PM_LSU0_FLUSH_UST)
+counter 2, event #219,u: LSU1 unaligned store flushes (PM_LSU1_FLUSH_UST)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event #226,v: Flush initiated by LSU (PM_LSU_FLUSH)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 28: pm_lsu_flush_full, LSU flush due to LRQ/SRQ full
+counter 1, event #232,v: Flush caused by LRQ full [shared] (PM_LSU_FLUSH_LRQ_FULL)
+counter 2, event #113,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 3, event #290,v: Marked LRQ flushes (PM_MRK_LSU_FLUSH_LRQ)
+counter 4, event #229,v: Flush caused by SRQ full [shared] (PM_LSU_FLUSH_SRQ_FULL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 29: pm_lsu_stall1, LSU Stalls
+counter 1, event #109,v: Group marked in IDU (PM_GRP_MRK)
+counter 2, event  #17,v: Completion stall caused by LSU instruction (PM_CMPLU_STALL_LSU)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event  #18,v: Completion stall caused by reject (PM_CMPLU_STALL_REJECT)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 30: pm_lsu_stall2, LSU Stalls
+counter 1, event #115,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 2, event  #14,v: Completion stall caused by D cache miss (PM_CMPLU_STALL_DCACHE_MISS)
+counter 3, event  #16,v: Processor cycles [shared] (PM_CYC)
+counter 4, event  #16,v: Completion stall caused by ERAT miss (PM_CMPLU_STALL_ERAT_MISS)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 31: pm_fxu_stall, FXU Stalls
+counter 1, event #107,v: Group experienced non-speculative I cache miss or branch redirect (PM_GRP_IC_MISS_BR_REDIR_NONSPEC)
+counter 2, event  #16,v: Completion stall caused by FXU instruction (PM_CMPLU_STALL_FXU)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event  #15,v: Completion stall caused by DIV instruction (PM_CMPLU_STALL_DIV)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 32: pm_fpu_stall, FPU Stalls
+counter 1, event  #89,c: Cycles FPU issue queue full (PM_FPU_FULL_CYC)
+counter 2, event  #15,v: Completion stall caused by FDIV or FQRT instruction (PM_CMPLU_STALL_FDIV)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event  #17,v: Completion stall caused by FPU instruction (PM_CMPLU_STALL_FPU)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 33: pm_queue_full, BRQ LRQ LMQ queue full
+counter 1, event #198,v: Larx executed on LSU0 (PM_LARX_LSU0)
+counter 2, event   #7,u: Cycles branch queue full [shared] (PM_BRQ_FULL_CYC)
+counter 3, event #237,v: Cycles LRQ full [shared] (PM_LSU_LRQ_FULL_CYC)
+counter 4, event #231,u: Cycles LMQ full [shared] (PM_LSU_LMQ_FULL_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 34: pm_issueq_full, FPU FX full
+counter 1, event  #68,v: Cycles FPU0 issue queue full [shared] (PM_FPU0_FULL_CYC)
+counter 2, event  #80,v: Cycles FPU1 issue queue full [shared] (PM_FPU1_FULL_CYC)
+counter 3, event  #88,v: Cycles FXU0/LS0 queue full [shared] (PM_FXLS0_FULL_CYC)
+counter 4, event  #92,v: Cycles FXU1/LS1 queue full [shared] (PM_FXLS1_FULL_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 35: pm_mapper_full1, CR CTR GPR mapper full
+counter 1, event  #16,v: Cycles CR logical operation mapper full [shared] (PM_CR_MAP_FULL_CYC)
+counter 2, event #200,u: Cycles LR/CTR mapper full [shared] (PM_LR_CTR_MAP_FULL_CYC)
+counter 3, event  #97,v: Cycles GPR mapper full [shared] (PM_GPR_MAP_FULL_CYC)
+counter 4, event  #19,u: Cycles CR issue queue full [shared] (PM_CRQ_FULL_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 36: pm_mapper_full2, FPR XER mapper full
+counter 1, event  #57,v: Cycles FPR mapper full [shared] (PM_FPR_MAP_FULL_CYC)
+counter 2, event #351,v: Cycles XER mapper full [shared] (PM_XER_MAP_FULL_CYC)
+counter 3, event #266,v: Marked data loaded missed L2 (PM_MRK_DATA_FROM_L2MISS)
+counter 4, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 37: pm_misc_load, Non-cachable loads and stcx events
+counter 1, event #325,v: STCX failed (PM_STCX_FAIL)
+counter 2, event #321,v: Stcx passes (PM_STCX_PASS)
+counter 3, event #208,v: LSU0 non-cacheable loads (PM_LSU0_NCLD)
+counter 4, event #220,v: LSU1 non-cacheable loads (PM_LSU1_NCLD)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 38: pm_ic_demand, ICache demand from BR redirect
+counter 1, event #205,v: LSU0 busy due to reject (PM_LSU0_BUSY_REJECT)
+counter 2, event #214,v: LSU1 busy due to reject (PM_LSU1_BUSY_REJECT)
+counter 3, event #106,v: L2 I cache demand request due to BHT redirect (PM_IC_DEMAND_L2_BHT_REDIRECT)
+counter 4, event #107,v: L2 I cache demand request due to branch redirect (PM_IC_DEMAND_L2_BR_REDIRECT)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 39: pm_ic_pref, ICache prefetch
+counter 1, event #113,v: Translation written to ierat (PM_IERAT_XLATE_WR)
+counter 2, event #110,v: Instruction prefetch requests (PM_IC_PREF_REQ)
+counter 3, event #108,v: Instruction prefetched installed in prefetch (PM_IC_PREF_INSTALL)
+counter 4, event   #1,v: No instructions fetched (PM_0INST_FETCH)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 40: pm_ic_miss, ICache misses
+counter 1, event #108,v: Group experienced non-speculative I cache miss (PM_GRP_IC_MISS_NONSPEC)
+counter 2, event #106,v: Group experienced I cache miss (PM_GRP_IC_MISS)
+counter 3, event #121,v: L1 reload data source valid (PM_L1_DCACHE_RELOAD_VALID)
+counter 4, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 41: pm_branch_miss, Branch mispredict, TLB and SLB misses
+counter 1, event #356,v: TLB misses (PM_TLB_MISS)
+counter 2, event #307,v: SLB misses (PM_SLB_MISS)
+counter 3, event   #9,v: Branch mispredictions due to CR bit setting (PM_BR_MPRED_CR)
+counter 4, event  #11,v: Branch mispredictions due to target address (PM_BR_MPRED_TA)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 42: pm_branch1, Branch operations
+counter 1, event  #12,v: Unconditional branch (PM_BR_UNCOND)
+counter 2, event  #11,v: A conditional branch was predicted, target prediction (PM_BR_PRED_TA)
+counter 3, event  #11,v: A conditional branch was predicted, CR prediction (PM_BR_PRED_CR)
+counter 4, event  #12,v: A conditional branch was predicted, CR and target prediction (PM_BR_PRED_CR_TA)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 43: pm_branch2, Branch operations
+counter 1, event #102,v: Group experienced non-speculative branch redirect (PM_GRP_BR_REDIR_NONSPEC)
+counter 2, event #100,v: Group experienced branch redirect (PM_GRP_BR_REDIR)
+counter 3, event  #52,v: Flush caused by branch mispredict (PM_FLUSH_BR_MPRED)
+counter 4, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 44: pm_L1_tlbmiss, L1 load and TLB misses
+counter 1, event  #25,v: Cycles doing data tablewalks (PM_DATA_TABLEWALK_CYC)
+counter 2, event  #30,v: Data TLB misses (PM_DTLB_MISS)
+counter 3, event #195,v: L1 D cache load misses (PM_LD_MISS_L1)
+counter 4, event #196,v: L1 D cache load references (PM_LD_REF_L1)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 45: pm_L1_DERAT_miss, L1 store and DERAT misses
+counter 1, event  #18,v: Data loaded from L2 (PM_DATA_FROM_L2)
+counter 2, event #228,v: DERAT misses (PM_LSU_DERAT_MISS)
+counter 3, event #322,v: L1 D cache store references (PM_ST_REF_L1)
+counter 4, event #318,v: L1 D cache store misses (PM_ST_MISS_L1)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 46: pm_L1_slbmiss, L1 load and SLB misses
+counter 1, event  #30,v: Data SLB misses (PM_DSLB_MISS)
+counter 2, event #120,u: Instruction SLB misses (PM_ISLB_MISS)
+counter 3, event #196,v: LSU0 L1 D cache load misses (PM_LD_MISS_L1_LSU0)
+counter 4, event #195,v: LSU1 L1 D cache load misses (PM_LD_MISS_L1_LSU1)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 47: pm_dtlbref, Data TLB references
+counter 1, event  #34,v: Data TLB reference for 4K page (PM_DTLB_REF_4K)
+counter 2, event  #33,v: Data TLB reference for 64K page (PM_DTLB_REF_64K)
+counter 3, event  #33,v: Data TLB reference for 16M page (PM_DTLB_REF_16M)
+counter 4, event  #34,v: Data TLB reference for 16G page (PM_DTLB_REF_16G)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 48: pm_dtlbmiss, Data TLB misses
+counter 1, event  #32,v: Data TLB miss for 4K page (PM_DTLB_MISS_4K)
+counter 2, event  #31,v: Data TLB miss for 64K page (PM_DTLB_MISS_64K)
+counter 3, event  #31,v: Data TLB miss for 16M page (PM_DTLB_MISS_16M)
+counter 4, event  #32,v: Data TLB miss for 16G page (PM_DTLB_MISS_16G)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 49: pm_dtlb, Data TLB references and misses
+counter 1, event  #33,v: Data TLB references (PM_DTLB_REF)
+counter 2, event  #30,v: Data TLB misses (PM_DTLB_MISS)
+counter 3, event  #16,v: Processor cycles [shared] (PM_CYC)
+counter 4, event  #21,v: Processor cycles [shared] (PM_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 50: pm_L1_refmiss, L1 load references and misses and store references and misses
+counter 1, event #201,v: L1 D cache load references (PM_LD_REF_L1)
+counter 2, event #323,v: L1 D cache store references (PM_ST_REF_L1)
+counter 3, event #195,v: L1 D cache load misses (PM_LD_MISS_L1)
+counter 4, event #318,v: L1 D cache store misses (PM_ST_MISS_L1)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 51: pm_dsource1, L3 cache and memory data access
+counter 1, event  #21,v: Data loaded from L3 (PM_DATA_FROM_L3)
+counter 2, event  #23,v: Data loaded from local memory (PM_DATA_FROM_LMEM)
+counter 3, event  #51,v: Flushes (PM_FLUSH)
+counter 4, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 52: pm_dsource2, L3 cache and memory data access
+counter 1, event  #21,v: Data loaded from L3 (PM_DATA_FROM_L3)
+counter 2, event  #23,v: Data loaded from local memory (PM_DATA_FROM_LMEM)
+counter 3, event  #19,v: Data loaded missed L2 (PM_DATA_FROM_L2MISS)
+counter 4, event  #24,v: Data loaded from remote memory (PM_DATA_FROM_RMEM)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 53: pm_dsource_L2, L2 cache data access
+counter 1, event  #19,v: Data loaded from L2.5 shared (PM_DATA_FROM_L25_SHR)
+counter 2, event  #21,v: Data loaded from L2.5 modified (PM_DATA_FROM_L25_MOD)
+counter 3, event  #18,v: Data loaded from L2.75 shared (PM_DATA_FROM_L275_SHR)
+counter 4, event  #22,v: Data loaded from L2.75 modified (PM_DATA_FROM_L275_MOD)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 54: pm_dsource_L3, L3 cache data access
+counter 1, event  #22,v: Data loaded from L3.5 shared (PM_DATA_FROM_L35_SHR)
+counter 2, event  #22,v: Data loaded from L3.5 modified (PM_DATA_FROM_L35_MOD)
+counter 3, event  #22,v: Data loaded from L3.75 shared (PM_DATA_FROM_L375_SHR)
+counter 4, event  #23,v: Data loaded from L3.75 modified (PM_DATA_FROM_L375_MOD)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 55: pm_isource1, Instruction source information
+counter 1, event #121,v: Instruction fetched from L3 (PM_INST_FROM_L3)
+counter 2, event #116,v: Instruction fetched from L1 (PM_INST_FROM_L1)
+counter 3, event #118,v: Instructions fetched from prefetch (PM_INST_FROM_PREF)
+counter 4, event #117,v: Instruction fetched from remote memory (PM_INST_FROM_RMEM)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 56: pm_isource2, Instruction source information
+counter 1, event #118,v: Instructions fetched from L2 (PM_INST_FROM_L2)
+counter 2, event #119,v: Instruction fetched from local memory (PM_INST_FROM_LMEM)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event   #1,v: No instructions fetched (PM_0INST_FETCH)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 57: pm_isource_L2, L2 instruction source information
+counter 1, event #119,v: Instruction fetched from L2.5 shared (PM_INST_FROM_L25_SHR)
+counter 2, event #117,v: Instruction fetched from L2.5 modified (PM_INST_FROM_L25_MOD)
+counter 3, event #115,v: Instruction fetched from L2.75 shared (PM_INST_FROM_L275_SHR)
+counter 4, event #115,v: Instruction fetched from L2.75 modified (PM_INST_FROM_L275_MOD)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 58: pm_isource_L3, L3 instruction source information
+counter 1, event #122,v: Instruction fetched from L3.5 shared (PM_INST_FROM_L35_SHR)
+counter 2, event #118,v: Instruction fetched from L3.5 modified (PM_INST_FROM_L35_MOD)
+counter 3, event #117,v: Instruction fetched from L3.75 shared (PM_INST_FROM_L375_SHR)
+counter 4, event #116,v: Instruction fetched from L3.75 modified (PM_INST_FROM_L375_MOD)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 59: pm_pteg_source1, PTEG source information
+counter 1, event #305,v: PTEG loaded from L2.5 shared (PM_PTEG_FROM_L25_SHR)
+counter 2, event #303,v: PTEG loaded from L2.5 modified (PM_PTEG_FROM_L25_MOD)
+counter 3, event #299,v: PTEG loaded from L2.75 shared (PM_PTEG_FROM_L275_SHR)
+counter 4, event #300,v: PTEG loaded from L2.75 modified (PM_PTEG_FROM_L275_MOD)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 60: pm_pteg_source2, PTEG source information
+counter 1, event #308,v: PTEG loaded from L3.5 shared (PM_PTEG_FROM_L35_SHR)
+counter 2, event #304,v: PTEG loaded from L3.5 modified (PM_PTEG_FROM_L35_MOD)
+counter 3, event #303,v: PTEG loaded from L3.75 shared (PM_PTEG_FROM_L375_SHR)
+counter 4, event #301,v: PTEG loaded from L3.75 modified (PM_PTEG_FROM_L375_MOD)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 61: pm_pteg_source3, PTEG source information
+counter 1, event #304,v: PTEG loaded from L2 (PM_PTEG_FROM_L2)
+counter 2, event #305,v: PTEG loaded from local memory (PM_PTEG_FROM_LMEM)
+counter 3, event #300,v: PTEG loaded from L2 miss (PM_PTEG_FROM_L2MISS)
+counter 4, event #302,v: PTEG loaded from remote memory (PM_PTEG_FROM_RMEM)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 62: pm_pteg_source4, L3 PTEG and group disptach events
+counter 1, event #307,v: PTEG loaded from L3 (PM_PTEG_FROM_L3)
+counter 2, event #102,v: Group dispatches (PM_GRP_DISP)
+counter 3, event #103,v: Group dispatch success (PM_GRP_DISP_SUCCESS)
+counter 4, event  #26,u: L1 D cache entries invalidated from L2 [shared] (PM_DC_INV_L2)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 63: pm_L2SA_ld, L2 slice A load events
+counter 1, event #130,v: L2 Slice A RC load dispatch attempt [shared] (PM_L2SA_RCLD_DISP)
+counter 2, event #130,v: L2 Slice A RC load dispatch attempt failed due to all RC full [shared] (PM_L2SA_RCLD_DISP_FAIL_RC_FULL)
+counter 3, event #127,v: L2 Slice A RC load dispatch attempt failed due to address collision with RC/CO/SN/SQ [shared] (PM_L2SA_RCLD_DISP_FAIL_ADDR)
+counter 4, event #127,v: L2 Slice A RC load dispatch attempt failed due to other reasons [shared] (PM_L2SA_RCLD_DISP_FAIL_OTHER)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 64: pm_L2SA_st, L2 slice A store events
+counter 1, event #134,v: L2 Slice A RC store dispatch attempt [shared] (PM_L2SA_RCST_DISP)
+counter 2, event #134,v: L2 Slice A RC store dispatch attempt failed due to all RC full [shared] (PM_L2SA_RCST_DISP_FAIL_RC_FULL)
+counter 3, event #131,v: L2 Slice A RC store dispatch attempt failed due to address collision with RC/CO/SN/SQ [shared] (PM_L2SA_RCST_DISP_FAIL_ADDR)
+counter 4, event #131,v: L2 Slice A RC store dispatch attempt failed due to other reasons [shared] (PM_L2SA_RCST_DISP_FAIL_OTHER)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 65: pm_L2SA_st2, L2 slice A store events
+counter 1, event #138,v: L2 Slice A RC dispatch attempt failed due to RC/CO pair chosen was miss and CO already busy [shared] (PM_L2SA_RC_DISP_FAIL_CO_BUSY)
+counter 2, event #140,v: L2 slice A store requests (PM_L2SA_ST_REQ)
+counter 3, event #135,v: L2 Slice A RC dispatch attempt failed due to all CO busy [shared] (PM_L2SA_RC_DISP_FAIL_CO_BUSY_ALL)
+counter 4, event #137,v: L2 slice A store hits (PM_L2SA_ST_HIT)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 66: pm_L2SB_ld, L2 slice B load events
+counter 1, event #146,v: L2 Slice B RC load dispatch attempt [shared] (PM_L2SB_RCLD_DISP)
+counter 2, event #146,v: L2 Slice B RC load dispatch attempt failed due to all RC full [shared] (PM_L2SB_RCLD_DISP_FAIL_RC_FULL)
+counter 3, event #143,v: L2 Slice B RC load dispatch attempt failed due to address collision with RC/CO/SN/SQ [shared] (PM_L2SB_RCLD_DISP_FAIL_ADDR)
+counter 4, event #143,v: L2 Slice B RC load dispatch attempt failed due to other reasons [shared] (PM_L2SB_RCLD_DISP_FAIL_OTHER)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 67: pm_L2SB_st, L2 slice B store events
+counter 1, event #150,v: L2 Slice B RC store dispatch attempt [shared] (PM_L2SB_RCST_DISP)
+counter 2, event #150,v: L2 Slice B RC store dispatch attempt failed due to all RC full [shared] (PM_L2SB_RCST_DISP_FAIL_RC_FULL)
+counter 3, event #147,v: L2 Slice B RC store dispatch attempt failed due to address collision with RC/CO/SN/SQ [shared] (PM_L2SB_RCST_DISP_FAIL_ADDR)
+counter 4, event #147,v: L2 Slice B RC store dispatch attempt failed due to other reasons [shared] (PM_L2SB_RCST_DISP_FAIL_OTHER)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 68: pm_L2SB_st2, L2 slice B store events
+counter 1, event #154,v: L2 Slice B RC dispatch attempt failed due to RC/CO pair chosen was miss and CO already busy [shared] (PM_L2SB_RC_DISP_FAIL_CO_BUSY)
+counter 2, event #156,v: L2 slice B store requests (PM_L2SB_ST_REQ)
+counter 3, event #151,v: L2 Slice B RC dispatch attempt failed due to all CO busy [shared] (PM_L2SB_RC_DISP_FAIL_CO_BUSY_ALL)
+counter 4, event #153,v: L2 slice B store hits (PM_L2SB_ST_HIT)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 69: pm_L2SB_ld, L2 slice C load events
+counter 1, event #162,v: L2 Slice C RC load dispatch attempt [shared] (PM_L2SC_RCLD_DISP)
+counter 2, event #162,v: L2 Slice C RC load dispatch attempt failed due to all RC full [shared] (PM_L2SC_RCLD_DISP_FAIL_RC_FULL)
+counter 3, event #159,v: L2 Slice C RC load dispatch attempt failed due to address collision with RC/CO/SN/SQ [shared] (PM_L2SC_RCLD_DISP_FAIL_ADDR)
+counter 4, event #159,v: L2 Slice C RC load dispatch attempt failed due to other reasons [shared] (PM_L2SC_RCLD_DISP_FAIL_OTHER)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 70: pm_L2SB_st, L2 slice C store events
+counter 1, event #166,v: L2 Slice C RC store dispatch attempt [shared] (PM_L2SC_RCST_DISP)
+counter 2, event #166,v: L2 Slice C RC store dispatch attempt failed due to all RC full [shared] (PM_L2SC_RCST_DISP_FAIL_RC_FULL)
+counter 3, event #163,v: L2 Slice C RC store dispatch attempt failed due to address collision with RC/CO/SN/SQ [shared] (PM_L2SC_RCST_DISP_FAIL_ADDR)
+counter 4, event #163,v: L2 Slice C RC store dispatch attempt failed due to other reasons [shared] (PM_L2SC_RCST_DISP_FAIL_OTHER)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 71: pm_L2SB_st2, L2 slice C store events
+counter 1, event #170,v: L2 Slice C RC dispatch attempt failed due to RC/CO pair chosen was miss and CO already busy [shared] (PM_L2SC_RC_DISP_FAIL_CO_BUSY)
+counter 2, event #172,v: L2 slice C store requests (PM_L2SC_ST_REQ)
+counter 3, event #167,v: L2 Slice C RC dispatch attempt failed due to all CO busy [shared] (PM_L2SC_RC_DISP_FAIL_CO_BUSY_ALL)
+counter 4, event #169,v: L2 slice C store hits (PM_L2SC_ST_HIT)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 72: pm_L3SA_trans, L3 slice A state transistions
+counter 1, event #180,v: L3 slice A transition from modified to TAG [shared] (PM_L3SA_MOD_TAG)
+counter 2, event #113,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 3, event #175,v: L3 slice A transition from modified to invalid [shared] (PM_L3SA_MOD_INV)
+counter 4, event #177,v: L3 slice A transition from shared to invalid [shared] (PM_L3SA_SHR_INV)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 73: pm_L3SB_trans, L3 slice B state transistions
+counter 1, event #115,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 2, event #184,v: L3 slice B transition from modified to TAG [shared] (PM_L3SB_MOD_TAG)
+counter 3, event #182,v: L3 slice B transition from modified to invalid [shared] (PM_L3SB_MOD_INV)
+counter 4, event #184,v: L3 slice B transition from shared to invalid [shared] (PM_L3SB_SHR_INV)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 74: pm_L3SC_trans, L3 slice C state transistions
+counter 1, event #115,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 2, event #191,v: L3 slice C transition from modified to TAG [shared] (PM_L3SC_MOD_TAG)
+counter 3, event #189,v: L3 slice C transition from modified to invalid [shared] (PM_L3SC_MOD_INV)
+counter 4, event #191,v: L3 slice C transition from shared to invalid [shared] (PM_L3SC_SHR_INV)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 75: pm_L2SA_trans, L2 slice A state transistions
+counter 1, event #129,v: L2 slice A transition from modified to tagged [shared] (PM_L2SA_MOD_TAG)
+counter 2, event #138,v: L2 slice A transition from shared to modified [shared] (PM_L2SA_SHR_MOD)
+counter 3, event #124,v: L2 slice A transition from modified to invalid [shared] (PM_L2SA_MOD_INV)
+counter 4, event #135,v: L2 slice A transition from shared to invalid [shared] (PM_L2SA_SHR_INV)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 76: pm_L2SB_trans, L2 slice B state transistions
+counter 1, event #145,v: L2 slice B transition from modified to tagged [shared] (PM_L2SB_MOD_TAG)
+counter 2, event #154,v: L2 slice B transition from shared to modified [shared] (PM_L2SB_SHR_MOD)
+counter 3, event #140,v: L2 slice B transition from modified to invalid [shared] (PM_L2SB_MOD_INV)
+counter 4, event #151,v: L2 slice B transition from shared to invalid [shared] (PM_L2SB_SHR_INV)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 77: pm_L2SC_trans, L2 slice C state transistions
+counter 1, event #161,v: L2 slice C transition from modified to tagged [shared] (PM_L2SC_MOD_TAG)
+counter 2, event #170,v: L2 slice C transition from shared to modified [shared] (PM_L2SC_SHR_MOD)
+counter 3, event #156,v: L2 slice C transition from modified to invalid [shared] (PM_L2SC_MOD_INV)
+counter 4, event #167,v: L2 slice C transition from shared to invalid [shared] (PM_L2SC_SHR_INV)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 78: pm_L3SAB_retry, L3 slice A/B snoop retry and all CI/CO busy
+counter 1, event #177,v: L3 slice A active for every cycle all CI/CO machines busy [shared] (PM_L3SA_ALL_BUSY)
+counter 2, event #181,v: L3 slice B active for every cycle all CI/CO machines busy [shared] (PM_L3SB_ALL_BUSY)
+counter 3, event #179,v: L3 slice A snoop retries [shared] (PM_L3SA_SNOOP_RETRY)
+counter 4, event #185,v: L3 slice B snoop retries [shared] (PM_L3SB_SNOOP_RETRY)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 79: pm_L3SAB_hit, L3 slice A/B hit and reference
+counter 1, event #181,v: L3 slice A references [shared] (PM_L3SA_REF)
+counter 2, event #185,v: L3 slice B references [shared] (PM_L3SB_REF)
+counter 3, event #174,v: L3 slice A hits [shared] (PM_L3SA_HIT)
+counter 4, event #180,v: L3 slice B hits [shared] (PM_L3SB_HIT)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 80: pm_L3SC_retry_hit, L3 slice C hit & snoop retry
+counter 1, event #191,v: L3 slice C active for every cycle all CI/CO machines busy [shared] (PM_L3SC_ALL_BUSY)
+counter 2, event #192,v: L3 slice C references [shared] (PM_L3SC_REF)
+counter 3, event #193,v: L3 slice C snoop retries [shared] (PM_L3SC_SNOOP_RETRY)
+counter 4, event #187,v: L3 Slice C hits [shared] (PM_L3SC_HIT)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 81: pm_fpu1, Floating Point events
+counter 1, event  #87,v: FPU executed FDIV instruction (PM_FPU_FDIV)
+counter 2, event  #84,v: FPU executed multiply-add instruction (PM_FPU_FMA)
+counter 3, event  #84,v: FPU executing FMOV or FEST instructions (PM_FPU_FMOV_FEST)
+counter 4, event  #87,v: FPU executed FEST instruction (PM_FPU_FEST)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 82: pm_fpu2, Floating Point events
+counter 1, event  #85,v: FPU executed one flop instruction  (PM_FPU_1FLOP)
+counter 2, event  #86,v: FPU executed FSQRT instruction (PM_FPU_FSQRT)
+counter 3, event  #85,v: FPU executed FRSP or FCONV instructions (PM_FPU_FRSP_FCONV)
+counter 4, event  #88,v: FPU produced a result (PM_FPU_FIN)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 83: pm_fpu3, Floating point events
+counter 1, event  #86,v: FPU received denormalized data (PM_FPU_DENORM)
+counter 2, event  #87,v: FPU stalled in pipe3 (PM_FPU_STALL3)
+counter 3, event  #61,v: FPU0 produced a result (PM_FPU0_FIN)
+counter 4, event  #77,v: FPU1 produced a result (PM_FPU1_FIN)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 84: pm_fpu4, Floating point events
+counter 1, event  #90,v: FPU executed single precision instruction (PM_FPU_SINGLE)
+counter 2, event  #88,v: FPU executed store instruction (PM_FPU_STF)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event #230,v: LSU executed Floating Point load instruction (PM_LSU_LDF)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 85: pm_fpu5, Floating point events by unit
+counter 1, event  #67,v: FPU0 executed FSQRT instruction (PM_FPU0_FSQRT)
+counter 2, event  #79,v: FPU1 executed FSQRT instruction (PM_FPU1_FSQRT)
+counter 3, event  #60,v: FPU0 executed FEST instruction (PM_FPU0_FEST)
+counter 4, event  #76,v: FPU1 executed FEST instruction (PM_FPU1_FEST)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 86: pm_fpu6, Floating point events by unit
+counter 1, event  #59,v: FPU0 received denormalized data (PM_FPU0_DENORM)
+counter 2, event  #72,v: FPU1 received denormalized data (PM_FPU1_DENORM)
+counter 3, event  #63,v: FPU0 executed FMOV or FEST instructions (PM_FPU0_FMOV_FEST)
+counter 4, event  #79,v: FPU1 executing FMOV or FEST instructions (PM_FPU1_FMOV_FEST)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 87: pm_fpu7, Floating point events by unit
+counter 1, event  #60,v: FPU0 executed FDIV instruction (PM_FPU0_FDIV)
+counter 2, event  #73,v: FPU1 executed FDIV instruction (PM_FPU1_FDIV)
+counter 3, event  #65,v: FPU0 executed FRSP or FCONV instructions (PM_FPU0_FRSP_FCONV)
+counter 4, event  #80,v: FPU1 executed FRSP or FCONV instructions (PM_FPU1_FRSP_FCONV)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 88: pm_fpu8, Floating point events by unit
+counter 1, event  #70,v: FPU0 stalled in pipe3 (PM_FPU0_STALL3)
+counter 2, event  #82,v: FPU1 stalled in pipe3 (PM_FPU1_STALL3)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event  #66,v: FPU0 executed FPSCR instruction (PM_FPU0_FPSCR)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 89: pm_fpu9, Floating point events by unit
+counter 1, event  #69,v: FPU0 executed single precision instruction (PM_FPU0_SINGLE)
+counter 2, event  #81,v: FPU1 executed single precision instruction (PM_FPU1_SINGLE)
+counter 3, event #207,v: LSU0 executed Floating Point load instruction (PM_LSU0_LDF)
+counter 4, event #219,v: LSU1 executed Floating Point load instruction (PM_LSU1_LDF)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 90: pm_fpu10, Floating point events by unit
+counter 1, event  #63,v: FPU0 executed multiply-add instruction (PM_FPU0_FMA)
+counter 2, event  #76,v: FPU1 executed multiply-add instruction (PM_FPU1_FMA)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event  #80,v: FPU1 executed FRSP or FCONV instructions (PM_FPU1_FRSP_FCONV)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 91: pm_fpu11, Floating point events by unit
+counter 1, event  #58,v: FPU0 executed add, mult, sub, cmp or sel instruction (PM_FPU0_1FLOP)
+counter 2, event  #71,v: FPU1 executed add, mult, sub, cmp or sel instruction (PM_FPU1_1FLOP)
+counter 3, event  #61,v: FPU0 produced a result (PM_FPU0_FIN)
+counter 4, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 92: pm_fpu12, Floating point events by unit
+counter 1, event  #71,v: FPU0 executed store instruction (PM_FPU0_STF)
+counter 2, event  #83,v: FPU1 executed store instruction (PM_FPU1_STF)
+counter 3, event #207,v: LSU0 executed Floating Point load instruction (PM_LSU0_LDF)
+counter 4, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 93: pm_fxu1, Fixed Point events
+counter 1, event  #96,u: FXU idle (PM_FXU_IDLE)
+counter 2, event  #93,u: FXU busy (PM_FXU_BUSY)
+counter 3, event  #90,u: FXU0 busy FXU1 idle (PM_FXU0_BUSY_FXU1_IDLE)
+counter 4, event  #95,u: FXU1 busy FXU0 idle (PM_FXU1_BUSY_FXU0_IDLE)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 94: pm_fxu2, Fixed Point events
+counter 1, event #281,v: Marked group dispatched (PM_MRK_GRP_DISP)
+counter 2, event #283,v: Group experienced marked branch redirect (PM_MRK_GRP_BR_REDIR)
+counter 3, event  #93,v: FXU produced a result (PM_FXU_FIN)
+counter 4, event  #93,c: Cycles FXLS queue is full (PM_FXLS_FULL_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 95: pm_fxu3, Fixed Point events
+counter 1, event   #4,v: Cycles 3 instructions in CLB (PM_3INST_CLB_CYC)
+counter 2, event   #4,v: Cycles 4 instructions in CLB (PM_4INST_CLB_CYC)
+counter 3, event  #91,v: FXU0 produced a result (PM_FXU0_FIN)
+counter 4, event  #96,v: FXU1 produced a result (PM_FXU1_FIN)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 96: pm_smt_priorities1, Thread priority events
+counter 1, event #337,v: Cycles thread running at priority level 4 (PM_THRD_PRIO_4_CYC)
+counter 2, event #335,v: Cycles thread running at priority level 7 (PM_THRD_PRIO_7_CYC)
+counter 3, event #334,v: Cycles no thread priority difference (PM_THRD_PRIO_DIFF_0_CYC)
+counter 4, event #331,v: Cycles thread priority difference is 1 or 2 (PM_THRD_PRIO_DIFF_1or2_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 97: pm_smt_priorities2, Thread priority events
+counter 1, event #336,v: Cycles thread running at priority level 3 (PM_THRD_PRIO_3_CYC)
+counter 2, event #334,v: Cycles thread running at priority level 6 (PM_THRD_PRIO_6_CYC)
+counter 3, event #336,v: Cycles thread priority difference is 3 or 4 (PM_THRD_PRIO_DIFF_3or4_CYC)
+counter 4, event #333,v: Cycles thread priority difference is 5 or 6 (PM_THRD_PRIO_DIFF_5or6_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 98: pm_smt_priorities3, Thread priority events
+counter 1, event #335,v: Cycles thread running at priority level 2 (PM_THRD_PRIO_2_CYC)
+counter 2, event #333,v: Cycles thread running at priority level 5 (PM_THRD_PRIO_5_CYC)
+counter 3, event #338,v: Cycles thread priority difference is -1 or -2 (PM_THRD_PRIO_DIFF_minus1or2_CYC)
+counter 4, event #335,v: Cycles thread priority difference is -3 or -4 (PM_THRD_PRIO_DIFF_minus3or4_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 99: pm_smt_priorities4, Thread priority events
+counter 1, event #334,v: Cycles thread running at priority level 1 (PM_THRD_PRIO_1_CYC)
+counter 2, event #107,v: Hypervisor Cycles (PM_HV_CYC)
+counter 3, event #340,v: Cycles thread priority difference is -5 or -6 (PM_THRD_PRIO_DIFF_minus5or6_CYC)
+counter 4, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 100: pm_smt_both, Thread common events
+counter 1, event #333,v: One of the threads in run cycles [shared] (PM_THRD_ONE_RUN_CYC)
+counter 2, event #327,v: Cycles group completed by both threads (PM_THRD_GRP_CMPL_BOTH_CYC)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event #322,v: Cycles both threads in L2 misses [shared] (PM_THRD_L2MISS_BOTH_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 101: pm_smt_selection, Thread selection
+counter 1, event #321,u: Snoop TLBIE [shared] (PM_SNOOP_TLBIE)
+counter 2, event #113,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 3, event #345,v: Decode selected thread 0 [shared] (PM_THRD_SEL_T0)
+counter 4, event #342,v: Decode selected thread 1 [shared] (PM_THRD_SEL_T1)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 102: pm_smt_selectover1, Thread selection overide
+counter 1, event #115,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 2, event   #0,v: Cycles no instructions in CLB (PM_0INST_CLB_CYC)
+counter 3, event #341,v: Thread selection overides caused by CLB empty [shared] (PM_THRD_SEL_OVER_CLB_EMPTY)
+counter 4, event #338,v: Thread selection overides caused by GCT imbalance [shared] (PM_THRD_SEL_OVER_GCT_IMBAL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 103: pm_smt_selectover2, Thread selection overide
+counter 1, event #115,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 2, event  #20,v: Processor cycles [shared] (PM_CYC)
+counter 3, event #343,v: Thread selection overides caused by ISU holds [shared] (PM_THRD_SEL_OVER_ISU_HOLD)
+counter 4, event #340,v: Thread selection overides caused by L2 misses [shared] (PM_THRD_SEL_OVER_L2MISS)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 104: pm_fabric1, Fabric events
+counter 1, event  #37,v: Fabric command issued [shared] (PM_FAB_CMD_ISSUED)
+counter 2, event  #38,v: dclaim issued [shared] (PM_FAB_DCLAIM_ISSUED)
+counter 3, event  #37,v: Fabric command retried (PM_FAB_CMD_RETRIED)
+counter 4, event  #41,v: dclaim retried [shared] (PM_FAB_DCLAIM_RETRIED)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 105: pm_fabric2, Fabric data movement
+counter 1, event  #45,v: P1 to M1 sidecar empty [shared] (PM_FAB_P1toM1_SIDECAR_EMPTY)
+counter 2, event  #41,v: Hold buffer to VN empty [shared] (PM_FAB_HOLDtoVN_EMPTY)
+counter 3, event  #45,v: P1 to VN/NN sidecar empty [shared] (PM_FAB_P1toVNorNN_SIDECAR_EMPTY)
+counter 4, event  #52,v: Vertical bypass buffer empty [shared] (PM_FAB_VBYPASS_EMPTY)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 106: pm_fabric3, Fabric data movement
+counter 1, event  #47,v: PN to NN beat went straight to its destination [shared] (PM_FAB_PNtoNN_DIRECT)
+counter 2, event  #48,v: PN to VN beat went straight to its destination [shared] (PM_FAB_PNtoVN_DIRECT)
+counter 3, event  #47,v: PN to NN beat went to sidecar first [shared] (PM_FAB_PNtoNN_SIDECAR)
+counter 4, event  #51,v: PN to VN beat went to sidecar first [shared] (PM_FAB_PNtoVN_SIDECAR)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 107: pm_fabric4, Fabric data movement
+counter 1, event  #43,v: M1 to P1 sidecar empty [shared] (PM_FAB_M1toP1_SIDECAR_EMPTY)
+counter 2, event  #40,v: Hold buffer to NN empty [shared] (PM_FAB_HOLDtoNN_EMPTY)
+counter 3, event  #34,v: Cycles MSR(EE) bit off (PM_EE_OFF)
+counter 4, event  #45,v: M1 to VN/NN sidecar empty [shared] (PM_FAB_M1toVNorNN_SIDECAR_EMPTY)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 108: pm_snoop1, Snoop retry
+counter 1, event #317,v: Snoop read retry due to read queue full [shared] (PM_SNOOP_RD_RETRY_QFULL)
+counter 2, event #308,v: Snoop dclaim/flush retry due to write/dclaim queues full [shared] (PM_SNOOP_DCLAIM_RETRY_QFULL)
+counter 3, event #315,v: Snoop read retry due to read queue full [shared] (PM_SNOOP_WR_RETRY_QFULL)
+counter 4, event #305,v: Snoop partial write retry due to partial-write queues full [shared] (PM_SNOOP_PARTIAL_RTRY_QFULL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 109: pm_snoop2, Snoop read retry
+counter 1, event #318,v: Snoop read retry due to collision with active read queue [shared] (PM_SNOOP_RD_RETRY_RQ)
+counter 2, event #315,v: Snoop retry due to one ahead collision [shared] (PM_SNOOP_RETRY_1AHEAD)
+counter 3, event #312,v: Snoop read retry due to collision with active write queue [shared] (PM_SNOOP_RD_RETRY_WQ)
+counter 4, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 110: pm_snoop3, Snoop write retry
+counter 1, event #323,v: Snoop write/dclaim retry due to collision with active read queue [shared] (PM_SNOOP_WR_RETRY_RQ)
+counter 2, event #252,v: High priority write completed [shared] (PM_MEM_HI_PRIO_WR_CMPL)
+counter 3, event #317,v: Snoop write/dclaim retry due to collision with active write queue [shared] (PM_SNOOP_WR_RETRY_WQ)
+counter 4, event #249,v: Low priority write completed [shared] (PM_MEM_LO_PRIO_WR_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 111: pm_snoop4, Snoop partial write retry
+counter 1, event #315,v: Snoop partial-write retry due to collision with active read queue [shared] (PM_SNOOP_PW_RETRY_RQ)
+counter 2, event #251,v: High priority partial-write completed [shared] (PM_MEM_HI_PRIO_PW_CMPL)
+counter 3, event #309,v: Snoop partial-write retry due to collision with active write or partial-write queue [shared] (PM_SNOOP_PW_RETRY_WQ_PWQ)
+counter 4, event #248,v: Low priority partial-write completed [shared] (PM_MEM_LO_PRIO_PW_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 112: pm_mem_rq, Memory read queue dispatch
+counter 1, event #261,v: Memory read queue dispatched [shared] (PM_MEM_RQ_DISP)
+counter 2, event #262,v: Memory read queue dispatched with 8-15 queues busy [shared] (PM_MEM_RQ_DISP_BUSY8to15)
+counter 3, event #257,v: Memory read queue dispatched with 1-7 queues busy [shared] (PM_MEM_RQ_DISP_BUSY1to7)
+counter 4, event  #36,u: Cycles MSR(EE) bit off and external interrupt pending (PM_EE_OFF_EXT_INT)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 113: pm_mem_read, Memory read complete and cancel
+counter 1, event #260,v: Memory read completed or canceled [shared] (PM_MEM_READ_CMPL)
+counter 2, event #250,v: Fast path memory read completed [shared] (PM_MEM_FAST_PATH_RD_CMPL)
+counter 3, event #259,v: Speculative memory read canceled [shared] (PM_MEM_SPEC_RD_CANCEL)
+counter 4, event  #37,v: External interrupts (PM_EXT_INT)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 114: pm_mem_wq, Memory write queue dispatch
+counter 1, event #268,v: Memory write queue dispatched due to write [shared] (PM_MEM_WQ_DISP_WRITE)
+counter 2, event #264,v: Memory write queue dispatched with 1-7 queues busy [shared] (PM_MEM_WQ_DISP_BUSY1to7)
+counter 3, event #262,v: Memory write queue dispatched due to dclaim/flush [shared] (PM_MEM_WQ_DISP_DCLAIM)
+counter 4, event #260,v: Memory write queue dispatched with 8-15 queues busy [shared] (PM_MEM_WQ_DISP_BUSY8to15)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 115: pm_mem_pwq, Memory partial write queue
+counter 1, event #256,v: Memory partial-write queue dispatched [shared] (PM_MEM_PWQ_DISP)
+counter 2, event #256,v: Memory partial-write queue dispatched with 2-3 queues busy [shared] (PM_MEM_PWQ_DISP_BUSY2or3)
+counter 3, event #254,v: Memory partial-write gathered [shared] (PM_MEM_PW_GATH)
+counter 4, event #252,v: Memory partial-write completed [shared] (PM_MEM_PW_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 116: pm_threshold, Thresholding
+counter 1, event #281,v: Marked group dispatched (PM_MRK_GRP_DISP)
+counter 2, event #284,v: Marked IMR reloaded (PM_MRK_IMR_RELOAD)
+counter 3, event #348,v: Threshold timeout (PM_THRESH_TIMEO)
+counter 4, event #293,c: Marked instruction LSU processing finished (PM_MRK_LSU_FIN)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 117: pm_mrk_grp1, Marked group events
+counter 1, event #281,v: Marked group dispatched (PM_MRK_GRP_DISP)
+counter 2, event #300,v: Marked L1 D cache store misses (PM_MRK_ST_MISS_L1)
+counter 3, event #278,v: Marked instruction finished (PM_MRK_INST_FIN)
+counter 4, event #278,v: Marked group completed (PM_MRK_GRP_CMPL)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 118: pm_mrk_grp2, Marked group events
+counter 1, event #282,v: Marked group issued (PM_MRK_GRP_ISSUED)
+counter 2, event #268,v: Marked instruction BRU processing finished (PM_MRK_BRU_FIN)
+counter 3, event #279,v: Marked L1 reload data source valid (PM_MRK_L1_RELOAD_VALID)
+counter 4, event #279,v: Group experienced marked I cache miss (PM_MRK_GRP_IC_MISS)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 119: pm_mrk_dsource1, Marked data from 
+counter 1, event #269,v: Marked data loaded from L2 (PM_MRK_DATA_FROM_L2)
+counter 2, event #272,v: Marked load latency from L2 (PM_MRK_DATA_FROM_L2_CYC)
+counter 3, event #264,v: Marked data loaded from L2.5 modified (PM_MRK_DATA_FROM_L25_MOD)
+counter 4, event #264,v: Marked load latency from L2.5 modified (PM_MRK_DATA_FROM_L25_MOD_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 120: pm_mrk_dsource2, Marked data from
+counter 1, event #270,v: Marked data loaded from L2.5 shared (PM_MRK_DATA_FROM_L25_SHR)
+counter 2, event #270,v: Marked load latency from L2.5 shared (PM_MRK_DATA_FROM_L25_SHR_CYC)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event  #88,v: FPU produced a result (PM_FPU_FIN)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 121: pm_mrk_dsource3, Marked data from
+counter 1, event #272,v: Marked data loaded from L3 (PM_MRK_DATA_FROM_L3)
+counter 2, event #276,v: Marked load latency from L3 (PM_MRK_DATA_FROM_L3_CYC)
+counter 3, event #268,v: Marked data loaded from L3.5 modified (PM_MRK_DATA_FROM_L35_MOD)
+counter 4, event #267,v: Marked load latency from L3.5 modified (PM_MRK_DATA_FROM_L35_MOD_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 122: pm_mrk_dsource4, Marked data from
+counter 1, event #275,v: Marked data loaded from remote memory (PM_MRK_DATA_FROM_RMEM)
+counter 2, event #271,v: Marked load latency from L2.75 shared (PM_MRK_DATA_FROM_L275_SHR_CYC)
+counter 3, event #265,v: Marked data loaded from L2.75 shared (PM_MRK_DATA_FROM_L275_SHR)
+counter 4, event #272,v: Marked load latency from remote memory (PM_MRK_DATA_FROM_RMEM_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 123: pm_mrk_dsource5, Marked data from
+counter 1, event #273,v: Marked data loaded from L3.5 shared (PM_MRK_DATA_FROM_L35_SHR)
+counter 2, event #274,v: Marked load latency from L3.5 shared (PM_MRK_DATA_FROM_L35_SHR_CYC)
+counter 3, event #270,v: Marked data loaded from local memory (PM_MRK_DATA_FROM_LMEM)
+counter 4, event #270,v: Marked load latency from local memory (PM_MRK_DATA_FROM_LMEM_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 124: pm_mrk_dsource6, Marked data from
+counter 1, event #271,v: Marked data loaded from L2.75 modified (PM_MRK_DATA_FROM_L275_MOD)
+counter 2, event #271,v: Marked load latency from L2.75 shared (PM_MRK_DATA_FROM_L275_SHR_CYC)
+counter 3, event #112,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 4, event #266,v: Marked load latency from L2.75 modified (PM_MRK_DATA_FROM_L275_MOD_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 125: pm_mrk_dsource7, Marked data from
+counter 1, event #274,v: Marked data loaded from L3.75 modified (PM_MRK_DATA_FROM_L375_MOD)
+counter 2, event #275,v: Marked load latency from L3.75 shared (PM_MRK_DATA_FROM_L375_SHR_CYC)
+counter 3, event #269,v: Marked data loaded from L3.75 shared (PM_MRK_DATA_FROM_L375_SHR)
+counter 4, event #269,v: Marked load latency from L3.75 modified (PM_MRK_DATA_FROM_L375_MOD_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 126: pm_mrk_dtlbref, Marked data TLB references
+counter 1, event #280,v: Marked Data TLB reference for 4K page (PM_MRK_DTLB_REF_4K)
+counter 2, event #282,v: Marked Data TLB reference for 64K page (PM_MRK_DTLB_REF_64K)
+counter 3, event #275,v: Marked Data TLB reference for 16M page (PM_MRK_DTLB_REF_16M)
+counter 4, event #277,v: Marked Data TLB reference for 16G page (PM_MRK_DTLB_REF_16G)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 127: pm_mrk_dtlbmiss, Marked data TLB misses
+counter 1, event #278,v: Marked Data TLB misses for 4K page (PM_MRK_DTLB_MISS_4K)
+counter 2, event #280,v: Marked Data TLB misses for 64K page (PM_MRK_DTLB_MISS_64K)
+counter 3, event #273,v: Marked Data TLB misses for 16M page (PM_MRK_DTLB_MISS_16M)
+counter 4, event #275,v: Marked Data TLB misses for 16G page (PM_MRK_DTLB_MISS_16G)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 128: pm_mrk_dtlb_dslb, Marked data TLB references and misses and marked data SLB misses
+counter 1, event #279,v: Marked Data TLB reference (PM_MRK_DTLB_REF)
+counter 2, event #279,v: Marked Data TLB misses (PM_MRK_DTLB_MISS)
+counter 3, event #271,v: Marked Data SLB misses (PM_MRK_DSLB_MISS)
+counter 4, event  #21,v: Processor cycles [shared] (PM_CYC)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 129: pm_mrk_lbref, Marked TLB and SLB references
+counter 1, event #280,v: Marked Data TLB reference for 4K page (PM_MRK_DTLB_REF_4K)
+counter 2, event #113,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 3, event #275,v: Marked Data TLB reference for 16M page (PM_MRK_DTLB_REF_16M)
+counter 4, event #273,v: Marked Data SLB misses (PM_MRK_DSLB_MISS)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 130: pm_mrk_lsmiss, Marked load and store miss
+counter 1, event #285,v: Marked L1 D cache load misses (PM_MRK_LD_MISS_L1)
+counter 2, event #113,v: IOPS instructions completed (PM_IOPS_CMPL)
+counter 3, event #294,v: Marked store completed with intervention (PM_MRK_ST_CMPL_INT)
+counter 4, event #263,v: Marked instruction CRU processing finished (PM_MRK_CRU_FIN)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 131: pm_mrk_ulsflush, Mark unaligned load and store flushes
+counter 1, event #299,v: Marked store instruction completed (PM_MRK_ST_CMPL)
+counter 2, event #300,v: Marked L1 D cache store misses (PM_MRK_ST_MISS_L1)
+counter 3, event #291,v: Marked unaligned store flushes (PM_MRK_LSU_FLUSH_UST)
+counter 4, event #295,v: Marked unaligned load flushes (PM_MRK_LSU_FLUSH_ULD)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 132: pm_mrk_misc, Misc marked instructions
+counter 1, event #298,v: Marked STCX failed (PM_MRK_STCX_FAIL)
+counter 2, event #299,v: Marked store sent to GPS (PM_MRK_ST_GPS)
+counter 3, event #276,v: Marked instruction FPU processing finished (PM_MRK_FPU_FIN)
+counter 4, event #280,v: Marked group completion timeout (PM_MRK_GRP_TIMEO)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 133: pm_lsref_L1, Load/Store operations and L1 activity
+counter 1, event  #18,v: Data loaded from L2 (PM_DATA_FROM_L2)
+counter 2, event #116,v: Instruction fetched from L1 (PM_INST_FROM_L1)
+counter 3, event #322,v: L1 D cache store references (PM_ST_REF_L1)
+counter 4, event #196,v: L1 D cache load references (PM_LD_REF_L1)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 134: pm_lsref_L2L3, Load/Store operations and L2,L3 activity
+counter 1, event  #21,v: Data loaded from L3 (PM_DATA_FROM_L3)
+counter 2, event  #23,v: Data loaded from local memory (PM_DATA_FROM_LMEM)
+counter 3, event #322,v: L1 D cache store references (PM_ST_REF_L1)
+counter 4, event #196,v: L1 D cache load references (PM_LD_REF_L1)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 135: pm_lsref_tlbmiss, Load/Store operations and TLB misses
+counter 1, event #124,v: Instruction TLB misses (PM_ITLB_MISS)
+counter 2, event  #30,v: Data TLB misses (PM_DTLB_MISS)
+counter 3, event #322,v: L1 D cache store references (PM_ST_REF_L1)
+counter 4, event #196,v: L1 D cache load references (PM_LD_REF_L1)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 136: pm_Dmiss, Data cache misses
+counter 1, event  #21,v: Data loaded from L3 (PM_DATA_FROM_L3)
+counter 2, event  #23,v: Data loaded from local memory (PM_DATA_FROM_LMEM)
+counter 3, event #195,v: L1 D cache load misses (PM_LD_MISS_L1)
+counter 4, event #318,v: L1 D cache store misses (PM_ST_MISS_L1)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 137: pm_prefetchX, Prefetch events
+counter 1, event  #17,v: Processor cycles [shared] (PM_CYC)
+counter 2, event #110,v: Instruction prefetch requests (PM_IC_PREF_REQ)
+counter 3, event #122,v: L1 cache data prefetches (PM_L1_PREF)
+counter 4, event #171,v: L2 cache prefetches (PM_L2_PREF)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 138: pm_branchX, Branch operations
+counter 1, event  #12,v: Unconditional branch (PM_BR_UNCOND)
+counter 2, event  #11,v: A conditional branch was predicted, target prediction (PM_BR_PRED_TA)
+counter 3, event  #11,v: A conditional branch was predicted, CR prediction (PM_BR_PRED_CR)
+counter 4, event   #9,v: Branches issued (PM_BR_ISSUED)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 139: pm_fpuX1, Floating point events by unit
+counter 1, event  #70,v: FPU0 stalled in pipe3 (PM_FPU0_STALL3)
+counter 2, event  #82,v: FPU1 stalled in pipe3 (PM_FPU1_STALL3)
+counter 3, event  #61,v: FPU0 produced a result (PM_FPU0_FIN)
+counter 4, event  #66,v: FPU0 executed FPSCR instruction (PM_FPU0_FPSCR)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 140: pm_fpuX2, Floating point events by unit
+counter 1, event  #63,v: FPU0 executed multiply-add instruction (PM_FPU0_FMA)
+counter 2, event  #76,v: FPU1 executed multiply-add instruction (PM_FPU1_FMA)
+counter 3, event  #65,v: FPU0 executed FRSP or FCONV instructions (PM_FPU0_FRSP_FCONV)
+counter 4, event  #80,v: FPU1 executed FRSP or FCONV instructions (PM_FPU1_FRSP_FCONV)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 141: pm_fpuX3, Floating point events by unit
+counter 1, event  #58,v: FPU0 executed add, mult, sub, cmp or sel instruction (PM_FPU0_1FLOP)
+counter 2, event  #71,v: FPU1 executed add, mult, sub, cmp or sel instruction (PM_FPU1_1FLOP)
+counter 3, event  #61,v: FPU0 produced a result (PM_FPU0_FIN)
+counter 4, event  #77,v: FPU1 produced a result (PM_FPU1_FIN)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 142: pm_fpuX4, Floating point and L1 events
+counter 1, event  #85,v: FPU executed one flop instruction  (PM_FPU_1FLOP)
+counter 2, event  #84,v: FPU executed multiply-add instruction (PM_FPU_FMA)
+counter 3, event #322,v: L1 D cache store references (PM_ST_REF_L1)
+counter 4, event #196,v: L1 D cache load references (PM_LD_REF_L1)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 143: pm_fpuX5, Floating point events
+counter 1, event  #90,v: FPU executed single precision instruction (PM_FPU_SINGLE)
+counter 2, event  #88,v: FPU executed store instruction (PM_FPU_STF)
+counter 3, event  #61,v: FPU0 produced a result (PM_FPU0_FIN)
+counter 4, event  #77,v: FPU1 produced a result (PM_FPU1_FIN)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 144: pm_fpuX6, Floating point events
+counter 1, event  #87,v: FPU executed FDIV instruction (PM_FPU_FDIV)
+counter 2, event  #86,v: FPU executed FSQRT instruction (PM_FPU_FSQRT)
+counter 3, event  #85,v: FPU executed FRSP or FCONV instructions (PM_FPU_FRSP_FCONV)
+counter 4, event  #88,v: FPU produced a result (PM_FPU_FIN)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 145: pm_fpuX7, Floating point events
+counter 1, event  #85,v: FPU executed one flop instruction  (PM_FPU_1FLOP)
+counter 2, event  #84,v: FPU executed multiply-add instruction (PM_FPU_FMA)
+counter 3, event  #87,v: FPU executed store instruction (PM_FPU_STF)
+counter 4, event  #88,v: FPU produced a result (PM_FPU_FIN)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 146: pm_hpmcount1, HPM group for set 1 
+counter 1, event  #17,v: Processor cycles [shared] (PM_CYC)
+counter 2, event  #94,v: FXU produced a result (PM_FXU_FIN)
+counter 3, event  #16,v: Processor cycles [shared] (PM_CYC)
+counter 4, event  #88,v: FPU produced a result (PM_FPU_FIN)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 147: pm_hpmcount2, HPM group for set 2
+counter 1, event  #17,v: Processor cycles [shared] (PM_CYC)
+counter 2, event  #88,v: FPU executed store instruction (PM_FPU_STF)
+counter 3, event #113,v: Instructions dispatched (PM_INST_DISP)
+counter 4, event #230,v: LSU executed Floating Point load instruction (PM_LSU_LDF)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 148: pm_hpmcount3, HPM group for set 3 
+counter 1, event  #17,v: Processor cycles [shared] (PM_CYC)
+counter 2, event #114,v: Instructions dispatched (PM_INST_DISP)
+counter 3, event #195,v: L1 D cache load misses (PM_LD_MISS_L1)
+counter 4, event #318,v: L1 D cache store misses (PM_ST_MISS_L1)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 149: pm_hpmcount4, HPM group for set 7
+counter 1, event #356,v: TLB misses (PM_TLB_MISS)
+counter 2, event  #20,v: Processor cycles [shared] (PM_CYC)
+counter 3, event #322,v: L1 D cache store references (PM_ST_REF_L1)
+counter 4, event #196,v: L1 D cache load references (PM_LD_REF_L1)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 150: pm_flop, Floating point operations
+counter 1, event  #87,v: FPU executed FDIV instruction (PM_FPU_FDIV)
+counter 2, event  #84,v: FPU executed multiply-add instruction (PM_FPU_FMA)
+counter 3, event  #86,v: FPU executed FSQRT instruction (PM_FPU_FSQRT)
+counter 4, event  #86,v: FPU executed one flop instruction  (PM_FPU_1FLOP)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 151: pm_eprof1, Group for use with eprof
+counter 1, event #303,v: Instructions completed (PM_INST_CMPL)
+counter 2, event  #20,v: Processor cycles [shared] (PM_CYC)
+counter 3, event #195,v: L1 D cache load misses (PM_LD_MISS_L1)
+counter 4, event  #26,u: L1 D cache entries invalidated from L2 [shared] (PM_DC_INV_L2)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)
+
+group 152: pm_eprof2, Group for use with eprof
+counter 1, event #303,v: Instructions completed (PM_INST_CMPL)
+counter 2, event #323,v: L1 D cache store references (PM_ST_REF_L1)
+counter 3, event #113,v: Instructions dispatched (PM_INST_DISP)
+counter 4, event #196,v: L1 D cache load references (PM_LD_REF_L1)
+counter 5, event   #0,v: Run instructions completed (PM_RUN_INST_CMPL)
+counter 6, event   #0,v: Run cycles (PM_RUN_CYC)

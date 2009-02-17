@@ -1,0 +1,246 @@
+#!/bin/sh
+
+################################################################################
+####  UNIX Script Documentation Block
+#                      .                                             .
+# Script name:         exrtma_gsianl.sh.sms
+# Script description:  Runs regional GSI variational analysis
+#
+# Author:        Manuel Pondeca      Org: NP22        Date: 2006-06-23
+#
+# Script history log:
+# 2006-06-23 Manuel Pondeca
+#
+################################################################################
+
+set -x
+cd $DATA
+
+msg="JOB $job HAS BEGUN"
+postmsg "$jlogfile" "$msg"
+
+# Set resoltion and other dependent parameters
+export JCAP=${JCAP:-62}
+export LEVS=${LEVS:-60}
+export DELTIM=${DELTIM:-$((3600/($JCAP/20)))}
+
+# Copy in the prepbufr file
+cp $COMRUC/${RUN}.t${cyc}z.prepbufr.tm00 prepbufr
+
+# Define the Analysis Date
+adate=$PDY$cyc
+
+#   for plotting correlations, set an_test_output = .true.
+#   variable names expected for var_plotcor are
+#    st  -- stream function
+#    vp  -- velocity potential
+#    ps  -- surface pressure
+#    tv  -- virtual temperature
+#    q   -- specific humidity
+#    oz  -- ozone
+#    sst -- sea surface temperature
+#    stl -- skin temp over land
+#    sti -- skin temp over ice
+#    cw  -- cloud water
+#
+#   coordinates of desired correlation test point are
+#
+#      i_plotcor, j_plotcor, k_plotcor
+#
+
+# Make gsi namelist
+cat << EOF > gsiparm.anl
+ &SETUP
+   miter=2,niter(1)=50,niter(2)=50,
+   write_diag(1)=.true.,write_diag(2)=.true.,write_diag(3)=.true.,
+   gencode=78,qoption=1,
+   factqmin=1.0,factqmax=1.0,deltim=$DELTIM,
+   ndat=5,iguess=-1,
+   oneobtest=.false.,retrieval=.false.,
+   diag_rad=.false.,diag_pcp=.false.,diag_ozone=.false.,
+   nhr_assimilation=3,
+ /
+ &GRIDOPTS
+   JCAP=$JCAP,NLAT=$NLAT,NLON=$LONA,nsig=$LEVS,hybrid=.true.,
+   wrf_nmm_regional=.false.,wrf_mass_regional=.false.,twodvar_regional=.true.,
+   diagnostic_reg=.false.,
+   filled_grid=.false.,half_grid=.true.,netcdf=.false.,
+ /
+ &BKGERR
+   as=0.35,0.35,0.35,0.50,0.50,0.80,1.00,1.00,
+   hzscl=1.414,1.000,0.707,
+   vs=0.5,bw=0.0,
+ /
+ &ANBKGERR
+   anisotropic=.true.,an_vs=0.5,ngauss=1,
+   an_flen_u=-5.,an_flen_t=3.,an_flen_z=-200.,
+   ifilt_ord=2,npass=3,normal=-200,grid_ratio=1.,nord_f2a=4
+ /
+ &JCOPTS
+   jcterm=.false.,jcdivt=.false.,bamp_ext1=1.0e6,bamp_ext2=1.0e6,
+   bamp_int1=1.0e5, bamp_int2=1.0e4
+ /
+ &STRONGOPTS
+   nstrong=0,nvmodes_keep=8,period_max=6.,period_width=1.5,nstrong_end=0,update_end=.false.,
+ /
+ &OBSQC
+   dfact=0.75,dfact1=3.0,noiqc=.false.,
+   vadfile='prepbufr',
+ /
+ &OBS_INPUT
+   dmesh(1)=60.0,dmesh(2)=60.0,dmesh(3)=60.0,dmesh(4)=60.0,time_window_max=1.5,
+   dfile(01)='prepbufr',  dtype(01)='ps',  dplat(01)=' ', dsis(01)='ps',  dval(01)=1.0,  dthin(01)=0,
+   dfile(02)='prepbufr'   dtype(02)='t',   dplat(02)=' ', dsis(02)='t',   dval(02)=1.0,  dthin(02)=0,
+   dfile(03)='prepbufr',  dtype(03)='q',   dplat(03)=' ', dsis(03)='q',   dval(03)=1.0,  dthin(03)=0,
+   dfile(04)='prepbufr',  dtype(04)='uv',  dplat(04)=' ', dsis(04)='uv',  dval(04)=1.0,  dthin(04)=0,
+   dfile(05)='prepbufr',  dtype(05)='spd', dplat(05)=' ', dsis(05)='spd', dval(05)=1.0,  dthin(05)=0,
+ /
+ &SUPEROB_RADAR
+ /
+ &SINGLEOB_TEST
+   maginnov=0.1,magoberr=0.1,oneob_type='v',
+   oblat=36.,oblon=264.,obpres=1000.,obdattim=${adate},
+   obhourset=0.,
+ /
+EOF
+
+# bsm - this code snippet was in exakrtma_getguess.sh.sms
+# bsm - since the error is that this file could not be read
+# bsm - and the file is zero length in /tmpnwprd 
+# bsm - I wonder if add 
+cat << EOF > gridname_input
+&gridname
+    cgrid='alaska'
+/
+EOF
+
+# Set fixed files
+#   berror   = forecast model background error statistics
+#   specoef  = OPTRAN spectral coefficients
+#   trncoef  = OPTRAN transmittance coefficients
+#   emiscoef = coefficients for IR sea surface emissivity model
+#   satinfo  = text file with information about assimilation of brightness temperatures
+#   satangl  = angle dependent bias correction file (fixed in time)
+#   pcpinfo  = text file with information about assimilation of prepcipitation rates
+#   ozinfo   = text file with information about assimilation of ozone data
+#   errtable = text file with obs error for conventional data (regional only)
+#   bufrtable= text file ONLY needed for single obs test (oneobstest=.true.)
+#   bftab_sst= bufr table for sst ONLY needed for sst retrieval (retrieval=.true.)
+
+cp $FIXrtma/akrtma_regional_nmm_berror.f77 berror_stats
+cp $FIXrtma/akrtma_nam_errtable.r3dv errtable
+cp $FIXrtma/akrtma_regional_convinfo.txt convinfo
+cp $FIXrtma/akrtma_mesonet_uselist.txt mesonetuselist
+cp $FIXrtma/rtma_prepobs_prep.bufrtable prepobs_prep.bufrtable
+cp $FIXrtma/akrtma_mass_rejectlist_static.txt mass_rejectlist_tmp
+cp $FIXrtma/akrtma_slmask.dat rtma_slmask.dat
+
+adate01=`/nwprod/util/exec/ndate -01 $adate`
+pdy0=`echo $adate01 | cut -c1-8`
+gesdir0=/nwges/${envir}/akrtma.${pdy0}
+
+#Note: DO NOT REMOVE "IF" statement below.
+#      ${lstats} IS PLACE TO STORE DYNAMICALLY GENERATED REJECT LISTS
+#      OF OBSERVATIONS AND OTHER STATISTICS BY THE RTMAPOST. CURRENT ANALYSIS 
+#      AND POST USE STATISTICS FROM LAST SIX ANALYSES STORED IN ${lstats}
+
+if [ -e ${gesdir0}/mass_rjlist.txt_${adate01} ] ; then
+  cat ${gesdir0}/mass_rjlist.txt_${adate01} | tail +4  >> mass_rejectlist_tmp
+fi
+
+mv mass_rejectlist_tmp mass_rejectlist
+
+# Copy bias correction, sigma, and surface files
+#
+#  *** NOTE:  The regional gsi analysis is written to (over)
+#             the input guess field file (wrf_inout)
+#
+cp $COMIN/${RUN}.t${cyc}z.2dvar_input  ./wrf_inout
+
+cp $FIXrtma/akrtma_fltnorm.dat_chi       $DATA/fltnorm.dat_chi
+cp $FIXrtma/akrtma_fltnorm.dat_ist       $DATA/fltnorm.dat_ist
+cp $FIXrtma/akrtma_fltnorm.dat_ps        $DATA/fltnorm.dat_ps
+cp $FIXrtma/akrtma_fltnorm.dat_lst       $DATA/fltnorm.dat_lst
+cp $FIXrtma/akrtma_fltnorm.dat_oz        $DATA/fltnorm.dat_oz
+cp $FIXrtma/akrtma_fltnorm.dat_pseudorh  $DATA/fltnorm.dat_pseudorh 
+cp $FIXrtma/akrtma_fltnorm.dat_psi       $DATA/fltnorm.dat_psi
+cp $FIXrtma/akrtma_fltnorm.dat_qw        $DATA/fltnorm.dat_qw
+cp $FIXrtma/akrtma_fltnorm.dat_sst       $DATA/fltnorm.dat_sst
+cp $FIXrtma/akrtma_fltnorm.dat_t         $DATA/fltnorm.dat_t
+
+export pgm=akrtma_gsianl
+. prep_step
+
+poe hpmcount $EXECrtma/akrtma_gsianl <gsiparm.anl>>$pmgout 2>errfile
+export err=$?; err_chk
+
+if [ $SENDCOM = YES ]
+then
+   cp wrf_inout  $COMOUT/${RUN}.t${cyc}z.wrfanl
+   cp siganl     $COMOUT/${RUN}.t${cyc}z.siganl
+   cp sigf03     $COMOUT/${RUN}.t${cyc}z.sigf03
+   cp bckg_dxdy.dat     $COMOUT/${RUN}.t${cyc}z.bckg_dxdy.dat
+   cp bckg_qsat.dat     $COMOUT/${RUN}.t${cyc}z.bckg_qsat.dat
+   cp bckg_psfc.dat     $COMOUT/${RUN}.t${cyc}z.bckg_psfc.dat
+   cp bckgvar.dat_psi     $COMOUT/${RUN}.t${cyc}z.bckgvar_psi.dat
+   cp bckgvar.dat_chi     $COMOUT/${RUN}.t${cyc}z.bckgvar_chi.dat
+   cp bckgvar.dat_ps    $COMOUT/${RUN}.t${cyc}z.bckgvar_ps.dat
+   cp bckgvar.dat_t     $COMOUT/${RUN}.t${cyc}z.bckgvar_t0.dat
+   cp bckgvar.dat_pseudorh     $COMOUT/${RUN}.t${cyc}z.bckgvar_pseudorh.dat
+
+   cp fort.201 $COMOUT/${RUN}.t${cyc}z.pressfcfits
+   cp fort.202 $COMOUT/${RUN}.t${cyc}z.windfits
+   cp fort.203 $COMOUT/${RUN}.t${cyc}z.tempfits
+   cp fort.204 $COMOUT/${RUN}.t${cyc}z.shumidfits
+   cp fort.220 $COMOUT/${RUN}.t${cyc}z.penaltyinfo
+   cp mass_rejectlist $COMOUT/${RUN}.t${cyc}z.mass_rejectlist
+fi
+
+# Loop over first and last outer loops to generate innovation
+# diagnostic files for indicated observation types (groups)
+#
+# NOTE:  Since we set miter=2 in GSI namelist SETUP, outer
+#        loop 03 will contain innovations with respect to 
+#        the analysis.  Creation of o-a innovation files
+#        is triggered by write_diag(3)=.true.  The setting
+#        write_diag(1)=.true. turns on creation of o-g
+#        innovation files.
+#
+
+loops="01 02 03"
+for loop in $loops
+do
+
+# Collect diagnostic files for obs types (groups) below
+list="conv"
+
+  for type in $list
+  do
+     count=`ls ${type}_${loop}* | wc -l`
+     if [ count -gt 0 ]
+     then
+        cat ${type}_${loop}.* > diag_${type}_${loop}
+        compress diag_${type}_${loop}
+        if [ $SENDCOM = YES ]
+        then
+          if [ "$loop" = "01" ]
+          then
+            cp diag_${type}_${loop}.Z $COMOUT/${RUN}.t${cyc}z.diag_${type}_ges.Z
+          elif [ "$loop" = "03" ]
+          then
+            cp diag_${type}_${loop}.Z $COMOUT/${RUN}.t${cyc}z.diag_${type}_anl.Z
+          else
+            cp diag_${type}_${loop}.Z $COMOUT/${RUN}.t${cyc}z.diag_${type}_${loop}.Z
+          fi
+        fi
+     fi
+   done
+done
+
+########################################################
+
+msg='$job ENDED NORMALLY.'
+postmsg "$jlogfile" "$msg"
+
+################## END OF SCRIPT #######################
+

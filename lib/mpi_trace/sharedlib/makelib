@@ -1,0 +1,109 @@
+#!/bin/ksh
+
+# script to regenerate libmpi_r.a incorporating name-shifted profiling code
+#
+# modified from a script by David Skinner, May 2005 (dskinner@nersc.gov)
+#
+
+#-----------------------------------------
+# Set the directory for the new shared lib
+#-----------------------------------------
+ export SHAREDIR=`pwd`
+#-----------------------------------------
+# Select a static wrapper library
+#-----------------------------------------
+ export WRAPPER_LIB=$SHAREDIR/../lib/libmpitrace.a
+ export EXTRA_LIBS=
+#-----------------------------------------
+#export WRAPPER_LIB=$SHAREDIR/../lib/libmpihpm.a
+#export EXTRA_LIBS="-lpmapi -lcfg -lodm"
+#-----------------------------------------
+
+for BITS in 32 64
+do
+
+echo " "
+echo Working on $BITS bit libraries ...
+export BITS
+
+export WRAPPER_OBJS=`ar -X $BITS t $WRAPPER_LIB`
+
+rm -rf $BITS
+mkdir $BITS
+cd $BITS
+
+export OBJECT_MODE=$BITS
+export ORIGMPIPATH=/usr/lpp/ppe.poe
+
+export OBJ=`ar -X $BITS t $ORIGMPIPATH/lib/libmpi_r.a | grep -v pm_initfini | grep -v mpifmod`
+
+# exceptions : pm_initfini.o mpifmod_r.o
+                                                                               
+if [[ $BITS == "32" ]] ; then
+  export XOBJ="pm_initfini.o mpifmod_r.o"
+fi
+
+if [[ $BITS == "64" ]] ; then
+  export XOBJ="pm_initfini64.o mpifmod64_r.o"
+fi
+
+cp $WRAPPER_LIB .
+ar -X $BITS vx $WRAPPER_LIB
+
+echo " "
+echo "Step 1: Extract the shared objects from libmpi_r.a"
+ar -X $BITS xv $ORIGMPIPATH/lib/libmpi_r.a
+cp $ORIGMPIPATH/lib/libmpi_r.a .
+
+echo " "
+echo "Step 2: Extract export lists"
+
+for o in $OBJ ; do
+ echo "Making exports for libmpi_r.a($o)"
+ expo=`echo $o | sed -e 's/\.o/.exp/'`
+ echo ../make_exp $BITS $o to $expo
+ echo "#! libmpi_r.a($o)" > $expo
+ ../make_exp $BITS $o >> $expo
+done
+
+echo " "
+echo "Step 3: Rebuild shared objects using MPI wrappers"
+for o in $OBJ ; do
+ news=`echo $o | sed -e 's/\.o/.sh/'`
+ echo rtl_enable -X $BITS -l -R -s $o -L. -lc_r -lpthreads 
+ rtl_enable -X $BITS -l -R -s $o -L. -lc_r -lpthreads  $EXTRA_LIBS
+ if [[ $o == "mpicore_r.o" ]] ; then
+  sed -e 's/mpicore_r.o -b/$WRAPPER_OBJS mpicore_r.o mpifort_r.o -b/' $news > tmp.$nnews
+  mv tmp.$nnews $news
+ fi
+ if [[ $o == "mpicore64_r.o" ]] ; then
+  sed -e 's/mpicore64_r.o -b/$WRAPPER_OBJS mpicore64_r.o mpifort64_r.o -b/' $news > tmp.$nnews 
+  mv tmp.$nnews $news
+ fi
+ sed -e 's/-bnortllib -bnosymbolic -bnoautoexp/-bM:SRE -H512 -T512 -bnoentry -bnoobjreorder/' $news > tmp.$nnews
+ mv tmp.$nnews $news
+ cat $news 
+  chmod a+rx $news
+ ./$news
+done
+
+echo " "
+echo "Step 4: Rebuild libmpi_r.a"
+echo rm -f libmpi_r.a
+rm -f libmpi_r.a
+echo ar -X $BITS rv libmpi_r.a $OBJ $XOBJ
+ar -X $BITS rv libmpi_r.a $OBJ $XOBJ
+
+cd ..
+
+done
+
+echo " "
+echo "Merging 32-bit and 64-bit libraries ..."
+ar -X32 xv 32/libmpi_r.a
+ar -X64 xv 64/libmpi_r.a
+ar -X32_64 rv libmpi_r.a *.o
+rm -rf *.o 32 64
+
+echo "done"
+echo "Modified MPI library is libmpi_r.a in this directory."

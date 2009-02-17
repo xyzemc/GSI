@@ -1,0 +1,15 @@
+The makelib script should take a static wrapper library and use it to
+re-build the libmpi_r.a shared library.  
+
+(1) Edit the makelib script, select the wrapper library, either 
+    libmpitrace.a or libmpihpm.a, and specify the extra shared 
+    libs that are needed.
+
+(2) Run the makelib script.
+
+To use the new libmpi_r.a library, set MP_EUILIBPATH to point to the
+re-built libmpi_r.a, which should be available in this directory.
+
+With this method it is not necessary to compile or link the executable
+with wrapper libraries - all you have to do is set MP_EUILIBPATH.
+

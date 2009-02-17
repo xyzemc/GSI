@@ -1,0 +1,119 @@
+With libmpihpm.a, hardware counters are started in MPI_Init() and
+stopped in MPI_Finalize().  Each MPI process can use it's own counter
+group, and so it is possible to multiplex over MPI ranks and get a lot
+of counter data from a single parallel job. For example, if you have a
+parallel job with >=80 MPI tasks, you could do the following on a
+power5 system:
+
+(1) link with libmpihpm.a -lpmapi -lcfg -lodm
+
+(2) run the app with env variables:
+
+    export HPM_GROUP_LIST=power5_std 
+    export SAVE_ALL_TASKS=no
+
+There are, however, a number of complications for power5/power5+.  If
+SMT is enabled, you have to make sure that the same counter group is
+used for the tasks that share a physical cpu.  That requires some form
+of binding.  On power5/power5+ there is a significant distinction
+between local and remote memory.  You may need to set
+MEMORY_AFFINITY=MCM and use some form of binding to ensure memory
+locality, whether SMT is enabled or not.  It is best to pre-bind, using
+a helper script or Farid Parpia's "launch" utility.  Pre-binding is the
+only way to ensure locality for static data, like common blocks.  If
+your application mainly uses memory allocated after MPI_Init(), you can
+use the binding included in the MPI wrapper libraries (export
+BIND_TASKS=yes).
+
+It makes sense to multiplex over MPI ranks if your job is reasonably
+well load-balanced, but not for MPMD codes; and extra care is needed
+when certain tasks perform unique or different functions.
+
+You can control the mapping of HPM counter groups onto MPI ranks by
+setting the HPM_GROUP_LIST env variable.  If you have just a few
+counter groups to collect, you can list them explicitly:
+
+export HPM_GROUP_LIST="0,1,2,3,4,5,6,7,8,9,10,11,12,13,16,17" 
+poe launch your.exe
+
+MPI rank 0 gets the first group in the list, MPI rank 1 gets the next
+group in the list, etc.; and if there are more MPI ranks than items in
+the list, it will wrap back around.  For example, if you run a 64-way
+MPI job with 16 counter groups in your HPM_GROUP_LIST, you will get
+four instances for each counter group.
+
+If you have >=80 MPI ranks, you can get all of the counter data in one
+shot by setting HPM_GROUP_LIST=power5_std (for standard power5) or
+HPM_GROUP_LIST=power5_plus (for a power5+ system).  By "all", I mean
+all of the groups currently in Joel Tendler's list - which is subject
+to change.
+
+
+Sometimes you may need to exclude some MPI process.  For example, if
+your application has a master task for rank 0, and all the others are
+workers, you can put "-1" for the group for rank 0 (the first group in
+the list), and that will turn off HPM data collection from that MPI rank.
+
+
+To get HPM data into some "useful" format requires extra care. The 
+libmpihpm.a library was originally setup to output one file from each 
+MPI rank, and that file would contain both the MPI and HPM data from 
+that MPI process.  This is still the default output format.  If you 
+use that method, it is necessary to do something to collect all of 
+the HPM data and put it into a file in the right format for analysis.  
+Alternatively, it should be more convenient if libmpihpm.a would just 
+collect all the HPM data into one file with the right format.  This 
+approach is new, and still under construction - but you can try it 
+as is.  To get the new HPM output format, you need to set an env 
+variable: 
+
+export SAVE_ALL_TASKS=no.  
+
+When you do that, all of the HPM data is collected in one file, 
+hpmdata.txt, which is opened in append mode.  That way, you can run a 
+script with a number of different jobs, and the HPM data automatically 
+accumulates in one file.  Please see the run scripts for power5 and 
+power5+ in the example directory.  At the present time, there is one 
+last step required to get the format of the HPM data to match Joel 
+Tendler's spreadsheets: there is a "reformat" utility, which you need 
+to run like this:
+
+reformat hpmdata.txt
+
+The resulting file can be imported into Joel's spreadsheet for analysis.
+
+To work with Joel's spreadsheets, you have to use the right counter
+groups for power5 and power5+.  These groups are listed in the files:
+
+power5.groups
+power5+.groups
+
+and are also in the run scripts in the example directory.  It is a 
+good idea to try a simple example, like the one in the example dir,
+before collecting data on important applications.  The "hpmdata.txt"
+file was meant to be opened in append mode, so that multiple jobs
+would automatically append data to the same file.  The format of the
+"hpmdata.txt" file has a header section with basic information about
+each job, followed by counter data for that job.  In the case of 
+multiple jobs, the "hpmdata.txt" file is a concatenation of the files
+for each job.  The "reformat" utility just re-organizes the data so
+it fits Joel's spreadsheet format.  You could do the same thing by
+hand-editing the "hpmdata.txt" file.
+
+
+--------------------------------------------------------------------
+
+Changes.
+
+July 2006.  Joe Robichaux has re-written the HPM part so that the
+  libmpihpm.a library should work on any AIX PowerPC system that
+  has pmapi.  This should make it possible to use the same library
+  for Power5, Power5+, Power6, JS21(AIX), etc.  This is a major 
+  improvement, which makes the code easier to maintain and also
+  ensures correct event labels for your processor version and the
+  installed level of pmapi.  You can use "pmlist -g -1" to list all 
+  of the groups that are available on your target platform.
+
+  Due to a change in the method used to obtain the system model,
+  it is necessary to link with libmpihpm.a -lpmapi -lcfg -lodm.
+
