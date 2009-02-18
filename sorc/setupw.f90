@@ -152,7 +152,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
   character(8) station_id
   character(8),allocatable,dimension(:):: cdiagbuf
 
-  logical pibal_height,sfc_data
+  logical pibal_height,sfc_data,z_height
   logical,dimension(nobs):: luse,muse
 
   equivalence(rstation_id,station_id)
@@ -251,8 +251,8 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 !   If height is not bad (less than 1e10), we use height in the
 !   forward model.  Otherwise, use reported pressure.
 
-    pibal_height = .false.
-    if ((itype==221) .and. (data(ihgt,i)<r1e10)) pibal_height = .true.
+    z_height = .false.
+    if ((itype>=221 .and. itype <= 229) .and. (data(ihgt,i)<r1e10)) z_height = .true.
 
 !   Process observations reported with height differently than those
 !   reported with pressure.  Type 223=profiler and 224=vadwnd are 
@@ -262,8 +262,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 !   also repoted using geopotential height.
 
     sfc_data = (itype >=280 .and. itype < 300) .and. (.not.twodvar_regional)
-    if (pibal_height .or. itype==223 .or. itype==224 .or. itype==229 &
-        .or. sfc_data) then
+    if (z_height .or. sfc_data) then
 
        drpx = zero
        dpres = data(ihgt,i)
@@ -290,7 +289,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 !      For observation reported with geometric height above sea level,
 !      convert geopotential to geometric height.
 
-       if (itype==223 .or. itype==224 .or. sfc_data) then
+       if ((itype>=223 .and. itype<=228) .or. sfc_data) then
 !         Convert geopotential height at layer midpoints to geometric 
 !         height using equations (17, 20, 23) in MJ Mahoney's note 
 !         "A discussion of various measures of altitude" (2001).  
@@ -404,12 +403,11 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
        dpres = dpres-log(psges)
        drpx=zero
        
-       prsfc=psges
-       prsln2=log(exp(prsltmp(1))/prsfc)
+       prsln2=log(exp(prsltmp(1))/psges)
        dpressave=dpres
 
 !      Put obs pressure in correct units to get grid coord. number
-       dpres=log(exp(dpres)*prsfc)
+       dpres=log(exp(dpres)*psges)
        call grdcrd(dpres,1,prsltmp(1),nsig,-1)
 
 !      Interpolate guess u and v to observation location and time.
@@ -464,8 +462,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 !   Check to see if observation below model surface or above model top.
 !   If so, don't use observation
     if (dpres>rsig) ratio_errors=zero
-    if ( (itype==221 .or. itype==223 .or. itype==224 .or. itype==229) &
-         .and. (dpres<zero) ) ratio_errors=zero
+    if ( (itype>=221 .and. itype<=229).and. (dpres<zero) ) ratio_errors=zero
 
 
 ! Compute innovations
@@ -479,7 +476,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 !       Get guess values of tropopause pressure and sea/land/ice
 !       mask at observation location
         call intrp2a(tropprs,trop5,dlat,dlon,1,1,mype)
-        prsfc = r10*prsfc       ! surface pressure in hPa
+        prsfc = r10*psges       ! surface pressure in hPa
 
 !       Compute observed and guess wind speeds (m/s).  
         spdges = sqrt(ugesin* ugesin +vgesin* vgesin )

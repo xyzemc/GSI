@@ -61,18 +61,24 @@ subroutine getprs(ps,prs)
         prs(i,j,k2)=zero
       end do
     end do
-    do k=2,nsig
-      do j=1,lon2
-        do i=1,lat2
-          if (idvc5.ne.3) then
+    if (idvc5 /= 3) then
+      do k=2,nsig
+        do j=1,lon2
+          do i=1,lat2
             prs(i,j,k)=ak5(k)+bk5(k)*ps(i,j)
-          else
-            trk=(half*(ges_tv(i,j,k-1,it)+ges_tv(i,j,k,it))/tref5(k))**kapr
-            prs(i,j,k)=ak5(k)+(bk5(k)*ps(i,j))+(ck5(k)*trk)
-          end if
+          end do
         end do
       end do
-    end do
+    else
+      do k=2,nsig
+        do j=1,lon2
+          do i=1,lat2
+            trk=(half*(ges_tv(i,j,k-1,it)+ges_tv(i,j,k,it))/tref5(k))**kapr
+            prs(i,j,k)=ak5(k)+(bk5(k)*ps(i,j))+(ck5(k)*trk)
+          end do
+        end do
+      end do
+    end if
   end if
 
   return
@@ -106,23 +112,21 @@ subroutine getprs_horiz(ps_x,ps_y,mype,prs,prs_x,prs_y)
 ! Declare local variables
   integer(i_kind) i,j,k,k2
 
-! Declare local parameter
-  real(r_kind),parameter:: ten = 10.0_r_kind
 
-  prs_x=zero ; prs_y=zero
-
-  if(wrf_nmm_regional) then
-    do k=1,nsig+1
-      do j=1,lon2
-        do i=1,lat2
-          prs_x(i,j,k)=eta2_ll(k)*ps_x(i,j)
-          prs_y(i,j,k)=eta2_ll(k)*ps_y(i,j)
-        end do
-      end do
-    end do
-  end if
-
-  if (.not.regional) then
+  if(regional)then
+     if(wrf_nmm_regional) then
+       do k=1,nsig+1
+         do j=1,lon2
+           do i=1,lat2
+             prs_x(i,j,k)=eta2_ll(k)*ps_x(i,j)
+             prs_y(i,j,k)=eta2_ll(k)*ps_y(i,j)
+           end do
+         end do
+       end do
+     else
+       prs_x=zero ; prs_y=zero
+     end if
+  else
     call mp_compact_dlon1(prs,prs_x,.false.,nsig+1,mype)
     call mp_compact_dlat1(prs,prs_y,.false.,nsig+1,mype)
   end if
@@ -171,11 +175,6 @@ subroutine getprs_tl(ps,t,prs)
   real(r_kind) kapr,kaprm1,trk,tc1,t9trm
   integer(i_kind) i,j,k,k2,it
 
-  kapr=one/rd_over_cp
-  kaprm1=kapr-one
-  it=ntguessig
-  prs=zero 
-
   if(wrf_nmm_regional) then
     do k=1,nsig+1
       do j=1,lon2
@@ -193,20 +192,29 @@ subroutine getprs_tl(ps,t,prs)
         prs(i,j,k2)=zero
       end do
     end do
-    do k=2,nsig
-      do j=1,lon2
-        do i=1,lat2
-          if (idvc5.ne.3) then
+    if (idvc5 /= 3) then
+      do k=2,nsig
+        do j=1,lon2
+          do i=1,lat2
             prs(i,j,k)=bk5(k)*ps(i,j)
-          else
+          end do
+        end do
+      end do
+    else
+      kapr=one/rd_over_cp
+      kaprm1=kapr-one
+      it=ntguessig
+      do k=2,nsig
+        do j=1,lon2
+          do i=1,lat2
             t9trm=half*(ges_tv(i,j,k-1,it)+ges_tv(i,j,k,it))/tref5(k)
             tc1=half/tref5(k)
             trk=kapr*tc1*(t(i,j,k-1)+t(i,j,k))*(t9trm**kaprm1)
             prs(i,j,k)=bk5(k)*ps(i,j) + ck5(k)*trk
-          end if
+          end do
         end do
       end do
-    end do
+    end if
   end if
 
   return
@@ -239,23 +247,24 @@ subroutine getprs_horiz_tl(ps_x,ps_y,mype,prs,prs_x,prs_y)
 ! Declare local variables
   integer(i_kind) i,j,k
 
-  prs_x=zero ; prs_y=zero
-
-  if(wrf_nmm_regional) then
-    do k=1,nsig+1
-      do j=1,lon2
-        do i=1,lat2
-            prs_x(i,j,k)=eta2_ll(k)*ps_x(i,j)
-            prs_y(i,j,k)=eta2_ll(k)*ps_y(i,j)
-        end do
-      end do
-    end do
-  endif
-
-  if (.not.regional) then
+  if(regional)then
+    if(wrf_nmm_regional) then
+       do k=1,nsig+1
+         do j=1,lon2
+           do i=1,lat2
+               prs_x(i,j,k)=eta2_ll(k)*ps_x(i,j)
+               prs_y(i,j,k)=eta2_ll(k)*ps_y(i,j)
+           end do
+         end do
+       end do
+    else
+      prs_x=zero
+      prs_y=zero
+    end if
+  else
     call mp_compact_dlon1(prs,prs_x,.false.,nsig+1,mype)
     call mp_compact_dlat1(prs,prs_y,.false.,nsig+1,mype)
-  end if
+  endif
 
   return
 end subroutine getprs_horiz_tl
@@ -304,9 +313,6 @@ subroutine getprs_ad(ps,t,prs)
   real(r_kind) kapr,kaprm1,trk,tc1,t9trm
   integer(i_kind) i,j,k,it
 
-  kapr=one/rd_over_cp
-  kaprm1=kapr-one
-  it=ntguessig
 
   if(wrf_nmm_regional) then
     do k=1,nsig+1
@@ -317,22 +323,31 @@ subroutine getprs_ad(ps,t,prs)
       end do
     end do
   else
-    do k=2,nsig
-      do j=1,lon2
-        do i=1,lat2
-          if (idvc5.ne.3) then
+    if (idvc5 /= 3) then
+      do k=2,nsig
+        do j=1,lon2
+          do i=1,lat2
             ps(i,j) = ps(i,j) + bk5(k)*prs(i,j,k)
-          else
+          end do
+        end do
+      end do
+    else
+      kapr=one/rd_over_cp
+      kaprm1=kapr-one
+      it=ntguessig
+      do k=2,nsig
+        do j=1,lon2
+          do i=1,lat2
             t9trm=half*(ges_tv(i,j,k-1,it)+ges_tv(i,j,k,it))/tref5(k)
             tc1=half/tref5(k)
             ps(i,j) = ps(i,j) + bk5(k)*prs(i,j,k)
             trk = ck5(k)*prs(i,j,k)
             t(i,j,k-1) = t(i,j,k-1) + kapr*tc1*trk*(t9trm**kaprm1)
             t(i,j,k)   = t(i,j,k)   + kapr*tc1*trk*(t9trm**kaprm1)
-          end if
+          end do
         end do
       end do
-    end do
+    end if
     k=1
     do j=1,lon2
       do i=1,lat2
@@ -384,21 +399,22 @@ subroutine getprs_horiz_ad(ps_x,ps_y,mype,prs,prs_x,prs_y)
   integer(i_kind) i,j,k
 
 ! Adjoint of horizontal derivatives
-  if (.not.regional) then
+  if (regional) then
+    if(wrf_nmm_regional) then
+      do k=1,nsig+1
+        do j=1,lon2
+          do i=1,lat2
+            ps_y(i,j) = ps_y(i,j) + eta2_ll(k)*prs_y(i,j,k)
+            ps_x(i,j) = ps_x(i,j) + eta2_ll(k)*prs_x(i,j,k)
+          end do
+        end do
+      end do
+    end if
+  else
     call mp_compact_dlon1_ad(prs,prs_x,.false.,nsig+1,mype)
     call mp_compact_dlat1_ad(prs,prs_y,.false.,nsig+1,mype)
   end if
 
-  if(wrf_nmm_regional) then
-    do k=1,nsig+1
-      do j=1,lon2
-        do i=1,lat2
-          ps_y(i,j) = ps_y(i,j) + eta2_ll(k)*prs_y(i,j,k)
-          ps_x(i,j) = ps_x(i,j) + eta2_ll(k)*prs_x(i,j,k)
-        end do
-      end do
-    end do
-  end if
 
   return
 end subroutine getprs_horiz_ad

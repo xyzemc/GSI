@@ -423,11 +423,7 @@
    sensorindex = 0
 !  determine specific sensor
    sensor_search: do j = 1, n_sensors
-!    CRTM rev1859 changes component name "sensorid" to "sensor_id"
-!!   if (channelinfo(j)%sensor_id == isis ) then
-
-!    Use this line for CRTM rev899
-     if (channelinfo(j)%sensorid == isis ) then
+     if (channelinfo(j)%sensor_id == isis ) then
          sensorindex = j
          exit sensor_search
      endif

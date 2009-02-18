@@ -63,7 +63,7 @@ fi
 
 
 # Set path/file for gsi executable
-gsipath=/ptmp/mhu/test_Q4FY08
+gsipath=/ptmp/mhu/test_Q1FY09
 gsiexec=$gsipath/sorc/global_gsi.fd/global_gsi
 
 
@@ -74,13 +74,11 @@ export DELTIM=1200
 
 
 # Set runtime and save directories
-tmpdir=/ptmp/mhu/test_Q4FY08/run/tmpreg_arw_$adate/$exp
-savdir=/ptmp/mhu/test_Q4FY08/run/outreg_arw_$adate/$exp
+tmpdir=/ptmp/mhu/test_Q1FY09/run/tmpreg_arw_$adate/$exp
+savdir=/ptmp/mhu/test_Q1FY09/run/outreg_arw_$adate/$exp
 
 
 # Specify GSI fixed field and data directories.
-fixgsi=$gsipath/fix
-fixcrtm=$fixgsi/crtm_gfs
 FIXGLOBAL=$gsipath/fix
 
 # Set variables used in script
@@ -131,7 +129,7 @@ rm -rf core*
 BERROR=${FIXGLOBAL}/nam_regional_glb_berror.f77
 SATANGL=${FIXGLOBAL}/global_satangbias.txt
 SATINFO=${FIXGLOBAL}/global_satinfo.txt
-RTMFIX=${FIXGLOBAL}/crtm_gfs
+RTMFIX=${FIXGLOBAL}/crtm_gfsgsi
 
 RTMEMIS=${RTMFIX}/EmisCoeff/Big_Endian/EmisCoeff.bin
 RTMAERO=${RTMFIX}/AerosolCoeff/Big_Endian/AerosolCoeff.bin
@@ -163,7 +161,7 @@ OBERROR=${FIXGLOBAL}/prepobs_errtable.global
           satsen=`head -n $isatsen satinfo | tail -1 | cut -f 2 -d" "`
           spccoeff=${satsen}.SpcCoeff.bin
           if  [[ ! -s $spccoeff ]]; then
-             ${NPC:-cp} $RTMFIX/SpcCoeff/No_AC/Big_Endian/$spccoeff $spccoeff
+             ${NPC:-cp} $RTMFIX/SpcCoeff/Big_Endian/$spccoeff $spccoeff
              ${NPC:-cp} $RTMFIX/TauCoeff/Big_Endian/${satsen}.TauCoeff.bin ${satsen}.TauCoeff.bin
           fi
        fi
@@ -171,7 +169,7 @@ OBERROR=${FIXGLOBAL}/prepobs_errtable.global
     done
 
 # Only need this file for single obs test
- bufrtable=$fixgsi/prepobs_prep.bufrtable
+ bufrtable=$FIXGLOBAL/prepobs_prep.bufrtable
 
 # Copy executable and fixed files to $tmpdir
  ${NPC:-cp} $gsiexec ./gsi.x

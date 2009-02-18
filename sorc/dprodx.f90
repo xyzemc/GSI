@@ -40,7 +40,7 @@
 !$$$
 
   use kinds, only: r_kind,r_double,i_kind,r_quad
-  use constants, only: zero,izero
+  use constants, only: zero,izero,zero_quad
 
   implicit none
 
@@ -54,7 +54,7 @@
   integer(i_kind) i,j,k
 
   real(r_kind):: out1save
-  real(r_quad):: b1,b2,t1,t2
+  real(r_quad):: t1,t2
 
 ! Zero solution
   out1save = out1(1)
@@ -63,38 +63,32 @@
   out1(3) = zero
   dprod = zero
   if(nlx <= izero)return
+  t1=zero_quad
+  t2=zero_quad
 
 ! Code for independent part of vector
-  if(n1 > izero ) then
-     call dplev(dx,dy,mype,t1)
-     call dplev(yd,dy,mype,t2)
-
-  end if
-
+  if(n1 > izero ) call dplev(dx,dy,yd,mype,t1,t2)
 
 ! Dot product for duplicated part of vector.  Done on all processors so no
 ! communication necessary
-  b1=zero
-  b2=zero
   if(nlx-n1 > izero ) then
      do i = n1+1,nlx
-        b1 = b1 + dx(i)*dy(i)
-        b2 = b2 + yd(i)*dy(i)
+        t1 = t1 + dx(i)*dy(i)
+        t2 = t2 + yd(i)*dy(i)
 !       out1(3) = out1(3) + dx(i)*dx(i)
      end do
   end if
 ! Sum independent and duplicated parts
 
-  out1(1)=t1+b1
-  out1(2)=t2+b2
-! if(mype == 0)write(6,*)' t1,t2,b1,b2',t1,t2,b1,b2
+  out1(1)=t1
+  out1(2)=t2
 
-  if(out1save > 1.e-16 .and. iter > 0)dprod = (t2+b2)/out1save
+  if(out1save > 1.e-16 .and. iter > 0)dprod = t2/out1save
 
   return
 end subroutine dprodx
 
- subroutine dplev(dx,dy,mype,dprod)
+ subroutine dplev(dx,dy,yd,mype,dprod1,dprod2)
 
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -132,39 +126,56 @@ end subroutine dprodx
   implicit none
 
 ! Declar passed variables
-  real(r_kind),dimension(lat2,lon2,nval_levs),intent(in)::dx,dy
+  real(r_kind),dimension(lat2,lon2,nval_levs),intent(in)::dx,dy,yd
   integer(i_kind),intent(in)::mype
-  real(r_quad),intent(out):: dprod
+  real(r_quad),intent(out):: dprod1,dprod2
 
 ! Declare local variables
   real(r_kind),dimension(iglobal):: work1
-  real(r_kind),dimension(lat1,lon1):: sum
+  real(r_kind),dimension(lat1,lon1):: sum1,sum2
 
   integer(i_kind) i,j,k,mm1,kk,jp
   
-  mm1=mype+1
-  sum=zero
+  do j=1,lon1
+    do i=1,lat1
+      sum1(i,j)=zero
+      sum2(i,j)=zero
+    end do
+  end do
+! Note sum could be done in quad precision and then gathered.  
+! This would result in slightly more accurate results
   do k=1,nval_levs
      do j=1,lon1
         jp=j+1
         do i=1,lat1
-           sum(i,j)=sum(i,j)+dx(i+1,jp,k)*dy(i+1,jp,k)
+           sum1(i,j)=sum1(i,j)+dx(i+1,jp,k)*dy(i+1,jp,k)
+           sum2(i,j)=sum2(i,j)+yd(i+1,jp,k)*dy(i+1,jp,k)
         end do
      end do
   end do
 
-  call mpi_allgatherv(sum,ijn(mm1),mpi_rtype,&
+  mm1=mype+1
+  call mpi_allgatherv(sum1,ijn(mm1),mpi_rtype,&
      work1,ijn,displs_g,mpi_rtype,&
      mpi_comm_world,ierror)
 
-  dprod=0.0_r_kind
+  dprod1=0.0_r_kind
   do k=1,iglobal
-    dprod=dprod+work1(k)
+    dprod1=dprod1+work1(k)
+  end do
+
+  call mpi_allgatherv(sum2,ijn(mm1),mpi_rtype,&
+     work1,ijn,displs_g,mpi_rtype,&
+     mpi_comm_world,ierror)
+
+  dprod2=0.0_r_kind
+  do k=1,iglobal
+    dprod2=dprod2+work1(k)
   end do
     
   return
   end subroutine dplev
- subroutine dplev1(dx,dy,mype,dprod)
+ subroutine dplev1(dx,dy,dprod)
 
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -182,7 +193,6 @@ end subroutine dprodx
 !   input argument list:
 !     dx       - input vector 1
 !     dy       - input vector 2
-!     mype     - processor id
 !
 !   output argument list
 !     dprod    - dot product
@@ -193,27 +203,28 @@ end subroutine dprodx
 !
 !$$$
   
-  use kinds, only: r_kind,r_double,i_kind,r_quad
+  use kinds, only: r_kind,i_kind,r_quad
   use jfunc, only:  nval_levs
-  use gridmod, only:  nlat,nlon,lat2,lon2,lat1,lon1,&
-     ltosi,ltosj,iglobal,itotsub,ijn,displs_g
-  use mpimod, only: mpi_comm_world,ierror,mpi_rtype
-  use constants, only:  zero,izero,zero_quad
+  use gridmod, only:  lat2,lon2,lat1,lon1
+  use constants, only:  zero,zero_quad
   implicit none
 
 ! Declar passed variables
   real(r_kind),dimension(lat2,lon2,nval_levs),intent(in)::dx,dy
-  integer(i_kind),intent(in)::mype
   real(r_quad),intent(out):: dprod
 
 ! Declare local variables
-  real(r_kind),dimension(iglobal):: work1
   real(r_kind),dimension(lat1,lon1):: sum
 
-  integer(i_kind) i,j,k,mm1,kk,jp
+  integer(i_kind) i,j,k,jp
   
-  mm1=mype+1
-  sum=zero
+  do j=1,lon1
+    do i=1,lat1
+      sum(i,j)=zero
+    end do
+  end do
+! Note sum could be done directly to dprod in quad precision.  
+! This would result in slightly more accurate results.
   do k=1,nval_levs
      do j=1,lon1
         jp=j+1
@@ -223,17 +234,12 @@ end subroutine dprodx
      end do
   end do
 
-  call mpi_gatherv(sum,ijn(mm1),mpi_rtype,&
-     work1,ijn,displs_g,mpi_rtype,izero,&
-     mpi_comm_world,ierror)
-
   dprod=zero_quad
-  if(mype == izero)then
-    do k=1,iglobal
-      dprod=dprod+work1(k)
+  do j=1,lon1
+    do i=1,lat1
+      dprod=dprod+sum(i,j)
     end do
-  end if
-    
+  end do
   return
 end subroutine dplev1
   subroutine fplev(dx,mype,dprod)

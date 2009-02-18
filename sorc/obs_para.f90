@@ -157,8 +157,7 @@ subroutine disobs(ndata,ndata_s,mm1,lunout,obsfile,obstypeall)
 !$$$
   use kinds, only: r_kind,i_kind
   use constants, only: izero,zero,one
-  use gridmod, only: periodic_s,nlon,nlat,&
-       jlon1,ilat1,istart,jstart
+  use gridmod, only: periodic_s,nlon,nlat,jlon1,ilat1,istart,jstart
   implicit none
 
 ! Declare passed variables
@@ -169,13 +168,10 @@ subroutine disobs(ndata,ndata_s,mm1,lunout,obsfile,obstypeall)
 
 ! Declare local variables
   integer(i_kind) j,lon,lat,lat_data,lon_data,n,kk,k,lunin
-  integer(i_kind) jj,nreal,nchanl,nn_obs
+  integer(i_kind) jj,nreal,nchanl,nn_obs,ndatax
   integer(i_kind),dimension(mm1):: ibe,ibw,ibn,ibs
-  real(r_kind):: dlat,dlon,critnew,alat,alon,adata
-  logical,allocatable,dimension(:):: luse,luse_s
-  logical :: lusenew
-  integer(i_kind),allocatable,dimension(:):: iloc
-  real(r_kind),allocatable,dimension(:):: crit
+  real(r_kind):: dlat,dlon
+  logical,allocatable,dimension(:):: luse,luse_s,luse_x
   real(r_kind),allocatable,dimension(:,:):: obs_data,data1_s
   character(10):: obstype
   character(20):: isis
@@ -194,9 +190,6 @@ subroutine disobs(ndata,ndata_s,mm1,lunout,obsfile,obstypeall)
 
   end do
 
-  alat = 10000._r_kind/float(nlat)
-  alon = 10000._r_kind/float(nlon+1)
-  adata = one/float(ndata)
   lunin=11
   open(lunin,file=obsfile,form='unformatted')
   read(lunin)obstype,isis,nreal,nchanl,lat_data,lon_data
@@ -210,15 +203,13 @@ subroutine disobs(ndata,ndata_s,mm1,lunout,obsfile,obstypeall)
   read(lunin) obs_data
   close(lunin)
 
+  allocate(luse(ndata),luse_x(ndata))
+  luse=.false.
+  luse_x=.false.
 
-!  Loop over all observations.  Locate each observation with respect
-!  to subdomains.
-
-   allocate(luse(ndata),crit(ndata),iloc(ndata))
-
-!  Loop over all observations.  Locate each observation with respect
-!  to subdomains.
-   do n=1,ndata
+! Loop over all observations.  Locate each observation with respect
+! to subdomains.
+  use: do n=1,ndata
 
      lat=obs_data(lat_data,n)
      lat=min(max(1,lat),nlat)
@@ -233,71 +224,46 @@ subroutine disobs(ndata,ndata_s,mm1,lunout,obsfile,obstypeall)
               (lon == nlon    .and. ibw(mm1) <= 1)   .or. periodic_s(mm1)) then
 
             ndata_s=ndata_s+1
-            dlat=float(nint(10000._r_kind-obs_data(lat_data,n)*alat))
-            dlon=float(nint(10000._r_kind-obs_data(lon_data,n)*alon))
-            critnew=10000._r_kind*dlat + dlon + one-float(n)*adata 
-
-!           Determine if ob in previous subdomain if so don't use in penalty
-!           Loop over mpi tasks (up to  current task)
-
-            lusenew=.true.
+            luse(n)=.true.
+!           Does the observation belong to the subdomain for other tasks?
             use_obs: do k=1,mm1-1
-
-!              Does the observation belong to the subdomain for other tasks?
-                if(lat>=ibs(k).and.lat<=ibn(k)) then
-                   if((lon>=  ibw(k).and. lon<=ibe(k))   .or.  &
-                        (lon == 0     .and. ibe(k) >=nlon) .or.  &
-                        (lon == nlon  .and. ibw(k) <= 1)   .or. periodic_s(k)) then
-                      lusenew = .false.
-                      exit use_obs
-                   end if
-                end if
+              if(lat>=ibs(k).and.lat<=ibn(k)) then
+                if((lon>=  ibw(k).and. lon<=ibe(k))   .or.  &
+                   (lon == 0     .and. ibe(k) >=nlon) .or.  &
+                   (lon == nlon  .and. ibw(k) <= 1)   .or. periodic_s(k))  & 
+                      cycle use
+              end if
             end do use_obs
-            if(ndata_s == 1)then
-              crit(1) = critnew
-              luse(1) = lusenew
-              iloc(1) = n
-            else
-              sort: do j=ndata_s-1,1,-1
-                if(critnew > crit(j))then
-                   crit(j+1)=crit(j)
-                   luse(j+1)=luse(j)
-                   iloc(j+1)=iloc(j) 
-                   if(j == 1)then
-                     crit(1)=critnew
-                     luse(1)=lusenew
-                     iloc(1)=n
-                   end if
-                else
-                  crit(j+1)=critnew
-                  luse(j+1)=lusenew
-                  iloc(j+1)=n
-                  exit sort
-                end if
-              end do sort
-            end if
-
-!        End of select block
-       end if
+            luse_x(n)=.true.
+        end if
      end if
-
-!     End of loop over data
-  end do
+  end do use
   if(ndata_s > izero)then
      allocate(data1_s(nn_obs,ndata_s),luse_s(ndata_s))
-     do j=1,ndata_s
-        do jj= 1,nn_obs
-           data1_s(jj,j) = obs_data(jj,iloc(j))
-        end do
-        luse_s(j)=luse(j)
+     ndatax=0
+     do n=1,ndata
+
+       if(luse(n))then
+
+          ndatax=ndatax+1
+          luse_s(ndatax)=luse_x(n)
+
+          do jj= 1,nn_obs
+            data1_s(jj,ndatax) = obs_data(jj,n)
+          end do
+
+       end if
+
      end do
+
+
 ! Write observations for given task to output file
      write(lunout) obstypeall,isis,nreal,nchanl,lat_data,lon_data
      write(lunout) data1_s,luse_s
      deallocate(data1_s,luse_s)
   endif
+  deallocate(obs_data,luse,luse_x)
 
-  deallocate(obs_data,luse,crit,iloc)
 
   return
 end subroutine disobs

@@ -52,6 +52,7 @@ subroutine deter_subdomain(mype)
 ! Start with square subdomains
   nrnc=sqrt(anperpe)
   iinum=nlon/nrnc
+  if (iinum==0) iinum=1
   iicnt=nlon/iinum
   iileft=nlon-iicnt*iinum
   jrows=npe/iinum

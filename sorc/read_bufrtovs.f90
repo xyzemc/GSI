@@ -1002,6 +1002,101 @@ subroutine deter_sfc(alat,alon,dlat_earth,dlon_earth,obstime,isflg, &
 
     return
 end subroutine deter_sfc
+subroutine deter_sfc_type(dlat_earth,dlon_earth,isflg)
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    deter_sfc                     determine land surface type
+!   prgmmr: derber           org: np2                date: 2005-01-27
+!
+! abstract:  determines land surface type based on surrounding land
+!            surface types
+!
+! program history log:
+!   2005-01-27 derber
+!   2005-03-03 treadon - add implicit none, define zero
+!   2006-02-01 parrish  - change names of sno,isli,sst
+!
+!   input argument list:
+!     dlat   - grid relative latitude
+!     dlon   - grid relative longitude
+!
+!   output argument list:
+!     isflg    - surface flag
+!                0 sea
+!                1 land
+!                2 sea ice
+!                3 snow
+!                4 mixed
+!
+! attributes:
+!   language: f90
+!   machine:  ibm RS/6000 SP
+!
+!$$$
+     use kinds, only: r_kind,i_kind
+     use satthin, only: isli_full
+     use constants, only: zero,one
+     use gridmod, only: rlats,rlons,nlat,nlon,regional,tll2xy,nlat_sfc,nlon_sfc,rlats_sfc,rlons_sfc
+     implicit none
+     integer(i_kind),intent(out):: isflg
+     real(r_kind),intent(in) :: dlat_earth,dlon_earth
+
+     integer(i_kind) istyp00,istyp01,istyp10,istyp11
+     integer(i_kind):: it
+     integer(i_kind):: ix,iy,ixp,iyp,j
+     real(r_kind):: dx,dy,dx1,dy1,w00,w10,w01,w11,wgtmin
+     real(r_kind):: dlat,dlon,alat,alon
+     real(r_kind):: sst00,sst01,sst10,sst11
+
+     real(r_kind),dimension(0:3)::wgtavg
+     real(r_kind),dimension(0:3):: sfcpct
+     logical :: sea,land,ice,outside
+
+     if(regional)then
+       call tll2xy(dlon_earth,dlat_earth,dlon,dlat,outside)
+     else
+       dlat=dlat_earth
+       dlon=dlon_earth
+       call grdcrd(dlat,1,rlats_sfc,nlat_sfc,1)
+       call grdcrd(dlon,1,rlons_sfc,nlon_sfc,1)
+     end if
+     iy=int(dlon); ix=int(dlat)
+     dy  =dlon-iy; dx  =dlat-ix
+     dx1 =one-dx;    dy1 =one-dy
+     w00=dx1*dy1; w10=dx*dy1; w01=dx1*dy; w11=one-w00-w10-w01
+
+     ix=min(max(1,ix),nlat_sfc); iy=min(max(0,iy),nlon_sfc)
+     ixp=min(nlat_sfc,ix+1); iyp=iy+1
+     if(iy==0) iy=nlon_sfc
+     if(iyp==nlon_sfc+1) iyp=1
+
+!    Set surface type flag.  Begin by assuming obs over ice-free water
+
+     istyp00 = isli_full(ix ,iy )
+     istyp10 = isli_full(ixp,iy )
+     istyp01 = isli_full(ix ,iyp)
+     istyp11 = isli_full(ixp,iyp)
+
+     sfcpct = zero
+     sfcpct(istyp00)=sfcpct(istyp00)+w00
+     sfcpct(istyp01)=sfcpct(istyp01)+w01
+     sfcpct(istyp10)=sfcpct(istyp10)+w10
+     sfcpct(istyp11)=sfcpct(istyp11)+w11
+
+     isflg = 0
+     if(sfcpct(0) > 0.99_r_kind)then
+       isflg = 0
+     else if(sfcpct(1) > 0.99_r_kind)then
+       isflg = 1
+     else if(sfcpct(2) > 0.99_r_kind)then
+       isflg = 2
+     else if(sfcpct(3) > 0.99_r_kind)then
+       isflg = 3
+     else
+       isflg = 4
+     end if
+     return
+end subroutine deter_sfc_type
 
 subroutine deter_sfc2(dlat_earth,dlon_earth,obstime,idomsfc,tsavg,ff10,sfcr)
 !$$$  subprogram documentation block

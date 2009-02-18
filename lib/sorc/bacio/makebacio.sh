@@ -27,12 +27,12 @@ SHELL=/bin/sh
 
 \$(LIB)(bacio.v1.3.o):       bacio.v1.3.c \$(INC)
 	ln -f \$(INC) clib.h
-	ncepxlc -c \$(CFLAGS) bacio.v1.3.c
+	xlc_r -c \$(CFLAGS) bacio.v1.3.c
 	ar -rv \$(AFLAGS) \$(LIB) bacio.v1.3.o
 	rm clib.h
 
 \$(LIB)(baciof.o):   baciof.f
-	ncepxlf -c \$(FFLAGS) baciof.f
+	xlf_r -c \$(FFLAGS) baciof.f
 	ar -rv \$(AFLAGS) \$(LIB) baciof.o
 	rm -f baciof.o
 

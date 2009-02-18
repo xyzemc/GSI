@@ -105,15 +105,10 @@ contains
     diag_conv = .true.    ! .true.=generate conv obs diagnostic file
     mype_conv = 0         ! mpi task to collect and print conv obs use information 
 
-	ithin_conv = 0             ! no thinning
-	rmesh_conv = 99999.
-        pmesh_conv=zero
-	npred_conv_max=0          ! max of all conv bias predictors 
-	npred_conv=0            ! number of bias predictors
+	npred_conv_max=0      ! max of all conv bias predictors 
 	nconvtype_ps  =0
 	nconvtype_t   =0
 	nconvtype_spd =0
-	stndev_conv =one
 	stndev_conv_t =one
 	stndev_conv_ps =one
 	stndev_conv_spd =one
@@ -203,6 +198,13 @@ contains
 		write(6,*) 'CONVINFO_READ: allocate 1 failed' 
 		call stop2(48)
 	endif
+    do i=1,nconvtype
+       ithin_conv(i)=izero            ! 0=no thinning
+       npred_conv(i)=izero            ! number of bias predictors
+       rmesh_conv(i)=99999.0_r_kind
+       pmesh_conv(i)=zero
+       stndev_conv(i)=one
+    enddo
     nc=zero
 
 	if(nconvtype*npred_conv_max>0) then

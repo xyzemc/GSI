@@ -1845,13 +1845,9 @@ subroutine mp_getuv1(u,v,st,vp,mype,nlev)
   st_ns=zero ; vp_ns=zero
   call cdiff_sd2ns2(st,vp,st_ns,vp_ns,nlev,mype)
 
-  stx_ew=zero
   call mp_compact_dlon(st_ew,stx_ew,.false.)
-  vpx_ew=zero
   call mp_compact_dlon(vp_ew,vpx_ew,.false.)
-  sty_ns=zero
   call mp_compact_dlat(st_ns,sty_ns,.false.)
-  vpy_ns=zero
   call mp_compact_dlat(vp_ns,vpy_ns,.false.)
   vp_x=zero ; st_x=zero
   call cdiff_ew2sd2(vp_x,st_x,vpx_ew,stx_ew,nlev,mype)
@@ -1944,12 +1940,8 @@ subroutine mp_compact_dlon1(b,dbdx,vector,nlev,mype)
   real(r_kind),dimension(2,nlon,nlat_0:nlat_1):: b_ew,bx_ew
 
 
-  b_ew=zero
   call cdiff_sd2ew(b,b_ew,nlev,mype)
-
-  bx_ew=zero
   call mp_compact_dlon(b_ew,bx_ew,vector)
-  dbdx=zero
   call cdiff_ew2sd(dbdx,bx_ew,nlev,mype)
 
 end subroutine mp_compact_dlon1
@@ -1972,11 +1964,9 @@ subroutine mp_compact_dlon1_ad(b,dbdx,vector,nlev,mype)
   real(r_kind),dimension(2,nlon,nlat_0:nlat_1):: b_ew,bx_ew
   real(r_kind),dimension(lat2,lon2,nlev):: btemp
 
-  bx_ew=zero
   call cdiff_sd2ew(dbdx,bx_ew,nlev,mype)
   b_ew=zero
   call mp_compact_dlon_ad(b_ew,bx_ew,vector)
-  btemp=zero
   call cdiff_ew2sd(btemp,b_ew,nlev,mype)
   b=b+btemp
 
@@ -2004,16 +1994,13 @@ subroutine mp_compact_dlat1(b,dbdy,vector,nlev,mype)
   b_ns=zero
   call cdiff_sd2ns(b,b_ns,nlev,mype)
 
-  by_ns=zero
   call mp_compact_dlat(b_ns,by_ns,vector)
   dbdy=zero
   call cdiff_ns2sd(dbdy,by_ns,nlev,mype)
   if(.not.vector.and.slow_pole) then
-    by_ew=zero
     call cdiff_sd2ew(dbdy,by_ew,nlev,mype)
     bx_ew=zero
     call mp_uv_pole(bx_ew,by_ew)
-    dbdy=zero
     call cdiff_ew2sd(dbdy,by_ew,nlev,mype)
   end if
 
@@ -2039,11 +2026,9 @@ subroutine mp_compact_dlat1_ad(b,dbdy,vector,nlev,mype)
   real(r_kind),dimension(lat2,lon2,nlev):: btemp
 
   if(.not.vector.and.slow_pole) then
-    by_ew=zero
     call cdiff_sd2ew(dbdy,by_ew,nlev,mype)
     bx_ew=zero
     call mp_uv_pole_ad(bx_ew,by_ew)
-    btemp=zero
     call cdiff_ew2sd(btemp,by_ew,nlev,mype)
   else
     btemp=dbdy

@@ -1,0 +1,407 @@
+#!/bin/sh
+###############################################################################
+####  UNIX Script Documentation Block                                         #
+#                                                                             #
+# Script name:         exofs_atl_analysis.sh.sms                              #
+# Script description:                                                         #
+#                                                                             #
+# Author:        Dan Iredell       Org: NP23         Date: 2005-06-14         #
+#                                                                             #
+# Abstract: This script generates the analysis field and creates the initial  #
+#           condition for the OFS_ATL Ocean model                             #
+#                                                                             #
+# Sub-scripts called:                                                         #
+#    seasforce.sh : create the forcing field                                 #
+#                                                                             #
+# Script history log:                                                         #
+# 2005-06-14  Dan Iredell                                                     #
+#                                                                             #
+###############################################################################
+set -xa
+
+export PS4='$SECONDS + '
+
+cd $DATA
+
+msg="OFS_ATL Analysis has begun on `hostname` at `date`"
+postmsg "$jlogfile" "$msg"
+
+# --------------------------------------------------------------------------- #
+# 0.  Preparations
+# --------------------------------------------------------------------------- #
+
+# 0.a date and time stuff
+
+  export nested=${nested:-0}
+  export srtdate=`echo $PDYm1 | cut -c1-8`
+  export enddate=`echo $PDY | cut -c1-8`
+  export inputgrid=${inputgrid:-ncep1_12}
+
+# --------------------------------------------------------------------------- #
+# 1  Set up the start time and end time for the forecast
+  sday=`sh $utilscript/date_normal2hycom.sh $srtdate$cyc`
+  eday=`sh $utilscript/date_normal2hycom.sh $enddate$cyc`
+  echo "  $sday $eday false false  " > limits
+
+# 2. Copy the necessary input files for the model forecast
+
+# 2.a Get topography (depth, grid and mask)
+  ln -s -f $FIXofs/ofs_${modID}.$inputgrid.regional.depth.a regional.depth.a
+  ln -s -f $FIXofs/ofs_${modID}.$inputgrid.regional.depth.b regional.depth.b 
+  ln -s -f $FIXofs/ofs_${modID}.$inputgrid.regional.grid.a regional.grid.a
+  ln -s -f $FIXofs/ofs_${modID}.$inputgrid.regional.grid.b regional.grid.b
+  ln -s -f $FIXofs/ofs_${modID}.$inputgrid.regional.mask.a regional.mask.a
+  ln -s -f $FIXofs/ofs_${modID}.$inputgrid.regional.mask.b regional.mask.b
+
+
+  # Check to make sure all the topography files are copied:
+  for fil in depth grid mask
+  do
+     for type in a b
+     do
+        if [ -s regional.$fil.$type ]
+        then
+           echo "regional.${fil}.${type} copied" 
+        else
+           msg1="Missing Topography files"
+           msg2="ABNORMAL EXIT NOWCAST: NO FILE for regional.${fil}.${type}"
+           postmsg "$jlogfile" "$msg1" "$msg2"
+           err=2;
+           export err;err_chk
+        fi
+     done
+  done
+
+
+  # 2.aa Get open boundary files
+
+  if [ $nested -eq 0 ]
+  then
+  ln -s -f $PARMofs/ofs_${modID}.lowfreq.input lowfreq.input 
+
+  
+  # Check to make sure all the open boundary files are copied:
+  if [ -s lowfreq.input ]   
+  then                                                                    
+      echo "LOWR files for open boundaries copied"                        
+  else                                                                    
+      msg1="Missing LOWR File"                                            
+      msg2="ABNORMAL EXIT NOWCAST: FATAL ERROR--NO LOWR FILE"             
+      postmsg "$jlogfile" "$msg1" "$msg2"                                
+      err=911;                                                            
+      export err;err_chk                                                  
+  fi
+  fi
+
+# 2.b Get boundary conditions (relax files)
+
+# new for atl000:
+
+  if [ $nested -eq 0 ]
+  then
+
+    ln -s -f $FIXofs/ofs_${modID}.$inputgrid.relax.intf.a relax.intf.a
+    ln -s -f $FIXofs/ofs_${modID}.$inputgrid.relax.intf.b relax.intf.b
+    ln -s -f $FIXofs/ofs_${modID}.$inputgrid.relax.rmu.a relax.rmu.a 
+    ln -s -f $FIXofs/ofs_${modID}.$inputgrid.relax.rmu.b relax.rmu.b 
+    ln -s -f $FIXofs/ofs_${modID}.$inputgrid.relax.temp.a relax.temp.a 
+    ln -s -f $FIXofs/ofs_${modID}.$inputgrid.relax.temp.b relax.temp.b 
+    ln -s -f $FIXofs/ofs_${modID}.$inputgrid.relax.saln.a relax.saln.a 
+    ln -s -f $FIXofs/ofs_${modID}.$inputgrid.relax.saln.b relax.saln.b 
+    filreq='intf rmu temp saln'
+
+  else
+    ln -s -f $FIXofs/ofs_${modID}.$inputgrid.relax.rmu.a relax.rmu.a 
+    ln -s -f $FIXofs/ofs_${modID}.$inputgrid.relax.rmu.b relax.rmu.b 
+    filreq='rmu'
+
+# need 48 hours of archive files for nesting.. 
+# OLDWAY
+#    ln -s $COMIN/../nest/ ./nest 
+# NEWWAY
+     mkdir -p nest
+     yyyyddd=`$utilscript/date2jday.sh $PDY`
+     yyyy=`echo $yyyyddd | cut -c1-4`
+     ddd=`echo $yyyyddd | cut -c5-7`
+     let dddm1=ddd-1
+     let dddm2=ddd-2
+# 1st 23 hours
+     for hour in 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+     do
+        cp $COMINm1/${RUN}_${modID}.t${cyc}z.${yyyy}_${dddm2}_${hour}.a ./nest/archv_${yyyy}_${dddm2}_${hour}.a
+        cp $COMINm1/${RUN}_${modID}.t${cyc}z.${yyyy}_${dddm2}_${hour}.b ./nest/archv_${yyyy}_${dddm2}_${hour}.b
+     done
+# next 24 hours
+     for hour in 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+     do
+        cp $COMINm1/${RUN}_${modID}.t${cyc}z.${yyyy}_${dddm1}_${hour}.a ./nest/archv_${yyyy}_${dddm1}_${hour}.a
+        cp $COMINm1/${RUN}_${modID}.t${cyc}z.${yyyy}_${dddm1}_${hour}.b ./nest/archv_${yyyy}_${dddm1}_${hour}.b
+     done
+# next 1
+     cp $COMINm1/${RUN}_${modID}.t${cyc}z.${yyyy}_${ddd}_00.a ./nest/archv_${yyyy}_${ddd}_00.a
+     cp $COMINm1/${RUN}_${modID}.t${cyc}z.${yyyy}_${ddd}_00.b ./nest/archv_${yyyy}_${ddd}_00.b
+
+  fi
+
+
+  for fil in $filreq
+  do
+     for type in a b
+     do
+        if [ -s relax.${fil}.${type} ]
+        then
+           echo "relax.${fil}.${type} copied" 
+        else
+           msg1="Missing Boundary Conditions File"
+           msg2="ABNORMAL EXIT NOWCAST: NO FILE for relax.${fil}.${type}"
+           postmsg "$jlogfile" "$msg1" "$msg2"
+           err=2;
+           export err;err_chk
+        fi
+     done
+  done
+
+
+# 2.c Get initialization files 
+  if [ $nested -eq 0 ]
+  then
+  cp $PARMofs/ofs_${modID}.anal.blkdat.input blkdat.input
+  cp $PARMofs/ofs_${modID}.ports.input ports.input
+  cp $PARMofs/ofs_${modID}.$inputgrid.patch.input.$NPROCS patch.input
+  cp $PARMofs/ofs_${modID}.angle.input angle.input
+  cp $PARMofs/ofs_${modID}.tidalports_p.input tidalports_p.input
+  cp $PARMofs/ofs_${modID}.tidalports_vel.input tidalports_vel.input
+  filreq='blkdat ports patch angle tidalports_p tidalports_vel'
+  else
+  cp $PARMofs/ofs_${modID}.anal.blkdat.input blkdat.input
+  cp $PARMofs/ofs_${modID}.ports.input ports.input
+  cp $PARMofs/ofs_${modID}.$inputgrid.patch.input.$NPROCS patch.input
+  cp $PARMofs/ofs_${modID}.angle.input angle.input
+  filreq='blkdat ports patch angle'
+  fi 
+
+  for fil in $filreq
+  do
+     if [ -s ${fil}.input ]
+     then
+        echo "${fil}.input copied" 
+     else
+        msg1="Missing Initialization File"
+        msg2="ABNORMAL EXIT NOWCAST: NO FILE for ${fil}.input"
+        postmsg "$jlogfile" "$msg1" "$msg2"
+        err=2;
+        export err;err_chk
+     fi
+  done
+
+# 2.d Get initial conditions (restart files)
+  if [ $cyc -eq 00 ]
+  then
+       yesterday_dir=$COMINm1
+       today_dir=$COMIN
+  else
+       yesterday_dir=$COMIN
+       today_dir=$COMIN
+  fi
+
+  if [ -s ${today_dir}/ofs_${modID}.t${cyc}z.updated_restart.a -a \
+       -s ${today_dir}/ofs_${modID}.t${cyc}z.updated_restart.b ] 
+  then
+    echo "Restarts after assimilation are found."
+    echo "Restarts after assimilation are found." >> \
+      $COMOUT/${RUN}_${modID}.restart_status
+    ln -s -f ${today_dir}/ofs_${modID}.t${cyc}z.updated_restart.a restart_in.a
+    ln -s -f ${today_dir}/ofs_${modID}.t${cyc}z.updated_restart.b restart_in.b
+  else
+    echo "WARNING: IMPORTANT !!! Restarts after assimilation are not found !!!!"    
+    echo "WARNING: IMPORTANT !!! Restarts after assimilation are not found !!!!" >> \
+      $COMOUT/${RUN}_${modID}.restart_status
+    if [ -s $yesterday_dir/ofs_${modID}.t${cyc}z.next_restart.a  -a \
+         -s $yesterday_dir/ofs_${modID}.t${cyc}z.next_restart.b  ]
+    then
+      ln -s -f $yesterday_dir/ofs_${modID}.t${cyc}z.next_restart.a restart_in.a
+      ln -s -f $yesterday_dir/ofs_${modID}.t${cyc}z.next_restart.b restart_in.b
+      echo "Initial restart files copied"
+      echo "Initial restart files copied" >> \
+      $COMOUT/${RUN}_${modID}.restart_status
+    else
+      msg1="Missing Restart File"
+      echo "$msg1" >> $COMOUT/${RUN}_${modID}.restart_status
+      msg2="ABNORMAL EXIT NOWCAST: FATAL ERROR--NO RESTART FILE"
+      postmsg "$jlogfile" "$msg1" "$msg2"
+      err=911;
+      export err;err_chk
+  fi
+ fi
+  
+
+# 2.e copy interpolator data
+  cp $FIXofs/ofs_${modID}.intp_pars.dat intp_pars.dat
+
+  if [[ -s intp_pars.dat ]]
+  then
+      echo "interpolator data copied"
+  else
+      msg1="Missing Interpolator Data"
+      msg2="ABNORMAL EXIT NOWCAST: NO FILE for intp_pars.dat"
+      postmsg "$jlogfile" "$msg1" "$msg2"
+      err=2;
+      export err;err_chk
+  fi
+
+# 2.f Get parameter data for seasforce
+
+  cp $FIXofs/ofs_${modID}.ismus_msk384x190.dat ismus_msk384x190.dat  
+  cp $FIXofs/ofs_${modID}.ismus_msk512x256.dat ismus_msk512x256.dat  
+  cp $FIXofs/ofs_${modID}.ismus_msk768x384.dat ismus_msk768x384.dat  
+  cp $FIXofs/ofs_${modID}.ismus_msk1152x576.dat ismus_msk1152x576.dat  
+
+  for rel in 384x190 512x256 768x384 1152x576
+  do
+     if [ -s ismus_msk${rel}.dat ]
+     then
+        echo "File ismus_msk${rel}.dat copied"
+     else
+        msg1="Missing Parameter data for Seasfore"
+        msg2="ABNORMAL EXIT NOWCAST: NO FILE for ismus_msk${rel}.dat"
+        postmsg "$jlogfile" "$msg1" "$msg2"
+        err=2;
+        export err;err_chk
+     fi
+  done
+
+# 2.g Get river forcing files
+
+###   export gridlabel=A12
+  export TANK=${TANK:-/dcom/us007003}
+  $USHofs/ofs_create_river.sh
+
+  if [ -s forcing.rivers.a -a forcing.rivers.b ]                             
+  then
+      echo "River Forcing Files copied"
+  else
+      msg1="Missing River Forcing Files"
+      msg2="ABNORMAL EXIT NOWCAST: NO FILE for forcing.rivers.a or .b "
+      postmsg "$jlogfile" "$msg1" "$msg2"
+      err=911;
+      export err;err_chk
+  fi
+
+# 3. Create Forcing files
+
+# 3.a call seasforce3 to get the forcing files 
+
+  export mode=anal
+  intvl=3
+  $USHofs/ofs_seasforce3.sh $srtdate$cyc $enddate$cyc $intvl 
+
+# 3.b correct air temperature over ice.
+
+  $USHofs/ofs_correct_forcing.sh 
+
+
+# 4. Copy the SST ASSIM file here
+
+# Notes:
+#  if runsst set to 0 then
+#  1) no assim.surtmp needed 
+#  2) bring in blkdat.fcst where asiflg=0 (can we spell kluge)
+
+  if [ $runsst -eq 1 ] ; then
+  ln -s -f $COMIN/${RUN}_${modID}.t${cyc}z.sstanl.a assim.surtmp.a 
+  ln -s -f $COMIN/${RUN}_${modID}.t${cyc}z.sstanl.b assim.surtmp.b
+
+  if [ -s assim.surtmp.a -a assim.surtmp.b ]
+  then
+     echo "4.b   assim.surtmp copied $COMIN/assim.surtmp.[ab] "
+  else
+     msg="4.b ABNORMAL EXIT NOWCAST PRE : NO FILE assim.surtmp:  $COMIN"
+     postmsg "$jlogfile" "$msg"
+     err=2;
+     export err;err_chk
+  fi
+  else
+    # whoops, have wrong blkdat.in file, so get 1 from fcst (where asiflg=0)
+    cp $PARMofs/ofs_${modID}.fcst.blkdat.input blkdat.input
+  fi
+    
+
+# 5. Prepare for the analysis run
+
+
+  export OMP_NUM_THREADS=2
+  export XLSMPOPTS=spins=0:yields=0
+  
+  touch ok
+  rm -f ok
+  date >> TRACK
+
+  cmdtype='poe'
+
+  export MP_LABELIO=YES
+  export MP_STDOUTMODE=ordered
+  export MEMORY_AFFINITY=MCM
+
+  export MP_COREFILE_FORMAT=txt
+  poe /usrx/local/bindproc/bin/bindproc.x $EXECofs/ofs_forecast -procs $NPROCS >> $pgmout 2>errfile
+
+  export err=$?; err_chk
+
+  date >> TRACK
+
+# --------------------------------------------------------------------------- #
+# 5.c  Check for errors
+
+if [ -e ok ]; then
+   modelstatus=0
+else
+   modelstatus=1
+fi
+
+# --------------------------------------------------------------------------- #
+# 6.  Ending output
+
+if [ $modelstatus = 0 ]
+then
+   if [ $SENDCOM = YES ]
+   then
+       yyyyddd=`$utilscript/date2jday.sh $enddate`
+       yyyy=`echo $yyyyddd | cut -c -1-4`
+       ddd=`echo $yyyyddd | cut -c -5-7`
+
+      # Copy diagnostic outputs to /com:
+      # for file in `ls archv.*`
+      # do
+      #    newfile=`echo $file |sed -e "s/archv/${RUN}_${modID}.t${cyc}z/g"`
+      #    cp $file $COMOUT/$newfile
+      # done
+
+      # Copy the restart files to /com:
+       cp restart_out.a $COMOUT/${RUN}_${modID}.t${cyc}z.next_restart.a
+       cp restart_out.b $COMOUT/${RUN}_${modID}.t${cyc}z.next_restart.b
+
+      # Copy probes to /com
+       for prb in `ls probe_out_*`
+       do
+         cp $prb $COMOUT/${RUN}_${modID}.t${cyc}z.${prb}
+       done
+
+      # copy lowfreq.out to /com
+       cp lowfreq.out $COMOUT/${RUN}_${modID}.t${cyc}z.anal.lowfreq.out
+
+       echo "done" >$COMOUT/${RUN}_${modID}.t${cyc}z.log
+       msg="6. Analysis job completed normally"
+       postmsg "$jlogfile" "$msg"
+       exit 0
+   fi
+else
+    msg="6. $modid run from ANALYSIS run script: ABNORMAL EXIT"
+    postmsg "$jlogfile" "$msg"
+    exit -1
+fi
+
+#################################################
+msg="THE OFS_ATL_ANALYSIS JOB HAS ENDED NORMALLY."
+postmsg "$jlogfile" "$msg"
+################## END OF SCRIPT #######################
+

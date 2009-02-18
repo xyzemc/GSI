@@ -69,7 +69,7 @@ main()
 }
 ENDIANTEST
 
-ncepxlc -o endiantest endiantest.c
+xlc_r -o endiantest endiantest.c
 
 if [ `./endiantest | cut -c1` = "A" ]
 then
@@ -135,12 +135,12 @@ SHELL=/bin/sh
 \$(LIB):	\$(LIB)( ${OBJS} )
 
 .f.a:
-	ncepxlf -c \$(FFLAGS) \$<
+	xlf_r -c \$(FFLAGS) \$<
 	ar -ruv \$(AFLAGS) \$@ \$*.o
 	rm -f \$*.o
 
 .c.a:
-	ncepxlc -c \$(CFLAGS) \$<
+	xlc_r -c \$(CFLAGS) \$<
 	ar -ruv \$(AFLAGS) \$@ \$*.o
 	rm -f \$*.o
 EOF

@@ -270,10 +270,10 @@ subroutine stpcalc(stpinout,xhat,xhatt,xhatp,xhatuv,xhat_x,xhat_y,xhat_t, &
 ! penalty, b and c for background terms
 
 ! pbc(1,1)= dplev(xhatsave,yhatsave)
-  call dplev1(xhatsave,yhatsave,mype,pstart(1))
-  call dplev1(dirx,yhatsave,mype,pbc(5,1))
+  call dplev1(xhatsave,yhatsave,pstart(1))
+  call dplev1(dirx,yhatsave,pbc(5,1))
   pbc(5,1)=-pbc(5,1)
-  call dplev1(dirx,diry,mype,pbc(6,1))
+  call dplev1(dirx,diry,pbc(6,1))
 
 ! bias correction terms
 

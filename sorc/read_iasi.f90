@@ -151,12 +151,13 @@ subroutine read_iasi(mype,val_iasi,ithin,rmesh,jsatid,gstime,&
   real(r_kind)     :: lza, lzaest,sat_height,sat_height_ratio
   real(r_kind)     :: timedif, pred, crit1, dist1
   real(r_kind)     :: sat_zenang, sol_zenang, sat_aziang, sol_aziang
-  real(r_kind)     :: radiance, temperature
+  real(r_kind)     :: radiance
   real(r_kind)     :: tsavg,vty,vfr,sty,stp,sm,sn,zz,ff10,sfcr
   real(r_kind),dimension(0:4) :: rlndsea
   real(r_kind),dimension(0:3) :: sfcpct
   real(r_kind),dimension(0:3) :: ts
   real(r_kind),dimension(10) :: sscale
+  real(r_kind),dimension(n_totchan) :: temperature
   real(r_kind),allocatable,dimension(:,:):: data_all
   real(r_kind),allocatable,dimension(:):: data_crit
   real(r_kind) disterr,disterrmax,rlon00,rlat00,r01
@@ -165,8 +166,8 @@ subroutine read_iasi(mype,val_iasi,ithin,rmesh,jsatid,gstime,&
   logical          :: iasi
 
   integer(i_kind)  :: ifov, iscn, ioff, ilat, ilon, sensorindex
-  integer(i_kind)  :: i, l, ll, iskip, ifovn
-  integer(i_kind)  :: nreal, ichsst, ichansst, isflg,ioffset
+  integer(i_kind)  :: i, j, l, ll, iskip, ifovn, bad_line
+  integer(i_kind)  :: nreal, isflg
   integer(i_kind)  :: itx, k, nele, itt, iout,n
   integer(i_kind),allocatable,dimension(:):: idata_itx
   integer(i_kind):: iexponent
@@ -198,6 +199,7 @@ subroutine read_iasi(mype,val_iasi,ithin,rmesh,jsatid,gstime,&
 
   ilon=3
   ilat=4
+  bad_line=-1
 
 !  write(6,*)'READ_IASI: mype, mype_root,mype_sub, npe_sub,mpi_comm_sub', &
 !          mype, mype_root,mype_sub,mpi_comm_sub
@@ -206,14 +208,11 @@ subroutine read_iasi(mype,val_iasi,ithin,rmesh,jsatid,gstime,&
      step_adjust = 0.625_r_kind
      senname = 'IASI'
      nchanlr = nchanl
-     ioffset=0
      rlndsea(0) = zero                       
      rlndsea(1) = 10._r_kind
      rlndsea(2) = 15._r_kind
      rlndsea(3) = 10._r_kind
      rlndsea(4) = 30._r_kind
-!     if (mype_sub==mype_root) &
-!          write(6,*)'READ_IASI:  iasi offset ',ioff,ichansst,ichsst
   
   allspotlist= &
    'SIID YEAR MNTH DAYS HOUR MINU SECO CLATH CLONH SAZA BEARAZ SOZA SOLAZI'
@@ -221,16 +220,21 @@ subroutine read_iasi(mype,val_iasi,ithin,rmesh,jsatid,gstime,&
 !  find IASI sensorindex  
    sensorindex = 0
    do i=1,n_sensors
-!   CRTM rev1859 changes component name "sensorid" to "sensor_id"
-!!  if ( channelinfo(i)%sensor_id == 'iasi616_metop-a' ) then
-
-!   Use this line for CRTM rev899
-    if ( channelinfo(i)%sensorid == 'iasi616_metop-a' ) then
+    if ( channelinfo(i)%sensor_id == 'iasi616_metop-a' ) then
        sensorindex = i
        exit
     endif
    end do 
-   if (sensorindex == 0 ) write(6,*)'READ_IASI: sensorindex not set'
+   if (sensorindex == 0 ) then
+     write(6,*)'READ_IASI: sensorindex not set  NO IASI DATA USED'
+     return
+   end if
+   ioff=jpch_rad
+   do i=1,jpch_rad
+     if(nusis(i)==sis)ioff=min(ioff,i)
+   end do
+   ioff=ioff-1
+   if (mype_sub==mype_root)write(6,*)'READ_IASI:  iasi offset ',ioff
 
 ! If all channels of a given sensor are set to monitor or not
 ! assimilate mode (iuse_rad<1), reset relative weight to zero.
@@ -289,6 +293,13 @@ subroutine read_iasi(mype,val_iasi,ithin,rmesh,jsatid,gstime,&
 !    Read IASI FOV information
      call mpi_ufbint(lnbufr,linele,5,1,iret,'FOVN SLNM QGFQ MJFC SELV')
      if ( linele(3) /= 0.0) cycle read_loop  ! problem with profile (QGFQ)
+
+     if ( bad_line == nint(linele(2))) then
+!        zenith angle/scan spot mismatch, reject entire line
+         cycle read_loop
+     else
+        bad_line = -1
+     endif
 
      call mpi_ufbint(lnbufr,allspot,13,1,iret,allspotlist)
      if(iret /= 1) cycle read_loop
@@ -369,14 +380,8 @@ subroutine read_iasi(mype,val_iasi,ithin,rmesh,jsatid,gstime,&
      endif
      
 !    Observational info
-     sat_zenang  = allspot(10) * deg2rad  ! satellite zenith angle
-     sat_aziang  = allspot(11)            ! satellite azimuth angle
-     sol_zenang = allspot(12)             ! solar zenith angle
-     sol_aziang = allspot(13)             ! solar azimuth angle
+     sat_zenang  = allspot(10)            ! satellite zenith angle
      ifov = nint(linele(1))               ! field of view
-     iscn = nint(linele(2))               ! scan line
-     sat_height = linele(5)               ! satellite orbit height
-     if ( ifov <= 60 ) sat_zenang = -sat_zenang
 
 !    IASI fov ranges from 1 to 120.   Current angle dependent bias
 !    correction has a maximum of 90 scan positions.   Geometry
@@ -384,42 +389,47 @@ subroutine read_iasi(mype,val_iasi,ithin,rmesh,jsatid,gstime,&
 !    ifovn below contains the remapped IASI fov.  This value is
 !    passed on to and used in setuprad
      ifovn = (ifov-1)/2 + 1
+     iscn = nint(linele(2))               ! scan line
 
 !    Check field of view (FOVN) and satellite zenith angle (SAZA)
-     if( ifov <    izero .or. ifov > 120 .or. abs(allspot(10)) > 360._r_kind ) then
+     if( ifov <= izero .or. ifov > 120 .or. sat_zenang > 90._r_kind ) then
         write(6,*)'READ_IASI:  ### ERROR IN READING ', senname, ' BUFR DATA:', &
              ' STRANGE OBS INFO(FOVN,SLNM,SAZA):', ifov, iscn, allspot(10)
         cycle read_loop
      endif
+     if ( ifov <= 60 ) sat_zenang = -sat_zenang
 
 !    Compare IASI satellite scan angle and zenith angle
      piece = -step_adjust
-     if ( mod(ifov,4) == 1 .or. mod(ifov,4) == 2 ) piece = step_adjust
+     if ( mod(ifovn,2) == 1) piece = step_adjust
      lza = ((start + float((ifov-1)/4)*step) + piece)*deg2rad
-     sat_height_ratio = (earth_radius + sat_height)/earth_radius
-     lzaest = asin(sat_height_ratio*sin(lza))
-     if (abs(sat_zenang - lzaest)*rad2deg > 1.0) then
+     sat_height_ratio = (earth_radius + linele(5))/earth_radius
+     lzaest = asin(sat_height_ratio*sin(lza))*rad2deg
+     if (abs(sat_zenang - lzaest) > 1.0) then
         write(6,*)' READ_IASI WARNING uncertainty in lza ', &
-            lza*rad2deg,sat_zenang*rad2deg,sis,ifov,start,step
+            lza*rad2deg,sat_zenang,sis,ifov,start,step,allspot(11),allspot(12),allspot(13)
+        bad_line = iscn
         cycle read_loop
      endif
 
 !   Increment nread counter by n_totchan
      nread = nread + n_totchan
 
+     timedif = 6.0_r_kind*abs(tdiff)        ! range:  0 to 18
+
 !   Clear Amount  (percent clear)
      call mpi_ufbrep(lnbufr,cloud_frac,1,6,iret,'FCPH')
      clr_amt = cloud_frac(1)
-     if ( clr_amt < zero .or. clr_amt > 100.0_r_kind ) clr_amt = zero
+!    if ( clr_amt < zero .or. clr_amt > 100.0_r_kind ) clr_amt = zero
+     clr_amt=max(clr_amt,zero)
+     clr_amt=min(clr_amt,100.0_r_kind)
      
 !    Compute "score" for observation.  All scores>=0.0.  Lowest score is "best"
      pred = 100.0 - clr_amt
 
-     timedif = 6.0_r_kind*abs(tdiff)        ! range:  0 to 18
-     crit1 = 0.01_r_kind+timedif + pred
+     crit1 = 0.01_r_kind+timedif+pred
      call map2tgrid(dlat_earth,dlon_earth,dist1,crit1,itx,ithin,itt,iuse)
      if(.not. iuse)cycle read_loop
-
 
 !   "Score" observation.  We use this information to identify "best" obs
 !    Locate the observation on the analysis grid.  Get sst and land/sea/ice
@@ -446,7 +456,10 @@ subroutine read_iasi(mype,val_iasi,ithin,rmesh,jsatid,gstime,&
      if(.not. iuse)cycle read_loop
 
      call mpi_ufbrep(lnbufr,cscale,3,10,iret,'STCH ENCH CHSF')
-     if(iret /= 10) cycle read_loop
+     if(iret /= 10) then
+       write(6,*) 'READ_IASI  read scale error ',iret
+       cycle read_loop
+     end if
 
 ! The scaling factors are as follows, cscale(1) is the start channel number,
 !                                     cscale(2) is the end channel number,
@@ -454,7 +467,7 @@ subroutine read_iasi(mype,val_iasi,ithin,rmesh,jsatid,gstime,&
 ! In our case (616 channels) there are 10 groups of cscale (dimension :: cscale(3,10))
 !  The units are W/m2..... you need to convert to mW/m2.... (subtract 5 from cscale(3)
      do i=1,10  ! convert exponent scale factor to int and change units
-       iexponent = -(int(cscale(3,i)) - 5)
+       iexponent = -(nint(cscale(3,i)) - 5)
        sscale(i)=ten**iexponent
      end do
 
@@ -468,74 +481,52 @@ subroutine read_iasi(mype,val_iasi,ithin,rmesh,jsatid,gstime,&
      endif
 
      iskip = 0
-     if ( sensorindex /= 0 ) then
      do i=1,n_totchan
 !     check that channel number is within reason
       if (( allchan(1,i) > 0.0_r_kind .and. allchan(1,i) < 99999._r_kind) .and. &  ! radiance bounds
           (allchan(2,i) < 8462._r_kind .and. allchan(2,i) > 0.0_r_kind )) then      ! chan # bounds
 !         radiance to BT calculation
           radiance = allchan(1,i)
-          if( allchan(2,i) >= cscale(1,1) .and. allchan(2,i) <= cscale(2,1)) then
-            radiance = allchan(1,i)*sscale(1)
-          elseif ( allchan(2,i) >= cscale(1,2) .and. allchan(2,i) <= cscale(2,2)) then
-            radiance = allchan(1,i)*sscale(2)
-          elseif ( allchan(2,i) >= cscale(1,3) .and. allchan(2,i) <= cscale(2,3)) then
-            radiance = allchan(1,i)*sscale(3)
-          elseif ( allchan(2,i) >= cscale(1,4) .and. allchan(2,i) <= cscale(2,4)) then
-            radiance = allchan(1,i)*sscale(4)
-          elseif ( allchan(2,i) >= cscale(1,5) .and. allchan(2,i) <= cscale(2,5)) then
-            radiance = allchan(1,i)*sscale(5)
-          elseif ( allchan(2,i) >= cscale(1,6) .and. allchan(2,i) <= cscale(2,6)) then
-            radiance = allchan(1,i)*sscale(6)
-          elseif ( allchan(2,i) >= cscale(1,7) .and. allchan(2,i) <= cscale(2,7)) then
-            radiance = allchan(1,i)*sscale(7)
-          elseif ( allchan(2,i) >= cscale(1,8) .and. allchan(2,i) <= cscale(2,8)) then
-            radiance = allchan(1,i)*sscale(8)
-          elseif ( allchan(2,i) >= cscale(1,9) .and. allchan(2,i) <= cscale(2,9)) then
-            radiance = allchan(1,i)*sscale(9)
-          elseif ( allchan(2,i) >= cscale(1,10) .and. allchan(2,i) <= cscale(2,10)) then
-            radiance = allchan(1,i)*sscale(10)
-          endif
+          scaleloop: do j=1,10
+            if(allchan(2,i) >= cscale(1,j) .and. allchan(2,i) <= cscale(2,j))then
+              radiance = allchan(1,i)*sscale(j)
+              exit scaleloop
+            end if
+          end do scaleloop
 
-          call crtm_planck_temperature(sensorindex,i,radiance,temperature)
-             allchan(1,i) = temperature
-          if(temperature < tbmin .or. temperature > tbmax ) then
-             allchan(1,i) = zero
-             iskip = iskip + 1
-             write(6,*)'READ_IASI:  skipped',i,temperature,allchan(2,1),allchan(2,i-1)
+          call crtm_planck_temperature(sensorindex,i,radiance,temperature(i))
+          if(temperature(i) < tbmin .or. temperature(i) > tbmax ) then
+             temperature(i) = zero
+             if(iuse_rad(ioff+i) >= 0)iskip = iskip + 1
+             write(6,*)'READ_IASI:  skipped',i,temperature(i),allchan(2,1),allchan(2,i-1)
           endif
       else           ! error with channel number or radiance
-!          write(6,*)'READ_IASI:  iasi chan error',i,allchan(1,i), allchan(2,i)
-          allchan(1,i) = zero
-          iskip = iskip + 1
+!         write(6,*)'READ_IASI:  iasi chan error',i,allchan(1,i), allchan(2,i)
+          temperature(i) = zero
+          if(iuse_rad(ioff+i) >= 0)iskip = iskip + 1
       endif
      end do
-     endif
+
+     if(iskip > 0)write(6,*) ' READ_IASI : iskip > 0 ',iskip
+!    if( iskip >= 10 )cycle read_loop 
 
      crit1=crit1 + 10.0_r_kind*float(iskip)
-!     if( iskip >= 20 )cycle read_loop 
 
 
 !    Map obs to grids
      call finalcheck(dist1,crit1,ndata,itx,iout,iuse,sis)
      if(.not. iuse)cycle read_loop
 
-!   write(6,*)'READ_IASI: using the data',iout,dist1,crit1,ndata,sis
-!JAJ
-!     if (clr_amt >= 99 ) write(6,99)'clear', dlon_earth*rad2deg, dlat_earth*rad2deg, &
-!          sol_zenang
-!  99 format(1x,a6,f8.2,f7.2,4f8.2)
-
      data_all(1,iout) = 4                   ! satellite ID (temp. 49)
      data_all(2,iout) = tdiff               ! time diff (obs-anal) (hrs)
      data_all(3,iout) = dlon                ! grid relative longitude
      data_all(4,iout) = dlat                ! grid relative latitude
-     data_all(5,iout) = sat_zenang          ! satellite zenith angle (rad)
-     data_all(6,iout) = sat_aziang          ! satellite azimuth angle (deg)
+     data_all(5,iout) = sat_zenang*deg2rad  ! satellite zenith angle (rad)
+     data_all(6,iout) = allspot(11)         ! satellite azimuth angle (deg)
      data_all(7,iout) = lza                 ! look angle (rad)
      data_all(8,iout) = ifovn               ! fov number
-     data_all(9,iout) = sol_zenang          ! solar zenith angle (deg)
-     data_all(10,iout)= sol_aziang          ! solar azimuth angle (deg)
+     data_all(9,iout) = allspot(12)         ! solar zenith angle (deg)
+     data_all(10,iout)= allspot(13)         ! solar azimuth angle (deg)
      data_all(11,iout)= sfcpct(0)           ! ocean percentage
      data_all(12,iout)= sfcpct(1)           ! land percentage
      data_all(13,iout)= sfcpct(2)           ! ice percentage
@@ -564,7 +555,7 @@ subroutine read_iasi(mype,val_iasi,ithin,rmesh,jsatid,gstime,&
      data_all(33,iout)= itt
 
      do l=1,nchanl
-        data_all(l+nreal,iout) = allchan(1,l+ioffset)   ! brightness temerature
+        data_all(l+nreal,iout) = temperature(l)   ! brightness temerature
      end do
 
      idata_itx(iout) = itx                  ! thinning grid location
@@ -593,7 +584,6 @@ end do mpi_loop
         do i=1,nchanl
            if(data_all(i+nreal,n) > tbmin .and. &
                 data_all(i+nreal,n) < tbmax)nodata=nodata+1
-!             nodata = nodata + 1 ! added JAJ
         end do
         itt=nint(data_all(nreal,n))
         super_val(itt)=super_val(itt)+val_iasi

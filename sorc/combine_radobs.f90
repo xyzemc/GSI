@@ -59,25 +59,18 @@ subroutine combine_radobs(mype,mype_sub,mype_root,&
 
 ! Declare local variables
   integer(i_kind):: i,j,k,kk,l,n
-  integer(i_kind):: itx_sub,itx,ndata1,ndata_in
+  integer(i_kind):: itx_sub,itx,ndata1
   integer(i_kind),dimension(npe_sub+2):: ncounts,ncounts1
   integer(i_kind),dimension(npe_sub):: recvcounts,displs,displs2
   integer(i_kind),dimension(itxmax):: itxsave
 
   real(r_kind):: crit_sub
-  real(r_kind),dimension(nele+2,itxmax) :: data_sub
+  real(r_kind),dimension(nele+2,ndata) :: data_sub
   real(r_kind),allocatable,dimension(:,:):: data_all_sub
 
 ! Determine total number of data read and retained.
   do i=1,npe_sub
      ncounts(i)=izero
-  end do
-  do i=1,ndata
-    do j=1,nele
-      data_sub(j,i)=data_all(j,i)
-    end do
-    data_sub(nele+1,i)=data_crit(i)
-    data_sub(nele+2,i)=idata_itx(i) + 0.01_r_kind
   end do
   ncounts(mype_sub+1)=ndata
   ncounts(npe_sub+1)=nread
@@ -87,8 +80,6 @@ subroutine combine_radobs(mype,mype_sub,mype_root,&
 ! Set total number of observations summed over all tasks and
 ! construct starting location of subset in reduction array
 
-  ndata_in=ndata
-  ndata=0
   nread=0
   ndata1=ncounts1(npe_sub+2)
   if (mype_sub==mype_root) nread = ncounts1(npe_sub+1)
@@ -103,12 +94,20 @@ subroutine combine_radobs(mype,mype_sub,mype_root,&
     displs2(i)=displs2(i-1)+ncounts1(i-1)
   end do
 
+  do i=1,ndata
+    do j=1,nele
+      data_sub(j,i)=data_all(j,i)
+    end do
+    data_sub(nele+1,i)=data_crit(i)
+    data_sub(nele+2,i)=idata_itx(i) + 0.01_r_kind
+  end do
+
 ! Allocate arrays to hold data
   if(mype_sub==mype_root)allocate(data_all_sub(nele+2,ndata1))
 
 ! gather arrays over all tasks in mpi_comm_sub.  Reduction result
 ! is only needed on task mype_root
-  call mpi_gatherv(data_sub,(nele+2)*ndata_in,mpi_rtype,data_all_sub,recvcounts,displs, &
+  call mpi_gatherv(data_sub,(nele+2)*ndata,mpi_rtype,data_all_sub,recvcounts,displs, &
        mpi_rtype,mype_root,mpi_comm_sub,ierror)
 
 ! Reset counters
@@ -120,6 +119,7 @@ subroutine combine_radobs(mype,mype_sub,mype_root,&
 
      do k=1,itxmax
         itxsave(k)=0
+        data_crit(k)=999999._r_kind
      end do
 
 !    Loop over task specific obs.  Retain "best"
@@ -132,24 +132,22 @@ subroutine combine_radobs(mype,mype_sub,mype_root,&
            crit_sub=data_all_sub(nele+1,kk)
            itx_sub=data_all_sub(nele+2,kk)
            
-           if(itxsave(itx_sub) == 0)then
-              ndata=min(ndata+1,itxmax)
-              itxsave(itx_sub)=ndata
-              data_crit(ndata)=crit_sub
-              do l=1,nele
-                  data_all(l,ndata)=data_all_sub(l,kk)
-              end do
-           else
-              itx=itxsave(itx_sub)
-              if(data_crit(itx) > crit_sub)then
-                data_crit(itx)=crit_sub
-                do l=1,nele
-                    data_all(l,itx)=data_all_sub(l,kk)
-                end do
-              end if
+           if(itxsave(itx_sub) == 0 .or. data_crit(itx_sub) > crit_sub)then
+              itxsave(itx_sub)=kk
+              data_crit(itx_sub)=crit_sub
            end if 
               
      end do data_loop
+     ndata=0
+     do i=1,itxmax
+       if(itxsave(i) > 0)then
+         itx=itxsave(i)
+         ndata=ndata+1
+         do l=1,nele
+            data_all(l,ndata)=data_all_sub(l,itx)
+         end do
+       end if
+     end do
 
 !    Deallocate arrays
      deallocate(data_all_sub)

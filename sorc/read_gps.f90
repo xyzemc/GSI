@@ -39,8 +39,9 @@ subroutine read_gps(nread,ndata,nodata,infile,lunout,obstype,twind, &
 !   2006-02-24  derber  - modify to take advantage of convinfo module
 !   2006-09-08 cucurull - modify bufr variables for COSMIC
 !   2006-10-13 cucurull - add QC checks
-!   2008-02-02 treadon  - sort out gpsro bufr by satellite id
+!   2008-02-02 treadon  - sort gpsro bufr by satellite id
 !   2008-02-06 cucurull - modify to support move from DDS to GTS/NC gpsro data feed
+!   2008-09-25 treadon  - skip report if ref_obs=.t. but no refractivity data
 !
 !   input argument list:
 !     infile   - unit from which to read BUFR data
@@ -237,30 +238,35 @@ subroutine read_gps(nread,ndata,nodata,infile,lunout,obstype,twind, &
    call w3fs21(iadate,mincy) ! analysis time in minutes
    timeo=(minobs-mincy)/r60
    if (abs(timeo)>ctwind(ikx) .or. abs(timeo) > twind) then
-      write(6,*)'READ_GPS:      time outside window ',&
-           timeo,' skip this report'
+      write(6,*)'READ_GPS:  ***WARNING*** time outside window ',&
+           timeo,' SKIP this report'
       cycle read_loop
    endif
 
+!  Check we have the same number of levels for ref and bending angle
+!  when ref_obs on
+   call ufbseq(lnbufr,data1b,25,maxlevs,levs,'ROSEQ1')  ! bending angle
+   call ufbseq(lnbufr,data2a,25,maxlevs,levsr,'ROSEQ3') ! refractivity
+   if ((ref_obs).and.(levs/=levsr)) then
+      write(6,*) 'READ_GPS:  ***WARNING*** said,ptid=',said,ptid,&
+           ' with gps_bnd levs=',levs,&
+           ' and gps_ref levsr=',levsr,&
+           ' SKIP this report'
+      cycle read_loop
+   endif
+
+!  Increment report counters
    nmrecs = nmrecs + 1      ! count reports in bufr file
    nmrecs_id(igpsro_type) = nmrecs_id(igpsro_type) + 1
 
+!  Set usage flag
    usage = 0.
    if(icuse(ikx) < 0)usage=100.
    if(ncnumgrp(ikx) > 0 )then                     ! cross validation on
      if(mod(nmrecs,ncnumgrp(ikx))== ncgroup(ikx)-1)usage=ncmiter(ikx)
    end if
 
-!  check we have the same number of levels for ref and bending angle
-!  when ref_obs on
-   call ufbseq(lnbufr,data1b,25,maxlevs,levs,'ROSEQ1')  ! bending angle
-   call ufbseq(lnbufr,data2a,25,maxlevs,levsr,'ROSEQ3') ! refractivity
-   if ((ref_obs).and.(levs/=levsr)) then
-    write(6,*) 'READ_GPS:  ***ERROR*** There are ',levs,&
-         ' levels in REP1 and',levsr,' levels in REP2'
-    call stop2(92)
-   endif
-
+!  Loop over levs in profile
    do k=1, levs
      nread=nread+1     ! count observations
      rlat=data1b(1,k)  ! earth relative latitude (degrees)

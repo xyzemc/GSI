@@ -1,6 +1,6 @@
 LIB	= ../../libsfcio_4.a
 INCMOD	= ../../incmod/sfcio_4
-FC	= ncepxlf
+FC	= xlf_r
 FFLAGS	= -O -qnosave -q free=f90 -I$(INCMOD)
 #FFLAGS	= -g -C -qextchk -qflttrap -qnosave -g -q free=f90 -I$(INCMOD)
 AR	= ar

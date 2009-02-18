@@ -51,7 +51,7 @@ SHELL=/bin/sh
 \$(LIB):	\$(LIB)( ${OBJS} )
 
 .f.a:
-	ncepxlf -c \$(FFLAGS) \$<
+	xlf_r -c \$(FFLAGS) \$<
 	ar -ruv \$(AFLAGS)  \$@ \$*.o
 	rm -f \$*.o
 

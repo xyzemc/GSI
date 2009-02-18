@@ -100,18 +100,14 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
      do k=1,nsig3p3
         tval(k)=zero
      end do
-     i1=j1
-     i2=j2
-     i3=j3
-     i4=j4
 
      time_rad=radptr%time
 !  Begin Forward model
 !  calculate temperature, q, ozone, sst vector at observation location
-     i1n(1) = i1
-     i2n(1) = i2
-     i3n(1) = i3
-     i4n(1) = i4
+     i1n(1) = j1
+     i2n(1) = j2
+     i3n(1) = j3
+     i4n(1) = j4
      do k=2,nsig
       i1n(k) = i1n(k-1)+latlon11
       i2n(k) = i2n(k-1)+latlon11
@@ -120,10 +116,10 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
      enddo
 !$omp parallel do private(k,i1,i2,i3,i4)
     do k=1,nsig
-     i1 = i1n(k)
-     i2 = i2n(k)
-     i3 = i3n(k)
-     i4 = i4n(k)
+        i1 = i1n(k)
+        i2 = i2n(k)
+        i3 = i3n(k)
+        i4 = i4n(k)
         tdir(k)=      w1*  st(i1)+w2*  st(i2)+ &
                       w3*  st(i3)+w4*  st(i4)+ &
                      (w1* dst(i1)+w2* dst(i2)+ &
@@ -200,6 +196,43 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
 
 
 !    Distribute adjoint contributions over surrounding grid points
+     do k=1,nsig
+        n_1=k+nsig
+        n_2=k+nsig2
+        i1 = i1n(k)
+        i2 = i2n(k)
+        i3 = i3n(k)
+        i4 = i4n(k)
+
+        rt(i1)=rt(i1)+w1*tval(k)
+        rt(i2)=rt(i2)+w2*tval(k)
+        rt(i3)=rt(i3)+w3*tval(k)
+        rt(i4)=rt(i4)+w4*tval(k)
+        drt(i1)=drt(i1)+w1*tval(k)*time_rad
+        drt(i2)=drt(i2)+w2*tval(k)*time_rad
+        drt(i3)=drt(i3)+w3*tval(k)*time_rad
+        drt(i4)=drt(i4)+w4*tval(k)*time_rad
+
+        rq(i1)=rq(i1)+w1*tval(n_1)
+        rq(i2)=rq(i2)+w2*tval(n_1)
+        rq(i3)=rq(i3)+w3*tval(n_1)
+        rq(i4)=rq(i4)+w4*tval(n_1)
+        drq(i1)=drq(i1)+w1*tval(n_1)*time_rad
+        drq(i2)=drq(i2)+w2*tval(n_1)*time_rad
+        drq(i3)=drq(i3)+w3*tval(n_1)*time_rad
+        drq(i4)=drq(i4)+w4*tval(n_1)*time_rad
+
+        roz(i1)=roz(i1)+w1*tval(n_2)
+        roz(i2)=roz(i2)+w2*tval(n_2)
+        roz(i3)=roz(i3)+w3*tval(n_2)
+        roz(i4)=roz(i4)+w4*tval(n_2)
+        droz(i1)=droz(i1)+w1*tval(n_2)*time_rad
+        droz(i2)=droz(i2)+w2*tval(n_2)*time_rad
+        droz(i3)=droz(i3)+w3*tval(n_2)*time_rad
+        droz(i4)=droz(i4)+w4*tval(n_2)*time_rad
+
+     end do
+
      ru(j1)=ru(j1)+w1*tval(nsig3p1)
      ru(j2)=ru(j2)+w2*tval(nsig3p1)
      ru(j3)=ru(j3)+w3*tval(nsig3p1)
@@ -223,42 +256,6 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
      rst(j3)=rst(j3)+w3*tval(nsig3p3)
      rst(j4)=rst(j4)+w4*tval(nsig3p3)
 
-     do k=1,nsig
-        n_1=k+nsig
-        n_2=k+nsig2
-
-        rt(j1)=rt(j1)+w1*tval(k)
-        rt(j2)=rt(j2)+w2*tval(k)
-        rt(j3)=rt(j3)+w3*tval(k)
-        rt(j4)=rt(j4)+w4*tval(k)
-        drt(j1)=drt(j1)+w1*tval(k)*time_rad
-        drt(j2)=drt(j2)+w2*tval(k)*time_rad
-        drt(j3)=drt(j3)+w3*tval(k)*time_rad
-        drt(j4)=drt(j4)+w4*tval(k)*time_rad
-
-        rq(j1)=rq(j1)+w1*tval(n_1)
-        rq(j2)=rq(j2)+w2*tval(n_1)
-        rq(j3)=rq(j3)+w3*tval(n_1)
-        rq(j4)=rq(j4)+w4*tval(n_1)
-        drq(j1)=drq(j1)+w1*tval(n_1)*time_rad
-        drq(j2)=drq(j2)+w2*tval(n_1)*time_rad
-        drq(j3)=drq(j3)+w3*tval(n_1)*time_rad
-        drq(j4)=drq(j4)+w4*tval(n_1)*time_rad
-
-        roz(j1)=roz(j1)+w1*tval(n_2)
-        roz(j2)=roz(j2)+w2*tval(n_2)
-        roz(j3)=roz(j3)+w3*tval(n_2)
-        roz(j4)=roz(j4)+w4*tval(n_2)
-        droz(j1)=droz(j1)+w1*tval(n_2)*time_rad
-        droz(j2)=droz(j2)+w2*tval(n_2)*time_rad
-        droz(j3)=droz(j3)+w3*tval(n_2)*time_rad
-        droz(j4)=droz(j4)+w4*tval(n_2)*time_rad
-
-        j1=j1+latlon11
-        j2=j2+latlon11
-        j3=j3+latlon11
-        j4=j4+latlon11
-     end do
      radptr => radptr%llpoint
   end do
   return
