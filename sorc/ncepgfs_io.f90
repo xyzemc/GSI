@@ -1230,7 +1230,7 @@ contains
     
     use constants, only: zero_single,r1000,fv,one,rad2deg,zero
   
-    use mpimod, only: mpi_rtype,mpi_rtype4
+    use mpimod, only: mpi_rtype
     use mpimod, only: mpi_comm_world
     use mpimod, only: strip
     use mpimod, only: ierror
@@ -1428,20 +1428,20 @@ contains
 !         Read header and spectral coefficients from guess
           call sigio_srohdc(lunges,fname_ges,sighead,sigdata,iret)
 !send data to compute pes
-       call mpi_send(sigdata%t,nc*nsig,mpi_rtype4,mype_th,&
+       call mpi_send(sigdata%t,nc*nsig,mpi_rtype,mype_th,&
                      itag_th,mpi_comm_world,ierror)
-       call mpi_send(sigdata%q(1,1,1),nc*nsig,mpi_rtype4,mype_sh,&
+       call mpi_send(sigdata%q(1,1,1),nc*nsig,mpi_rtype,mype_sh,&
                      itag_sh,mpi_comm_world,ierror)
-       call mpi_send(sigdata%q(1,1,2),nc*nsig,mpi_rtype4,mype_oz,&
+       call mpi_send(sigdata%q(1,1,2),nc*nsig,mpi_rtype,mype_oz,&
                      itag_oz,mpi_comm_world,ierror)
        if (ntracer>2 .or. ncloud>=1) then
-        call mpi_send(sigdata%q(1,1,3),nc*nsig,mpi_rtype4,mype_clc,&
+        call mpi_send(sigdata%q(1,1,3),nc*nsig,mpi_rtype,mype_clc,&
                       itag_clc,mpi_comm_world,ierror)
        endif
-       call mpi_send(sigdata%d,nc*nsig,mpi_rtype4,mype_div,&
+       call mpi_send(sigdata%d,nc*nsig,mpi_rtype,mype_div,&
                      itag_div,mpi_comm_world,ierror)
 
-       call mpi_send(sigdata%z,nc*nsig,mpi_rtype4,mype_vort,&
+       call mpi_send(sigdata%z,nc*nsig,mpi_rtype,mype_vort,&
                      itag_vort,mpi_comm_world,ierror)
 !
 
@@ -1470,34 +1470,34 @@ contains
     else
      if (mype==mype_th) then
       allocate (temp(nc,nsig),stat=istat)
-      call mpi_recv(temp,nc*nsig,mpi_rtype4,mype_out,&
+      call mpi_recv(temp,nc*nsig,mpi_rtype,mype_out,&
                     itag_th,mpi_comm_world,status,ierror)
      endif
      if (mype==mype_sh) then
       allocate (temp(nc,nsig),stat=istat)
-      call mpi_recv(temp,nc*nsig,mpi_rtype4,mype_out,&
+      call mpi_recv(temp,nc*nsig,mpi_rtype,mype_out,&
                     itag_sh,mpi_comm_world,status,ierror)
      endif
      if (mype==mype_oz) then
       allocate (temp(nc,nsig),stat=istat)
-      call mpi_recv(temp,nc*nsig,mpi_rtype4,mype_out,&
+      call mpi_recv(temp,nc*nsig,mpi_rtype,mype_out,&
                     itag_oz,mpi_comm_world,status,ierror)
      endif
      if (mype==mype_clc) then
        if (ntracer>2 .or. ncloud>=1) then
         allocate (temp(nc,nsig),stat=istat)
-        call mpi_recv(temp,nc*nsig,mpi_rtype4,mype_out,&
+        call mpi_recv(temp,nc*nsig,mpi_rtype,mype_out,&
                       itag_clc,mpi_comm_world,status,ierror)
        endif
      endif
      if (mype==mype_div) then
       allocate (temp(nc,nsig),stat=istat)
-      call mpi_recv(temp,nc*nsig,mpi_rtype4,mype_out,&
+      call mpi_recv(temp,nc*nsig,mpi_rtype,mype_out,&
                     itag_div,mpi_comm_world,status,ierror)
      endif
      if (mype==mype_vort) then
       allocate (temp(nc,nsig),stat=istat)
-      call mpi_recv(temp,nc*nsig,mpi_rtype4,mype_out,&
+      call mpi_recv(temp,nc*nsig,mpi_rtype,mype_out,&
                     itag_vort,mpi_comm_world,status,ierror)
      endif
     endif
@@ -1728,7 +1728,7 @@ contains
        end do
 !$omp end parallel do
 !send temperature back to mype_out
-       call mpi_send(temp,nc*nsig,mpi_rtype4,mype_out,&
+       call mpi_send(temp,nc*nsig,mpi_rtype,mype_out,&
                      itag_th,mpi_comm_world,ierror)
      endif
     else                 !GFS I/O
@@ -1771,7 +1771,7 @@ contains
        end do
 !$omp end parallel do
 !send sh back to mype_out
-       call mpi_send(temp,nc*nsig,mpi_rtype4,mype_out,&
+       call mpi_send(temp,nc*nsig,mpi_rtype,mype_out,&
                      itag_sh,mpi_comm_world,ierror)
      endif
   else             !GFS I/O
@@ -1815,7 +1815,7 @@ contains
        end do
 !$omp end parallel do
 !send sh back to mype_out
-       call mpi_send(temp,nc*nsig,mpi_rtype4,mype_out,&
+       call mpi_send(temp,nc*nsig,mpi_rtype,mype_out,&
                      itag_oz,mpi_comm_world,ierror)
      endif
     else          !GFS I/O
@@ -1860,7 +1860,7 @@ contains
        end do
 !$omp end parallel do
 !send sh back to mype_out
-       call mpi_send(temp,nc*nsig,mpi_rtype4,mype_out,&
+       call mpi_send(temp,nc*nsig,mpi_rtype,mype_out,&
                      itag_clc,mpi_comm_world,ierror)
      endif
     else          !GFS I/O
@@ -1905,7 +1905,7 @@ contains
       end do
 !$omp end parallel do
 !send sh back to mype_out
-       call mpi_send(temp,nc*nsig,mpi_rtype4,mype_out,&
+       call mpi_send(temp,nc*nsig,mpi_rtype,mype_out,&
                      itag_div,mpi_comm_world,ierror)
      endif
 
@@ -1926,7 +1926,7 @@ contains
              end do
       end do
 !$omp end parallel do
-       call mpi_send(temp,nc*nsig,mpi_rtype4,mype_out,&
+       call mpi_send(temp,nc*nsig,mpi_rtype,mype_out,&
                      itag_vort,mpi_comm_world,ierror)
      endif
     endif
@@ -2015,24 +2015,24 @@ contains
     if (mype==mype_out) then
       if (ncep_sigio) then
 !receive temperature from mype_th
-        call mpi_recv(sigdata%t,nc*nsig,mpi_rtype4,mype_th,&
+        call mpi_recv(sigdata%t,nc*nsig,mpi_rtype,mype_th,&
                       itag_th,mpi_comm_world,status,ierror)
 !receive specific humidity from mype_sh
-        call mpi_recv(sigdata%q(1,1,1),nc*nsig,mpi_rtype4,mype_sh,&
+        call mpi_recv(sigdata%q(1,1,1),nc*nsig,mpi_rtype,mype_sh,&
                       itag_sh,mpi_comm_world,status,ierror)
 !receive ozone from mype_oz
-        call mpi_recv(sigdata%q(1,1,2),nc*nsig,mpi_rtype4,mype_oz,&
+        call mpi_recv(sigdata%q(1,1,2),nc*nsig,mpi_rtype,mype_oz,&
                       itag_oz,mpi_comm_world,status,ierror)
 !receive cloud condensate mixing ratio from mype_clc
        if (ntracer>2 .or. ncloud>=1) then
-        call mpi_recv(sigdata%q(1,1,3),nc*nsig,mpi_rtype4,mype_clc,&
+        call mpi_recv(sigdata%q(1,1,3),nc*nsig,mpi_rtype,mype_clc,&
                       itag_clc,mpi_comm_world,status,ierror)
        endif 
 !receive divergence from mype_div
-       call mpi_recv(sigdata%d,nc*nsig,mpi_rtype4,mype_div,&
+       call mpi_recv(sigdata%d,nc*nsig,mpi_rtype,mype_div,&
                      itag_div,mpi_comm_world,status,ierror)
 !receive vorticity from mype_vort
-       call mpi_recv(sigdata%z,nc*nsig,mpi_rtype4,mype_vort,&
+       call mpi_recv(sigdata%z,nc*nsig,mpi_rtype,mype_vort,&
                      itag_vort,mpi_comm_world,status,ierror)
 !
           string='sigio'

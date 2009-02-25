@@ -60,12 +60,12 @@ SHELL=/bin/sh
 \$(LIB):	\$(LIB)( ${OBJS} )
 
 .f.a:
-	xlf_r -c \$(FFLAGS) \$<
+	mpif90 -c \$(FFLAGS) \$<
 	ar -ruv \$(AFLAGS) \$@ \$*.o
 	rm -f \$*.o
 
 .c.a:
-	xlc_r -c \$(CFLAGS) \$<
+	icc -c \$(CFLAGS) \$<
 	ar -ruv  \$(AFLAGS) \$@ \$*.o
 	rm -f \$*.o
 EOF
@@ -73,26 +73,29 @@ EOF
 #     Update 4-byte version of libw3_4.a
 #
 export LIB="../../libw3_4.a"
-export FFLAGS=" -O3 -qnosave -qmoddir=../../incmod/w3_4 -I ../../incmod/sigio_4 -I ../../incmod/w3_4"
-export AFLAGS=" -X64"
-export CFLAGS=" -O3 -q64"
+export FFLAGS=" -O3  -assume byterecl -I ../../incmod/sigio_4 -I ../../incmod/w3_4"
+export AFLAGS=" "
+export CFLAGS=" -O3"
 make -f make.libw3
+mv  *.mod ../../incmod/w3_4/.
 #
 #     Update 8-byte version of libw3_8.a
 #
 export LIB="../../libw3_8.a"
-export FFLAGS=" -O3 -qnosave -qintsize=8 -qrealsize=8 -qmoddir=../../incmod/w3_8 -I ../../incmod/sigio_4 -I ../../incmod/w3_8"
-export AFLAGS=" -X64"
-export CFLAGS=" -O3 -q64"
+export FFLAGS=" -O3 -i8 -r8  -assume byterecl  -I ../../incmod/sigio_4 -I ../../incmod/w3_8"
+export AFLAGS=" "
+export CFLAGS=" -O3 "
 make -f make.libw3
+mv  *.mod ../../incmod/w3_8/.
 #
 #     Update Double Precision (Size of Real 8-byte and default Integer) version 
 #     of libw3_d.a
 #
 export LIB="../../libw3_d.a"
-export FFLAGS=" -O3 -qnosave -qrealsize=8 -qmoddir=../../incmod/w3_d -I ../../incmod/sigio_4 -I ../../incmod/w3_d"
-export AFLAGS=" -X64"
-export CFLAGS=" -O3 -q64"
+export FFLAGS=" -O3 -r8  -assume byterecl  -I ../../incmod/sigio_4 -I ../../incmod/w3_d"
+export AFLAGS=" "
+export CFLAGS=" -O3 "
 make -f make.libw3
+mv  *.mod ../../incmod/w3_d/.
 
 rm -f make.libw3

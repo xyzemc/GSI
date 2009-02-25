@@ -69,7 +69,7 @@ main()
 }
 ENDIANTEST
 
-xlc_r -o endiantest endiantest.c
+cc -o endiantest endiantest.c
 
 if [ `./endiantest | cut -c1` = "A" ]
 then
@@ -91,7 +91,7 @@ do
   bn=`basename $i .F`
   bnf=${bn}.f
   BNFS="$BNFS $bnf"
-  /usr/lib/cpp -P -D$byte_order $i $bnf
+  /usr/bin/cpp -P -D$byte_order $i $bnf
 done
 
 #-------------------------------------------------------------------------------
@@ -135,12 +135,12 @@ SHELL=/bin/sh
 \$(LIB):	\$(LIB)( ${OBJS} )
 
 .f.a:
-	xlf_r -c \$(FFLAGS) \$<
+	mpif90 -c \$(FFLAGS) \$<
 	ar -ruv \$(AFLAGS) \$@ \$*.o
 	rm -f \$*.o
 
 .c.a:
-	xlc_r -c \$(CFLAGS) \$<
+	cc -c \$(CFLAGS) \$<
 	ar -ruv \$(AFLAGS) \$@ \$*.o
 	rm -f \$*.o
 EOF
@@ -148,16 +148,16 @@ EOF
 #-------------------------------------------------------------------------------
 #     Generate the bufrlib.prm header file.
 
-/usr/lib/cpp -P bufrlib.PRM bufrlib.prm
+/usr/bin/cpp -P bufrlib.PRM bufrlib.prm
 
 #-------------------------------------------------------------------------------
 #   Update libbufr_4_64.a (4-byte REAL, 4-byte INT, 64-bit compilation,
 #                          Fortran optimization level 4, C optimization level 3)
  
 export LIB="../../libbufr_4_64.a"
-export FFLAGS=" -O4 -q64 -qsource -qstrict -qnosave -qintsize=4 -qrealsize=4 -qxlf77=leadzero"
-export CFLAGS=" -O3 -q64"
-export AFLAGS=" -X64"
+export FFLAGS=" -O3 -w"
+export CFLAGS=" -O3 -DUNDERSCORE"
+export AFLAGS=" "
 make -f make.libbufr
 err_make=$?
 [ $err_make -ne 0 ]  && exit 99
@@ -167,9 +167,9 @@ err_make=$?
 #                          Fortran optimization level 4, C optimization level 3)
  
 export LIB="../../libbufr_8_64.a"
-export FFLAGS=" -O4 -q64 -qsource -qstrict -qnosave -qintsize=8 -qrealsize=8 -qxlf77=leadzero"
-export CFLAGS=" -O3 -q64 -DF77_INTSIZE_8"
-export AFLAGS=" -X64"
+export FFLAGS=" -O3 -r8 -i8"
+export CFLAGS=" -O3 -DUNDERSCORE"
+export AFLAGS=" "
 make -f make.libbufr
 err_make=$?
 [ $err_make -ne 0 ]  && exit 99
@@ -179,9 +179,9 @@ err_make=$?
 #                          Fortran optimization level 4, C optimization level 3)
 
 export LIB="../../libbufr_d_64.a"
-export FFLAGS=" -O4 -q64 -qsource -qstrict -qnosave -qintsize=4 -qrealsize=8 -qxlf77=leadzero"
-export CFLAGS=" -O3 -q64"
-export AFLAGS=" -X64"
+export FFLAGS=" -O3 -r8 -w"
+export CFLAGS=" -O3 -DUNDERSCORE"
+export AFLAGS=" "
 make -f make.libbufr
 err_make=$?
 [ $err_make -ne 0 ]  && exit 99
@@ -191,9 +191,9 @@ err_make=$?
 #                          Fortran optimization level 3, C optimization level 3)
 
 export LIB="../../libbufr_4_32.a"
-export FFLAGS=" -O3 -q32 -qsource -qnosave -qintsize=4 -qrealsize=4 -qxlf77=leadzero"
-export CFLAGS=" -O3 -q32"
-export AFLAGS=" -X32"
+export FFLAGS=" -O3"
+export CFLAGS=" -O3 -DUNDERSCORE"
+export AFLAGS=" "
 make -f make.libbufr
 err_make=$?
 [ $err_make -ne 0 ]  && exit 99
@@ -202,19 +202,19 @@ err_make=$?
 
 #     Generate a new bufrlib.prm header file.
 
-/usr/lib/cpp -P -DSUPERSIZE bufrlib.PRM bufrlib.prm
+/usr/bin/cpp -P -DSUPERSIZE bufrlib.PRM bufrlib.prm
 
 #-------------------------------------------------------------------------------
 #   Update libbufr_s_64.a (4-byte REAL, 4-byte INT, 64-bit compilation, extra-large array sizes,
 #                          Fortran optimization level 4, C optimization level 3)
  
-export LIB="../../libbufr_s_64.a"
-export FFLAGS=" -O4 -q64 -qsource -qstrict -qnosave -qintsize=4 -qrealsize=4 -qxlf77=leadzero"
-export CFLAGS=" -O3 -q64"
-export AFLAGS=" -X64"
-make -f make.libbufr
-err_make=$?
-[ $err_make -ne 0 ]  && exit 99
+#export LIB="../../libbufr_s_64.a"
+#export FFLAGS=" -O4 -q64 -qsource -qstrict -qnosave -qintsize=4 -qrealsize=4 -qxlf77=leadzero"
+#export CFLAGS=" -O3 -q64"
+#export AFLAGS=" -X64"
+#make -f make.libbufr
+#err_make=$?
+#[ $err_make -ne 0 ]  && exit 99
  
 #-------------------------------------------------------------------------------
 
@@ -222,7 +222,7 @@ err_make=$?
 
 rm -f make.libbufr bufrlib.prm $BNFS
 
-if [ -s ../../libbufr_s_64.a ] ; then
+if [ -s ../../libbufr_4_32.a ] ; then
    echo
    echo "SUCCESS: The script updated all BUFR archive libraries"
    echo

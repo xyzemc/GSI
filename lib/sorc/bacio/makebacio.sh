@@ -27,12 +27,12 @@ SHELL=/bin/sh
 
 \$(LIB)(bacio.v1.3.o):       bacio.v1.3.c \$(INC)
 	ln -f \$(INC) clib.h
-	xlc_r -c \$(CFLAGS) bacio.v1.3.c
+	cc -c \$(CFLAGS) bacio.v1.3.c
 	ar -rv \$(AFLAGS) \$(LIB) bacio.v1.3.o
 	rm clib.h
 
 \$(LIB)(baciof.o):   baciof.f
-	xlf_r -c \$(FFLAGS) baciof.f
+	mpif90 -c \$(FFLAGS) baciof.f
 	ar -rv \$(AFLAGS) \$(LIB) baciof.o
 	rm -f baciof.o
 
@@ -42,18 +42,18 @@ EOF
 #
 export LIB="../../libbacio_4.a"
 export INC="clib4.h"
-export FFLAGS=" -O3 -qnosave"
-export AFLAGS=" -X64"
-export CFLAGS=" -q64 -O3"
+export FFLAGS=" -O3 "
+export AFLAGS=" "
+export CFLAGS=" -O3"
 make -f make.bacio
 #
 #     Update 8-byte version of libbacio_8.a
 #
 export LIB="../../libbacio_8.a"
 export INC="clib8.h"
-export FFLAGS=" -O3 -qnosave -qintsize=8 -qrealsize=8"
-export AFLAGS=" -X64"
-export CFLAGS=" -q64 -O3 -qlonglong"
+export FFLAGS=" -O3 -i8 -r8"
+export AFLAGS=" "
+export CFLAGS=" -O3 "
 make -f make.bacio
 
 rm -f make.bacio

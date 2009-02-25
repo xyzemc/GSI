@@ -1783,14 +1783,15 @@ SUBROUTINE int_unpack_string ( str, buf, n )
   n = strlen + 1
 END SUBROUTINE int_unpack_string
 
-SUBROUTINE wrf_sizeof_integer( retval )
-  use kinds, only: i_kind
-  IMPLICIT NONE
-  INTEGER retval
-! IWORDSIZE is defined by CPP
-  retval = i_kind
-  RETURN
-END SUBROUTINE wrf_sizeof_integer
+!SUBROUTINE wrf_sizeof_integer( retval )
+!  use kinds, only: i_kind
+!  IMPLICIT NONE
+!  INTEGER retval
+!! IWORDSIZE is defined by CPP
+!!mhu to make it comsistent to the WRF  retval = i_kind
+!  retval = 4
+!  RETURN
+!END SUBROUTINE wrf_sizeof_integer
 !WRF:DRIVER_LAYER:UTIL
 !
 

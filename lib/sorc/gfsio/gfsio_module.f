@@ -1377,8 +1377,8 @@ contains
 !------------------------------------------------------------
 ! get data from putgb _w34
 !------------------------------------------------------------
-    call putgb(gfile%flunit,grbmeta%jf,grbmeta%jpds,grbmeta%jgds, &
-      grbmeta%lbms,data,ios)
+!mhu    call putgb(gfile%flunit,grbmeta%jf,grbmeta%jpds,grbmeta%jgds, &
+!mhu      grbmeta%lbms,data,ios)
     deallocate(grbmeta%lbms)
     if(ios.ne.0) then
        if ( present(iret))  then
@@ -1440,8 +1440,8 @@ contains
 ! get data from putgb _w3d
 !------------------------------------------------------------
     data8=data
-    call putgb(gfile%flunit,grbmeta%jf,grbmeta%jpds,grbmeta%jgds, &
-      grbmeta%lbms,data8,ios)
+!mhu    call putgb(gfile%flunit,grbmeta%jf,grbmeta%jpds,grbmeta%jgds, &
+!mhu      grbmeta%lbms,data8,ios)
     deallocate(grbmeta%lbms)
     if(ios.ne.0) then
        if ( present(iret))  then
@@ -1502,8 +1502,8 @@ contains
 !------------------------------------------------------------
 ! get data from putgb _w3d
 !------------------------------------------------------------
-    call putgb(gfile%flunit,grbmeta%jf,grbmeta%jpds,grbmeta%jgds, &
-      grbmeta%lbms,data8,ios)
+!mhu    call putgb(gfile%flunit,grbmeta%jf,grbmeta%jpds,grbmeta%jgds, &
+!mhu      grbmeta%lbms,data8,ios)
     deallocate(grbmeta%lbms)
     if(ios.ne.0) then
        if ( present(iret))  then
@@ -1567,8 +1567,8 @@ contains
 !------------------------------------------------------------
 ! get data from putgb _w34
 !------------------------------------------------------------
-    call putgb(gfile%flunit,grbmeta%jf,grbmeta%jpds,grbmeta%jgds, &
-      grbmeta%lbms,data,ios)
+!mhu    call putgb(gfile%flunit,grbmeta%jf,grbmeta%jpds,grbmeta%jgds, &
+!mhu      grbmeta%lbms,data,ios)
     deallocate(grbmeta%lbms)
     if(ios.ne.0) then
        if ( present(iret))  then
@@ -1633,8 +1633,8 @@ contains
 ! get data from putgb _w3d
 !------------------------------------------------------------
     data8=data
-    call putgb(gfile%flunit,grbmeta%jf,grbmeta%jpds,grbmeta%jgds, &
-      grbmeta%lbms,data8,ios)
+!mhu    call putgb(gfile%flunit,grbmeta%jf,grbmeta%jpds,grbmeta%jgds, &
+!mhu      grbmeta%lbms,data8,ios)
     deallocate(grbmeta%lbms)
     if(ios.ne.0) then
        if ( present(iret))  then
@@ -1697,8 +1697,8 @@ contains
 !------------------------------------------------------------
 ! get data from putgb _w3d
 !------------------------------------------------------------
-    call putgb(gfile%flunit,grbmeta%jf,grbmeta%jpds,grbmeta%jgds, &
-      grbmeta%lbms,data8,ios)
+!mhu    call putgb(gfile%flunit,grbmeta%jf,grbmeta%jpds,grbmeta%jgds, &
+!mhu      grbmeta%lbms,data8,ios)
     deallocate(grbmeta%lbms)
     if(ios.ne.0) then
        if ( present(iret))  then
@@ -2520,8 +2520,8 @@ contains
         DO JS=1,JHO
           BWORK(JS)=-D1/(4*(JS-1)**2-1)
         ENDDO
-        CALL DGEF(AWORK,JHE,JHO,IPVT)
-        CALL DGES(AWORK,JHE,JHO,IPVT,BWORK,J0)
+!mhu        CALL DGEF(AWORK,JHE,JHO,IPVT)
+!mhu        CALL DGES(AWORK,JHE,JHO,IPVT,BWORK,J0)
         WLAT(1)=0.
         DO J=1,JHO
           WLAT(J+1)=BWORK(J)
@@ -2554,8 +2554,8 @@ contains
         DO JS=1,JHO
           BWORK(JS)=-D1/(4*(JS-1)**2-1)
         ENDDO
-        CALL DGEF(AWORK,JHE,JHO,IPVT)
-        CALL DGES(AWORK,JHE,JHO,IPVT,BWORK,J0)
+!mhu        CALL DGEF(AWORK,JHE,JHO,IPVT)
+!mhu        CALL DGES(AWORK,JHE,JHO,IPVT,BWORK,J0)
         WLAT(1)=0.
         DO J=1,JHO
           WLAT(J)=BWORK(J)
@@ -2668,8 +2668,8 @@ contains
         DO JS=1,JHO
           BWORK(JS)=-D1/(4*(JS-1)**2-1)
         ENDDO
-        CALL DGEF(AWORK,JHE,JHO,IPVT)
-        CALL DGES(AWORK,JHE,JHO,IPVT,BWORK,J0)
+!mhu        CALL DGEF(AWORK,JHE,JHO,IPVT)
+!mhu        CALL DGES(AWORK,JHE,JHO,IPVT,BWORK,J0)
         WLAT(1)=0.
         DO J=1,JHO
           WLAT(J+1)=BWORK(J)
@@ -2702,8 +2702,8 @@ contains
         DO JS=1,JHO
           BWORK(JS)=-D1/(4*(JS-1)**2-1)
         ENDDO
-        CALL DGEF(AWORK,JHE,JHO,IPVT)
-        CALL DGES(AWORK,JHE,JHO,IPVT,BWORK,J0)
+!mhu        CALL DGEF(AWORK,JHE,JHO,IPVT)
+!mhu        CALL DGES(AWORK,JHE,JHO,IPVT,BWORK,J0)
         WLAT(1)=0.
         DO J=1,JHO
           WLAT(J)=BWORK(J)

@@ -193,7 +193,7 @@ C
       DATA       INUNIT        /5/
       INTEGER    CARDFIL
       INTEGER    OUTFIL
-      INTEGER_4    NK,NM,NJ,NF,KRET4
+      INTEGER(4) NK,NM,NJ,NF,KRET4
 C
 
       LOGICAL*1  BYPASS

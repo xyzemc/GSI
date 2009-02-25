@@ -51,7 +51,7 @@ SHELL=/bin/sh
 \$(LIB):	\$(LIB)( ${OBJS} )
 
 .f.a:
-	xlf_r -c \$(FFLAGS) \$<
+	mpif90 -c \$(FFLAGS) \$<
 	ar -ruv \$(AFLAGS)  \$@ \$*.o
 	rm -f \$*.o
 
@@ -60,23 +60,23 @@ EOF
 #     Update 4-byte version of libspi_4.a 
 #
 export LIB="../../libsp_4.a"
-export FFLAGS="-qnosave -qsmp=noauto -qtune=auto -O3 -qintsize=4 -qrealsize=4"
-export AFLAGS=" -X64"
+export FFLAGS="-O3 -i4 -r4"
+export AFLAGS=" "
 make -f make.libsp
 #
 #     Update 8-byte version of libsp_8.a
 #
 export LIB="../../libsp_8.a"
-export FFLAGS=" -qnosave -qsmp=noauto -qtune=auto -O3 -qintsize=8 -qrealsize=8"
-export AFLAGS=" -X64"
+export FFLAGS=" -O3 -i8 -r8"
+export AFLAGS=" "
 make -f make.libsp
 #
 #     Update Double Precision (Size of Real 8-byte and default Integer) version
 #     of libsp_d.a
 #
 export LIB="../../libsp_d.a"
-export FFLAGS=" -qnosave -qsmp=noauto -qtune=auto -O3 -qintsize=4 -qrealsize=8"
-export AFLAGS=" -X64"
+export FFLAGS=" -O3 -i4 -r8"
+export AFLAGS=" "
 make -f make.libsp
 
 rm -f make.libsp
