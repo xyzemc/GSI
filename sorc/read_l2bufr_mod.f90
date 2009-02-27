@@ -177,7 +177,11 @@ contains
     
 !   Open bufr file with openbf to initialize bufr table, etc in bufrlib
     inbufr=10
-    open(inbufr,file='l2rwbufr',form='unformatted')
+    open(inbufr,file='l2rwbufr',form='unformatted',iostat=iret)
+    if(iret.ne.0) then
+       write(6,*)'RADAR_BUFR_READ_ALL:  cannot open file "l2rwbufr"'
+       return
+    end if
     read(inbufr,iostat=iret)subset
     if(iret.ne.0) then
        if(rite) write(6,*)'RADAR_BUFR_READ_ALL:  problem opening level 2 bufr file "l2rwbufr"'
