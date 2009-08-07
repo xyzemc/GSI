@@ -449,6 +449,7 @@ contains
 !   2004-05-13  kleist, documentation
 !   2004-07-15  todling, protex-compliant prologue
 !   2005-03-03  treadon - add implicit none
+!   2009-08-07  Hu - initialize ak5 and bk5
 !
 ! !REMARKS:
 !   language: f90
@@ -464,6 +465,8 @@ contains
     allocate(rlats(nlat),rlons(nlon),coslon(nlon),sinlon(nlon),&
              wgtlats(nlat),rbs2(nlat),corlats(nlat))
     allocate(ak5(nsig+1),bk5(nsig+1),ck5(nsig+1),tref5(nsig))
+    ak5=0
+    bk5=0
     return
   end subroutine create_grid_vars
     
