@@ -1,4 +1,0 @@
-export MP_EUILIBPATH=../
-export MP_HOSTFILE=hf
-export MP_PROCS=4
-poe sample
