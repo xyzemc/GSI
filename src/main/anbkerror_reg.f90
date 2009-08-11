@@ -1,8 +1,7 @@
-subroutine anbkerror_reg(gradx,grady,mype)
-!-----------------
+subroutine anbkerror_reg(gradx,grady)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
-! subprogram:    anbkerror_reg apply anisotropic background error covariance            
+! subprogram:    anbkerror_reg apply anisotropic background error covariance  
 !   prgmmr: parrish          org: np22                date: 2005-02-03
 !
 ! abstract: apply regional anisotropic background error.
@@ -11,6 +10,10 @@ subroutine anbkerror_reg(gradx,grady,mype)
 !   2005-02-08  parrish
 !   2005-04-29  parrish - replace coarse2fine with fgrid2agrid;
 !                         remove ansmoothrf_reg_d
+!   2006-11-30  todling - add fpsproj as arg to (t)balance routine(s)
+!   2008-10-10  derber - add strong constraint to background error
+!   2008-12-29  todling - update interface to strong_bk/bk_ad
+!   2009-04-13  derber - move strong_bk into balance
 !
 !   input argument list:
 !     gradx    - input field  
@@ -22,28 +25,27 @@ subroutine anbkerror_reg(gradx,grady,mype)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
   use kinds, only: r_kind,i_kind
   use gridmod, only: lat2,lon2
-  use jfunc, only: nclen,nt,np,nq,nst,nvp,noz,nsst,ncw,nrclen,nclen1
+  use jfunc, only: nsclen,npclen
   use balmod, only: balance,tbalance
-  use berror, only: varprd
+  use berror, only: varprd,fpsproj
   use constants, only: zero
+  use control_vectors
+  use gsi_4dvar, only: nsubwin
   implicit none
 
 ! Declare passed variables
-  integer(i_kind),intent(in):: mype
-  real(r_kind),dimension(nclen),intent(inout):: gradx
-  real(r_kind),dimension(nclen),intent(out):: grady
+type(control_vector),intent(inout):: gradx
+type(control_vector),intent(inout):: grady
 
 ! Declare local variables
-  integer(i_kind) i,j
+  integer(i_kind) i,j,ii
   real(r_kind),dimension(lat2,lon2):: sst,slndt,sicet
 
 ! Put things in grady first since operations change input variables
-  do i=1,nclen
-     grady(i)=gradx(i)
-  end do
+  grady=gradx
 
 ! Zero arrays for land, ocean, ice skin (surface) temperature.
   do j=1,lon2
@@ -54,24 +56,40 @@ subroutine anbkerror_reg(gradx,grady,mype)
      end do
   end do
 
-! Transpose of balance equation
-  call tbalance(grady(nt),grady(np),grady(nq),grady(nst),grady(nvp))
+! Loop on control steps
+  do ii=1,nsubwin
 
-! Apply background error covariance
-  call anbkgcov_reg(grady(nst),grady(nvp),grady(nt),grady(np),grady(nq),&
-       grady(noz),grady(nsst),sst,slndt,sicet,grady(ncw),mype)
+!   Transpose of balance equation
+    call tbalance(grady%step(ii)%t ,grady%step(ii)%p , &
+                  grady%step(ii)%st,grady%step(ii)%vp,fpsproj)
 
-! Balance equation
-  call balance(grady(nt),grady(np),grady(nq),grady(nst),grady(nvp))
+!   Apply variances, as well as vertical & horizontal parts of background error
+    call anbkgcov_reg(grady%step(ii)%st,grady%step(ii)%vp,grady%step(ii)%t, &
+                      grady%step(ii)%p ,grady%step(ii)%rh,grady%step(ii)%oz, &
+                      grady%step(ii)%sst,sst,slndt,sicet,grady%step(ii)%cw)
+
+!   Balance equation
+    call balance(grady%step(ii)%t ,grady%step(ii)%p ,&
+                 grady%step(ii)%st,grady%step(ii)%vp,fpsproj)
+
+end do
 
 ! Take care of background error for bias correction terms
-  do i=1,nrclen
-     grady(i+nclen1)=grady(i+nclen1)*varprd(i)
-  end do
+  if(nsclen>0)then
+    do i=1,nsclen
+      grady%predr(i)=grady%predr(i)*varprd(i)
+    end do
+  end if
+  if(npclen>0)then
+    do i=1,npclen
+      grady%predp(i)=grady%predp(i)*varprd(nsclen+i)
+    end do
+  end if
 
 end subroutine anbkerror_reg
 
-subroutine anbkgcov_reg(st,vp,t,p,q,oz,skint,sst,slndt,sicet,cwmr,mype)
+
+subroutine anbkgcov_reg(st,vp,t,p,q,oz,skint,sst,slndt,sicet,cwmr)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    anbkgcov    apply anisotropic background error covar
@@ -118,7 +136,6 @@ subroutine anbkgcov_reg(st,vp,t,p,q,oz,skint,sst,slndt,sicet,cwmr,mype)
   implicit none
 
 ! Passed Variables
-  integer(i_kind),intent(in):: mype
   real(r_kind),dimension(lat2,lon2),intent(inout):: p,skint,sst,slndt,sicet
   real(r_kind),dimension(lat2,lon2,nsig),intent(inout):: t,q,cwmr,oz,st,vp
 
@@ -135,7 +152,7 @@ subroutine anbkgcov_reg(st,vp,t,p,q,oz,skint,sst,slndt,sicet,cwmr,mype)
   call sub2grid(hwork,t,p,q,oz,sst,slndt,sicet,cwmr,st,vp,iflg)
 
 ! Apply horizontal smoother for number of horizontal scales
-  call ansmoothrf_reg(hwork,mype)
+  call ansmoothrf_reg(hwork)
 
 ! Put back onto subdomains
   call grid2sub(hwork,t,p,q,oz,sst,slndt,sicet,cwmr,st,vp)
@@ -144,6 +161,7 @@ subroutine anbkgcov_reg(st,vp,t,p,q,oz,skint,sst,slndt,sicet,cwmr,mype)
   call anbkgvar_reg(skint,sst,slndt,sicet,1)
 
 end subroutine anbkgcov_reg
+
 
 subroutine anbkgvar_reg(skint,sst,slndt,sicet,iflg)
 !$$$  subprogram documentation block
@@ -155,6 +173,7 @@ subroutine anbkgvar_reg(skint,sst,slndt,sicet,iflg)
 !
 ! program history log:
 !   2005-01-22  parrish
+!   2008-06-05  safford - rm unused uses
 !
 !   input argument list:
 !     skint    - skin temperature grid values
@@ -177,7 +196,6 @@ subroutine anbkgvar_reg(skint,sst,slndt,sicet,iflg)
 !
 !$$$
   use kinds, only: r_kind,i_kind
-  use constants, only:  one
   use gridmod, only: lat2,lon2
   use guess_grids, only: isli2
   implicit none
@@ -223,7 +241,8 @@ subroutine anbkgvar_reg(skint,sst,slndt,sicet,iflg)
   return
 end subroutine anbkgvar_reg
 
-subroutine ansmoothrf_reg(work,mype)
+
+subroutine ansmoothrf_reg(work)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    ansmoothrf_reg  anisotropic rf for regional mode
@@ -233,6 +252,7 @@ subroutine ansmoothrf_reg(work,mype)
 !
 ! program history log:
 !   2005-02-14  parrish
+!   2009-01-02  todling - get mype from mpimod directly
 !
 !   input argument list:
 !     work     - fields to be smoothed
@@ -244,6 +264,7 @@ subroutine ansmoothrf_reg(work,mype)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !$$$
+  use mpimod, only: mype
   use kinds, only: r_kind,i_kind,r_single
   use anberror, only: ids,ide,jds,jde,kds,kde,ips,ipe,jps,jpe,kps,kpe, &
            ims,ime,jms,jme,kms,kme,filter_all,ngauss
@@ -255,7 +276,6 @@ subroutine ansmoothrf_reg(work,mype)
   implicit none
 
 ! Declare passed variables
-  integer(i_kind), intent(in):: mype
   real(r_kind),dimension(nlat,nlon,kms:kme),intent(inout):: work
 
 ! Declare local variables

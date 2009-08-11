@@ -36,8 +36,8 @@ subroutine statspcp(aivals,ndata)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
-!
+!$$$ end documentation block
+
 ! Include data type module
   use kinds, only: r_kind,i_kind
   use pcpinfo, only: dtphys,deltim
@@ -51,10 +51,8 @@ subroutine statspcp(aivals,ndata)
 
   real(r_kind),dimension(40,ndat),intent(inout):: aivals
 
-! Declare local parameters
-
 ! Declare local variables
-  integer(i_kind) ii,i,j,k,m,n,is
+  integer(i_kind) i,j,is
   integer(i_kind) iread,ikeep,iasim
   integer(i_kind) nsphys
   integer(i_kind) iland
@@ -65,10 +63,10 @@ subroutine statspcp(aivals,ndata)
   integer(i_kind) inumw,inum,iclip,itoss
   integer(i_kind) ntossqc
 
-  real(r_kind) avg,sdv,rterm
+  real(r_kind) sdv,rterm
   real(r_kind) pcpobs0,pcpnbc0,pcpbc0,pcpobs1,pcpnbc1,pcpbc1
   real(r_kind) pcpsas0,pcpsas1,rsum
-  real(r_kind) frain,dtp,dtf,sum
+  real(r_kind) frain,dtp,dtf
   real(r_kind) fhour,rtime
   real(r_kind) penalty_all,qcpenalty_all
   real(r_kind) rmmhr

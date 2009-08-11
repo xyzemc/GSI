@@ -1,4 +1,4 @@
-subroutine strong_bal_correction(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_diagnostic,fullfield,update)
+subroutine strong_bal_correction(u_t,v_t,t_t,ps_t,mype,psi,chi,t,ps,bal_diagnostic,fullfield,update)
 
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -19,6 +19,7 @@ subroutine strong_bal_correction(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_diagnostic,f
 !
 ! program history log:
 !   2007-02-15  parrish
+!   2008-08-10  derber - update to output correction to psi and chi for global
 !
 !   input argument list:
 !     u_t      - input perturbation u tendency (subdomains)
@@ -60,35 +61,31 @@ subroutine strong_bal_correction(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_diagnostic,f
   logical,intent(in)::bal_diagnostic,update,fullfield
   real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::u_t,v_t,t_t
   real(r_kind),dimension(lat2,lon2),intent(inout)::ps_t
-  real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::u,v,t
+  real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::psi,chi,t
   real(r_kind),dimension(lat2,lon2),intent(inout)::ps
-
-  logical update_tend
 
   if(jcstrong_option.eq.1) then
 
 !    slow global option:
 
-    call strong_bal_correction_slow_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_diagnostic,fullfield,update)
+    call strong_bal_correction_slow_global(u_t,v_t,t_t,ps_t,mype,psi,chi,t,ps,bal_diagnostic,fullfield,update)
 
   elseif(jcstrong_option.eq.2) then
 
 !    faster global option:
 
-    call strong_bal_correction_fast_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_diagnostic,fullfield,update)
+    call strong_bal_correction_fast_global(u_t,v_t,t_t,ps_t,mype,psi,chi,t,ps,bal_diagnostic,fullfield,update)
 
   elseif(jcstrong_option.eq.3) then
 
 !    regional option:
 
-    update_tend=.false.
-    call zrnmi_strong_bal_correction(u_t,v_t,t_t,ps_t,u,v,t,ps,bal_diagnostic,fullfield,update,update_tend,mype)
+    call zrnmi_strong_bal_correction(u_t,v_t,t_t,ps_t,psi,chi,t,ps,bal_diagnostic,fullfield,update,mype)
 
   end if
 
 end subroutine strong_bal_correction
-
-subroutine strong_bal_correction_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
+subroutine strong_bal_correction_ad(u_t,v_t,t_t,ps_t,mype,psi,chi,t,ps)
 
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -109,6 +106,7 @@ subroutine strong_bal_correction_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
 !
 ! program history log:
 !   2007-02-15  parrish
+!   2008-08-10  derber - update to output correction to psi and chi for global
 !
 !   input argument list:
 !     u_t      - input perturbation u tendency (subdomains)
@@ -147,31 +145,31 @@ subroutine strong_bal_correction_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
   integer(i_kind),intent(in)::mype
   real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::u_t,v_t,t_t
   real(r_kind),dimension(lat2,lon2),intent(inout)::ps_t
-  real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::u,v,t
+  real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::psi,chi,t
   real(r_kind),dimension(lat2,lon2),intent(inout)::ps
 
-  logical update,update_tend
+  logical update
 
   if(jcstrong_option.eq.1) then
 
 !    slow global option:
 
-    call strong_bal_correction_slow_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
+    call strong_bal_correction_slow_global_ad(u_t,v_t,t_t,ps_t,mype,psi,chi,t,ps)
 
   elseif(jcstrong_option.eq.2) then
 
 !    faster global option:
 
-    call strong_bal_correction_fast_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
+    call strong_bal_correction_fast_global_ad(u_t,v_t,t_t,ps_t,mype,psi,chi,t,ps)
 
   elseif(jcstrong_option.eq.3) then
 
 !    regional option:
 
     update=.true.
-    update_tend=.false.
-    call zrnmi_strong_bal_correction_ad(u_t,v_t,t_t,ps_t,u,v,t,ps,update,update_tend,mype)
+    call zrnmi_strong_bal_correction_ad(u_t,v_t,t_t,ps_t,psi,chi,t,ps,update,mype)
 
   end if
 
 end subroutine strong_bal_correction_ad
+

@@ -40,6 +40,9 @@ subroutine compute_derived(mype)
 !   2007-07-26  cucurull - call gesprs, add ges_3dp and remove ps 
 !                          in calctends argument list 
 !   2007-08-08  derber - pass ges_teta to calctends rather than calculate seperately
+!   2008-06-05  safford - rm unused uses
+!   2008-10-10  derber  - add calculation of fact_tv
+!   2008-12-08  todling - move 3dprs/geop-hght calculation from here into setuprhsall
 !
 !   input argument list:
 !     mype     - mpi task id
@@ -60,8 +63,8 @@ subroutine compute_derived(mype)
   use guess_grids, only: ges_z,ges_ps,ges_u,ges_v,&
        ges_tv,ges_q,ges_oz,ges_cwmr,sfct,&
        tropprs,ges_prsi,ges_prsl,ntguessig,&
-       nfldsig,load_prsges,sfcmod_gfs,sfcmod_mm5,&
-       load_geop_hgt,geop_hgtl,geop_hgti,ges_teta, &
+       nfldsig,sfcmod_gfs,sfcmod_mm5,&
+       geop_hgtl,geop_hgti,ges_teta,fact_tv, &
        ges_u_lon,ges_v_lon,ges_tvlon,ges_ps_lon,ges_qlon,ges_ozlon,ges_cwmr_lon, &
        ges_u_lat,ges_v_lat,ges_tvlat,ges_ps_lat,ges_qlat,ges_ozlat,ges_cwmr_lat
   use guess_grids, only: ges_u_ten,ges_v_ten,ges_tv_ten,ges_prs_ten,ges_q_ten,&
@@ -69,16 +72,16 @@ subroutine compute_derived(mype)
   use guess_grids, only: ges_qlon    ,ges_qlat
   use guess_grids, only: ges_tvlon   ,ges_tvlat
   use guess_grids, only: ges_prslavg,ges_psfcavg
-  use gridmod, only: lat2,lon2,nsig,nsig1o,aeta2_ll
-  use gridmod, only: jstart,jlon1,regional
-  use gridmod, only: istart,ilat1,twodvar_regional,bk5,eta2_ll
-  use gridmod, only: nlon,nlat,rlats,wrf_nmm_regional,wrf_mass_regional
+  use gridmod, only: lat2,lon2,nsig,nnnn1o,aeta2_ll
+  use gridmod, only: regional
+  use gridmod, only: twodvar_regional,bk5,eta2_ll
+  use gridmod, only: wrf_nmm_regional,wrf_mass_regional,nems_nmmb_regional
   use berror, only: qvar3d,dssv
   use balmod, only: rllat1,llmax
   use mod_strong, only: jcstrong,baldiag_full
   use obsmod, only: write_diag
 
-  use constants, only: zero,one,rd,one_tenth,half
+  use constants, only: zero,one,one_tenth,half,fv
   implicit none
 
 ! Declare local parameters
@@ -89,29 +92,12 @@ subroutine compute_derived(mype)
 
 ! Declare local variables
   logical ice,fullfield
-  integer(i_kind) i,j,k,it,nnn,k150,kpres,n,np,l,l2
+  integer(i_kind) i,j,k,it,k150,kpres,n,np,l,l2
   
   real(r_kind) drh,d,dl1,dl2,psfc015,dn1,dn2
-  real(r_kind),dimension(5):: stat,stat1
   real(r_kind),allocatable,dimension(:,:,:):: dlnesdtv,dmax
   real(r_kind),dimension(lat2,lon2,nsig+1):: ges_3dp
   real(r_kind),dimension(lat2,lon2,nfldsig):: sfct_lat,sfct_lon
-
-
-! The 3d pressure and geopotential grids are initially loaded at
-! the end of the call to read_guess.  Thus, we don't need to call 
-! load_prsges and load_geop_hgt on the first outer loop.  We need 
-! to update these 3d pressure arrays on all subsequent outer loops.
-! Hence, the conditional call to load_prsges and load_geop_hgt
-
-  if (jiter>jiterstart) then
-     call load_prsges
-     call load_geop_hgt
-!    if (sfcmod_gfs .or. sfcmod_mm5) then
-!       if (mype==0) write(6,*)'COMPUTE_DERIVED:  call load_fact10'
-!       call load_fact10
-!    endif
-  endif
 
 !-----------------------------------------------------------------------------------
 ! Compute derivatives for .not. twodvar_regional case
@@ -124,37 +110,36 @@ subroutine compute_derived(mype)
 !       and for getting time derivatives of prognostic variables for
 !       time extrapolation and non-linear balance constraints.
 
-        nnn=0
-        do k=1,nsig1o
-           if (levs_id(k)/=0) nnn=nnn+1
-        end do
         
-        call get_derivatives(ges_u,ges_v,ges_tv,ges_ps,ges_q,&
-             ges_oz,sfct,ges_cwmr, &
+        it=ntguessig
+        call get_derivatives(ges_u(1,1,1,it),ges_v(1,1,1,it), &
+             ges_tv(1,1,1,it),ges_ps,ges_q(1,1,1,it),&
+             ges_oz(1,1,1,it),sfct(1,1,it),ges_cwmr(1,1,1,it), &
              ges_u_lon,ges_v_lon,ges_tvlon,ges_ps_lon,ges_qlon,&
              ges_ozlon,sfct_lon,ges_cwmr_lon, &
              ges_u_lat,ges_v_lat,ges_tvlat,ges_ps_lat,ges_qlat,&
              ges_ozlat,sfct_lat,ges_cwmr_lat, &
-             nnn,mype,nfldsig)
+             nnnn1o,mype,nfldsig)
 
         if(.not. wrf_mass_regional .and. tendsflag)then
 
 ! now that we have derivs, get time tendencies if necessary
-            it=ntguessig
 
             call getprs(ges_ps(1,1,it),ges_3dp)
+
             call calctends(ges_u(1,1,1,it),ges_v(1,1,1,it),ges_tv(1,1,1,it), &
                ges_q(1,1,1,it),ges_oz(1,1,1,it),ges_cwmr(1,1,1,it),&
                ges_teta(1,1,1,it),ges_z(1,1,it), &
-               ges_u_lon(1,1,1,it),ges_u_lat(1,1,1,it),ges_v_lon(1,1,1,it),&
-               ges_v_lat(1,1,1,it),ges_tvlon(1,1,1,it),ges_tvlat(1,1,1,it),ges_ps_lon(1,1,it), &
-               ges_ps_lat(1,1,it),ges_qlon(1,1,1,it),ges_qlat(1,1,1,it),ges_ozlon(1,1,1,it),&
-               ges_ozlat(1,1,1,it),ges_cwmr_lon(1,1,1,it),ges_cwmr_lat(1,1,1,it),&
+               ges_u_lon,ges_u_lat,ges_v_lon,&
+               ges_v_lat,ges_tvlon,ges_tvlat,ges_ps_lon(1,1,it), &
+               ges_ps_lat(1,1,it),ges_qlon,ges_qlat,ges_ozlon,&
+               ges_ozlat,ges_cwmr_lon,ges_cwmr_lat,&
                mype,ges_u_ten,ges_v_ten,ges_tv_ten,ges_prs_ten,ges_q_ten,&
                ges_oz_ten,ges_cwmr_ten,ges_3dp)
 
             if(jcstrong .and. write_diag(jiter) .and. baldiag_full) then
                 fullfield=.true.
+
 
                 call strong_bal_correction(ges_u_ten,ges_v_ten,ges_tv_ten,ges_prs_ten,mype, &
                                            ges_u,ges_v,ges_tv,ges_ps,.true.,fullfield,.false.)
@@ -197,6 +182,7 @@ subroutine compute_derived(mype)
         do i=1,lat2
            qgues(i,j,k)=ges_q(i,j,k,ntguessig) ! q guess
            qsatg(i,j,k)=max(zero,ges_q(i,j,k,ntguessig)) ! q guess
+           fact_tv(i,j,k)=one/(one+fv*qsatg(i,j,k))      ! factor for tv to tsen conversion
         end do
      end do
   end do
@@ -232,7 +218,9 @@ subroutine compute_derived(mype)
                     l2=min0(l+1,llmax)
                     dl2=rllat1(i,j)-float(l)
                     dl1=one-dl2
-                    qvar3d(i,j,k)=dl1*dssv(4,l,j,k)+dl2*dssv(4,l2,j,k)
+                    if(.not.twodvar_regional)then
+                       qvar3d(i,j,k)=dl1*dssv(4,l,j,k)+dl2*dssv(4,l2,j,k)
+                    endif
                  else
                     qvar3d(i,j,k)=dssv(4,i,j,k)
                  end if
@@ -265,8 +253,10 @@ subroutine compute_derived(mype)
                  l2=min0(l+1,llmax)
                  dl2=rllat1(i,j)-float(l)
                  dl1=one-dl2
-                 qvar3d(i,j,k)=(varq(n,k)*dn1 + varq(np,k)*dn2)* &
-                    (dl1*dssv(4,l,j,k)+dl2*dssv(4,l2,j,k)) 
+                 if(.not.twodvar_regional)then
+                    qvar3d(i,j,k)=(varq(n,k)*dn1 + varq(np,k)*dn2)* &
+                      (dl1*dssv(4,l,j,k)+dl2*dssv(4,l2,j,k))
+                 endif 
                else
                  qvar3d(i,j,k)=(varq(n,k)*dn1 + varq(np,k)*dn2)*dssv(4,i,j,k) 
                end if 
@@ -295,7 +285,6 @@ subroutine compute_derived(mype)
            endif
         end do
 
-
 !       For mass core, decouple T and p above 150 hPa
         if (wrf_mass_regional) then
            do k=k150,nsig
@@ -308,7 +297,7 @@ subroutine compute_derived(mype)
            end do
 
 !       Decouple T and p at different levels for nmm core
-        elseif (wrf_nmm_regional) then
+        elseif (wrf_nmm_regional.or.nems_nmmb_regional) then
            kpres = nsig
            do k=1,nsig
               if (aeta2_ll(k)==zero) then
@@ -354,31 +343,7 @@ subroutine compute_derived(mype)
   
   deallocate(dlnesdtv,dmax)
 
-! Generate and output RH stats
-  stat1=zero
-  stat=zero
-  stat(5)=nsig*(lat2-2)*(lon2-2)
-  do k=1,nsig
-     do j=2,lon2-1
-        do i=2,lat2-1
-           drh=rhgues(i,j,k)
-           if(drh > one)then
-              stat(1)=stat(1)+one
-              stat(2)=stat(2)+(drh - one)**2
-           elseif(drh < zero)then
-              stat(3)=stat(3)+one
-              stat(4)=stat(4)+drh**2
-           endif
-        end do
-     end do
-  end do
-  call mpi_allreduce(stat,stat1,5,mpi_rtype,&
-       mpi_sum,mpi_comm_world,ierror)
-  if(stat1(1) > zero)   stat1(2)=sqrt(stat1(2)/stat1(1))
-  if(stat1(3) > zero)   stat1(4)=sqrt(stat1(4)/stat1(3))
-  if(mype==0)write(6,*)'COMPUTE_DERIVED:  stats of RH=',&
-       nint(stat1(1)),stat1(2),nint(stat1(3)),stat1(4),nint(stat1(5))
-  
+  call q_diag(mype)
   
 ! End of routine
   return

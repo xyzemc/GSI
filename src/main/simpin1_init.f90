@@ -27,7 +27,8 @@ subroutine simpin1_init(ixi,tlout,alocalout,blocalout,iord,lbig,x1grid,n1grid)
 !   language: f90
 !   machine:  ibm rs/6000 sp
 !
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind,i_kind
   use constants, only: zero, half, one, two
   implicit none

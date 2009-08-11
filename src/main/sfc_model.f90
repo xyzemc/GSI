@@ -20,79 +20,92 @@
 !   2006-09-20  derber - add t sensible or virtual dependency on iqtflg
 !   2006-09-28  treadon - add f10 (10m wind factor) to subroutine argument list
 !   2007-04-03  treadon - replace 1_1 on "pi =( -five * rib ) / (1_1 - five * rib )" line with r1_1
-
-
-SUBROUTINE SFC_WTQ_FWD (psfc_in,tg, &
-                        ps_in,tvs,qs,us,vs,ps2_in,tvs2,qs2,&
-                        hs, roughness, iland, &
-                        f10, u10, v10, t2, q2, regime, iqtflg)
-
-!   NOTE:   changed code so input layer temps are virtual, and are internally
-!           converted to sensible as required.  this corrects error where
-!           ths is potential temperature for lowest half sigma layer, but
-!           before this change is in fact potential virtual temperature.
-!           also, output t2 should be potential temperature, so changed t2 to tv2
-!-----------------------------------------------------------------------------!
-! Calculate the  10m wind, 2m (virtual) temperature and moisture based on the
-! similarity theory/
 !
-!  The unit for input pressure variables psfc_in, ps_in, ps2_in is cb.
-!  The unit for pressure   : psfc, ps, ps2     is Pa.
-!  The unit for temperature: tg, tvs, tvs2, tv2,t2   is K.
-!  The unit for moisture   : qs, qs2, q2       is kg/kg.
-!  The unit for wind       : us, vs, u10, v10  is m/s.
-!  The unit for height     : hs, roughness     is m.
-!  iland and regime are dimensionless.
+! subroutines included:
+!
+! variable definitions:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
+
+SUBROUTINE SFC_WTQ_FWD (psfc_in,tg,ps_in,tvs,qs,us,vs, &
+                        ps2_in,tvs2,qs2, hs, roughness, iland, &
+                        f10, u10, v10, t2, q2, regime, iqtflg)
+!$$$ subprogram documentation block
+!
+! subprogram:  SFC_WTQ_FWD
+!
+!   prgrmmr:
+!
+! abstract:  Calculate the 10m wind, 2m (virtual) temperature and moisture based on the
+!              similarity theory/
+!
+!            The unit for input pressure variables psfc_in, ps_in, ps2_in is cb.
+!            The unit for pressure   : psfc, ps, ps2     is Pa.
+!            The unit for temperature: tg, tvs, tvs2, tv2,t2   is K.
+!            The unit for moisture   : qs, qs2, q2       is kg/kg.
+!            The unit for wind       : us, vs, u10, v10  is m/s.
+!            The unit for height     : hs, roughness     is m.
+!            xland and regime are dimensionless.
 !
 ! Reference:
 ! ---------
 !  Detail MM5/physics/pbl_sfc/mrfpbl/MRFPBL.F
 !
-!  Input Variables:
-! 
-!   psfc, tg                : surface pressure and ground temperature
-!   ps, tvs, qs, us, vs, hs : model variable at lowlest half sigma leve1
-!   ps2, tvs2, qs2          : model variables at the second lowest half 
-!                             sigma level
-!   iqtflg                  : flag  true if output is virtual temperature
-!                             otherwise sensible temperature
+! program history log:
+!   NOTE:   changed code so input layer temps are virtual, and are internally
+!           converted to sensible as required.  this corrects error where
+!           ths is potential temperature for lowest half sigma layer, but
+!           before this change is in fact potential virtual temperature.
+!           also, output t2 should be potential temperature, so changed t2 to tv2
+!   2008-04-14  safford - completed standard documentation block, rm unused vars
 !
+!  Input argument list:
+!    psfc, tg                : surface pressure and ground temperature
+!    ps, tvs, qs, us, vs, hs : model variable at lowlest half sigma leve1
+!    ps2, tvs2, qs2          : model variables at the second lowest half 
+!                              sigma level
+!    iqtflg                  : flag  true if output is virtual temperature
+!                              otherwise sensible temperature
 !
-!  Constants:
+!  Output argument list:
+!    regime                 : PBL regime
+!    u10, v10               : 10-m high observed wind components
+!    t2 , q2                : 2-m high observed virtual (or sensible) temperature and 
+!                             mixing ratio
+!  Constant argument list:
 !
-!   hs                     : height at the lowest half sigma level  (above surface)
-!   roughness              : roughness
-!   iland                  : land-water-ice mask (0 - 1 - 2)
+!    hs                     : height at the lowest half sigma level  (above surface)
+!    roughness              : roughness
+!    xland                  : land-water-mask (<=0.5 water, >0.5 land)
 !
-!  Output Variables:
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
 !
-!   regime                 : PBL regime
-!   u10, v10               : 10-m high observed wind components
-!   t2 , q2                : 2-m high observed virtual (or sensible) temperature and specific humidity
-!
-!-----------------------------------------------------------------------------!
-!  
-!                      psim  : mechanical psi at lowlest sigma leve1
-!                      psim2 : mechanical psi at 2m 
-!                      psimz : mechanical psi at 10m 
-!
-!-----------------------------------------------------------------------------!
+!$$$ end documentation block
+  
       use kinds, only: r_kind,i_kind   
 
       use constants, only: grav,fv,rd_over_cp,zero,quarter,half,one,two,four,five,r1000,izero
 
       IMPLICIT NONE
 
-      REAL(r_kind), INTENT (in)                :: ps_in , tvs , qs , us, vs      ! change ts to tvs
-      REAL(r_kind), INTENT (in)                :: ps2_in, tvs2, qs2, psfc_in, tg    ! change ts2 to tvs2
-      REAL(r_kind), INTENT (in)                :: hs, roughness
-      integer(i_kind), INTENT (in)             :: iland
-      INTEGER(i_kind), INTENT(out)             :: regime
-      REAL(r_kind)   , INTENT (out)            :: f10, u10, v10, q2, t2   !  change t2 to tv2
+      real(r_kind),intent(in):: ps_in,tvs,qs,us,vs
+      real(r_kind),intent(in):: ps2_in,tvs2,qs2,psfc_in,tg
+      real(r_kind),intent(in):: hs,roughness
+      integer(i_kind),intent(in):: iland
+      logical,intent(in):: iqtflg
+      integer(i_kind),intent(out):: regime
+      real(r_kind),intent(out):: f10,u10,v10,q2,t2
 
 ! Maximum number of iterations in computing psim, psih
 
-      INTEGER(i_kind), PARAMETER :: k_iteration = 10
+!     INTEGER(i_kind), PARAMETER :: k_iteration = 10
 !     INTEGER(i_kind), PARAMETER :: k_iteration = 1
 
 ! h10 is the height of 10m where the wind observed
@@ -114,22 +127,19 @@ SUBROUTINE SFC_WTQ_FWD (psfc_in,tg, &
 
       real(r_kind) :: psfc,ps,ps2
       REAL(r_kind) :: Vc2, Va2, V2 
-      REAL(r_kind) :: rib, rr, rz, r2, xx, yy, cc
+      REAL(r_kind) :: rib, xx, yy, cc
       REAL(r_kind) :: psiw, psiz, mol, ust, hol, holz, hol2
       REAL(r_kind) :: psim, psimz, psim2, psih, psihz, psih2
-      REAL(r_kind) :: psit, psitz, psit2, psiq, psiqz, psiq2
+      REAL(r_kind) :: psit, psit2, psiq, psiq2
       REAL(r_kind) :: gzsoz0, gz10oz0, gz2oz0
-      REAL(r_kind) :: eg, qg, tvg, ts, ts2, tv   !  change tvs, tvs2 to ts, ts2, add t2
+      REAL(r_kind) :: eg, qg, tvg, ts, ts2   !  change tvs, tvs2 to ts, ts2, add t2
       REAL(r_kind) :: ths, thg, thvs, thvg, thvs2
-      REAL(r_kind) :: dz, arg, e1, zq0, z0
-      INTEGER(i_kind) :: k, nn, nz, n2
+      REAL(r_kind) :: zq0, z0
 
       REAL(r_kind), PARAMETER :: ka = 2.4E-5_r_kind
 
 ! local 
 
-      integer(i_kind) :: mype 
-      logical iqtflg
       real(r_kind),parameter :: r100  = 100.0_r_kind
       real(r_kind),parameter :: r16   = 16.0_r_kind
       real(r_kind),parameter :: r10   = 10.0_r_kind
@@ -427,22 +437,43 @@ SUBROUTINE SFC_WTQ_FWD (psfc_in,tg, &
 return
 END SUBROUTINE SFC_WTQ_FWD
 
+
 SUBROUTINE DA_TP_To_Qs( t, p, es, qs )
-                                                                                                       
-!------------------------------------------------------------------------------
-!  PURPOSE: Convert T/p to saturation specific humidity.
+
+!$$$ subprogram documentation block
+!
+! subprogram:  DA_TP_To_Qs
+!
+!   prgrmmr:
+!
+! abstract:  Convert T/p to saturation specific humidity.
 !
 !  METHOD: qs = es_alpha * es / ( p - ( 1 - rd_over_rv ) * es ).
 !          Use Rogers & Yau (1989) formula: es = a exp( bTc / (T_c + c) ).
 !
-!  HISTORY: 10/03/2000 - Creation of F90 version.           Dale Barker
-!------------------------------------------------------------------------------
+! program history log: 
+!   2000-10-03  Barker  - Creation of F90 version.
+!   2008-04-14  safford - added standard documentation block
+!
+!   input argument list:
+!     t          - Temperature.
+!     p          - Pressure.
+!
+!   output argument list:
+!     es         - Sat. vapour pressure.
+!     qs         - Sat. specific humidity.
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
    use kinds, only: r_kind,i_kind  
    use constants, only: eps,omeps,t0c
-                                                                                                       
+
    IMPLICIT NONE
-                                                                                                       
+
 !  Saturation Vapour Pressure Constants(Rogers & Yau, 1989)
    REAL(r_kind), PARAMETER    :: es_alpha = 611.2_r_kind
    REAL(r_kind), PARAMETER    :: es_beta = 17.67_r_kind
@@ -479,67 +510,76 @@ SUBROUTINE DA_TP_To_Qs( t, p, es, qs )
 return
 END SUBROUTINE DA_TP_To_Qs
 
+
 SUBROUTINE sfc_wtq_Lin(psfc_in, tg, ps_in, tvs, qs, us, vs, regime,           &
                        psfc_prime_in,tg_prime,sig1,ts_in,qs_prime, &
                        us_prime,vs_prime, hs,roughness,iland,          &
                        u10_prime,v10_prime,t2_prime,q2_prime,iqtflg) 
 
-!   NOTE:   changed code so input layer temps are virtual, and are internally
-!               converted to sensible as required.  this corrects error where
-!                ths is potential temperature for lowest half sigma layer, but
-!                before this change is in fact potential virtual temperature.
-!              also, output t2 should be potential temperature, so changed t2 to tv2
-!-----------------------------------------------------------------------------!
-! Calculate the  10m wind, 2m (virtual) temperature and moisture based on the
-! similarity theory/
+!$$$ subprogram documentation block
+!
+! subprogram:  sfc_wtq_Lin
+!
+!   prgrmmr:
+!
+! abstract:  Calculate the 10m wind, 2m (virtual) temperature and moisture based on the
+!               similarity theory/
 !
 ! Reference:
 ! ---------
 !  Detail MM5/physics/pbl_sfc/mrfpbl/MRFPBL.F
 !
-!  Input Variables(basic state):
-! 
-!   psfc_in, tg               : surface pressure and ground temperature
-!   ps_in, tvs, qs, us, vs, hs : model variable at lowlest half sigma leve1
-!   regime                 : PBL regime
-!   iqtflg                    : if true return virtual temperature
-!                             : otherwise return sensible temperature
 !
-!  Input Variables(pertubation):
+!  program history log:
+!   NOTE:   changed code so input layer temps are virtual, and are internally
+!               converted to sensible as required.  this corrects error where
+!                ths is potential temperature for lowest half sigma layer, but
+!                before this change is in fact potential virtual temperature.
+!              also, output t2 should be potential temperature, so changed t2 to tv2
+!   2008-04-14  safford - added standard documentation block, rm unused vars
+!
+!  Input argument list(basic state):
+! 
+!   psfc_in, tg                : surface pressure and ground temperature
+!   ps_in, tvs, qs, us, vs, hs : model variable at lowlest half sigma leve1
+!   regime                     : PBL regime
+!   iqtflg                     : if true return virtual temperature
+!                              : otherwise return sensible temperature
+!
+!  Input argument list(pertubation):
 ! 
 !   psfc_prime_in, tg_prime    : Surface pressure and ground temperature
-!   ps_prime, tvs_prime,    : Model variables at the lowest half sigma
-!   qs_prime, us_prime,     : level 
-!   vs_prime                : 
+!   ps_prime, tvs_prime,       : Model variables at the lowest half sigma
+!   qs_prime, us_prime,        : level 
+!   vs_prime                   : 
 !
 !  Constants:
+!   hs                         : height at the lowest half sigma level
+!   roughness                  : roughness
+!   xland                      : land-water-mask (=2 water, =1 land)
 !
-!   hs                     : height at the lowest half sigma level
-!   roughness              : roughness
-!   iland                  : water-land-ice mask (0 - 1 - 2)
+!  Output argument list(pertubation):
 !
-!  Output Variables(pertubation):
+!   u10_prime, v10_prime       : 10-m high observed wind components
+!   tv2_prime , q2_prime       : 2-m high observed temperature and mixing ratio
 !
-!   u10_prime, v10_prime    : 10-m high observed wind components
-!   tv2_prime , q2_prime    : 2-m high observed temperature and specific humidity
+! attributes:
+!   language:  f90
+!   machine    ibm RS/6000 SP
 !
-!-----------------------------------------------------------------------------!
-!  
-!                      psim  : mechanical psi at lowlest sigma leve1
-!                      psim2 : mechanical psi at 2m 
-!                      psimz : mechanical psi at 10m 
-!
-!-----------------------------------------------------------------------------!
+!$$$ end documentation block
+
+
       use kinds, only: r_kind,i_kind  
       use constants, only: grav,fv,rd_over_cp,zero,quarter,half,one,two,four,five,r1000,izero
 
       IMPLICIT NONE
 
-      INTEGER(i_kind), INTENT (in)          :: regime
+      INTEGER(i_kind), INTENT (in)          :: regime,iland
       REAL(r_kind)   , INTENT (in)          :: ps_in , tvs , qs , us, vs, psfc_in, tg    !   change ts to tvs
       REAL(r_kind)   , INTENT (in)          :: sig1, ts_in, qs_prime  , &  !   change ts_prime to tvs_prime
                                        us_prime, vs_prime, psfc_prime_in, tg_prime
-      REAL(r_kind)   , INTENT (in)          :: hs, roughness, iland
+      REAL(r_kind)   , INTENT (in)          :: hs, roughness
 
       REAL(r_kind)   , INTENT (out)         :: u10_prime, v10_prime, t2_prime, q2_prime  
       logical,intent(in)::iqtflg
@@ -547,7 +587,7 @@ SUBROUTINE sfc_wtq_Lin(psfc_in, tg, ps_in, tvs, qs, us, vs, regime,           &
 
 ! Maximum number of iterations in computing psim, psih
 
-      INTEGER(i_kind), PARAMETER :: k_iteration = 10 
+!      INTEGER(i_kind), PARAMETER :: k_iteration = 10 
 !      INTEGER, PARAMETER :: k_iteration = 1
 
 ! h10 is the height of 10m where the wind observed
@@ -569,15 +609,14 @@ SUBROUTINE sfc_wtq_Lin(psfc_in, tg, ps_in, tvs, qs, us, vs, regime,           &
 
       real(r_kind) :: psfc,ps
       REAL(r_kind) :: Vc2, Va2, V2 
-      REAL(r_kind) :: rib, rr, rz, r2, xx, yy, cc, Pi
+      REAL(r_kind) :: rib, xx, yy, cc, Pi
       REAL(r_kind) :: psiw, psiz, mol, ust, hol, holz, hol2
       REAL(r_kind) :: psim, psimz, psim2, psih, psihz, psih2
-      REAL(r_kind) :: psit, psitz, psit2, psiq, psiqz, psiq2
+      REAL(r_kind) :: psit, psit2, psiq, psiq2
       REAL(r_kind) :: gzsoz0, gz10oz0, gz2oz0
-      REAL(r_kind) :: eg, qg, tvg, ts, tv       ! change tvs to ts
+      REAL(r_kind) :: eg, qg, tvg, ts       ! change tvs to ts
       REAL(r_kind) :: ths, thg, thvs, thvg
-      REAL(r_kind) :: dz, arg, e1, zq0, z0
-      INTEGER(i_kind) :: k, nn, nz, n2
+      REAL(r_kind) :: zq0, z0
 
       real(r_kind) ps_prime,psfc_prime
       REAL(r_kind) :: Vc2_prime, Va2_prime, V2_prime
@@ -586,9 +625,9 @@ SUBROUTINE sfc_wtq_Lin(psfc_in, tg, ps_in, tvs, qs, us, vs, regime,           &
               hol_prime, holz_prime, hol2_prime
       REAL(r_kind) :: psim_prime, psimz_prime, psim2_prime, &
               psih_prime, psihz_prime, psih2_prime
-      REAL(r_kind) :: psit_prime, psitz_prime, psit2_prime, &
-              psiq_prime, psiqz_prime, psiq2_prime
-      REAL(r_kind) :: eg_prime, qg_prime, tvg_prime, ts_prime, tv_prime,tvs_prime
+      REAL(r_kind) :: psit_prime, psit2_prime, &
+              psiq_prime, psiq2_prime
+      REAL(r_kind) :: qg_prime, tvg_prime, ts_prime, tvs_prime
       REAL(r_kind) :: ths_prime, thg_prime, thvs_prime, thvg_prime !  add t2_prime
       real(r_kind) t2,q2             
 
@@ -602,7 +641,6 @@ SUBROUTINE sfc_wtq_Lin(psfc_in, tg, ps_in, tvs, qs, us, vs, regime,           &
       real(r_kind),parameter :: r1_1  = 1.1_r_kind
       real(r_kind),parameter :: r0_9  = 0.9_r_kind
       real(r_kind),parameter :: r0_75 = 0.75_r_kind
-      real(r_kind),parameter :: r0_2  = 0.2_r_kind
       real(r_kind),parameter :: r0_01 = 0.01_r_kind
 
 !-----------------------------------------------------------------------------!
@@ -1055,23 +1093,43 @@ END SUBROUTINE sfc_wtq_Lin
 
 SUBROUTINE DA_TP_To_Qs_Lin( t, p, es, t_prime, p_prime, &
                              qs_prime_over_qs )
-
-!------------------------------------------------------------------------------
-!  PURPOSE: Convert es/p/es_prime to saturation specific humidity increment.
+!$$$ subprogram documentation block
+!               .      .    .
+! subprogram:  DA_TP_To_Qs_Lin
 !
-!  METHOD: qs~ = qs * ( p es'/es - p' ) / ( p - (1-rd_over_rv) es ).
-!          Use Rogers & Yau (1989) formula: es = a exp( bTc / (T_c + c) ).
+!   prgrmmr:
 !
-!  HISTORY: 10/03/2000 - Creation of F90 version.           Dale Barker
-!------------------------------------------------------------------------------
+! abstract:  Convert es/p/es_prime to saturation specific humidity increment.
+!   METHOD:  qs~ = qs * ( p es'/es - p' ) / ( p - (1-rd_over_rv) es ).
+!            Use Rogers & Yau (1989) formula: es = a exp( bTc / (T_c + c) ).
+!
+! program history log:
+!   2000-10-03 Barker  - Creation of F90 version.
+!   2008-04-14 safford - add standard documentation block, rm unused uses
+!
+!   input argument list:
+!     t                - temperature
+!     p                - pressure
+!     es               - Sat. vapour pressure
+!     t_prime          - temperature increment
+!     p_prime          - pressure increment
+!
+!   output argument list:
+!     qs_prime_over_qs - qs~/qs
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
-   use kinds,only: r_kind,i_kind
-   use constants, only: eps,omeps,t0c
+   use kinds,only: r_kind
+   use constants, only: omeps,t0c
 
    IMPLICIT NONE
 
 !  Saturation Vapour Pressure Constants(Rogers & Yau, 1989)
-   REAL(r_kind), PARAMETER    :: es_alpha = 611.2_r_kind
+!  REAL(r_kind), PARAMETER    :: es_alpha = 611.2_r_kind
    REAL(r_kind), PARAMETER    :: es_beta = 17.67_r_kind
    REAL(r_kind), PARAMETER    :: es_gamma = 243.5_r_kind
    REAL(r_kind), PARAMETER    :: es_gammakelvin = es_gamma-t0c
@@ -1108,16 +1166,50 @@ SUBROUTINE DA_TP_To_Qs_Lin( t, p, es, t_prime, p_prime, &
 
 END SUBROUTINE DA_TP_To_Qs_Lin
 
+
 subroutine get_tlm_tsfc(tlm_tsfc,psges2,tgges,prsltmp2, &
                   tvtmp,qtmp,utmp,vtmp,hsges,roges,msges,regime,iqtflg)
+!$$$ subprogram documentation block
+!
+! subprogram:  get_tlm_tsfc
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-14 safford  - add documentation block
+!
+!   input argument list:
+!     psges2       -
+!     tgges        -
+!     prsltmp2     -
+!     tvtmp        -
+!     qtmp         -
+!     utmp         -
+!     vtmp         -
+!     hsges        -
+!     roges        -
+!     msges        -
+!     regime       -
+!     iqtflg       -
+!
+!   output argument list:
+!     tlm_tsfc     -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
   use kinds, only: r_kind,i_kind
 
   implicit none
 
   real(r_kind),intent(out):: tlm_tsfc(6)
-  real(r_kind),intent(in):: psges2,tgges,prsltmp2,tvtmp,qtmp,utmp,vtmp,hsges,roges,msges
-  integer(i_kind),intent(in):: regime
+  real(r_kind),intent(in):: psges2,tgges,prsltmp2,tvtmp,qtmp,utmp,vtmp,hsges,roges
+  integer(i_kind),intent(in):: regime,msges
   logical,intent(in)::iqtflg
 
   real(r_kind) perturb(6),u10_prime,v10_prime,q2_prime

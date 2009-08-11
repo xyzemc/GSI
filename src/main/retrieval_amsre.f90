@@ -1,6 +1,7 @@
 subroutine retrieval_amsre(tb,nchanl,amsre_low, amsre_mid, amsre_hig,  &
                         uu5,vv5,f10, sst, &
                         tpwc,clw,si85,kraintype,ierr )
+
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:  retrieval_amsre         make retrieval from AMSR-E observation
@@ -15,6 +16,7 @@ subroutine retrieval_amsre(tb,nchanl,amsre_low, amsre_mid, amsre_hig,  &
 !   2006-04-26  kazumori - removed extra qc and comment changed
 !   2006-07-27  kazumori - modified bias correction of retrieval
 !                          and clean up the code
+!   2008-04-16  safford  - rm unused uses and vars
 !
 !   input argument list:
 !     tb      - Observed brightness temperature [K]
@@ -40,10 +42,10 @@ subroutine retrieval_amsre(tb,nchanl,amsre_low, amsre_mid, amsre_hig,  &
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
 
   use kinds, only: r_kind, i_kind
-  use constants, only: two,three,zero,one,izero
+  use constants, only: zero,one,izero
 
   implicit none
   
@@ -66,7 +68,6 @@ subroutine retrieval_amsre(tb,nchanl,amsre_low, amsre_mid, amsre_hig,  &
   real(r_kind) :: degre,wind
   real(r_kind) :: rwp,cwp,vr,vc
   real(r_kind),dimension(12)::tbo
-  real(r_kind)::d,d2
 
 ! Initialize variable
   nchanl1 = 12   ! Total AMSR-E channel number=12
@@ -117,7 +118,9 @@ subroutine retrieval_amsre(tb,nchanl,amsre_low, amsre_mid, amsre_hig,  &
   return
 end subroutine retrieval_amsre
 
+
 subroutine RCWPS_Alg(theta,tbo,sst,wind,rwp,cwp,vr,vc)
+
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram: RCWPS_Alg   make retrieval from AMSR-E observation
@@ -145,7 +148,7 @@ subroutine RCWPS_Alg(theta,tbo,sst,wind,rwp,cwp,vr,vc)
 !      betat version is release to EMC                       :  06/14/05
 !
 !      2005-10-21  kazumori - modified for GSI
-!
+!      2008-04-16  safford  - rm unused uses and vars
 !
 !   input argument list:
 !     tbo(1): Vertically polarized AMSR-E brighness temperature at 6.925 GHz
@@ -193,21 +196,22 @@ subroutine RCWPS_Alg(theta,tbo,sst,wind,rwp,cwp,vr,vc)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind, i_kind
-  use constants, only: deg2rad,two,three,zero,one,izero
+  use constants, only: deg2rad,two,zero,one
 
   implicit none
 
   integer(i_kind) nch
   parameter(nch=6)
-  integer(i_kind) ich,i,j,ns,iw,polar_status
-  real(r_kind)  wind,angle,theta,sst,s,frequency,emissivity
+  integer(i_kind) ich,i,polar_status
+  real(r_kind)  wind,angle,theta,sst,frequency,emissivity
   real(r_kind)  freq(nch),ev(nch),eh(nch)
   real(r_kind)  tbo(nch*2),tbe(nch*2),tauo(nch),kl(nch),kw(nch),tv(nch),th(nch),tvmin(nch),thmin(nch)
   real(r_kind)  ko2_coe(nch,3),kl_coe(nch,3)
-  real(r_kind)  taut,rwp,vr,vc,lw,cwp,umu,tl,tpw
-  real(r_kind)  a0,a1,a2,b0,b1,b2,tv18,tv10
+  real(r_kind)  rwp,vr,vc,cwp,umu,tl
+  real(r_kind)  a0,a1,a2,b0,b1,b2
   data freq/6.925_r_kind,10.65_r_kind,18.7_r_kind,23.8_r_kind,37._r_kind,89.0_r_kind/
   data  kw/ 7.253225e-5_r_kind,1.8841e-4_r_kind,1.6962e-3_r_kind,5.268469e-3_r_kind,1.96235e-3_r_kind,9.399432e-3_r_kind/
   data  (ko2_coe(1,i),i=1,3)/1.045148e-002_r_kind,  2.909099e-005_r_kind, -1.258838e-007_r_kind/
@@ -308,8 +312,8 @@ end subroutine RCWPS_Alg
 
 
 
-! Several subroutines called by  RCWPS_Alg
 subroutine TBE_FROM_TBO(tbo,tb)
+
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram: TBE_FROM_TBO
@@ -322,6 +326,7 @@ subroutine TBE_FROM_TBO(tbo,tb)
 !
 ! program history log:
 !      2005-10-21  kazumori - modified for GSI
+!      2008-04-16  safford  - rm unused uses
 !
 !   input argument list:
 !     tbo(*) : AMSRE measurements
@@ -335,11 +340,11 @@ subroutine TBE_FROM_TBO(tbo,tb)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
-!
+!$$$ end documentation block
+
   use kinds, only: r_kind, i_kind
-  use constants, only: deg2rad,two,three,zero,one,izero
   implicit none
+
   integer(i_kind) nch,i,j,k
   parameter (nch = 6)
   real(r_kind) tbo(nch*2),tb(nch*2),tbe(nch*2),tv18
@@ -449,6 +454,7 @@ subroutine TBA_FROM_TBE(tbo,tvs,ths)
 !
 ! program history log:
 !      2005-10-21  kazumori - modified for GSI
+!      2008-04-16  safford  - rm unused uses
 !
 !   input argument list:
 !     tbo(*) : AMSRE measurements
@@ -465,8 +471,8 @@ subroutine TBA_FROM_TBE(tbo,tvs,ths)
 !
 !$$$
   use kinds, only: r_kind, i_kind
-  use constants, only: deg2rad,two,three,zero,one,izero
   implicit none
+
   integer(i_kind) nch
   parameter (nch = 6)
   real(r_kind) tbo(nch*2),tb(nch*2),tvs(nch),ths(nch)
@@ -518,6 +524,7 @@ subroutine emis_water(angle,frequency,sst,wind,polar_status,emissivity)
 !
 ! program history
 !      2005-10-21  kazumori - modified for GSI
+!      2008-04-16  safford  - rm unused uses and vars
 !
 !   input argument list:
 !         angle    :  incident angle in radian
@@ -536,25 +543,23 @@ subroutine emis_water(angle,frequency,sst,wind,polar_status,emissivity)
 !                    changes in reflection coefficient
 !         f        : frequency in Hz
 !
-!   comments:
-!
 ! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
-!
+!$$$ end documentation block
+
   use kinds, only: r_kind, i_kind
-  use constants, only: deg2rad,two,three,zero,one,izero
+  use constants, only: zero,one
   implicit none
+
   real(r_kind) s
   parameter (s = 35.5_r_kind)
   integer(i_kind) polar_status
-  real(r_kind) t,degre,angle, wind, lambda, lambdas, tc,emissivity
+  real(r_kind) t,degre,angle, wind, emissivity
   real(r_kind) f
   real(r_kind) ref,rfoam,tr,g,rclear,foam,ev,eh,pi,sst,frequency
   real(r_kind) ep,real_ep,imag_ep
-  character polar
   complex mu, eps, aid1,aid2,aid3,cang,refwat,rh,rv
 
   mu = cmplx (one,zero)
@@ -635,13 +640,14 @@ subroutine  epsp(t1,s,f,ep)
 !
 ! program history log:
 !      2005-10-21  kazumori - modified for GSI
+!      2008-04-16  safford  - rm unused uses
 !
 !   input argument list:
 !         t1       : temperature (K)
 !         s        : sea water salinity (1/thousand)
 !         f        : (Hz)
 !
-!   comments:
+!   output argument list:
 !
 ! attributes:
 !   language: f90
@@ -649,9 +655,10 @@ subroutine  epsp(t1,s,f,ep)
 !
 !$$$
 !
-  use kinds, only: r_kind, i_kind
-  use constants, only: deg2rad,two,three,zero,one,izero
+  use kinds, only: r_kind
+  use constants, only: one
   implicit none
+
   real(r_kind) f,t1,t,t2,eswi,eswo,a,b,esw,tswo,tsw,s
   real(r_kind) ep
 
@@ -686,23 +693,25 @@ subroutine epspp (t1,s,f,ep)
 !
 ! program history log:
 !      2005-10-21  kazumori - modified for GSI
+!      2008-04-16  safford  - rm unused uses
 !
-! input argument list:
+!   input argument list:
 !         t1       : temperature (K)
 !         s        : sea water salinity (1/thousand)
 !         f        : (Hz)
 !
-!   comments:
+!   output argument list:
 !
 ! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
-!
-  use kinds, only: r_kind, i_kind
-  use constants, only: deg2rad,two,three,zero,one,izero
+!$$$ end documentation block
+
+  use kinds, only: r_kind
+  use constants, only: two,one
   implicit none
+
   real(r_kind) f,t1,t,t2,eswi,eswo,a,b,d,esw,tswo,tsw,sswo,fi,ssw
   real(r_kind) pi,eo,s
   real(r_kind) ep

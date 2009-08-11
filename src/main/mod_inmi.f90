@@ -46,22 +46,45 @@ implicit none
 
 contains
 
+
   subroutine gproj(vort,div,phi,vort_g,div_g,phi_g,rmstend,rmstend_g,filtered)
-
-!      for gravity wave projection:    vort, div, phi --> vort_g, div_g, phi_g
-!      -----------------------------------------------------------------------
-
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    gproj
+!
+!   prgrmmr:
+!
+! abstract:    
+!         for gravity wave projection:    vort, div, phi --> vort_g, div_g, phi_g
+!
 !         scale:      vort,div,phi --> vort_hat,div_hat,phi_hat
-
+!
 !         solve:     (F*F+C*C)*x = F*vort_hat + C*phi_hat
 !         then:
 !               phi_hat_g = C*x
 !              vort_hat_g = F*x
 !               div_hat_g = div_hat
-
+!
 !         unscale:    vort_hat_g, div_hat_g, phi_hat_g --> vort_g, div_g, phi_g
+!
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     vort,div,phi
+!     rmstend,rmstend_g
+!     filtered
+!
+!   output argument list:
+!     vort_g,div_g,phi_g
+!     rmstend,rmstend_g
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
-    use kinds, only: r_kind,i_kind
     implicit none
 
     real(r_kind),intent(in)::vort(2,m:mmax),div(2,m:mmax),phi(2,m:mmax)
@@ -102,20 +125,40 @@ contains
 
   end subroutine gproj
 
-  subroutine gproj0(vort_hat,div_hat,phi_hat,vort_hat_g,div_hat_g,phi_hat_g)
 
+  subroutine gproj0(vort_hat,div_hat,phi_hat,vort_hat_g,div_hat_g,phi_hat_g)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    gproj0
+!
+!   prgrmmr:
+!
+! abstract:
 !  for gravity wave projection: vort,div,phi --> vort_g,div_g,phi_g
 !  -----------------------------------------------------------------------------
-
-
+!
 !    solve:  (F*F+C*C)*x = F*vort_hat + C*phi_hat
-
+!
 !    then:
 !          phi_hat_g  = C*x
 !         vort_hat_g  = F*x
 !          div_hat_g  = div_hat
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!     vort_hat,div_hat,phi_hat
+!
+!   output argument list:
+!     vort_hat_g,div_hat_g,phi_hat_g
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-    use kinds, only: r_kind,i_kind
     implicit none
 
     real(r_kind),dimension(2,m:mmax),intent(in):: vort_hat,div_hat,phi_hat
@@ -136,24 +179,44 @@ contains
 
   end subroutine gproj0
 
+
   subroutine gproj_ad(vort,div,phi,vort_g,div_g,phi_g)
-
-!  for gravity wave projection: vort,div,phi --> vort_g,div_g,phi_g
-!  -----------------------------------------------------------------------------
-
-
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    gproj_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!    for gravity wave projection: vort,div,phi --> vort_g,div_g,phi_g
+!
 !    scale:      vort,div,phi --> vort_hat,div_hat,phi_hat
-
+!
 !    solve:  (F*F+C*C)*x = F*vort_hat + C*phi_hat
-
+!
 !    then:
 !               phi_hat_g = C*x
 !              vort_hat_g = F*x
 !               div_hat_g = div_hat
+!
+!      unscale:    vort_hat_g, div_hat_g, phi_hat_g --> vort_g, div_g, phi_g
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!     vort,div,phi
+!     vort_g,div_g,phi_g
+!
+!   output argument list:
+!     vort,div,phi
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-!         unscale:    vort_hat_g, div_hat_g, phi_hat_g --> vort_g, div_g, phi_g
-
-    use kinds, only: r_kind,i_kind
     use constants, only: zero
     implicit none
 
@@ -183,25 +246,44 @@ contains
 
   end subroutine gproj_ad
 
+
   subroutine dinmi(vort_t,div_t,phi_t,del_vort,del_div,del_phi)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dinmi
+!
+!   prgrmmr:
+!
+! abstract:
+!      for implicit nmi correction: vort_t,div_t,phi_t --> del_vort,del_div,del_phi
+!
+!      scale:      vort_t,div_t,phi_t --> vort_t_hat,div_t_hat,phi_t_hat
+!
+!      solve:  (F*F+C*C)*del_div_hat = sqrt(-1)*(F*vort_t_hat + C*phi_t_hat)
+!
+!      solve:  (F*F+C*C)*x = sqrt(-1)*div_t_hat - B*del_div_hat
+!
+!      then:
+!            del_phi_hat  = C*x
+!            del_vort_hat = F*x
+!
+!      unscale: del_vort_hat,del_div_hat,del_phi_hat --> del_vort,del_div,del_phi
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!     vort_t,div_t,phi_t
+!
+!   output argument list:
+!     del_vort,del_div,del_phi
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-!  for implicit nmi correction: vort_t,div_t,phi_t --> del_vort,del_div,del_phi
-!  -----------------------------------------------------------------------------
-
-
-!    scale:      vort_t,div_t,phi_t --> vort_t_hat,div_t_hat,phi_t_hat
-
-!    solve:  (F*F+C*C)*del_div_hat = sqrt(-1)*(F*vort_t_hat + C*phi_t_hat)
-
-!    solve:  (F*F+C*C)*x = sqrt(-1)*div_t_hat - B*del_div_hat
-
-!    then:
-!          del_phi_hat  = C*x
-!          del_vort_hat = F*x
-
-!    unscale: del_vort_hat,del_div_hat,del_phi_hat --> del_vort,del_div,del_phi
-
-    use kinds, only: r_kind,i_kind
     implicit none
 
     real(r_kind),intent(in)::vort_t(2,m:mmax),div_t(2,m:mmax),phi_t(2,m:mmax)
@@ -228,25 +310,42 @@ contains
 
   end subroutine dinmi
 
+
   subroutine dinmi_ad(vort_t,div_t,phi_t,del_vort,del_div,del_phi)
-
-!  for implicit nmi correction: vort_t,div_t,phi_t --> del_vort,del_div,del_phi
-!  -----------------------------------------------------------------------------
-
-
-!    scale:      vort_t,div_t,phi_t --> vort_t_hat,div_t_hat,phi_t_hat
-
-!    solve:  (F*F+C*C)*del_div_hat = sqrt(-1)*(F*vort_t_hat + C*phi_t_hat)
-
-!    solve:  (F*F+C*C)*x = sqrt(-1)*div_t_hat - B*del_div_hat
-
-!    then:
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dinmi_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!       for implicit nmi correction: vort_t,div_t,phi_t --> del_vort,del_div,del_phi
+!
+!       scale:      vort_t,div_t,phi_t --> vort_t_hat,div_t_hat,phi_t_hat
+!
+!       solve:  (F*F+C*C)*del_div_hat = sqrt(-1)*(F*vort_t_hat + C*phi_t_hat)
+!
+!       solve:  (F*F+C*C)*x = sqrt(-1)*div_t_hat - B*del_div_hat
+!
+!       then:
 !          del_phi_hat  = C*x
 !          del_vort_hat = F*x
+!
+!       unscale: del_vort_hat,del_div_hat,del_phi_hat --> del_vort,del_div,del_phi
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!
+!   output argument list:
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-!    unscale: del_vort_hat,del_div_hat,del_phi_hat --> del_vort,del_div,del_phi
-
-    use kinds, only: r_kind,i_kind
     implicit none
 
     real(r_kind),intent(inout)::vort_t(2,m:mmax),div_t(2,m:mmax),phi_t(2,m:mmax)
@@ -273,21 +372,38 @@ contains
 
   end subroutine dinmi_ad
 
+
   subroutine dinmi0(vort_t_hat,div_t_hat,phi_t_hat,del_vort_hat,del_div_hat,del_phi_hat)
-
-!  for implicit nmi correction: vort_t,div_t,phi_t --> del_vort,del_div,del_phi
-!  -----------------------------------------------------------------------------
-
-
-!    solve:  (F*F+C*C)*del_div_hat = sqrt(-1)*(F*vort_t_hat + C*phi_t_hat)
-
-!    solve:  (F*F+C*C)*x = sqrt(-1)*div_t_hat - B*del_div_hat
-
-!    then:
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dinmi0
+!
+!   prgrmmr:
+!
+! abstract:
+!      for implicit nmi correction: vort_t,div_t,phi_t --> del_vort,del_div,del_phi
+!
+!      solve:  (F*F+C*C)*del_div_hat = sqrt(-1)*(F*vort_t_hat + C*phi_t_hat)
+!
+!      solve:  (F*F+C*C)*x = sqrt(-1)*div_t_hat - B*del_div_hat
+!
+!      then:
 !          del_phi_hat  = C*x
 !          del_vort_hat = F*x
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!
+!   output argument list:
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-    use kinds, only: r_kind,i_kind
     implicit none
 
     real(r_kind),dimension(2,m:mmax),intent(in):: vort_t_hat,div_t_hat,phi_t_hat
@@ -312,14 +428,33 @@ contains
 
   end subroutine dinmi0
 
+
   subroutine balm_1(vort_t_hat,div_t_hat,phi_t_hat,balnm1)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    gproj
+!
+!   prgrmmr:
+!
+! abstract:      obtain balance diagnostic for each wave number n,m using 
+!                method 1 (eq 4.23 of Temperton,1989)
+!
+!                balnm1 = abs(vort_t_hat)(n,m)**2 + abs(div_t_hat)(n,m)**2 + 
+!                         abs(phi_t_hat)(n,m)**2
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!
+!   output argument list:
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-!  obtain balance diagnostic for each wave number n,m using method 1 (eq 4.23 of Temperton,1989)
-!  -----------------------------------------------------------------------------
-
-!            balnm1 = abs(vort_t_hat)(n,m)**2 + abs(div_t_hat)(n,m)**2 + abs(phi_t_hat)(n,m)**2
-
-    use kinds, only: r_kind,i_kind
     implicit none
 
     real(r_kind),intent(in)::vort_t_hat(2,m:mmax),div_t_hat(2,m:mmax),phi_t_hat(2,m:mmax)
@@ -335,18 +470,38 @@ contains
 
   end subroutine balm_1
 
+
   subroutine get_periodmask(pmask)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    gproj
+!
+!   prgrmmr:
+!
+! abstract:      create mask to zero out components with estimated periods longer 
+!                than period_max, where period_max is in hours
+!
+!                c = phase speed for given vertical mode
+!
+!                L/c = period, where L is wavelength
+!
+!                L = 2*pi*erad/n     where n is wavenumber and 2*pi*erad is 
+!                                    circumference of earth
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!
+!   output argument list:
+!     pmask
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-!     create mask to zero out components with estimated periods longer than period_max, where
-!          period_max is in hours
-
-!         c = phase speed for given vertical mode
-
-!         L/c = period, where L is wavelength
-
-!        L = 2*pi*erad/n     where n is wavenumber and 2*pi*erad is circumference of earth
-
-    use kinds, only: r_kind,i_kind
     use constants, only: zero,half,one,rearth
     use mod_strong, only: period_max,period_width
     implicit none
@@ -367,15 +522,35 @@ contains
 
   end subroutine get_periodmask
 
-  subroutine getbcf(b,c,f)
 
-    use kinds, only: r_kind,i_kind
+  subroutine getbcf(b,c,f)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    getbcf
+!
+!   prgrmmr:
+!
+! abstract:      compute operators needed to do gravity wave projection
+!                and implicit normal mode initialization in spectral space
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!
+!   output argument list:
+!     b,c,f
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
+
     use constants, only: zero,one,two,four,omega,rearth
     use mod_strong, only: scheme
     implicit none
 
-!   compute operators needed to do gravity wave projection
-!     and implicit normal mode initialization in spectral space
 
     real(r_kind),intent(out)::b(m:mmax),c(m:mmax),f(m:mmax)
 
@@ -420,27 +595,42 @@ contains
 
   end subroutine getbcf
 
+
   subroutine scale_vars(vort,div,phi,vort_hat,div_hat,phi_hat)
-
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    scale_vars
+!
+!   prgrmmr:
+!
+! abstract:
 !        input scaling:
+!
+!           for schemes B, C:
+!               vort_hat(n) = erad*vort(n)/sqrt(n*(n+1))
+!               div_hat(n)  = sqrt(-1)*erad*div(n)/sqrt(n*(n+1))
+!               phi_hat(n)  = phi(n)/gspeed
+!
+!           for scheme D:
+!               vort_hat(n) = erad*vort(n)
+!               div_hat(n)  = sqrt(-1)*erad*div(n)
+!               phi_hat(n)  = phi(n)*sqrt(n*(n+1))/gspeed
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!     vort,div,phi
+!
+!   output argument list:
+!     vort_hat,div_hat,phi_hat
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-!     for schemes B, C:
-
-!           vort_hat(n) = erad*vort(n)/sqrt(n*(n+1))
-
-!           div_hat(n)  = sqrt(-1)*erad*div(n)/sqrt(n*(n+1))
-
-!           phi_hat(n)  = phi(n)/gspeed
-
-!     for scheme D:
-
-!           vort_hat(n) = erad*vort(n)
-
-!           div_hat(n)  = sqrt(-1)*erad*div(n)
-
-!           phi_hat(n)  = phi(n)*sqrt(n*(n+1))/gspeed
-
-    use kinds, only: i_kind,r_kind
     use constants, only: zero,one,rearth
     use mod_strong, only: scheme
     implicit none
@@ -481,28 +671,43 @@ contains
 
   end subroutine scale_vars
 
+
   subroutine scale_vars_ad(vort,div,phi,vort_hat,div_hat,phi_hat)
-
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    scale_vars_ad
+!
+!   prgrmmr:
+!
+! abstract:
 !        input scaling:
+!               for schemes B, C:
+!                 vort_hat(n) = erad*vort(n)/sqrt(n*(n+1))
+!                 div_hat(n)  = sqrt(-1)*erad*div(n)/sqrt(n*(n+1))
+!                 phi_hat(n)  = phi(n)/gspeed
+!
+!              for scheme D:
+!                 vort_hat(n) = erad*vort(n)
+!                 div_hat(n)  = sqrt(-1)*erad*div(n)
+!                 phi_hat(n)  = phi(n)*sqrt(n*(n+1))/gspeed
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!     vort,div,phi
+!     vort_hat,div_hat,phi_hat
+!
+!   output argument list:
+!     real(r_kind),intent(inout)::vort(2,m:mmax),div(2,m:mmax),phi(2,m:mmax)
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-!     for schemes B, C:
-
-!           vort_hat(n) = erad*vort(n)/sqrt(n*(n+1))
-
-!           div_hat(n)  = sqrt(-1)*erad*div(n)/sqrt(n*(n+1))
-
-!           phi_hat(n)  = phi(n)/gspeed
-
-!     for scheme D:
-
-!           vort_hat(n) = erad*vort(n)
-
-!           div_hat(n)  = sqrt(-1)*erad*div(n)
-
-!           phi_hat(n)  = phi(n)*sqrt(n*(n+1))/gspeed
-
-    use kinds, only: i_kind,r_kind
-    use constants, only: zero,one,rearth
+    use constants, only: one,rearth
     use mod_strong, only: scheme
     implicit none
 
@@ -534,27 +739,38 @@ contains
 
   end subroutine scale_vars_ad
 
+
   subroutine unscale_vars(vort_hat,div_hat,phi_hat,vort,div,phi)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    unscale_vars
+!
+!   prgrmmr:
+!
+! abstract:
+!      output scaling:
+!            for schemes B, C:
+!                vort(n,m) = sqrt(n*(n+1))*vort_hat(n,m)/erad
+!                div(n,m)  = -sqrt(-1)*sqrt(n*(n+1))*div_hat(n,m)/erad
+!                phi(n,m)  = gspeed*phi_hat(n,m)
+!            for scheme C:
+!                vort(n,m) = vort_hat(n,m)/erad
+!                div(n,m)  = -sqrt(-1)*div_hat(n,m)/erad
+!                phi(n,m)  = gspeed*phi_hat(n,m)/sqrt(n*(n+1))
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!
+!   output argument list:
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-!        output scaling:
-
-!    for schemes B, C:
-
-!           vort(n,m) = sqrt(n*(n+1))*vort_hat(n,m)/erad
-
-!           div(n,m)  = -sqrt(-1)*sqrt(n*(n+1))*div_hat(n,m)/erad
-
-!           phi(n,m)  = gspeed*phi_hat(n,m)
-
-!    for scheme C:
-
-!           vort(n,m) = vort_hat(n,m)/erad
-
-!           div(n,m)  = -sqrt(-1)*div_hat(n,m)/erad
-
-!           phi(n,m)  = gspeed*phi_hat(n,m)/sqrt(n*(n+1))
-
-    use kinds, only: i_kind,r_kind
     use constants, only: zero,one,rearth
     use mod_strong, only: scheme
     implicit none
@@ -595,29 +811,40 @@ contains
 
   end subroutine unscale_vars
 
+
   subroutine unscale_vars_ad(vort_hat,div_hat,phi_hat,vort,div,phi)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    unscale_vars_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!      output scaling:
+!          for schemes B, C:
+!              vort(n,m) = sqrt(n*(n+1))*vort_hat(n,m)/erad
+!              div(n,m)  = -sqrt(-1)*sqrt(n*(n+1))*div_hat(n,m)/erad
+!              phi(n,m)  = gspeed*phi_hat(n,m)
+!          for scheme C:
+!              vort(n,m) = vort_hat(n,m)/erad
+!              div(n,m)  = -sqrt(-1)*div_hat(n,m)/erad
+!              phi(n,m)  = gspeed*phi_hat(n,m)/sqrt(n*(n+1))
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!
+!   output argument list:
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-!        output scaling:
-
-!    for schemes B, C:
-
-!           vort(n,m) = sqrt(n*(n+1))*vort_hat(n,m)/erad
-
-!           div(n,m)  = -sqrt(-1)*sqrt(n*(n+1))*div_hat(n,m)/erad
-
-!           phi(n,m)  = gspeed*phi_hat(n,m)
-
-!    for scheme C:
-
-!           vort(n,m) = vort_hat(n,m)/erad
-
-!           div(n,m)  = -sqrt(-1)*div_hat(n,m)/erad
-
-!           phi(n,m)  = gspeed*phi_hat(n,m)/sqrt(n*(n+1))
-
-    use kinds, only: i_kind,r_kind
-    use constants, only: zero,one,rearth
-    use mod_strong, only: scheme
+    use constants, only:  one,rearth
+    use mod_strong, only:  scheme
     implicit none
 
     real(r_kind),intent(inout)::vort_hat(2,m:mmax),div_hat(2,m:mmax),phi_hat(2,m:mmax)
@@ -648,11 +875,31 @@ contains
 
   end subroutine unscale_vars_ad
 
+
   subroutine f_mult(x,y,f)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    f_mult
+!
+!   prgrmmr:
+!
+! abstract:      x = F*y
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!     y,f
+!
+!   output argument list:
+!     x
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-!    x = F*y
-
-    use kinds, only: i_kind,r_kind
     use constants, only: zero
     implicit none
 
@@ -688,11 +935,31 @@ contains
 
   end subroutine f_mult
 
+
   subroutine c_mult(x,y,c)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    c_mult
+!
+!   prgrmmr:
+!
+! abstract:      x = C*y
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!     y,c
+!
+!   output argument list:
+!     x
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-!    x = C*y
-
-    use kinds, only: i_kind,r_kind
     use constants, only: zero
     implicit none
 
@@ -715,11 +982,31 @@ contains
 
   end subroutine c_mult
 
+
   subroutine i_mult(x,y)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    i_mult
+!
+!   prgrmmr:
+!
+! abstract:      x = sqrt(-1)*y
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!     y
+!
+!   output argument list:
+!     x
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-!    x = sqrt(-1)*y
-
-    use kinds, only: i_kind,r_kind
     use constants, only: zero
     implicit none
 
@@ -742,11 +1029,31 @@ contains
 
   end subroutine i_mult
 
+
   subroutine solve_f2c2(x,y,f,c)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    solve_f2c2
+!
+!   prgrmmr:
+!
+! abstract:      solve (F*F+C*C)*x = y
+!         
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block, rm unused uses
+!               
+!   input argument list:
+!     y,f,c
+!
+!   output argument list:
+!     x
+!   
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   
+!$$$ end documentation block
 
-!    solve (F*F+C*C)*x = y
-
-    use kinds, only: i_kind,r_kind
     use constants, only: zero
     implicit none
 

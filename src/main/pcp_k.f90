@@ -29,6 +29,7 @@ subroutine pcp_k(km,dtp,del_in,sl_in,rbs,&
 !   2006-04-12  treadon - change del and sl from 1d to 2d arrays
 !   2006-09-15  treadon - change (k,i) arrays to (k) arrays
 !   2006-10-12  treadon - remove virtual temperature
+!   2008-04-29  safford - rm unused uses
 !
 !   input argument list:
 !     km        - number of levels in vertical profile
@@ -92,7 +93,7 @@ subroutine pcp_k(km,dtp,del_in,sl_in,rbs,&
 !$$$
 !    
   use kinds, only: r_kind,i_kind
-  use constants, only: rhcbot,rhctop,dx_inv,dx_min,one,zero,fv
+  use constants, only: rhcbot,rhctop,dx_inv,dx_min,one,zero
   use pcpinfo, only: tiny_obs
   use gridmod, only: nlon
   use specmod, only: jcap
@@ -101,10 +102,10 @@ subroutine pcp_k(km,dtp,del_in,sl_in,rbs,&
 
 ! Declare passed variables
   logical:: skipsas,skiplrg
-  integer(i_kind) i,k,mype,km,ncloud
+  integer(i_kind) k,mype,km,ncloud
   integer(i_kind):: kb,kbcon,jmin,ktcon,kuo
 
-  real(r_kind) term,work2,term_ad,tem,work1,dtp,frain,rmmhr
+  real(r_kind) work2,tem,work1,dtp,frain,rmmhr
   real(r_kind):: rbs,dplat,dplon,slmask,psexp,cldwrk,rn_out
 
   real(r_kind),dimension(km):: del_in,sl_in
@@ -121,13 +122,13 @@ subroutine pcp_k(km,dtp,del_in,sl_in,rbs,&
   logical adjoint
 
   integer(i_kind):: im,ix
-  real(r_kind):: ps,rcl,rcs,dpi,dlm,xkt,xkt2,satpcp,rnlrg_o,&
+  real(r_kind):: ps,rcl,rcs,xkt,xkt2,rnlrg_o,&
        rnlrg_o_ad,rnsas_o,rnsas_o_ad,rnsas_of,rnlrg_of,rnsas_of_ad,&
        rnlrg_of_ad,rn_out_ad
   
-  real(r_kind),dimension(km):: u,v,div,vvel,u_i,v_i,div_i,vvel_i,vvel_o,&
-       u_i_ad,v_i_ad,div_i_ad,vvel_o_ad,vvel_i_ad,spd,u_ad,&
-       v_ad,div_ad,vvel_ad,t_ten_i,q_ten_i,p_ten_i,qgs_i,cwmgs_i,tgs_i,&
+  real(r_kind),dimension(km):: u_i,v_i,div_i,vvel_o,&
+       u_i_ad,v_i_ad,div_i_ad,vvel_o_ad,&
+       t_ten_i,q_ten_i,p_ten_i,qgs_i,cwmgs_i,tgs_i,&
        qgs_o,cwmgs_o,tgs_o, qlrg_i, cwmlrg_i, tlrg_i,&
        qlrg_o, cwmlrg_o, tlrg_o,t_ten_i_ad,q_ten_i_ad,p_ten_i_ad,&
        qgs_i_ad,cwmgs_i_ad,tgs_i_ad,qgs_o_ad,cwmgs_o_ad,tgs_o_ad,&
@@ -139,7 +140,7 @@ subroutine pcp_k(km,dtp,del_in,sl_in,rbs,&
        tsas_o_ad,qsas_o_ad,cwmsas_o_ad,usas_o_ad,vsas_o_ad,&
        save_tlrg,save_qlrg,save_cwmlrg,&
        save_tsas,save_qsas,save_cwmsas,save_usas,save_vsas,&
-       save_wsas,del_i,sl_i,t_ten_in
+       save_wsas,del_i,sl_i
 
 
 !**************************************************************************

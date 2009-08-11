@@ -1,4 +1,25 @@
-subroutine stpq(rq,sq,out,sges,drq,dsq)
+module stpqmod
+
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    stpqmod    module for stpq and its tangent linear stpq_tl
+!
+! abstract: module for stpq and its tangent linear stpq_tl
+!
+! program history log:
+!   2005-05-19  Yanqiu zhu - wrap stpq and its tangent linear stpq_tl into one module
+!   2005-11-16  Derber - remove interfaces
+!   2008-12-02  Todling - remove stpq_tl
+!
+
+implicit none
+
+PRIVATE
+PUBLIC stpq
+
+contains
+
+subroutine stpq(qhead,rq,sq,out,sges)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    stpq        calcuate penalty and stepsize from q
@@ -19,15 +40,15 @@ subroutine stpq(rq,sq,out,sges,drq,dsq)
 !   2005-08-02  derber  - modify for variational qc parameters for each ob
 !   2005-09-28  derber  - consolidate location and weight arrays
 !   2005-10-21  su      - modify for variational qc
+!   2007-03-19  tremolet - binning of observations
 !   2007-07-28  derber  - modify to use new inner loop obs data structure
 !   2007-02-15  rancic  - add foto
 !   2007-06-04  derber  - use quad precision to get reproducability over number of processors
+!   2008-12-03  todling - changed handling of ptr%time
 !
 !   input argument list:
 !     rq       - search direction for q
 !     sq       - analysis increment for q
-!     drq      - search direction for time derivative of q
-!     dsq      - analysis increment for time derivative of q
 !     sges     - stepsize estimates (4)
 !
 !   output argument list:
@@ -44,23 +65,25 @@ subroutine stpq(rq,sq,out,sges,drq,dsq)
 !
 !$$$
   use kinds, only: r_kind,i_kind,r_quad
-  use obsmod, only: qptr,qhead
-  use qcmod, only: nlnqc_iter,c_varqc
+  use obsmod, only: q_ob_type
+  use qcmod, only: nlnqc_iter,varqc_iter
   use gridmod, only: latlon1n
-  use constants, only: zero,half,one,two,tiny_r_kind,cg_term,zero_quad
-  use jfunc, only: iter,jiter,niter_no_qc,jiterstart
+  use constants, only: zero,half,one,two,tiny_r_kind,cg_term,zero_quad,r3600
+  use jfunc, only: iter,jiter,niter_no_qc,jiterstart,l_foto,dhat_dt,xhat_dt
   implicit none
 
 ! Declare passed variables
+  type(q_ob_type),pointer,intent(in):: qhead
   real(r_quad),dimension(6),intent(out):: out
-  real(r_kind),dimension(latlon1n),intent(in):: rq,sq,drq,dsq
+  real(r_kind),dimension(latlon1n),intent(in):: rq,sq
   real(r_kind),dimension(4),intent(in):: sges
 
 ! Declare local variables
   integer(i_kind) i,j1,j2,j3,j4,j5,j6,j7,j8
-  real(r_kind) cg_q,pen1,pen2,pen3,pencur,q0,q1,q2,q3,val,val2,wgross,wnotgross,q_pg,varqc_iter
+  real(r_kind) cg_q,pen1,pen2,pen3,pencur,q0,q1,q2,q3,val,val2,wgross,wnotgross,q_pg
   real(r_kind) w1,w2,w3,w4,w5,w6,w7,w8,time_q
   real(r_kind) alpha,ccoef,bcoef1,bcoef2,cc
+  type(q_ob_type), pointer :: qptr
 
   out=zero_quad
   alpha=one/(sges(3)-sges(2))
@@ -87,16 +110,23 @@ subroutine stpq(rq,sq,out,sges,drq,dsq)
      w6=qptr%wij(6)
      w7=qptr%wij(7)
      w8=qptr%wij(8)
-     time_q=qptr%time
+
 
      val= w1* rq(j1)+w2* rq(j2)+w3* rq(j3)+w4* rq(j4)+ &
-          w5* rq(j5)+w6* rq(j6)+w7* rq(j7)+w8* rq(j8)+ &
-         (w1*drq(j1)+w2*drq(j2)+w3*drq(j3)+w4*drq(j4)+ &
-          w5*drq(j5)+w6*drq(j6)+w7*drq(j7)+w8*drq(j8))*time_q
+          w5* rq(j5)+w6* rq(j6)+w7* rq(j7)+w8* rq(j8)
      val2=w1* sq(j1)+w2* sq(j2)+w3* sq(j3)+w4* sq(j4)+ &
-          w5* sq(j5)+w6* sq(j6)+w7* sq(j7)+w8* sq(j8)+ &
-         (w1*dsq(j1)+w2*dsq(j2)+w3*dsq(j3)+w4*dsq(j4)+ &
-          w5*dsq(j5)+w6*dsq(j6)+w7*dsq(j7)+w8*dsq(j8))*time_q-qptr%res
+          w5* sq(j5)+w6* sq(j6)+w7* sq(j7)+w8* sq(j8)-qptr%res
+     if(l_foto)then
+        time_q=qptr%time*r3600
+        val =val +(w1*dhat_dt%q(j1)+w2*dhat_dt%q(j2)+ &
+                   w3*dhat_dt%q(j3)+w4*dhat_dt%q(j4)+ &
+                   w5*dhat_dt%q(j5)+w6*dhat_dt%q(j6)+ &
+                   w7*dhat_dt%q(j7)+w8*dhat_dt%q(j8))*time_q
+        val2=val2+(w1*xhat_dt%q(j1)+w2*xhat_dt%q(j2)+ &
+                   w3*xhat_dt%q(j3)+w4*xhat_dt%q(j4)+ &
+                   w5*xhat_dt%q(j5)+w6*xhat_dt%q(j6)+ &
+                   w7*xhat_dt%q(j7)+w8*xhat_dt%q(j8))*time_q
+     end if
      q0=val2+sges(1)*val
      q1=val2+sges(2)*val
      q2=val2+sges(3)*val
@@ -108,17 +138,10 @@ subroutine stpq(rq,sq,out,sges,drq,dsq)
      pen3   = q3*q3*qptr%err2
 
 !  Modify penalty term if nonlinear QC
-!    Variational qc is gradually increased to avoid possible convergence problems
-     if(jiter == jiterstart .and. nlnqc_iter .and. qptr%pg > tiny_r_kind) then
-        varqc_iter=c_varqc*(iter-niter_no_qc(1)+one)
-        if(varqc_iter >=one) varqc_iter= one
-        q_pg=qptr%pg*varqc_iter
-     else
-        q_pg=qptr%pg
-     endif
 
      if (nlnqc_iter .and. qptr%pg > tiny_r_kind .and. &
                           qptr%b  > tiny_r_kind) then
+        q_pg=qptr%pg*varqc_iter
         cg_q=cg_term/qptr%b
         wnotgross= one-q_pg
         wgross = q_pg*cg_q/wnotgross
@@ -143,3 +166,5 @@ subroutine stpq(rq,sq,out,sges,drq,dsq)
 
   return
 end subroutine stpq
+
+end module stpqmod

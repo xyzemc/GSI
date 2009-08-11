@@ -1,21 +1,48 @@
 subroutine turbl_tl(pges,tges,oges,u,v,prs,t,termu,termv,termt,jstart,jstop)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    turbl_tl
+!
+!   prgrmmr:
+!
+! abstract:      Tangent linear of turbl
+!
+! program history log:
+!   2008-04-01  safford - add subprogram doc block, rm unused vars and uses
+!   2008-11-01  guo     - remove reference to dzl_tl(1); out-of-bounds
+!
+!   input argument list:
+!     pges     -
+!     tges     -
+!     oges     -
+!     prs      -
+!     t        -
+!     u        -
+!     v        -
+!     termu    -
+!     termv    -
+!     termt    -
+!
+!   output argument list:
+!     termu    -
+!     termv    -
+!     termt    -
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
 !$$$
-!    Tangent linear of turbl
-!$$$
+
   use constants,only: rd_over_cp,two,rd_over_g,half,zero,one,three,grav
   use kinds,only: r_kind,i_kind
   use gridmod, only: lat2,lon2,nsig,nsig_hlf
   use turblmod, only: use_pbl
   use turblmod, only: dudz,dvdz,dodz,ri,rf,kar0my20,zi,km,kh,sm,sh
   use turblmod, only: lmix,dudtm,dvdtm,dtdtm,rdzi,rdzl
-  use turblmod, only: a0my20,b0my20,c0my20,d0my20,f1my20,f2my20, &
-                      f3my20,f4my20,f5my20,f6my20,f7my20,f8my20,b1my20, &
-                      karmy20,l0my20,alf0my20, &
-                      f85my20,f76my20
-  use turblmod, only: ricmy20,rfcmy20,shcmy20,smcmy20,eps_m
-  use turblmod, only: fsm_my20,fsh_my20
-  use turblmod, only: ri_int
-!m  use turblmod, only: nsig_hlf
+  use turblmod, only: a0my20,c0my20,d0my20,f7my20,f8my20,karmy20
+  use turblmod, only: eps_m,fsm_my20,fsh_my20,ri_int
+
   implicit none
 
 
@@ -28,7 +55,7 @@ subroutine turbl_tl(pges,tges,oges,u,v,prs,t,termu,termv,termt,jstart,jstop)
   integer(i_kind) :: jstart,jstop  
 
 ! Declare local variables
-  real(r_kind),dimension(nsig_hlf):: dzi_tl,turbu,turbv,turbo,t_bck,u_bck,v_bck,o_bck
+  real(r_kind),dimension(nsig_hlf):: dzi_tl,t_bck,o_bck
   real(r_kind),dimension(nsig_hlf):: dudz_bck,dvdz_bck,dodz_bck,ri_bck,rf_bck
   real(r_kind),dimension(nsig_hlf):: rdudz_bck,rdvdz_bck,sm_bck,sh_bck,rdzl_bck,rdzi_bck
   real(r_kind),dimension(nsig_hlf):: u_tl,v_tl,o_tl,zl_tl,t_tl,rssq,rofbck,rshbck
@@ -134,7 +161,6 @@ subroutine turbl_tl(pges,tges,oges,u,v,prs,t,termu,termv,termt,jstart,jstop)
       do k=2,nsig_hlf
         dzl_tl(k)=zl_tl(k)-zl_tl(k-1)
      end do
-        dzl_tl(1)=zero
 
 ! perturbation of vertical derivatives
 

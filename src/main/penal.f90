@@ -1,4 +1,4 @@
-subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
+subroutine penal(xhat)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    penal       oberror tuning
@@ -11,15 +11,12 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
 ! program history log:
 !   2005-08-15  wu - oberror tuning
 !   2008-03-24  wu - use convinfo ikx as index for oberr tune
+!   2008-05-27  safford - rm unused vars
+!   2008-12-03  todling - update in light of state vector and obs binning
 !
 ! usage: intt(st,rt)
 !   input argument list:
-!     xhatq    - q increment in grid space
-!     xhatt    - t increment in grid space
-!     xhatp    - p increment in grid space
-!     xhatu    - u increment in grid space
-!     xhatv    - v increment in grid space
-!     mype     - pe id
+!     xhat    - increment in grid space
 !
 !   output argument list:
 !
@@ -29,46 +26,43 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
 !
 !$$$
   use kinds, only: r_kind,i_kind
-  use constants, only: half,one,two,zero
+  use mpimod, only: ierror,mpi_comm_world,mpi_sum,mpi_rtype,levs_id,npe,mype
+  use constants, only: one,zero
+  use gsi_4dvar, only: nobs_bins
   use obsmod, only: qhead,qptr,thead,tptr,whead,wptr,pshead,psptr
   use converr, only:etabl
-  use qcmod, only: nlnqc_iter
   use gridmod, only: latlon1n,latlon11
-  use jfunc, only: nclen,&
-       np,nt,nq,nu,nv,nuvlen,jiterstart,jiter
-  use mpimod, only: ierror,mpi_comm_world,mpi_sum,mpi_rtype,levs_id,npe
+  use jfunc, only: jiterstart,jiter
   use convinfo, only:ictype,nconvtype,ioctype
+  use state_vectors
   implicit none
 
 ! Declare passed variables
 
-  integer(i_kind),intent(in):: mype
-  real(r_kind),dimension(latlon1n),intent(in):: xhatt,xhatu,xhatv,xhatq
-  real(r_kind),dimension(latlon11),intent(in):: xhatp
+  type(state_vector),intent(in):: xhat
 
 ! Declare passed variables
   real(r_kind),save,dimension(33,200) ::  penalty,trace
 
 ! Declare local variables
-  real(r_kind) err2,err
+  real(r_kind) err2
 
-  integer(i_kind) i,n,k,l,m
+  integer(i_kind) i,n,k,l,m,ibin
   real(r_kind) tpenalty(33,nconvtype),ttrace(33,nconvtype)
   real(r_kind) valu,valv,val,so(33,nconvtype),cat_num(33,nconvtype),sosum,tcat_num(33,nconvtype)
-  real(r_kind) xhat_q(latlon1n),sumqz(2),tsumqz(2),ratiomin
-  integer(i_kind) itype,nq180,ncat,k1
- 
+  integer(i_kind) itype,ncat,k1
 
 
   ncat=nconvtype*33
-  call normal_rh_to_q(xhatq,xhatt,xhatp,xhat_q)
 
   if(jiter==jiterstart)then
      trace=zero
      penalty=zero
 
+   do ibin=1,nobs_bins
+
 !    Moisture
-     qptr => qhead
+     qptr => qhead(ibin)%head
      do while (associated(qptr))
         n=qptr%kx
         itype=ictype(n)
@@ -82,10 +76,10 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
         err2=qptr%raterr2*qptr%err2
 !       err=sqrt(err2)
 !       Forward model
-        val=qptr%wij(1)* xhat_q(qptr%ij(1))+qptr%wij(2)* xhat_q(qptr%ij(2))&
-             +qptr%wij(3)* xhat_q(qptr%ij(3))+qptr%wij(4)* xhat_q(qptr%ij(4))&
-             +qptr%wij(5)* xhat_q(qptr%ij(5))+qptr%wij(6)* xhat_q(qptr%ij(6))&
-             +qptr%wij(7)* xhat_q(qptr%ij(7))+qptr%wij(8)* xhat_q(qptr%ij(8))
+        val= qptr%wij(1)* xhat%q(qptr%ij(1))+qptr%wij(2)* xhat%q(qptr%ij(2))&
+            +qptr%wij(3)* xhat%q(qptr%ij(3))+qptr%wij(4)* xhat%q(qptr%ij(4))&
+            +qptr%wij(5)* xhat%q(qptr%ij(5))+qptr%wij(6)* xhat%q(qptr%ij(6))&
+            +qptr%wij(7)* xhat%q(qptr%ij(7))+qptr%wij(8)* xhat%q(qptr%ij(8))
         
         trace(k1,n)=trace(k1,n)-qptr%qpertb*val*err2
         penalty(k1,n)=penalty(k1,n)+(val-qptr%res)**2*err2
@@ -94,7 +88,7 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
 !    if(mype==29)write(0,*)'q2 trace,pen=',trace(k1,n),penalty(k1,n),k1,n
 
 !    Temperature
-     tptr => thead
+     tptr => thead(ibin)%head
      do while (associated(tptr))
         n=tptr%kx
         itype=ictype(n)
@@ -108,10 +102,10 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
         err2=tptr%raterr2*tptr%err2
 !       err=sqrt(err2)
 !       Forward model
-        val=tptr%wij(1)* xhatt(tptr%ij(1))+tptr%wij(2)* xhatt(tptr%ij(2))&
-             +tptr%wij(3)* xhatt(tptr%ij(3))+tptr%wij(4)* xhatt(tptr%ij(4))&
-             +tptr%wij(5)* xhatt(tptr%ij(5))+tptr%wij(6)* xhatt(tptr%ij(6))&
-             +tptr%wij(7)* xhatt(tptr%ij(7))+tptr%wij(8)* xhatt(tptr%ij(8))
+        val= tptr%wij(1)* xhat%t(tptr%ij(1))+tptr%wij(2)* xhat%t(tptr%ij(2))&
+            +tptr%wij(3)* xhat%t(tptr%ij(3))+tptr%wij(4)* xhat%t(tptr%ij(4))&
+            +tptr%wij(5)* xhat%t(tptr%ij(5))+tptr%wij(6)* xhat%t(tptr%ij(6))&
+            +tptr%wij(7)* xhat%t(tptr%ij(7))+tptr%wij(8)* xhat%t(tptr%ij(8))
         
         trace(k1,n)=trace(k1,n)-tptr%tpertb*val*err2
         penalty(k1,n)=penalty(k1,n)+(val-tptr%res)**2*err2
@@ -119,7 +113,7 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
      end do
      
 !    Surface pressure
-     psptr => pshead
+     psptr => pshead(ibin)%head
      do while (associated(psptr))
         n=psptr%kx
         itype=ictype(n)
@@ -128,8 +122,8 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
         err2=psptr%raterr2*psptr%err2
 !       err=sqrt(err2)
 !       Forward model
-        val=psptr%wij(1)* xhatp(psptr%ij(1))+psptr%wij(2)* xhatp(psptr%ij(2))&
-             +psptr%wij(3)* xhatp(psptr%ij(3))+psptr%wij(4)* xhatp(psptr%ij(4))
+        val= psptr%wij(1)* xhat%p(psptr%ij(1))+psptr%wij(2)* xhat%p(psptr%ij(2))&
+            +psptr%wij(3)* xhat%p(psptr%ij(3))+psptr%wij(4)* xhat%p(psptr%ij(4))
         
         trace(k1,n)=trace(k1,n)-psptr%ppertb*val*err2
         penalty(k1,n)=penalty(k1,n)+(val-psptr%res)**2*err2
@@ -137,7 +131,7 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
      end do
      
 !    Winds
-     wptr => whead
+     wptr => whead(ibin)%head
      do while (associated(wptr))
         n=wptr%kx
         itype=ictype(n)
@@ -151,29 +145,31 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
         err2=wptr%raterr2*wptr%err2
 !       err=sqrt(err2)
 !       Forward model
-        valu=wptr%wij(1)* xhatu(wptr%ij(1))+wptr%wij(2)* xhatu(wptr%ij(2))&
-             +wptr%wij(3)* xhatu(wptr%ij(3))+wptr%wij(4)* xhatu(wptr%ij(4))&
-             +wptr%wij(5)* xhatu(wptr%ij(5))+wptr%wij(6)* xhatu(wptr%ij(6))&
-             +wptr%wij(7)* xhatu(wptr%ij(7))+wptr%wij(8)* xhatu(wptr%ij(8))
-        valv=wptr%wij(1)* xhatv(wptr%ij(1))+wptr%wij(2)* xhatv(wptr%ij(2))&
-             +wptr%wij(3)* xhatv(wptr%ij(3))+wptr%wij(4)* xhatv(wptr%ij(4))&
-             +wptr%wij(5)* xhatv(wptr%ij(5))+wptr%wij(6)* xhatv(wptr%ij(6))&
-             +wptr%wij(7)* xhatv(wptr%ij(7))+wptr%wij(8)* xhatv(wptr%ij(8))
+        valu= wptr%wij(1)* xhat%u(wptr%ij(1))+wptr%wij(2)* xhat%u(wptr%ij(2))&
+             +wptr%wij(3)* xhat%u(wptr%ij(3))+wptr%wij(4)* xhat%u(wptr%ij(4))&
+             +wptr%wij(5)* xhat%u(wptr%ij(5))+wptr%wij(6)* xhat%u(wptr%ij(6))&
+             +wptr%wij(7)* xhat%u(wptr%ij(7))+wptr%wij(8)* xhat%u(wptr%ij(8))
+        valv= wptr%wij(1)* xhat%v(wptr%ij(1))+wptr%wij(2)* xhat%v(wptr%ij(2))&
+             +wptr%wij(3)* xhat%v(wptr%ij(3))+wptr%wij(4)* xhat%v(wptr%ij(4))&
+             +wptr%wij(5)* xhat%v(wptr%ij(5))+wptr%wij(6)* xhat%v(wptr%ij(6))&
+             +wptr%wij(7)* xhat%v(wptr%ij(7))+wptr%wij(8)* xhat%v(wptr%ij(8))
         
         trace(k1,n)=trace(k1,n)-(wptr%upertb*valu+wptr%vpertb*valv)*err2
         penalty(k1,n)=penalty(k1,n)+((valu-wptr%ures)**2+(valv-wptr%vres)**2)*err2
         wptr => wptr%llpoint
      end do
+
+   end do ! ibin
      
 
+  else ! jiter
+    cat_num=zero
 
-
-  else !jiter
-     cat_num=zero
+    do ibin=1,nobs_bins
 
 ! Moisture
 !    ratiomin=1.
-     qptr => qhead
+     qptr => qhead(ibin)%head
      do while (associated(qptr))
         n=qptr%kx
         itype=ictype(n)
@@ -187,10 +183,10 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
         err2=qptr%raterr2*qptr%err2
 !       err=sqrt(err2)
 !       Forward model
-        val=qptr%wij(1)* xhat_q(qptr%ij(1))+qptr%wij(2)* xhat_q(qptr%ij(2))&
-             +qptr%wij(3)* xhat_q(qptr%ij(3))+qptr%wij(4)* xhat_q(qptr%ij(4))&
-             +qptr%wij(5)* xhat_q(qptr%ij(5))+qptr%wij(6)* xhat_q(qptr%ij(6))&
-             +qptr%wij(7)* xhat_q(qptr%ij(7))+qptr%wij(8)* xhat_q(qptr%ij(8))
+        val= qptr%wij(1)* xhat%q(qptr%ij(1))+qptr%wij(2)* xhat%q(qptr%ij(2))&
+            +qptr%wij(3)* xhat%q(qptr%ij(3))+qptr%wij(4)* xhat%q(qptr%ij(4))&
+            +qptr%wij(5)* xhat%q(qptr%ij(5))+qptr%wij(6)* xhat%q(qptr%ij(6))&
+            +qptr%wij(7)* xhat%q(qptr%ij(7))+qptr%wij(8)* xhat%q(qptr%ij(8))
         
         cat_num(k1,n)=cat_num(k1,n)+1.
         trace(k1,n)=trace(k1,n)+qptr%qpertb*val*err2
@@ -199,7 +195,7 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
      
 !    if(mype==29)write(0,*)'q2 trace,pen=',trace(k1,n),cat_num(k1,n),k1,n
 !    Temperature
-     tptr => thead
+     tptr => thead(ibin)%head
      do while (associated(tptr))
         n=tptr%kx
         itype=ictype(n)
@@ -213,17 +209,17 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
         err2=tptr%raterr2*tptr%err2
 !       err=sqrt(err2)
 !       Forward model
-        val=tptr%wij(1)* xhatt(tptr%ij(1))+tptr%wij(2)* xhatt(tptr%ij(2))&
-             +tptr%wij(3)* xhatt(tptr%ij(3))+tptr%wij(4)* xhatt(tptr%ij(4))&
-             +tptr%wij(5)* xhatt(tptr%ij(5))+tptr%wij(6)* xhatt(tptr%ij(6))&
-             +tptr%wij(7)* xhatt(tptr%ij(7))+tptr%wij(8)* xhatt(tptr%ij(8))
+        val= tptr%wij(1)* xhat%t(tptr%ij(1))+tptr%wij(2)* xhat%t(tptr%ij(2))&
+            +tptr%wij(3)* xhat%t(tptr%ij(3))+tptr%wij(4)* xhat%t(tptr%ij(4))&
+            +tptr%wij(5)* xhat%t(tptr%ij(5))+tptr%wij(6)* xhat%t(tptr%ij(6))&
+            +tptr%wij(7)* xhat%t(tptr%ij(7))+tptr%wij(8)* xhat%t(tptr%ij(8))
         
         cat_num(k1,n)=cat_num(k1,n)+1.
         trace(k1,n)=trace(k1,n)+tptr%tpertb*val*err2
         tptr => tptr%llpoint
      end do
 !    Surface pressure
-     psptr => pshead
+     psptr => pshead(ibin)%head
      do while (associated(psptr))
         n=psptr%kx
         itype=ictype(n)
@@ -232,15 +228,15 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
         err2=psptr%raterr2*psptr%err2
 !       err=sqrt(err2)
 !       Forward model
-        val=psptr%wij(1)* xhatp(psptr%ij(1))+psptr%wij(2)* xhatp(psptr%ij(2))&
-             +psptr%wij(3)* xhatp(psptr%ij(3))+psptr%wij(4)* xhatp(psptr%ij(4))
+        val= psptr%wij(1)* xhat%p(psptr%ij(1))+psptr%wij(2)* xhat%p(psptr%ij(2))&
+            +psptr%wij(3)* xhat%p(psptr%ij(3))+psptr%wij(4)* xhat%p(psptr%ij(4))
         
         cat_num(k1,n)=cat_num(k1,n)+1.
         trace(k1,n)=trace(k1,n)+psptr%ppertb*val*err2
         psptr => psptr%llpoint
      end do
 !    Winds
-     wptr => whead
+     wptr => whead(ibin)%head
      do while (associated(wptr))
         n=wptr%kx
         itype=ictype(n)
@@ -254,14 +250,14 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
         err2=wptr%raterr2*wptr%err2
 !       err=sqrt(err2)
 !       Forward model
-        valu=wptr%wij(1)* xhatu(wptr%ij(1))+wptr%wij(2)* xhatu(wptr%ij(2))&
-             +wptr%wij(3)* xhatu(wptr%ij(3))+wptr%wij(4)* xhatu(wptr%ij(4))&
-             +wptr%wij(5)* xhatu(wptr%ij(5))+wptr%wij(6)* xhatu(wptr%ij(6))&
-             +wptr%wij(7)* xhatu(wptr%ij(7))+wptr%wij(8)* xhatu(wptr%ij(8))
-        valv=wptr%wij(1)* xhatv(wptr%ij(1))+wptr%wij(2)* xhatv(wptr%ij(2))&
-             +wptr%wij(3)* xhatv(wptr%ij(3))+wptr%wij(4)* xhatv(wptr%ij(4))&
-             +wptr%wij(5)* xhatv(wptr%ij(5))+wptr%wij(6)* xhatv(wptr%ij(6))&
-             +wptr%wij(7)* xhatv(wptr%ij(7))+wptr%wij(8)* xhatv(wptr%ij(8))
+        valu= wptr%wij(1)* xhat%u(wptr%ij(1))+wptr%wij(2)* xhat%u(wptr%ij(2))&
+             +wptr%wij(3)* xhat%u(wptr%ij(3))+wptr%wij(4)* xhat%u(wptr%ij(4))&
+             +wptr%wij(5)* xhat%u(wptr%ij(5))+wptr%wij(6)* xhat%u(wptr%ij(6))&
+             +wptr%wij(7)* xhat%u(wptr%ij(7))+wptr%wij(8)* xhat%u(wptr%ij(8))
+        valv= wptr%wij(1)* xhat%v(wptr%ij(1))+wptr%wij(2)* xhat%v(wptr%ij(2))&
+             +wptr%wij(3)* xhat%v(wptr%ij(3))+wptr%wij(4)* xhat%v(wptr%ij(4))&
+             +wptr%wij(5)* xhat%v(wptr%ij(5))+wptr%wij(6)* xhat%v(wptr%ij(6))&
+             +wptr%wij(7)* xhat%v(wptr%ij(7))+wptr%wij(8)* xhat%v(wptr%ij(8))
         
         cat_num(k1,n)=cat_num(k1,n)+1.
         trace(k1,n)=trace(k1,n)+(wptr%upertb*valu+wptr%vpertb*valv)*err2
@@ -273,6 +269,9 @@ subroutine penal(xhatq,xhatt,xhatp,xhatu,xhatv,mype)
            trace(k,n)=cat_num(k,n)-trace(k,n)
         enddo
      enddo
+
+    end do ! ibin
+
      call mpi_allreduce(trace,ttrace,ncat,mpi_rtype,mpi_sum, &
           mpi_comm_world,ierror)
      call mpi_allreduce(penalty,tpenalty,ncat,mpi_rtype,mpi_sum, &

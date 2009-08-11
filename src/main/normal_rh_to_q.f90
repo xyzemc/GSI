@@ -13,6 +13,7 @@ subroutine normal_rh_to_q(rhnorm,t,p,q)
 !   2005-11-21  derber modify to make qoption =1 work same as =2
 !   2006-01-09  derber move sigsum calculation to compute_derived and clean up
 !   2006-07-31  kleist - analysis variable changed from ln(ps) to ps
+!   2008-05-28  safford - rm unused uses
 !
 !   input argument list:
 !      rhnorm - normalized RH
@@ -30,7 +31,6 @@ subroutine normal_rh_to_q(rhnorm,t,p,q)
   use kinds, only: r_kind,i_kind
   use jfunc, only: dqdrh,dqdp,dqdt,qoption
   use gridmod, only: lat2,lon2,nsig
-  use constants, only: half,zero
 
   implicit none
 
@@ -82,6 +82,7 @@ subroutine normal_rh_to_q_ad(rhnorm,t,p,q)
 !   2006-07-31  kleist - analysis variable changed from ln(ps) to ps
 !   2006-08-16  parrish - correct adjoint error, which only has impact when
 !                         using strong balance constraint.
+!   2008-05-28  safford - rm unused uses
 !
 !   input argument list:
 !      rhnorm - normalized RH
@@ -95,12 +96,12 @@ subroutine normal_rh_to_q_ad(rhnorm,t,p,q)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
 
   use kinds, only: r_kind,i_kind
   use jfunc, only: dqdrh,dqdp,dqdt,qoption
   use gridmod, only: lat2,lon2,nsig
-  use constants, only: half,zero
+  use constants, only: zero
   implicit none
 
   real(r_kind),intent(inout):: rhnorm(lat2,lon2,nsig)

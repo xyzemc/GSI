@@ -24,7 +24,8 @@ subroutine smoothww(nx,ny,p,wl,nitr,mx)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind,i_kind
   use constants, only: one
   implicit none

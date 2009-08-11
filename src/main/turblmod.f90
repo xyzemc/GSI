@@ -1,4 +1,25 @@
-module turblmod 
+module turblmod
+!$$$   module documentation block
+!                .      .    .
+! module:   turblmod
+!
+! abstract:
+!
+! program history log:
+!   2008-04-01  safford - added doc blocks
+!
+! subroutines included:
+!   init_turbl          --
+!   create_turblvars    --
+!   destroy_turblvars   --
+!
+! variable definitions:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
   use kinds, only: r_kind,i_kind
   use gridmod, only: lat2,lon2,nsig,nsig_hlf
@@ -31,7 +52,7 @@ module turblmod
 
  real(r_kind) a0my20,b0my20,c0my20,d0my20,f1my20,f2my20, &
               f3my20,f4my20,f5my20,f6my20,f7my20,f8my20,b1my20, &
-	      karmy20,l0my20,alf0my20, &
+              karmy20,l0my20,alf0my20, &
               f85my20,f76my20
  real(r_kind) ricmy20,rfcmy20,shcmy20,smcmy20,eps_m
  real(r_kind) fsm_my20,fsh_my20
@@ -81,7 +102,29 @@ module turblmod
   parameter( eps_m   = 0.02_r_kind )
 
 contains
+
   subroutine init_turbl
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    init_turbl
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-01  safford -- add subprogram doc block
+!
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$
+
     implicit none
       use_pbl=.false.                      ! set to true to turn on effect of pbl
       rfcmy20=a0my20*(ricmy20+b0my20-sqrt(ricmy20**2-c0my20*ricmy20+d0my20))
@@ -93,8 +136,29 @@ contains
   end subroutine init_turbl
 
   subroutine create_turblvars
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    create_turblvars
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-01  safford -- add subprogram doc block
+!
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$
     implicit none
     
+    if(.not. use_pbl)return
     allocate(dudz (lat2,lon2,nsig_hlf) )
     allocate(dvdz (lat2,lon2,nsig_hlf) )
     allocate(dodz (lat2,lon2,nsig_hlf) )
@@ -107,7 +171,7 @@ contains
     allocate(rf   (lat2,lon2,nsig_hlf) )
     allocate(km   (lat2,lon2,nsig_hlf+1) )
     allocate(kh   (lat2,lon2,nsig_hlf+1) )
-    allocate(zi   (lat2,lon2,nsig_hlf) )
+    allocate(zi   (lat2,lon2,nsig_hlf+1) )
     allocate(sm   (lat2,lon2,nsig_hlf) )
     allocate(sh   (lat2,lon2,nsig_hlf) )
     allocate(lmix (lat2,lon2,nsig_hlf) )
@@ -118,7 +182,29 @@ contains
   end subroutine create_turblvars
 
   subroutine destroy_turblvars
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    destroy_turblvars
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-01  safford -- add subprogram doc block
+!
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$
+    implicit none
 
+    if(.not. use_pbl)return
     deallocate(dudz  )
     deallocate(dvdz  )
     deallocate(dodz  )

@@ -43,7 +43,11 @@ subroutine setupspd(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 !   2006-07-31  kleist - use ges_ps instead of lnps
 !   2006-08-28      su - fix a bug in variational qc
 !   2007-03-09      su - modify the observation perturbation
+!   2007-03-19  tremolet - binning of observations
+!   2007-06-05  tremolet - add observation diagnostics structure
 !   2007-08-28      su - modify the observation gross check error 
+!   2008-05-23  safford - rm unused vars and uses
+!   2008-12-03  todling - changed handling of ptr%time
 !
 !   input argument list:
 !     lunin    - unit from which to read observations
@@ -61,15 +65,16 @@ subroutine setupspd(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 !
 !$$$
   use kinds, only: r_kind,r_single,r_double,i_kind
-  use obsmod, only: spdhead,spdtail,rmiss_single
+  use obsmod, only: spdhead,spdtail,rmiss_single,i_spd_ob_type,obsdiags,&
+                    lobsdiagsave,nobskeep,lobsdiag_allocated,time_offset
+  use gsi_4dvar, only: nobs_bins,hr_obsbin
   use guess_grids, only: ges_u,ges_v,nfldsig,hrdifsig,ges_tv,ges_lnprsl, &
            ges_ps,comp_fact10,sfcmod_gfs,sfcmod_mm5
   use gridmod, only: nsig,get_ij
   use qcmod, only: npres_print,ptop,pbot
-  use constants, only: rad2deg,one,grav,rd,zero,four,tiny_r_kind,one_tenth, &
-       half,two,cg_term,huge_single,r1000,wgtlim,r3600
-  use jfunc, only: jiter,last
-  use jfunc, only: l_foto
+  use constants, only: one,grav,rd,zero,four,tiny_r_kind, &
+       half,two,cg_term,huge_single,r1000,wgtlim
+  use jfunc, only: jiter,last,miter
   use qcmod, only: dfact,dfact1,npres_print
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype
   use convinfo, only: icsubtype
@@ -91,7 +96,7 @@ subroutine setupspd(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
   
   real(r_kind) uob,vob,spdges,spdob,spdob0,goverrd,ratio_errors
   real(r_kind) presw,factw,dpres,ugesin,vgesin,sfcr,skint
-  real(r_kind) dx,dy,ds,dx1,dy1,ds1,scale
+  real(r_kind) scale
   real(r_kind) val2,ressw,ress,error,ddiff,dx10,rhgh,prsfc,r0_001
   real(r_kind) sfcchk,prsln2,rwgt,tfact                        
   real(r_kind) thirty,rsig,ratio,residual,obserrlm,obserror
@@ -104,8 +109,8 @@ subroutine setupspd(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
   real(r_kind),dimension(nsig)::prsltmp,tges
   real(r_single),allocatable,dimension(:,:)::rdiagbuf
 
-  integer(i_kind) jlat,jlon,jsig,mm1,itype
-  integer(i_kind) ii,i,nchar,nreal,k,j,n,l,it,nty,nn,ikxx
+  integer(i_kind) mm1,ibin,ioff
+  integer(i_kind) ii,jj,i,nchar,nreal,k,j,l,nty,nn,ikxx
   integer(i_kind) ier,ilon,ilat,ipres,iuob,ivob,id,itime,ikx
   integer(i_kind) ihgt,iqc,ier2,iuse,ilate,ilone,istnelv,istat
   integer(i_kind) idomsfc,iskint,iff10,isfcr,isli
@@ -158,6 +163,7 @@ subroutine setupspd(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
      ii=0
      nchar=1
      nreal=20
+     if (lobsdiagsave) nreal=nreal+4*miter+1
      allocate(cdiagbuf(nobs),rdiagbuf(nreal,nobs))
   end if
 
@@ -190,6 +196,55 @@ subroutine setupspd(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
     dpres=data(ipres,i)
     error=data(ier2,i)
     ikx=nint(data(ikxx,i))
+
+!   Link observation to appropriate observation bin
+    if (nobs_bins>1) then
+      ibin = NINT( dtime/hr_obsbin ) + 1
+    else
+      ibin = 1
+    endif
+    IF (ibin<1.OR.ibin>nobs_bins) write(6,*)mype,'Error nobs_bins,ibin= ',nobs_bins,ibin
+
+!   Link obs to diagnostics structure
+    if (.not.lobsdiag_allocated) then
+      if (.not.associated(obsdiags(i_spd_ob_type,ibin)%head)) then
+        allocate(obsdiags(i_spd_ob_type,ibin)%head,stat=istat)
+        if (istat/=0) then
+          write(6,*)'setupspd: failure to allocate obsdiags',istat
+          call stop2(289)
+        end if
+        obsdiags(i_spd_ob_type,ibin)%tail => obsdiags(i_spd_ob_type,ibin)%head
+      else
+        allocate(obsdiags(i_spd_ob_type,ibin)%tail%next,stat=istat)
+        if (istat/=0) then
+          write(6,*)'setupspd: failure to allocate obsdiags',istat
+          call stop2(290)
+        end if
+        obsdiags(i_spd_ob_type,ibin)%tail => obsdiags(i_spd_ob_type,ibin)%tail%next
+      end if
+      allocate(obsdiags(i_spd_ob_type,ibin)%tail%muse(miter+1))
+      allocate(obsdiags(i_spd_ob_type,ibin)%tail%nldepart(miter+1))
+      allocate(obsdiags(i_spd_ob_type,ibin)%tail%tldepart(miter))
+      allocate(obsdiags(i_spd_ob_type,ibin)%tail%obssen(miter))
+      obsdiags(i_spd_ob_type,ibin)%tail%indxglb=i
+      obsdiags(i_spd_ob_type,ibin)%tail%nchnperobs=-99999
+      obsdiags(i_spd_ob_type,ibin)%tail%luse=.false.
+      obsdiags(i_spd_ob_type,ibin)%tail%muse(:)=.false.
+      obsdiags(i_spd_ob_type,ibin)%tail%nldepart(:)=-huge(zero)
+      obsdiags(i_spd_ob_type,ibin)%tail%tldepart(:)=zero
+      obsdiags(i_spd_ob_type,ibin)%tail%wgtjo=-huge(zero)
+      obsdiags(i_spd_ob_type,ibin)%tail%obssen(:)=zero
+    else
+      if (.not.associated(obsdiags(i_spd_ob_type,ibin)%tail)) then
+        obsdiags(i_spd_ob_type,ibin)%tail => obsdiags(i_spd_ob_type,ibin)%head
+      else
+        obsdiags(i_spd_ob_type,ibin)%tail => obsdiags(i_spd_ob_type,ibin)%tail%next
+      end if
+      if (obsdiags(i_spd_ob_type,ibin)%tail%indxglb/=i) then
+        write(6,*)'setupspd: index error'
+        call stop2(291)
+      end if
+    endif
 
 
 !   Load obs error and u,v obs
@@ -292,6 +347,7 @@ subroutine setupspd(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
      end if
 
      if (ratio_errors*error <=tiny_r_kind) muse(i)=.false.
+     if (nobskeep>0) muse(i)=obsdiags(i_spd_ob_type,ibin)%tail%muse(nobskeep)
 
 !    Compute penalty terms (linear & nonlinear qc).
      val      = error*ddiff
@@ -341,39 +397,42 @@ subroutine setupspd(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 
        end if
      end do
+
+     obsdiags(i_spd_ob_type,ibin)%tail%luse=luse(i)
+     obsdiags(i_spd_ob_type,ibin)%tail%muse(jiter)=muse(i)
+     obsdiags(i_spd_ob_type,ibin)%tail%nldepart(jiter)=spdob-sqrt(ugesin*ugesin+vgesin*vgesin)
+     obsdiags(i_spd_ob_type,ibin)%tail%wgtjo= (error*ratio_errors)**2
+
 !    If obs is "acceptable", load array with obs info for use
 !    in inner loop minimization (int* and stp* routines)
      if (.not. last .and. muse(i)) then
 
-        if(.not. associated(spdhead))then
-            allocate(spdhead,stat=istat)
+        if(.not. associated(spdhead(ibin)%head))then
+            allocate(spdhead(ibin)%head,stat=istat)
             if(istat /= 0)write(6,*)' failure to write spdhead '
-            spdtail => spdhead
+            spdtail(ibin)%head => spdhead(ibin)%head
         else
-            allocate(spdtail%llpoint,stat=istat)
-            spdtail => spdtail%llpoint
+            allocate(spdtail(ibin)%head%llpoint,stat=istat)
             if(istat /= 0)write(6,*)' failure to write spdtail%llpoint '
+            spdtail(ibin)%head => spdtail(ibin)%head%llpoint
         end if
 
 !       Set (i,j) indices of guess gridpoint that bound obs location
-        call get_ij(mm1,dlat,dlon,spdtail%ij(1),spdtail%wij(1))
+        call get_ij(mm1,dlat,dlon,spdtail(ibin)%head%ij(1),spdtail(ibin)%head%wij(1))
 
         do j=1,4
-           spdtail%wij(j)=factw*spdtail%wij(j)
+           spdtail(ibin)%head%wij(j)=factw*spdtail(ibin)%head%wij(j)
         end do
-        spdtail%raterr2= ratio_errors**2     
-        spdtail%res    = spdob
-        spdtail%uges   = ugesin
-        spdtail%vges   = vgesin
-        spdtail%err2   = error**2
-        if(l_foto)then
-          spdtail%time = dtime*r3600
-        else
-          spdtail%time = zero
-        end if
-        spdtail%luse   = luse(i)
-        spdtail%b      = cvar_b(ikx)
-        spdtail%pg     = cvar_pg(ikx)
+        spdtail(ibin)%head%raterr2= ratio_errors**2     
+        spdtail(ibin)%head%res    = spdob
+        spdtail(ibin)%head%uges   = ugesin
+        spdtail(ibin)%head%vges   = vgesin
+        spdtail(ibin)%head%err2   = error**2
+        spdtail(ibin)%head%time   = dtime
+        spdtail(ibin)%head%luse   = luse(i)
+        spdtail(ibin)%head%b      = cvar_b(ikx)
+        spdtail(ibin)%head%pg     = cvar_pg(ikx)
+        spdtail(ibin)%head%diags => obsdiags(i_spd_ob_type,ibin)%tail
 
      end if
 ! Save select output for diagnostic file
@@ -390,7 +449,7 @@ subroutine setupspd(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
         rdiagbuf(5,ii)  = data(istnelv,i)    ! station elevation (meters)
         rdiagbuf(6,ii)  = presw              ! observation pressure (hPa)
         rdiagbuf(7,ii)  = data(ihgt,i)       ! observation height (meters)
-        rdiagbuf(8,ii)  = dtime              ! obs time (hours relative to analysis time)
+        rdiagbuf(8,ii)  = dtime-time_offset  ! obs time (hours relative to analysis time)
 
         rdiagbuf(9,ii)  = data(iqc,i)        ! input prepbufr qc or event mark
         rdiagbuf(10,ii) = rmiss_single       ! setup qc or event mark
@@ -428,6 +487,29 @@ subroutine setupspd(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 
         rdiagbuf(20,ii) = factw              ! 10m wind reduction factor
 
+        if (lobsdiagsave) then
+          ioff=20
+          do jj=1,miter 
+            ioff=ioff+1 
+            if (obsdiags(i_spd_ob_type,ibin)%tail%muse(jj)) then
+              rdiagbuf(ioff,ii) = one
+            else
+              rdiagbuf(ioff,ii) = -one
+            endif
+          enddo
+          do jj=1,miter+1
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsdiags(i_spd_ob_type,ibin)%tail%nldepart(jj)
+          enddo
+          do jj=1,miter
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsdiags(i_spd_ob_type,ibin)%tail%tldepart(jj)
+          enddo
+          do jj=1,miter
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsdiags(i_spd_ob_type,ibin)%tail%obssen(jj)
+          enddo
+        endif
 
      end if
   end do

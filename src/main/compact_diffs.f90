@@ -51,10 +51,12 @@ module compact_diffs
   implicit none
 
   integer(i_kind) noq
+  logical,save :: initialized_=.false.
   real(r_kind),allocatable,dimension(:):: coef
 
 
 contains
+
 
   subroutine init_compact_diffs
 !$$$  subprogram documentation block
@@ -82,6 +84,7 @@ contains
     return
   end subroutine init_compact_diffs
 
+
   subroutine create_cdiff_coefs
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -93,6 +96,7 @@ contains
 !
 ! program history log:
 !   2005-01-21  parrish
+!   2009-02-20  todling - allow multiple init/destroy
 !
 !   input argument list:
 !
@@ -106,11 +110,13 @@ contains
   use gridmod, only: nlat,nlon
   implicit none
 
+  if(initialized_) return
   allocate(coef(3*nlat+4*(2*(noq+5)+1)*(nlat+nlon/2)))
-
+  initialized_=.true.
 
   return
   end subroutine create_cdiff_coefs
+
 
   subroutine destroy_cdiff_coefs
 !$$$  subprogram documentation block
@@ -123,6 +129,7 @@ contains
 ! program history log:
 !   2005-01-21  parrish
 !   2005-03-03  treadon - add implicit none
+!   2009-02-20  todling - allow multiple init/destroy
 !
 !   input argument list:
 !
@@ -134,10 +141,13 @@ contains
 !
 !$$$
     implicit none
+    if(.not.initialized_) return
     deallocate(coef)
+    initialized_=.false.
 
     return
   end subroutine destroy_cdiff_coefs
+
 
   subroutine stvp2uv(work1,work2)
 !$$$  subprogram documentation block
@@ -154,6 +164,7 @@ contains
 !   1994-05-17  parrish,d. reverse order of longitude and latitude
 !   2004-07-27  treadon - add only on use declarations; add intent in/out
 !   2004-10-26  kleist - fix sign error
+!   2009-04-19  derber - modified interface
 !
 !   input argument list:
 !     work1  - array containing the streamfunction 
@@ -175,11 +186,11 @@ contains
   implicit none
 
 ! Declare passed variables
-  real(r_kind),dimension(max(iglobal,itotsub)),intent(inout):: work1,work2
+  real(r_kind),dimension(nlat,nlon),intent(inout):: work1,work2
 
 ! Declare local variables  
   integer(i_kind) lbcoy2,lcy,lbcoy1,lacoy1,lacoy2,kk,ix,iy,ni1,ni2,nbp,nya
-  integer(i_kind) nxh,nxa,lacox2,lbcox2,lacox1,lbcox1,ny
+  integer(i_kind) nxh,nxa,lacox2,lbcox2,lacox1,lbcox1,ny,i,j
   real(r_kind) polsu,polnu,polnv,polsv
   real(r_kind),dimension(nlon):: grid3n,grid3s,grid1n,grid1s
   real(r_kind),dimension(nlat-2,nlon):: a,b,grid1,grid2,grid3,grid4
@@ -200,13 +211,11 @@ contains
   lbcoy2=lacoy2+nya
   lcy   =lbcoy2+nya-1
   
-  do kk=1,iglobal
-     ni1=ltosi(kk); ni2=ltosj(kk)
-     
-     if(ni1 /= 1 .and. ni1 /=nlat)then
-        a(ni1-1,ni2)=work1(kk)
-        b(ni1-1,ni2)=work2(kk)
-     end if
+  do j=1,nlon
+    do i=2,nlat-1
+        a(i-1,j)=work1(i,j)
+        b(i-1,j)=work2(i,j)
+    end do
   end do
   
   call xdcirdp(a,grid1,coef(lacox1),coef(lbcox1),coef(lacox2),coef(lbcox2),&
@@ -247,22 +256,24 @@ contains
      grid1s(ix)= polsu*sinlon(ix)-polsv*coslon(ix)
   end do
 ! work 1 is u, work2 is v
-  do kk=1,itotsub
-     ni1=ltosi_s(kk); ni2=ltosj_s(kk)
-     if(ni1 /=1 .and. ni1 /=nlat)then
-        work1(kk)=grid3(ni1-1,ni2)
-        work2(kk)=grid1(ni1-1,ni2)
-     else if(ni1 == 1)then
-        work1(kk)=grid3s(ni2)
-        work2(kk)=grid1s(ni2)
+  do j=1,nlon
+    do i=1,nlat
+     if(i /=1 .and. i /=nlat)then
+        work1(i,j)=grid3(i-1,j)
+        work2(i,j)=grid1(i-1,j)
+     else if(i == 1)then
+        work1(i,j)=grid3s(j)
+        work2(i,j)=grid1s(j)
      else
-        work1(kk)=grid3n(ni2)
-        work2(kk)=grid1n(ni2)
+        work1(i,j)=grid3n(j)
+        work2(i,j)=grid1n(j)
      end if
+   end do
   enddo
 
   return
   end subroutine stvp2uv
+
 
   subroutine uv2vordiv(work1,work2)
 !$$$  subprogram documentation block
@@ -421,6 +432,7 @@ contains
   return
 end subroutine uv2vordiv
 
+
   subroutine xdcirdp(p,q,aco1,bco1,aco2,bco2,nx,ny,noq,nxh)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -497,6 +509,7 @@ end subroutine uv2vordiv
   return
   end subroutine xdcirdp
 
+
   subroutine xmulbv(a,v1,v2,n1x,n2x,nbh1,nbh2,ny, na,nv1,nv2)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -563,6 +576,7 @@ end subroutine uv2vordiv
   return
   end subroutine xmulbv
 
+
   subroutine xbacbv(a,v,nx,nbh1,nbh2,ny,na,nv)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -575,6 +589,7 @@ end subroutine uv2vordiv
 ! program history log:
 !   1994-05-12  parrish,d. elimanate memory bank conflicts
 !   2004-07-27  treadon - add intent in/out
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !     a      - encodes the (l)*(d**-1)*(u) factorization of the linear-system
@@ -605,7 +620,6 @@ end subroutine uv2vordiv
 
 ! Declare local variables
   integer(i_kind) jx,ix,iy,ix1
-  real(r_kind) aij
 
   do jx=1,nx
      do ix=jx+1,min(nx,jx+nbh1)
@@ -630,6 +644,7 @@ end subroutine uv2vordiv
   return
   end subroutine xbacbv
 
+
   subroutine tstvp2uv(work1,work2)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -646,6 +661,8 @@ end subroutine uv2vordiv
 !   1994-05-17  parrish,d. reverse order of longitude and latitude
 !   2004-07-27  treadon - add only on use declarations; add intent in/out
 !   2004-10-26  kleist - fix sign error
+!   2008-06-05  safford - rm unused vars
+!   2009-04-19  derber modified interface
 !
 !   input argument list:
 !     work1  - array containing the adjoint u velocity 
@@ -666,11 +683,11 @@ end subroutine uv2vordiv
   implicit none
 
 ! Declare passed scalars, arrays
-  real(r_kind),dimension(max(iglobal,itotsub)),intent(inout):: work1,work2
+  real(r_kind),dimension(nlat,nlon),intent(inout):: work1,work2
 
 ! Declare local scalars,arrays
-  integer(i_kind) nx,ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
-  integer(i_kind) lacoy2,lbcoy2,lcy,iy,ix,ni1,ni2,kk
+  integer(i_kind) ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
+  integer(i_kind) lacoy2,lbcoy2,lcy,iy,ix,ni1,ni2,kk,i,j
   real(r_kind) polsu,polsv,polnu,polnv
   real(r_kind),dimension(nlon):: grid3n,grid3s,grid1n,grid1s
   real(r_kind),dimension(nlat-2,nlon):: a,b,grid2,grid3,grid1,grid4
@@ -692,18 +709,19 @@ end subroutine uv2vordiv
   lbcoy2=lacoy2+nya
   lcy   =lbcoy2+nya-1
   
-  do kk=1,iglobal
-     ni1=ltosi(kk); ni2=ltosj(kk)
-     if(ni1 /= 1 .and. ni1 /=nlat)then
-        grid3(ni1-1,ni2)=work1(kk)
-        grid1(ni1-1,ni2)=work2(kk)
-     else if(ni1 == 1)then
-        grid3s(ni2)=work1(kk)
-        grid1s(ni2)=work2(kk)
+  do j=1,nlon
+    do i=1,nlat
+     if(i /= 1 .and. i /=nlat)then
+        grid3(i-1,j)=work1(i,j)
+        grid1(i-1,j)=work2(i,j)
+     else if(i == 1)then
+        grid3s(j)=work1(i,j)
+        grid1s(j)=work2(i,j)
      else
-        grid3n(ni2)=work1(kk)
-        grid1n(ni2)=work2(kk)
+        grid3n(j)=work1(i,j)
+        grid1n(j)=work2(i,j)
      end if
+    end do
   end do
   
   polnu=zero
@@ -755,20 +773,22 @@ end subroutine uv2vordiv
        coef(lacoy1),coef(lbcoy1),coef(lacoy2),coef(lbcoy2), &
        nlon,ny,noq)
 
-  do kk=1,itotsub
-     ni1=ltosi_s(kk); ni2=ltosj_s(kk)
-     if(ni1 /=1 .and. ni1 /=nlat)then
+  do j=1,nlon
+    do i=1,nlat
+     if(i /=1 .and. i /=nlat)then
 !       NOTE:  Adjoint of first derivative is its negative
-        work1(kk)=-a(ni1-1,ni2)
-        work2(kk)=-b(ni1-1,ni2)
+        work1(i,j)=-a(i-1,j)
+        work2(i,j)=-b(i-1,j)
      else
-        work2(kk)=zero
-        work1(kk)=zero
+        work1(i,j)=zero
+        work2(i,j)=zero
      end if
+   end do
   end do
   
   return
   end subroutine tstvp2uv
+
 
   subroutine ydsphdp(p,q,aco1,bco1,aco2,bco2,nx,ny,noq)
 !$$$  subprogram documentation block
@@ -843,6 +863,7 @@ end subroutine uv2vordiv
   return
   end subroutine ydsphdp
 
+
   subroutine ymulbv(a,v1,v2, n1y,n2y,nbh1,nbh2,nx, na,nv1,nv2)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -854,6 +875,7 @@ end subroutine uv2vordiv
 ! program history log:
 !   1994-05-12  parrish,d. elimanate memory bank conflicts
 !   2004-07-27  treadon - add only on use declarations; add intent in/out
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !     a      - matrix
@@ -886,8 +908,7 @@ end subroutine uv2vordiv
   real(r_kind),dimension(n1y,nv2),intent(out):: v2
 
 ! Declare local variables
-  integer(i_kind) ix,iy,jy,jiy
-  real(r_kind) aij
+  integer(i_kind) ix,iy,jiy
 
   do ix=1,nx
      do iy=1,n1y
@@ -904,6 +925,7 @@ end subroutine uv2vordiv
   return
   end subroutine ymulbv
 
+
   subroutine ybacbv(a,v,ny,nbh1,nbh2,nx,na,nv)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -916,6 +938,7 @@ end subroutine uv2vordiv
 ! program history log:
 !   1994-05-12  parrish,d. elimanate memory bank conflicts
 !   2004-07-27  treadon - add intent in/out
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !     v      - right-hand-side vectors
@@ -948,7 +971,6 @@ end subroutine uv2vordiv
 ! Declare local variables
   logical odd
   integer(i_kind) jy,iy,ix,ix1
-  real(r_kind) aij
 
   odd = mod(nx,2)==1
   do ix=1,nx-1,2
@@ -985,6 +1007,7 @@ end subroutine uv2vordiv
      
   return
   end subroutine ybacbv
+
 
   subroutine tydsphdp(p,q,aco1,bco1,aco2,bco2,nx,ny,noq)
 !$$$  subprogram documentation block
@@ -1059,6 +1082,7 @@ end subroutine uv2vordiv
   return
   end subroutine tydsphdp
 
+
   subroutine ybacvb(v,a,ny,nbh1,nbh2,nx,nv,na)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -1071,6 +1095,7 @@ end subroutine uv2vordiv
 ! program history log:
 !   1994-05-12  parrish,d. elimanate memory bank conflicts
 !   2004-07-27  treadon - add intent in/out
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !     v      - right-hand-side vectors
@@ -1103,7 +1128,6 @@ end subroutine uv2vordiv
 ! Declare local variables  
   logical odd
   integer(i_kind) iy,jy,ix,ix1
-  real(r_kind) aij
 
   odd = mod(nx,2)==1
 
@@ -1142,6 +1166,7 @@ end subroutine uv2vordiv
   endif
   return
   end subroutine ybacvb
+
 
   subroutine ymulvb(v1,a,v2,n1y,n2y,nbh1,nbh2,nx,nv1,na,nv2)
 !$$$  subprogram documentation block
@@ -1207,6 +1232,7 @@ end subroutine uv2vordiv
   return
   end subroutine ymulvb
 
+
   subroutine inisph(r,yor,tau,nx,ny)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -1217,9 +1243,10 @@ end subroutine uv2vordiv
 !            compact differencing on a spherical grid.
 !
 ! program history log:
-!   1994-01-01 purser
-!   2004-06-21 treadon - update documentation
+!   1994-01-01  purser
+!   2004-06-21  treadon - update documentation
 !   2004-07-28  treadon - add only to module use, add intent in/out
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !     r   - radius of the sphere
@@ -1254,7 +1281,7 @@ end subroutine uv2vordiv
 ! Declare local variables
   integer(i_kind) nxh,nbp,nya,nxa,lbcox1,lacox1,ltaui,lbcox2
   integer(i_kind) lacoy1,lacox2,lbcoy1,lcy,lacoy2,lbcoy2,i,ix,ltau,iy
-  real(r_kind) ir,pih,pi2onx,ri
+  real(r_kind) pih,pi2onx,ri
   real(r_kind),dimension(max(nx/2,ny+2)+16+52*(noq+5)+32*(noq+5)**2):: w
 
 ! Set parameters for calls to subsequent routines  
@@ -1326,6 +1353,7 @@ end subroutine uv2vordiv
   enddo
 
   end subroutine inisph
+
 
   subroutine cdcoef(nh,noq,zlim1,zlim2,z,work,aco1,bco1,aco2,bco2,na1,nb1,na2,nb2)
 !$$$  subprogram documentation block
@@ -1437,6 +1465,7 @@ end subroutine uv2vordiv
   call aldub(aco2,nh,noq,noq,na2)
   return
   end subroutine cdcoef
+
 
   subroutine dfcd(za,zb,z0,na,nb,a,b,work)
 !$$$  subprogram documentation block
@@ -1561,6 +1590,7 @@ end subroutine uv2vordiv
   return
   end subroutine dfcd
 
+
   subroutine aldub(a,n,nbh1,nbh2,na)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -1633,6 +1663,7 @@ end subroutine uv2vordiv
   return
   end subroutine aldub
 
+
   subroutine dlinvmm(a,b,m,mm,na,nb)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -1683,6 +1714,7 @@ end subroutine uv2vordiv
   call dlubmm(a,b,ipiv,m,mm,na,nb)
   return
   end subroutine dlinvmm
+
 
   subroutine dlufm(a,ipiv,d,m,na)
 !$$$  subprogram documentation block
@@ -1769,6 +1801,7 @@ end subroutine uv2vordiv
   return
   end subroutine dlufm
 
+
   subroutine dlubmm(a,b,ipiv,m,mm,na,nb)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -1832,6 +1865,7 @@ end subroutine uv2vordiv
   return
   end subroutine dlubmm
 
+
   subroutine compact_dlon(b,dbdx,vector)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -1843,6 +1877,7 @@ end subroutine uv2vordiv
 !
 ! program history log:
 !   2005-05-16  parrish
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !     "b"    - array containing the scalar field
@@ -1863,8 +1898,8 @@ end subroutine uv2vordiv
   implicit none
 
   logical vector
-  integer(i_kind) nx,ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
-  integer(i_kind) lbcoy2,lacoy2,iy,ix,kk,i,j,lcy
+  integer(i_kind) ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
+  integer(i_kind) lbcoy2,lacoy2,iy,ix,i,j,lcy
   real(r_kind),dimension(nlat,nlon):: b,dbdx
   real(r_kind),dimension(nlat-2,nlon):: work3,grid3
   real(r_kind),dimension(nlon):: grid3n,grid3s
@@ -1956,6 +1991,7 @@ end subroutine uv2vordiv
   return
   end subroutine compact_dlon
 
+
   subroutine tcompact_dlon(b,dbdx,vector)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -1967,6 +2003,7 @@ end subroutine uv2vordiv
 ! program history log:
 !   2005-05-16  parrish
 !   2005-07-01  kleist, bug fix
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !     "b"    - array containing existing contents to be accumulated to
@@ -1988,8 +2025,8 @@ end subroutine uv2vordiv
   implicit none
 
   logical vector
-  integer(i_kind) nx,ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
-  integer(i_kind) lbcoy2,lacoy2,iy,ix,kk,i,j,lcy
+  integer(i_kind) ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
+  integer(i_kind) lbcoy2,lacoy2,iy,ix,i,j,lcy
   real(r_kind),dimension(nlat,nlon):: b,dbdx
   real(r_kind),dimension(nlat-2,nlon):: work3,grid3
   real(r_kind),dimension(nlon):: grid3n,grid3s
@@ -2070,6 +2107,7 @@ end subroutine uv2vordiv
   return
   end subroutine tcompact_dlon
 
+
   subroutine compact_dlat(b,dbdy,vector)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -2082,6 +2120,7 @@ end subroutine uv2vordiv
 ! program history log:
 !   2005-05-16  parrish
 !   2005-07-01  kleist, bug fix
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !     "b"    - array containing the scalar field
@@ -2103,8 +2142,8 @@ end subroutine uv2vordiv
   implicit none
 
   logical vector
-  integer(i_kind) nx,ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
-  integer(i_kind) lbcoy2,lacoy2,iy,ix,kk,i,j,lcy
+  integer(i_kind) ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
+  integer(i_kind) lbcoy2,lacoy2,iy,ix,i,j,lcy
   real(r_kind),dimension(nlat,nlon):: b,dbdy
   real(r_kind),dimension(nlat-2,nlon):: work2,grid4
   real(r_kind),dimension(nlon)::grid4n,grid4s
@@ -2203,6 +2242,7 @@ end subroutine uv2vordiv
   return
   end subroutine compact_dlat
 
+
   subroutine tcompact_dlat(b,dbdy,vector)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -2214,6 +2254,7 @@ end subroutine uv2vordiv
 ! program history log:
 !   2005-05-16  parrish
 !   2005-07-01  kleist, bug and sign fixes
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !     "b"    - array containing existing contents to be accumulated to
@@ -2236,8 +2277,8 @@ end subroutine uv2vordiv
   implicit none
 
   logical vector
-  integer(i_kind) nx,ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
-  integer(i_kind) lbcoy2,lacoy2,iy,ix,kk,i,j,lcy
+  integer(i_kind) ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
+  integer(i_kind) lbcoy2,lacoy2,iy,ix,i,j,lcy
   real(r_kind),dimension(nlat,nlon):: b,dbdy
   real(r_kind),dimension(nlat-2,nlon):: work2,grid4
   real(r_kind),dimension(nlon)::grid4n,grid4s
@@ -2326,6 +2367,7 @@ end subroutine uv2vordiv
   return
   end subroutine tcompact_dlat
 
+
   subroutine compact_delsqr(b,delsqrb)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -2372,6 +2414,7 @@ end subroutine uv2vordiv
 
   return
   end subroutine compact_delsqr
+
 
   subroutine tcompact_delsqr(b,delsqrb)
 !$$$  subprogram documentation block
@@ -2435,6 +2478,7 @@ end subroutine uv2vordiv
   return
   end subroutine tcompact_delsqr
 
+
   subroutine compact_grad(a,dadx,dady)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -2449,6 +2493,7 @@ end subroutine uv2vordiv
 !   1994-01-01  purser
 !   1994-05-12  parrish - eliminate memory bank conflicts
 !   2004-06-16  treadon - update documentation
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !     "a"   - array containing the scalar field
@@ -2467,9 +2512,8 @@ end subroutine uv2vordiv
     use gridmod, only: nlon, nlat
     implicit none
 
-    integer(i_kind) nx,ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
-    integer(i_kind) lbcoy2,lacoy2,lcy,iy,ix,ni1,ni2,kk,i,j
-    real(r_kind) cy
+    integer(i_kind) ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
+    integer(i_kind) lbcoy2,lacoy2,lcy,iy,ix,i,j
     real(r_kind),dimension(nlat,nlon):: a,dadx,dady
     real(r_kind),dimension(nlat-2,nlon):: work1,grid1,grid2
 
@@ -2536,14 +2580,38 @@ end subroutine uv2vordiv
     return
   end subroutine compact_grad
 
+
   subroutine compact_grad_ad(a,dadx,dady)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    compact_grad_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-06-05  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     dadx,dady
+!
+!   output argument list:
+!     a
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
     use kinds, only: r_kind,i_kind
     use constants, only: zero
     use gridmod, only: nlon, nlat
     implicit none
 
-    integer(i_kind) nx,ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
-    integer(i_kind) lbcoy2,lacoy2,lcy,iy,ix,ni1,ni2,kk,i,j
+    integer(i_kind) ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
+    integer(i_kind) lbcoy2,lacoy2,lcy,iy,ix,i,j
     real(r_kind),dimension(nlat,nlon),intent(in):: dadx,dady
     real(r_kind),dimension(nlat,nlon),intent(out):: a
     real(r_kind),dimension(nlat-2,nlon):: work1,work2,grid1,grid2
@@ -2603,15 +2671,39 @@ end subroutine uv2vordiv
     return
   end subroutine compact_grad_ad
 
+
   subroutine compact_div(uin,vin,div)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    compact_div
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-06-05  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     uin,vin
+!
+!   output argument list:
+!     div
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
     use kinds, only: r_kind,i_kind
     use gridmod, only: nlon,nlat
     implicit none
 
     real(r_kind),dimension(nlat,nlon),intent(in):: uin,vin
     real(r_kind),dimension(nlat,nlon),intent(out):: div
-    integer(i_kind) nx,ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
-    integer(i_kind) lbcoy2,lacoy2,lcy,iy,ix,ni1,ni2,kk,i,j
+    integer(i_kind) ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
+    integer(i_kind) lbcoy2,lacoy2,lcy,iy,ix,i,j
     real(r_kind),dimension(nlat-2,nlon):: work1,work2,grid1,grid2
 
 ! Set parameters for calls to subsequent routines
@@ -2692,6 +2784,27 @@ end subroutine uv2vordiv
 
 
   subroutine compact_div_ad(ux,vy,ddiv)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    compact_div_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-06-05  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
     use kinds, only: r_kind,i_kind
     use constants, only: zero
     use gridmod, only: nlat,nlon
@@ -2700,10 +2813,9 @@ end subroutine uv2vordiv
     real(r_kind),dimension(nlat,nlon),intent(out):: ux,vy
     real(r_kind),dimension(nlat,nlon),intent(in):: ddiv
 
-    integer(i_kind) nx,ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
-    integer(i_kind) lbcoy2,lacoy2,lcy,iy,ix,ni1,ni2,kk,i,j
+    integer(i_kind) ny,nxh,nbp,nya,nxa,lacox1,lbcox1,lacox2,lbcox2,lacoy1,lbcoy1
+    integer(i_kind) lbcoy2,lacoy2,lcy,iy,ix,i,j
     real(r_kind),dimension(nlat-2,nlon):: work1,work2,grid1,grid2
-    real(r_kind) cy
 
 ! Set parameters for calls to subsequent routines
     ny=nlat-2

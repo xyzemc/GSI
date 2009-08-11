@@ -1,4 +1,24 @@
-subroutine stpgps(rt,rq,rp,st,sq,sp,out,sges,drt,drq,drp,dst,dsq,dsp)
+module stpgpsmod
+
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    stpgpsmod    module for stpref and its tangent linear stpref_tl
+!
+! abstract: module for stpref and its tangent linear stpref_tl
+!
+! program history log:
+!   2005-05-19  Yanqiu zhu - wrap stpref and its tangent linear stpref_tl into one module
+!   2005-11-16  Derber - remove interfaces
+!
+
+implicit none
+
+PRIVATE
+PUBLIC stpgps
+
+contains
+
+subroutine stpgps(gpshead,rt,rq,rp,st,sq,sp,out,sges)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram: stpref    compute contribution to penalty and stepsize
@@ -22,6 +42,7 @@ subroutine stpgps(rt,rq,rp,st,sq,sp,out,sges,drt,drq,drp,dst,dsq,dsp)
 !   2005-08-02  derber  - modify for variational qc parameters for each ob
 !   2005-09-28  derber  - consolidate location and weight arrays
 !   2005-12-02  cucurull - fix bug for dimensions of sp and rp
+!   2007-03-19  tremolet - binning of observations
 !   2007-07-28  derber  - modify to use new inner loop obs data structure
 !                       - unify NL qc
 !   2006-09-06  cucurull - generalize code to hybrid vertical coordinate and modify to use 
@@ -30,6 +51,8 @@ subroutine stpgps(rt,rq,rp,st,sq,sp,out,sges,drt,drq,drp,dst,dsq,dsp)
 !   2007-02-15  rancic - add foto
 !   2007-06-04  derber  - use quad precision to get reproducability over number of processors
 !   2007-07-26  cucurull - input 3d pressure to update code to generalized vertical coordinate
+!   2008-04-11  safford - rm unused vars
+!   2008-12-03  todling - changed handling of ptr%time
 !
 !   input argument list:
 !     rt    - search direction (gradxJ) for virtual temperature
@@ -39,12 +62,6 @@ subroutine stpgps(rt,rq,rp,st,sq,sp,out,sges,drt,drq,drp,dst,dsq,dsp)
 !     sq    - analysis increment (correction) for specific humidity
 !     sp    - analysis increment (correction) for (3D) pressure
 !     sges  - stepsize estimates (4)
-!     drt   - search direction for time derivative of virtual temperature
-!     drq   - search direction for time derivative of specific humidity
-!     drp   - search direction for time derivative of (3D) pressure
-!     dst   - analysis increment for time derivative of virtual temperature
-!     dsq   - analysis increment for time derivative of specific humidity
-!     dsp   - analysis increment for time derivative of (3D) pressure
 !                                         
 !   output argument list:
 !     out(1)- contribution to penalty from local gps refractivity - sges(1)
@@ -60,19 +77,19 @@ subroutine stpgps(rt,rq,rp,st,sq,sp,out,sges,drt,drq,drp,dst,dsq,dsp)
 !
 !$$$
   use kinds, only: r_kind,i_kind,r_quad
-  use obsmod, only: gpshead,gpsptr
-  use qcmod, only: nlnqc_iter
-  use constants, only: zero,one,two,n_a,n_b,half,tiny_r_kind,cg_term,zero_quad
-  use gridmod, only: latlon1n,latlon11,nsig
+  use obsmod, only: gps_ob_type
+  use qcmod, only: nlnqc_iter,varqc_iter
+  use constants, only: zero,one,two,half,tiny_r_kind,cg_term,zero_quad,&
+                       r3600
+  use gridmod, only: latlon1n,latlon1n1,nsig
+  use jfunc, only: l_foto,xhat_dt,dhat_dt
   implicit none
 
-! Declare local parameters
-  real(r_kind),parameter:: ten = 10.0_r_kind
-
 ! Declare passed variables
+  type(gps_ob_type),pointer,intent(in):: gpshead
   real(r_quad),dimension(6),intent(out):: out
-  real(r_kind),dimension(latlon1n),intent(in):: rt,rq,st,sq,drt,drq,dst,dsq
-  real(r_kind),dimension(latlon1n+latlon11),intent(in):: rp,sp,drp,dsp
+  real(r_kind),dimension(latlon1n),intent(in):: rt,rq,st,sq
+  real(r_kind),dimension(latlon1n1),intent(in):: rp,sp
   real(r_kind),dimension(4),intent(in):: sges
 
 ! Declare local variables
@@ -82,9 +99,10 @@ subroutine stpgps(rt,rq,rp,st,sq,sp,out,sges,drt,drq,drp,dst,dsq,dsp)
   real(r_kind) :: w1,w2,w3,w4
   real(r_kind) :: q_TL,p_TL,t_TL,time_gps
   real(r_kind) :: rq_TL,rp_TL,rt_TL
+  type(gps_ob_type), pointer :: gpsptr
 
   real(r_kind) cg_gps,pen1,pen2,pen3,pencur,nref1,nref2,nref3,wgross,wnotgross
-  real(r_kind) alpha,ccoef,bcoef1,bcoef2,cc,nref0
+  real(r_kind) alpha,ccoef,bcoef1,bcoef2,cc,nref0,pg_gps
 
 ! Initialize penalty, b1, and b3 to zero
   out=zero_quad
@@ -109,24 +127,34 @@ subroutine stpgps(rt,rq,rp,st,sq,sp,out,sges,drt,drq,drp,dst,dsq,dsp)
       w2=gpsptr%wij(2)
       w3=gpsptr%wij(3)
       w4=gpsptr%wij(4)
-      time_gps=gpsptr%time
+
+
       val=zero
       val2=-gpsptr%res
 
 
       do j=1,nsig
-        t_TL =w1* st(i1(j))+w2* st(i2(j))+w3* st(i3(j))+w4* st(i4(j))+ &
-             (w1*dst(i1(j))+w2*dst(i2(j))+w3*dst(i3(j))+w4*dst(i4(j)))*time_gps
-        rt_TL=w1* rt(i1(j))+w2* rt(i2(j))+w3* rt(i3(j))+w4* rt(i4(j))+ &
-             (w1*drt(i1(j))+w2*drt(i2(j))+w3*drt(i3(j))+w4*drt(i4(j)))*time_gps
-        q_TL =w1* sq(i1(j))+w2* sq(i2(j))+w3* sq(i3(j))+w4* sq(i4(j))+ &
-             (w1*dsq(i1(j))+w2*dsq(i2(j))+w3*dsq(i3(j))+w4*dsq(i4(j)))*time_gps
-        rq_TL=w1* rq(i1(j))+w2* rq(i2(j))+w3* rq(i3(j))+w4* rq(i4(j))+ &
-             (w1*drq(i1(j))+w2*drq(i2(j))+w3*drq(i3(j))+w4*drq(i4(j)))*time_gps
-        p_TL =w1* sp(i1(j))+w2* sp(i2(j))+w3* sp(i3(j))+w4* sp(i4(j))+ &
-             (w1*dsp(i1(j))+w2*dsp(i2(j))+w3*dsp(i3(j))+w4*dsp(i4(j)))*time_gps
-        rp_TL=w1* rp(i1(j))+w2* rp(i2(j))+w3* rp(i3(j))+w4* rp(i4(j))+ &
-             (w1*drp(i1(j))+w2*drp(i2(j))+w3*drp(i3(j))+w4*drp(i4(j)))*time_gps
+        t_TL =w1* st(i1(j))+w2* st(i2(j))+w3* st(i3(j))+w4* st(i4(j))
+        rt_TL=w1* rt(i1(j))+w2* rt(i2(j))+w3* rt(i3(j))+w4* rt(i4(j))
+        q_TL =w1* sq(i1(j))+w2* sq(i2(j))+w3* sq(i3(j))+w4* sq(i4(j))
+        rq_TL=w1* rq(i1(j))+w2* rq(i2(j))+w3* rq(i3(j))+w4* rq(i4(j))
+        p_TL =w1* sp(i1(j))+w2* sp(i2(j))+w3* sp(i3(j))+w4* sp(i4(j))
+        rp_TL=w1* rp(i1(j))+w2* rp(i2(j))+w3* rp(i3(j))+w4* rp(i4(j))
+        if(l_foto)then
+          time_gps=gpsptr%time*r3600
+          t_TL=t_TL+(w1*xhat_dt%t(i1(j))+w2*xhat_dt%t(i2(j))+ &
+                     w3*xhat_dt%t(i3(j))+w4*xhat_dt%t(i4(j)))*time_gps
+          rt_TL=rt_TL+(w1*dhat_dt%t(i1(j))+w2*dhat_dt%t(i2(j))+ &
+                       w3*dhat_dt%t(i3(j))+w4*dhat_dt%t(i4(j)))*time_gps
+          q_TL=q_TL+(w1*xhat_dt%q(i1(j))+w2*xhat_dt%q(i2(j))+ &
+                     w3*xhat_dt%q(i3(j))+w4*xhat_dt%q(i4(j)))*time_gps
+          rq_TL=rq_TL+(w1*dhat_dt%q(i1(j))+w2*dhat_dt%q(i2(j))+ &
+                       w3*dhat_dt%q(i3(j))+w4*dhat_dt%q(i4(j)))*time_gps
+          p_TL=p_TL+(w1*xhat_dt%p3d(i1(j))+w2*xhat_dt%p3d(i2(j))+ &
+                     w3*xhat_dt%p3d(i3(j))+w4*xhat_dt%p3d(i4(j)))*time_gps
+          rp_TL=rp_TL+(w1*dhat_dt%p3d(i1(j))+w2*dhat_dt%p3d(i2(j))+ &
+                       w3*dhat_dt%p3d(i3(j))+w4*dhat_dt%p3d(i4(j)))*time_gps
+        end if
         val2 = val2 + t_tl*gpsptr%jac_t(j)+ q_tl*gpsptr%jac_q(j)+p_tl*gpsptr%jac_p(j) 
         val  = val + rt_tl*gpsptr%jac_t(j)+rq_tl*gpsptr%jac_q(j)+rp_tl*gpsptr%jac_p(j)
 
@@ -147,9 +175,10 @@ subroutine stpgps(rt,rq,rp,st,sq,sp,out,sges,drt,drq,drp,dst,dsq,dsp)
 
 !      Modify penalty term if nonlinear QC
       if (nlnqc_iter .and. gpsptr%pg > tiny_r_kind .and. gpsptr%b > tiny_r_kind) then
+         pg_gps=gpsptr%pg*varqc_iter
          cg_gps=cg_term/gpsptr%b
-         wnotgross= one-gpsptr%pg
-         wgross = gpsptr%pg*cg_gps/wnotgross
+         wnotgross= one-pg_gps
+         wgross = pg_gps*cg_gps/wnotgross
          pencur = -two*log((exp(-half*pencur) + wgross)/(one+wgross))
          pen1   = -two*log((exp(-half*pen1  ) + wgross)/(one+wgross))
          pen2   = -two*log((exp(-half*pen2  ) + wgross)/(one+wgross))
@@ -173,3 +202,6 @@ subroutine stpgps(rt,rq,rp,st,sq,sp,out,sges,drt,drq,drp,dst,dsq,dsp)
 
  return
 end subroutine stpgps
+
+
+end module stpgpsmod

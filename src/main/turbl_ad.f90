@@ -1,21 +1,53 @@
 subroutine turbl_ad(pges,tges,oges,u,v,prs,t,termu,termv,termt,jstart,jstop)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    turbl_ad
+!
+!   prgrmmr:
+!
+! abstract:      Adjoint of turbl_tl
+!
+! program history log:
+!   2008-04-02  safford -- add subprogram doc block, rm unused vars and uses
+!
+!   input argument list:
+!     pges     -
+!     tges     -
+!     oges     -
+!     prs      -
+!     t        -
+!     u        -
+!     v        -
+!     termu    -
+!     termv    -
+!     termt    -
+!
+!   output argument list:
+!     prs      -
+!     t        -
+!     u        -
+!     v        -
+!     termu    -
+!     termv    -
+!     termt    -
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
 !$$$
-!    Adjoint of turbl_tl
-!$$$
+
   use constants, only: rd_over_cp,two,rd_over_g,half,zero,one,three,grav
   use kinds, only: r_kind,i_kind 
   use gridmod, only: lat2,lon2,nsig,nsig_hlf
   use turblmod, only: use_pbl
   use turblmod, only: dudz,dvdz,dodz,ri,rf,kar0my20,zi,km,kh,sm,sh
   use turblmod, only: lmix,dudtm,dvdtm,dtdtm,rdzi,rdzl
-  use turblmod, only: ricmy20,a0my20,b0my20,c0my20,d0my20,f1my20,f2my20, &
-                      f3my20,f4my20,f5my20,f6my20,f7my20,f8my20,b1my20, &
-                      karmy20,l0my20,alf0my20, &
-                      f85my20,f76my20
-  use turblmod, only: ricmy20,rfcmy20,shcmy20,smcmy20,eps_m
+  use turblmod, only: a0my20,c0my20,d0my20, &
+                      f7my20,f8my20,karmy20
+  use turblmod, only: eps_m
   use turblmod, only: fsm_my20,fsh_my20
   use turblmod, only: ri_int
-!m  use turblmod, only: nsig_hlf
   implicit none
 
 
@@ -28,7 +60,7 @@ subroutine turbl_ad(pges,tges,oges,u,v,prs,t,termu,termv,termt,jstart,jstop)
   integer(i_kind) :: jstart,jstop
 
 ! Declare local variables
-  real(r_kind),dimension(nsig_hlf):: turbu,turbv,turbo,t_bck,u_bck,v_bck,o_bck
+  real(r_kind),dimension(nsig_hlf):: t_bck,o_bck
   real(r_kind),dimension(nsig_hlf):: dudz_bck,dvdz_bck,dodz_bck,ri_bck,rf_bck
   real(r_kind),dimension(nsig_hlf):: rdudz_bck,rdvdz_bck,sm_bck,sh_bck
   real(r_kind),dimension(nsig_hlf):: rdzl_bck,rdzi_bck,t_tl,u_tl,v_tl,o_tl,dzi_tl,zl_tl
@@ -38,7 +70,7 @@ subroutine turbl_ad(pges,tges,oges,u,v,prs,t,termu,termv,termt,jstart,jstop)
   real(r_kind),dimension(2:nsig_hlf):: dzl_tl,dodz_tl,dudz_tl,dvdz_tl,ri_tl
   real(r_kind),dimension(2:nsig_hlf):: rf_tl,sh_tl,sm_tl,lmix_tl
   integer(i_kind),dimension(nsig_hlf):: lssq
-  real(r_kind):: px,rpx,zx,a1,a2,ax,bx,ssq,rtbck
+  real(r_kind):: px,rpx,a1,a2,ax,bx,ssq,rtbck
   real(r_kind):: alph,beta,gamm,gam1,gam2,alph1,alph2,delt,bet
   real(r_kind):: rdzibk,rdzlbk,kmbk,khbk,rpbck,hrdzbk,ardzbk
   real(r_kind):: kmaz_bck,khaz_bck,kmaz_tl,khaz_tl
@@ -91,14 +123,18 @@ subroutine turbl_ad(pges,tges,oges,u,v,prs,t,termu,termv,termt,jstart,jstop)
 
 ! initialize perturbations
 
+      do k=nsig_hlf,2,-1
+         dzl_tl(k)=zero
+         lmix_tl(k)=zero
+         sm_tl(k)=zero; sh_tl(k)=zero
+         ri_tl(k)=zero; rf_tl(k)=zero
+         dudz_tl(k)=zero; dvdz_tl(k)=zero; dodz_tl(k)=zero
+      enddo
       do k=nsig_hlf,1,-1
-        dzi_tl(k)=zero; dzl_tl(k)=zero
+        dzi_tl(k)=zero
         zi_tl(k)=zero;   zl_tl(k)=zero
-        dudz_tl(k)=zero; dvdz_tl(k)=zero; dodz_tl(k)=zero
         km_tl(k)=zero; kh_tl(k)=zero
-        sm_tl(k)=zero; sh_tl(k)=zero
-        ri_tl(k)=zero; rf_tl(k)=zero
-        lmix_tl(k)=zero; t_tl(k)=zero
+        t_tl(k)=zero
         o_tl(k)=zero; u_tl(k)=zero; v_tl(k)=zero; p_tl(k)=zero
       end do
         p_tl(nsig_hlf+1)=zero; zi_tl(nsig_hlf+1)=zero

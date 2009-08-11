@@ -80,14 +80,16 @@ module fgrid2agrid_mod
 
   contains
 
+
   subroutine init_fgrid2agrid
 !$$$  subprogram documentation block
 !                .      .    .                                       .
-! subprogram:    init_fgrid2agrid  initialize interpolation variables and constants to defaults
-!   prgmmr: parrish          org: np22                date: 2005-06-06
+! subprogram:    init_fgrid2agrid  initialize interpolation variables and 
+!                                  constants to defaults
+!   prgmmr:      parrish          org: np22                date: 2005-06-06
 !
-! abstract: initialize structure variable designed to contain interpolation details, and also
-!            various other constants to defaults.
+! abstract:      initialize structure variable designed to contain interpolation 
+!                details, and also various other constants to defaults.
 !
 ! program history log:
 !   2005-06-06  parrish
@@ -100,7 +102,7 @@ module fgrid2agrid_mod
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
     use constants, only: one
 
 !    initialize fgrid2agrid interpolation structure variables and other constants to defaults
@@ -143,14 +145,15 @@ module fgrid2agrid_mod
 
   end subroutine init_fgrid2agrid
 
+
   subroutine create_fgrid2agrid(grid_ratio)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    create_fgrid2agrid  create interpolation variables
-!   prgmmr: parrish          org: np22                date: 2005-06-06
+!   prgmmr:      parrish          org: np22                date: 2005-06-06
 !
-! abstract: fill up structure variable with interpolation information for specified grid ratio.
-!
+! abstract:      fill up structure variable with interpolation information 
+!                for specified grid ratio.
 !
 ! program history log:
 !   2005-06-06  parrish
@@ -164,7 +167,7 @@ module fgrid2agrid_mod
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
 
 !    grid_ratio is desired ratio of the filter grid to analysis grid in analysis grid units.
 !    compute nlatf, nlonf to get actual ratio to be the closest from below if grid_ratio > 1
@@ -197,13 +200,14 @@ module fgrid2agrid_mod
 
   end subroutine create_fgrid2agrid
 
+
   subroutine get_3ops(f2a,grid_ratio_in,grid_ratio_out,ngrida,ngridf,iord)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    get_3ops          compute interpolation operators
-!   prgmmr: parrish          org: np22                date: 2005-06-06
+!   prgmmr:      parrish          org: np22                date: 2005-06-06
 !
-! abstract: obtain one-dimensional interpolation operators.
+! abstract:      obtain one-dimensional interpolation operators.
 !
 !
 ! program history log:
@@ -226,7 +230,7 @@ module fgrid2agrid_mod
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
 
 !     obtain 3 types of interpolation/smoothing operators:
 
@@ -434,6 +438,8 @@ module fgrid2agrid_mod
       f2a%iwin=0
       f2a%nwin=0
       f2a%win=zero
+
+      !$omp parallel do private (k,j)
       do i=1,nf
         f2a%nwin(i)=nwin(i)
         do k=1,nwin(i)
@@ -441,6 +447,8 @@ module fgrid2agrid_mod
           f2a%win(k,i)=win(k,i)
         end do
       end do
+
+
       deallocate(f2a%itwin,f2a%ntwin,f2a%twin)
       deallocate(f2a%iswin,f2a%nswin,f2a%swin)
       allocate(f2a%itwin(ntwinmax,nc))
@@ -455,6 +463,8 @@ module fgrid2agrid_mod
       f2a%iswin=0
       f2a%nswin=0
       f2a%swin=zero
+
+      !$omp parallel do private (k,j)
       do j=1,nc
         f2a%ntwin(j)=ntwin(j)
         f2a%nswin(j)=nswin(j)
@@ -482,6 +492,8 @@ module fgrid2agrid_mod
       f2a%iwin=0
       f2a%nwin=0
       f2a%win=zero
+
+      !$omp parallel do private (k,j)
       do j=1,nc
         f2a%nwin(j)=nswin(j)
         do k=1,nswin(j)
@@ -489,6 +501,7 @@ module fgrid2agrid_mod
           f2a%win(k,j)=swin(k,j)
         end do
       end do
+
       deallocate(f2a%itwin,f2a%ntwin,f2a%twin)
       deallocate(f2a%iswin,f2a%nswin,f2a%swin)
       allocate(f2a%itwin(iord+1,nf))
@@ -503,6 +516,8 @@ module fgrid2agrid_mod
       f2a%iswin=0
       f2a%nswin=0
       f2a%swin=zero
+
+      !$omp parallel do private (k,j)
       do i=1,nf
         f2a%ntwin(i)=ntswin(i)
         f2a%nswin(i)=nwin(i)
@@ -522,13 +537,14 @@ module fgrid2agrid_mod
 
   end subroutine get_3ops
 
+
   subroutine destroy_fgrid2agrid
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    destroy_fgrid2agrid   release space used by fgrid2agrid
-!   prgmmr: parrish          org: np22                date: 2005-06-06
+!   prgmmr:      parrish          org: np22                date: 2005-06-06
 !
-! abstract: release space used by fgrid2agrid.
+! abstract:      release space used by fgrid2agrid.
 !
 !
 ! program history log:
@@ -542,7 +558,7 @@ module fgrid2agrid_mod
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
 
 ! free space used by interpolation structures
 
@@ -556,14 +572,14 @@ module fgrid2agrid_mod
 
   end subroutine destroy_fgrid2agrid
 
+
   subroutine fgrid2agrid(f,a)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    fgrid2agrid   interpolate from filter to analysis grid
-!   prgmmr: parrish          org: np22                date: 2005-06-06
+!   prgmmr:      parrish          org: np22                date: 2005-06-06
 !
-! abstract: interpolate from filter to analysis grid
-!
+! abstract:      interpolate from filter to analysis grid
 !
 ! program history log:
 !   2005-06-06  parrish
@@ -578,7 +594,7 @@ module fgrid2agrid_mod
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
     real(r_kind),intent(in):: f(nlatf,nlonf)
     real(r_kind),intent(out):: a(nlat,nlon)
 
@@ -618,17 +634,18 @@ module fgrid2agrid_mod
 
   end subroutine fgrid2agrid
 
+
   subroutine tfgrid2agrid(a,f)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    tfgrid2agrid  adjoint of fgrid2agrid
-!   prgmmr: parrish          org: np22                date: 2005-06-06
+!   prgmmr:      parrish          org: np22                date: 2005-06-06
 !
-! abstract: adjoint of fgrid2agrid
-!
+! abstract:      adjoint of fgrid2agrid
 !
 ! program history log:
 !   2005-06-06  parrish
+!   2008-06-04  safford - rm unused use "one"
 !
 !   input argument list:
 !     a              - analysis grid
@@ -640,9 +657,8 @@ module fgrid2agrid_mod
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
 
-    use constants, only: zero
     real(r_kind),intent(out):: f(nlatf,nlonf)
     real(r_kind),intent(in):: a(nlat,nlon)
 
@@ -682,17 +698,19 @@ module fgrid2agrid_mod
 
   end subroutine tfgrid2agrid
 
+
   subroutine agrid2fgrid(a,f)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    agrid2fgrid  interpolate from agrid to fgrid
-!   prgmmr: parrish          org: np22                date: 2005-06-06
+!   prgmmr:      parrish          org: np22                date: 2005-06-06
 !
-! abstract: interpolate from agrid to fgrid
+! abstract:      interpolate from agrid to fgrid
 !
 !
 ! program history log:
 !   2005-06-06  parrish
+!   2008-06-04  safford - rm unused use "one"
 !
 !   input argument list:
 !     a              - analysis grid
@@ -704,9 +722,8 @@ module fgrid2agrid_mod
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
 
-    use constants, only: zero
     real(r_kind),intent(out):: f(nlatf,nlonf)
     real(r_kind),intent(in):: a(nlat,nlon)
 

@@ -1,5 +1,4 @@
-
- subroutine update_guess(xhat,xhatuv,xut,xvt,xtt,xqt,xozt,xcwt,xpt,mype)
+subroutine update_guess(sval,sbias)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    update_guess          add analysis increment to guess
@@ -14,7 +13,7 @@
 !            function and velocity potential are converted into 
 !            vorticity and divergence, the guess variables.
 !
-!            If the guess bias correction is turned on (biascor>0.0),
+!            If the guess bias correction is turned on (biascor>=0.0),
 !            then use the analysis increment to adjust the bias 
 !            correction fields 
 !
@@ -48,15 +47,21 @@
 !   2006-02-02  treadon - replace prsi_oz with ges_prsi
 !   2006-03-27  treadon - bug fix:  use xhat_q, not xhat(nq), to update bias_q
 !   2006-04-05  treadon - add update to skin temperature and bias correction
+!   2006-06-08  zhang,b - change "biascor>0" to "biascor>=0" for debug purposes
+!   2006-06-10  zhang,b - add update_bias and m_gsiBiases reference
 !   2006-07-28  derber  - include sensible temperature update
 !   2006-07-31  kleist  - change to ps instead of ln(ps)
-!   2007-02-15  rancic -  add foto
-!   2007-05-30  h.liu  - remove ozone units conversion
+!   2006-12-13  todling - add brute-force lower bound for positive quantities
+!   2007-04-13  tremolet - use state vectors
+!   2007-04-24  tremolet - 4dvar version
+!   2007-07-05  todling - moved vor/div calculation elsewhere
+!   2007-05-30  h.liu - remove ozone units conversion
+!   2008-10-10  derber  - flip indices for predx and predxp
+!   2009-01-28  todling - remove reference to original GMAO interface
 !
 !   input argument list:
 !     xhat     - analysis increment in grid space
 !     xhatuv    - u,v increment in grid space
-!     mype     - mpi task number
 !
 !   output argument list:
 !
@@ -68,296 +73,122 @@
 !
 !$$$
   use kinds, only: r_kind,i_kind
-  use mpimod, only: iscuv_s,ierror,mpi_comm_world,irduv_s,ircuv_s,&
-       isduv_g,iscuv_g,nuvlevs,irduv_g,ircuv_g,mpi_rtype,isduv_s,&
-       strip,reorder,reorder2
-  use constants, only: zero, one, fv,r3600
-  use jfunc, only: ncw,nq,nt,iout_iter,biascor,np,noz,nclen,&
-       nvp,nst,nuvlen,nu,nv,nsst,nclen1,nclen2,l_foto
-  use gridmod, only: lat1,lon1,lat2,lon2,itotsub,nsig,ltosi,ltosj,nlon,nlat,iglobal,&
-       ltosi_s,ltosj_s,regional,twodvar_regional,latlon1n,latlon11
+  use mpimod, only: mype
+  use constants, only: zero, one, ozcon, fv, tiny_r_kind
+  use jfunc, only: iout_iter,biascor
+  use gridmod, only: lat1,lon1,lat2,lon2,nsig,nlon,nlat,&
+       regional,twodvar_regional
   use guess_grids, only: ges_div,ges_vor,ges_ps,ges_cwmr,ges_tv,ges_q,&
-       ges_tsen,ges_oz,ges_u,ges_v,bias_oz,bias_cwmr,bias_ps,bias_q,bias_vor,&
-       bias_div,bias_tv,bias_u,bias_v,nfldsig,ntguessig,&
-       bias_tskin,nfldsfc,dsfct,&
-       hrdifsig,hrdifsfc
+       ges_tsen,ges_oz,ges_u,ges_v,nfldsig,hrdifsig,hrdifsfc,ges_prsi,&
+       nfldsfc,dsfct
+  use xhat_vordivmod, only: xhat_vor,xhat_div
   use compact_diffs, only: uv2vordiv
-  use gridmod,only : gmao_intfc
+  use gsi_4dvar, only: nobs_bins, hr_obsbin, winlen
   use radinfo, only: npred,jpch_rad,predx
   use pcpinfo, only: npredp,npcptype,predxp
+  use m_gsiBiases,only : bias_hour, update_bias
+  use bias_predictors
+  use state_vectors
 
   implicit none
 
 ! Declare passed variables
-  integer(i_kind),intent(in):: mype
-  real(r_kind),dimension(nclen),intent(inout):: xhat
-  real(r_kind),dimension(nuvlen),intent(in):: xhatuv
-  real(r_kind),dimension(lat2,lon2,nsig),intent(in):: xut,xvt,xtt,xqt, &
-                                                      xozt,xcwt
-  real(r_kind),dimension(lat2,lon2),intent(in):: xpt
+  type(state_vector), intent(inout) :: sval(nobs_bins)
+  type(predictors)  , intent(inout) :: sbias
 
 ! Declare local variables
-  integer(i_kind) i,j,k,it,ij,ijk,i2,i2m1,ni1,ni2,kk
+  integer(i_kind) i,j,k,it,ij,ijk,i2,i2m1,ni1,ni2,kk,ii,jj
   real(r_kind),dimension(lat1,lon1,nsig):: usm,vsm
-  real(r_kind),dimension(lat2,lon2,nsig):: xhat_vor,xhat_div,xhat_q,dvor_t,ddiv_t
-  real(r_kind),dimension(itotsub,nuvlevs):: work1,work2
-  real(r_kind),dimension(latlon1n+latlon11)::xhat3dp
+  real(r_kind),dimension(nlon,nlat):: grid_vor,grid_div
+  real(r_kind) :: zt,zmin
 
+!*******************************************************************************
+! In 3dvar, nobs_bins=1 is smaller than nfldsig. This subroutine is
+! written in a way that is more efficient in that case but might not
+! be the best in 4dvar.
 
-  real(r_kind) aux_m1,tcon
 ! Initialize local arrays
-  do k=1,nsig
-     do j=1,lon2
-        do i=1,lat2
-           xhat_vor(i,j,k) = zero
-           xhat_div(i,j,k) = zero
-           dvor_t(i,j,k) = zero
-           ddiv_t(i,j,k) = zero
-        end do
-     end do
-  end do
-
   if (regional) then
-     ijk=-1
+   do ii=1,nobs_bins
+     ijk=0
      do k=1,nsig
         do j=1,lon2
            do i=1,lat2
               ijk=ijk+1
-              xhat(noz+ijk)=zero
-              xhat(ncw+ijk)=zero
+              sval(ii)%oz(ijk)=zero
+              sval(ii)%cw(ijk)=zero
            end do
         end do
      end do
+   end do
   endif
-              
-
-! The GSI analyzes stream function (sf) and velocity potential (vp).  
-! Wind field observations are in terms of zonal (u) and meridional 
-! (v) wind components or wind speed.  Thus, the GSI carries wind 
-! increments in terms of both u,v and sf,vp.  
-!
-! The NCEP GFS (global) model uses vorticity and divergence as
-! wind field variable.  The code below converts increments in 
-! u and v to those in vorticity and divergence.  The wind variables
-! in the NCEP regional model are u and v.  Hence, the block of code
-! below is only used for the NCEP GFS (.not.regional). 
-
-! Other users may need to change the logical below to obtain the
-! proper behavior for their specific guess (model background)
-
-! For NCEP GFS convert increment in u,v to increments in vor,div
-  if (.not.regional) then
-
-!    NCEP GFS interface
-!    Zero work arrays
-     do k=1,nuvlevs
-        do j=1,itotsub
-           work1(j,k)=zero
-           work2(j,k)=zero
-        end do
-     end do
-  
-!    Strip off halo for u,v grids on subdomains
-     call strip(xhatuv(nu),usm,nsig)
-     call strip(xhatuv(nv),vsm,nsig)
-
-!    Put u,v subdomains on global slabs
-!    Note:  u --> work1, v --> work2
-     call mpi_alltoallv(usm,iscuv_g,isduv_g,&
-          mpi_rtype,work1,ircuv_g,irduv_g,mpi_rtype,&
-          mpi_comm_world,ierror)
-     call mpi_alltoallv(vsm,iscuv_g,isduv_g,&
-          mpi_rtype,work2,ircuv_g,irduv_g,mpi_rtype,&
-          mpi_comm_world,ierror)
-
-!    Reorder work arrays before converting u,v to vor,div
-     call reorder(work1,nuvlevs)
-     call reorder(work2,nuvlevs)
-
-!    Call u,v --> vor,div routine (conversion uses compact differences)
-     do k=1,nuvlevs
-        call uv2vordiv(work1(1,k),work2(1,k))
-     end do
-
-!    Reorder work arrays for mpi communication
-     call reorder2(work1,nuvlevs)
-     call reorder2(work2,nuvlevs)
-
-!    Get vor,div on subdomains
-!    Note:  work1 --> vor, work2 --> div
-     call mpi_alltoallv(work1,iscuv_s,isduv_s,&
-          mpi_rtype,xhat_vor(1,1,1),ircuv_s,irduv_s,mpi_rtype,&
-          mpi_comm_world,ierror)
-     call mpi_alltoallv(work2,iscuv_s,isduv_s,&
-          mpi_rtype,xhat_div(1,1,1),ircuv_s,irduv_s,mpi_rtype,&
-          mpi_comm_world,ierror)
-
-!  Do time derivative of vorticity and divergence
-     if(l_foto)then
-
-!      Zero work arrays
-       do k=1,nuvlevs
-          do j=1,itotsub
-             work1(j,k)=zero
-             work2(j,k)=zero
-          end do
-       end do
-  
-!      Strip off halo for u,v grids on subdomains
-       call strip(xut,usm,nsig)
-       call strip(xvt,vsm,nsig)
-
-!      Put u,v subdomains on global slabs
-!      Note:  u --> work1, v --> work2
-       call mpi_alltoallv(usm,iscuv_g,isduv_g,&
-            mpi_rtype,work1,ircuv_g,irduv_g,mpi_rtype,&
-            mpi_comm_world,ierror)
-       call mpi_alltoallv(vsm,iscuv_g,isduv_g,&
-            mpi_rtype,work2,ircuv_g,irduv_g,mpi_rtype,&
-            mpi_comm_world,ierror)
-  
-!      Reorder work arrays before converting u,v to vor,div
-       call reorder(work1,nuvlevs)
-       call reorder(work2,nuvlevs)
-  
-!      Call u,v --> vor,div routine (conversion uses compact differences)
-       do k=1,nuvlevs
-          call uv2vordiv(work1(1,k),work2(1,k))
-       end do
-
-!      Reorder work arrays for mpi communication
-       call reorder2(work1,nuvlevs)
-       call reorder2(work2,nuvlevs)
-  
-!      Get vor,div on subdomains
-!      Note:  work1 --> vor, work2 --> div
-       call mpi_alltoallv(work1,iscuv_s,isduv_s,&
-            mpi_rtype,dvor_t,ircuv_s,irduv_s,mpi_rtype,&
-            mpi_comm_world,ierror)
-       call mpi_alltoallv(work2,iscuv_s,isduv_s,&
-            mpi_rtype,ddiv_t,ircuv_s,irduv_s,mpi_rtype,&
-            mpi_comm_world,ierror)
-
-    end if
-
-!   End of NCEP GFS block
-
-  endif
-
-  
-! Obtain q from normalized rh
-  call getprs_tl(xhat(np),xhat(nt),xhat3dp)
-  call normal_rh_to_q(xhat(nq),xhat(nt),xhat3dp,xhat_q)
-
 
 ! Add increment to background
   do it=1,nfldsig
-     ijk=-1
+     if (nobs_bins>1) then
+       zt = hrdifsig(it)
+       ii = NINT(zt/hr_obsbin)+1
+     else
+       ii = 1
+     endif
+     ijk=0
      do k=1,nsig
         do j=1,lon2
            do i=1,lat2
               ijk=ijk+1
-              ges_u(i,j,k,it)    = ges_u(i,j,k,it)    + xhatuv(nu+ijk) 
-              ges_v(i,j,k,it)    = ges_v(i,j,k,it)    + xhatuv(nv+ijk) 
-
-              ges_tv(i,j,k,it)   = ges_tv(i,j,k,it)   + xhat(nt+ijk)  
-
-              ges_q(i,j,k,it)   = ges_q(i,j,k,it)   + xhat_q(i,j,k)  
-
+              ges_u(i,j,k,it)    =                 ges_u(i,j,k,it)    + sval(ii)%u(ijk)
+              ges_v(i,j,k,it)    =                 ges_v(i,j,k,it)    + sval(ii)%v(ijk)
+              ges_tv(i,j,k,it)   =                 ges_tv(i,j,k,it)   + sval(ii)%t(ijk)
+!_RT          ges_q(i,j,k,it)    = max(tiny_r_kind,ges_q(i,j,k,it)    + sval(ii)%q(ijk))
+              ges_q(i,j,k,it)    =                 ges_q(i,j,k,it)    + sval(ii)%q(ijk) 
 !  produce sensible temperature
               ges_tsen(i,j,k,it) = ges_tv(i,j,k,it)/(one+fv*max(zero,ges_q(i,j,k,it)))
 
 !             Note:  Below variables only used in NCEP GFS model
-
-              ges_oz(i,j,k,it)   = ges_oz(i,j,k,it)   + xhat(noz+ijk) 
-
-              ges_cwmr(i,j,k,it) = ges_cwmr(i,j,k,it) + xhat(ncw+ijk) 
-
-              ges_div(i,j,k,it)  = ges_div(i,j,k,it)  + xhat_div(i,j,k)
-              ges_vor(i,j,k,it)  = ges_vor(i,j,k,it)  + xhat_vor(i,j,k)
+!_RT          ges_oz(i,j,k,it)   = max(tiny_r_kind,ges_oz(i,j,k,it)   + sval(ii)%oz(ijk))
+!_RT          ges_cwmr(i,j,k,it) = max(tiny_r_kind,ges_cwmr(i,j,k,it) + sval(ii)%cw(ijk))
+              ges_oz(i,j,k,it)   =                 ges_oz(i,j,k,it)   + sval(ii)%oz(ijk)
+              ges_cwmr(i,j,k,it) =                 ges_cwmr(i,j,k,it) + sval(ii)%cw(ijk)
+              ges_div(i,j,k,it)  =                 ges_div(i,j,k,it)  + xhat_div(i,j,k,ii)
+              ges_vor(i,j,k,it)  =                 ges_vor(i,j,k,it)  + xhat_vor(i,j,k,ii)
            end do
         end do
      end do
-     ij=-1
+     ij=0
      do j=1,lon2
         do i=1,lat2
            ij=ij+1
-           ges_ps(i,j,it) = ges_ps(i,j,it) + xhat(np+ij) 
+           ges_ps(i,j,it) = ges_ps(i,j,it) + sval(ii)%p(ij)
         end do
      end do
   end do
 
-  if(l_foto)then
-    do it=1,nfldsig
-       tcon=hrdifsig(it)*r3600
-       do k=1,nsig
-          do j=1,lon2
-             do i=1,lat2
-               ges_u(i,j,k,it)    = ges_u(i,j,k,it) + xut(i,j,k)*tcon
-               ges_v(i,j,k,it)    = ges_v(i,j,k,it) + xvt(i,j,k)*tcon
-               ges_tv(i,j,k,it)   = ges_tv(i,j,k,it)+ xtt(i,j,k)*tcon
-               ges_q(i,j,k,it)    = ges_q(i,j,k,it) + xqt(i,j,k)*tcon
-
-!  produce sensible temperature
-               ges_tsen(i,j,k,it) = ges_tv(i,j,k,it)/(one+fv*max(zero,ges_q(i,j,k,it)))
-
-!              Note:  Below variables only used in NCEP GFS model
-
-               ges_oz(i,j,k,it)   = ges_oz(i,j,k,it) + xozt(i,j,k)*tcon
-               ges_cwmr(i,j,k,it) = ges_cwmr(i,j,k,it)+ xcwt(i,j,k)*tcon
-               ges_div(i,j,k,it)  = ges_div(i,j,k,it) + ddiv_t(i,j,k)*tcon
-               ges_vor(i,j,k,it)  = ges_vor(i,j,k,it) + dvor_t(i,j,k)*tcon
-             end do
-          end do
-       end do
-       do j=1,lon2
-          do i=1,lat2
-            ges_ps(i,j,it) = ges_ps(i,j,it) + xpt(i,j)*tcon
-          end do
-       end do
-    end do
-  end if
-
-  ij=-1
-  do j=1,lon2
-     do i=1,lat2
-        ij=ij+1
-        dsfct(i,j)=dsfct(i,j)+xhat(nsst+ij)
+  do k=1,nfldsfc
+     if (nobs_bins>1) then
+       zt = hrdifsfc(it)
+       ii = NINT(zt/hr_obsbin)+1
+     else
+       ii = 1
+     endif
+     ij=0
+     do j=1,lon2
+        do i=1,lat2
+           ij=ij+1
+           dsfct(i,j,k)=dsfct(i,j,k)+sval(ii)%sst(ij)
+        end do
      end do
   end do
 
+
 ! If requested, update background bias correction
-  if(.not.gmao_intfc) then
-   if (biascor > zero) then
+  if (biascor >= zero) then
      if (mype==0) write(iout_iter,*) &
           'UPDATE_GUESS:  update background bias correction.  biascor=',biascor
 
-!    Update bias correction field     
-     ijk=-1
-     do k=1,nsig
-        do j=1,lon2
-           do i=1,lat2
-              ijk=ijk+1
-              bias_u(i,j,k)    = bias_u(i,j,k)    + biascor*xhatuv(nu+ijk)
-              bias_v(i,j,k)    = bias_v(i,j,k)    + biascor*xhatuv(nv+ijk)
-              bias_tv(i,j,k)   = bias_tv(i,j,k)   + biascor*xhat(nt+ijk)
-              bias_q(i,j,k)    = bias_q(i,j,k)    + biascor*xhat_q(i,j,k)
-              bias_oz(i,j,k)   = bias_oz(i,j,k)   + biascor*xhat(noz+ijk)
-              bias_cwmr(i,j,k) = bias_cwmr(i,j,k) + biascor*xhat(ncw+ijk)
-              bias_div(i,j,k)  = bias_div(i,j,k)  + biascor*xhat_div(i,j,k)
-              bias_vor(i,j,k)  = bias_vor(i,j,k)  + biascor*xhat_vor(i,j,k)
-           end do
-        end do
-     end do
-     ij=-1
-     do j=1,lon2
-        do i=1,lat2
-           ij=ij+1
-           bias_ps(i,j) = bias_ps(i,j)  + biascor*xhat(np+ij)
-           bias_tskin(i,j)= bias_tskin(i,j) + biascor*xhat(nsst+ij)
-        end do
-     end do
-   endif
+!    Update bias correction field
+
+     call update_bias(sval(1),xhat_div(:,:,:,1),xhat_vor(:,:,:,1),hour=bias_hour)
+
   endif
 
  
@@ -367,20 +198,20 @@
   if (.not.twodvar_regional) then
 
 !    Satellite radiance biases
-     ij=nclen1
-     do j=1,npred
-        do i=1,jpch_rad
+     ij=0
+     do j=1,jpch_rad
+        do i=1,npred
            ij=ij+1
-           predx(i,j)=predx(i,j)+xhat(ij)
+           predx(i,j)=predx(i,j)+sbias%predr(ij)
         end do
      end do
 
 !    Precipitation biases
-     ij=nclen2
-     do j=1,npredp
-        do i=1,npcptype
+     ij=0
+     do j=1,npcptype
+        do i=1,npredp
            ij=ij+1
-           predxp(i,j)=predxp(i,j)+xhat(ij)
+           predxp(i,j)=predxp(i,j)+sbias%predp(ij)
         end do
      end do
   endif

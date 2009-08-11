@@ -8,6 +8,7 @@ module gsi_io
 !
 ! program history log:
 !   2006-04-15 treadon
+!   2007-05-25 todling - make reorder public; add interface to reorder
 !
 ! Subroutines Included:
 !   sub init_io           - initial i/o parameters
@@ -32,7 +33,17 @@ module gsi_io
   public init_io
   public read_bias
   public write_bias
+  public reorder21
+  public reorder12
 
+  interface reorder21; module procedure &
+            reorder21s_, &
+            reorder21d_
+  end interface
+  interface reorder12; module procedure &
+            reorder12s_, &
+            reorder12d_
+  end interface
 contains
   subroutine init_io(mype)
 !$$$  subprogram documentation block
@@ -72,7 +83,7 @@ contains
 
   end subroutine init_io
 
-  subroutine read_bias(filename,mype,sub_z,sub_ps,sub_tskin,sub_vor,&
+  subroutine read_bias(filename,mype,nbc,sub_z,sub_ps,sub_tskin,sub_vor,&
        sub_div,sub_u,sub_v,sub_tv,sub_q,sub_cwmr,sub_oz,istatus)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -85,6 +96,8 @@ contains
 !
 ! program history log:
 !   2006-04-15  treadon
+!   2006-12-04  todling - add nbc and loop over nbc
+!   2007-06-01  todling - bug fix: loops were only copying to (1,1) element
 !
 !   input argument list:
 !     filename - name of local file from which to read bias
@@ -102,7 +115,7 @@ contains
 !     sub_q      - specific humidity???
 !     sub_cwmr   - cloud condensate mixing ratio
 !     sub_oz     - ozone mixing ratio
-!     istatus  - read status indicator
+!     istatus    - read status indicator
 !
 ! attributes:
 !   language: f90
@@ -123,17 +136,20 @@ contains
 !   Declare passed variables
     character(24),intent(in):: filename
     integer(i_kind),intent(in):: mype
+    integer(i_kind),intent(in):: nbc
     integer(i_kind),intent(out):: istatus
-    real(r_kind),dimension(lat2,lon2),intent(out):: sub_z,sub_ps,sub_tskin
-    real(r_kind),dimension(lat2,lon2,nsig),intent(out):: sub_u,sub_v,&
+    real(r_kind),dimension(lat2,lon2,nbc),intent(out):: sub_z,sub_ps,sub_tskin
+    real(r_kind),dimension(lat2,lon2,nsig,nbc),intent(out):: sub_u,sub_v,&
          sub_vor,sub_div,sub_cwmr,sub_q,sub_oz,sub_tv
     
 !   Declare local variables
     integer(i_kind) i,j,k,mm1
     integer(i_kind) mype_in,iret
-    integer(i_kind):: ib,nb,ka
+    integer(i_kind):: ib,nb,ka,n
     real(r_kind),dimension(itotsub):: work
     real(r_single),dimension(nlon,nlat):: grid4
+
+    real(r_kind),dimension(lat2,lon2,nsig)::work3d
     
 !******************************************************************************  
 !   Initialize variables used below
@@ -153,14 +169,17 @@ contains
        return
     endif
 
+!   Loop over all coefficients of bias model
+
+    do n=1,nbc
 
 !   Terrain:  spectral --> grid transform, scatter to all mpi tasks
-    if (mype==mype_in) then
-       call baread(lunin,ib,nb,ka,grid4)
-       call reorder21(grid4,work)
-    endif
-    call mpi_scatterv(work,ijn_s,displs_s,mpi_rtype,&
-         sub_z,ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+       if (mype==mype_in) then
+          call baread(lunin,ib,nb,ka,grid4)
+          call reorder21(grid4,work)
+       endif
+       call mpi_scatterv(work,ijn_s,displs_s,mpi_rtype,&
+            sub_z(1,1,n),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
 
 
 !   Surface pressure:  same procedure as terrain
@@ -169,7 +188,7 @@ contains
        call reorder21(grid4,work)
     endif
     call mpi_scatterv(work,ijn_s,displs_s,mpi_rtype,&
-         sub_ps,ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+         sub_ps(1,1,n),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
     
 
 !   Skin temperature
@@ -178,7 +197,7 @@ contains
        call reorder21(grid4,work)
     endif
     call mpi_scatterv(work,ijn_s,displs_s,mpi_rtype,&
-         sub_tskin,ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+         sub_tskin(1,1,n),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
 
 
 !   (Virtual) temperature
@@ -188,7 +207,12 @@ contains
           call reorder21(grid4,work)
        endif
        call mpi_scatterv(work,ijn_s,displs_s,mpi_rtype,&
-            sub_tv(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+            work3d(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+       do j=1,lon2
+          do i=1,lat2
+             sub_tv(i,j,k,n) = work3d(i,j,k)
+          end do
+       end do
     end do
 
 
@@ -199,7 +223,12 @@ contains
           call reorder21(grid4,work)
        endif
        call mpi_scatterv(work,ijn_s,displs_s,mpi_rtype,&
-            sub_div(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+            work3d(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+       do j=1,lon2
+          do i=1,lat2
+             sub_div(i,j,k,n) = work3d(i,j,k)
+          end do
+       end do
     end do
     do k=1,nsig
        if (mype==mype_in) then
@@ -207,7 +236,12 @@ contains
           call reorder21(grid4,work)
        endif
        call mpi_scatterv(work,ijn_s,displs_s,mpi_rtype,&
-            sub_vor(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+            work3d(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+       do j=1,lon2
+          do i=1,lat2
+             sub_vor(i,j,k,n) = work3d(i,j,k)
+          end do
+       end do
     end do
 
 
@@ -218,7 +252,12 @@ contains
           call reorder21(grid4,work)
        endif
        call mpi_scatterv(work,ijn_s,displs_s,mpi_rtype,&
-            sub_u(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+            work3d(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+       do j=1,lon2
+          do i=1,lat2
+             sub_u(i,j,k,n) = work3d(i,j,k)
+          end do
+       end do
     end do
     do k=1,nsig
        if (mype==mype_in) then
@@ -226,18 +265,28 @@ contains
           call reorder21(grid4,work)
        endif
        call mpi_scatterv(work,ijn_s,displs_s,mpi_rtype,&
-            sub_v(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+            work3d(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+       do j=1,lon2
+          do i=1,lat2
+             sub_v(i,j,k,n) = work3d(i,j,k)
+          end do
+       end do
     end do
 
 
-!   Specific humidity
+!   Water vapor mixing ratio
     do k=1,nsig
        if (mype==mype_in) then
           call baread(lunin,ib,nb,ka,grid4)
           call reorder21(grid4,work)
        endif
        call mpi_scatterv(work,ijn_s,displs_s,mpi_rtype,&
-            sub_q(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+            work3d(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+       do j=1,lon2
+          do i=1,lat2
+             sub_q(i,j,k,n) = work3d(i,j,k)
+          end do
+       end do
     end do
 
 
@@ -249,7 +298,12 @@ contains
           call reorder21(grid4,work)
        endif
        call mpi_scatterv(work,ijn_s,displs_s,mpi_rtype,&
-            sub_oz(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+            work3d(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+       do j=1,lon2
+          do i=1,lat2
+             sub_oz(i,j,k,n) = work3d(i,j,k)
+          end do
+       end do
     end do
 
     
@@ -262,17 +316,24 @@ contains
              call reorder21(grid4,work)
           endif
           call mpi_scatterv(work,ijn_s,displs_s,mpi_rtype,&
-            sub_cwmr(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+            work3d(1,1,k),ijn_s(mm1),mpi_rtype,mype_in,mpi_comm_world,ierror)
+       end do
+       do j=1,lon2
+          do i=1,lat2
+             sub_cwmr(i,j,k,n) = work3d(i,j,k)
+          end do
        end do
     else
        do k=1,nsig
           do j=1,lon2
              do i=1,lat2
-                sub_cwmr(i,j,k)=zero
+                sub_cwmr(i,j,k,n)=zero
              end do
           end do
        end do
     endif
+
+    end do  ! End loop over coefficients
     
 !   Close input file
     call baclose(lunin,iret)
@@ -295,7 +356,7 @@ contains
 ! !INTERFACE:
 !
 
-  subroutine write_bias(filename,mype,mype_out,sub_z,sub_ps,&
+  subroutine write_bias(filename,mype,mype_out,nbc,sub_z,sub_ps,&
        sub_tskin,sub_vor,sub_div,sub_u,sub_v,sub_tv,sub_q,sub_cwmr,sub_oz,istatus)
 !
 ! !USES:
@@ -334,19 +395,20 @@ contains
 
     integer(i_kind),intent(in) :: mype      ! mpi task number
     integer(i_kind),intent(in) :: mype_out  ! mpi task to write output file
+    integer(i_kind),intent(in) :: nbc       ! number of bias coefficients in bias model
     integer(i_kind),intent(out):: istatus   ! write status
     
-    real(r_kind),dimension(lat2,lon2),     intent(in):: sub_z    ! GFS terrain field on subdomains
-    real(r_kind),dimension(lat2,lon2),     intent(in):: sub_ps   ! ps on subdomains
-    real(r_kind),dimension(lat2,lon2),     intent(in):: sub_tskin! skin temperature
-    real(r_kind),dimension(lat2,lon2,nsig),intent(in):: sub_vor  ! vorticity on subdomains
-    real(r_kind),dimension(lat2,lon2,nsig),intent(in):: sub_div  ! divergence on subdomains
-    real(r_kind),dimension(lat2,lon2,nsig),intent(in):: sub_u    ! u wind on subdomains
-    real(r_kind),dimension(lat2,lon2,nsig),intent(in):: sub_v    ! v wind on subdomains
-    real(r_kind),dimension(lat2,lon2,nsig),intent(in):: sub_tv   ! virtual temperature on subdomains
-    real(r_kind),dimension(lat2,lon2,nsig),intent(in):: sub_q    ! specific humidity on subdomains
-    real(r_kind),dimension(lat2,lon2,nsig),intent(in):: sub_oz   ! ozone on subdomains
-    real(r_kind),dimension(lat2,lon2,nsig),intent(in):: sub_cwmr ! cloud condensate mixing ratio on subdomains
+    real(r_kind),dimension(lat2,lon2,nbc),     intent(in):: sub_z    ! GFS terrain field on subdomains
+    real(r_kind),dimension(lat2,lon2,nbc),     intent(in):: sub_ps   ! ps on subdomains
+    real(r_kind),dimension(lat2,lon2,nbc),     intent(in):: sub_tskin! skin temperature
+    real(r_kind),dimension(lat2,lon2,nsig,nbc),intent(in):: sub_vor  ! vorticity on subdomains
+    real(r_kind),dimension(lat2,lon2,nsig,nbc),intent(in):: sub_div  ! divergence on subdomains
+    real(r_kind),dimension(lat2,lon2,nsig,nbc),intent(in):: sub_u    ! u wind on subdomains
+    real(r_kind),dimension(lat2,lon2,nsig,nbc),intent(in):: sub_v    ! v wind on subdomains
+    real(r_kind),dimension(lat2,lon2,nsig,nbc),intent(in):: sub_tv   ! virtual temperature on subdomains
+    real(r_kind),dimension(lat2,lon2,nsig,nbc),intent(in):: sub_q    ! specific humidity on subdomains
+    real(r_kind),dimension(lat2,lon2,nsig,nbc),intent(in):: sub_oz   ! ozone on subdomains
+    real(r_kind),dimension(lat2,lon2,nsig,nbc),intent(in):: sub_cwmr ! cloud condensate mixing ratio on subdomains
     
 !
 ! !OUTPUT PARAMETERS:
@@ -359,6 +421,7 @@ contains
 !
 ! !REVISION HISTORY:
 !
+!   2006-12-04  todling - add nbc and loop over nbc
 !
 ! !REMARKS:
 !
@@ -377,7 +440,7 @@ contains
 
     integer(i_kind) k,mm1
     integer(i_kind):: iret
-    integer(i_kind):: nb
+    integer(i_kind):: nb,n
     
     real(r_kind),dimension(lat1*lon1):: zsm,psm,tskinsm
     real(r_kind),dimension(lat1*lon1,nsig):: tvsm,vorsm,divsm,usm,vsm,qsm,ozsm,cwmrsm
@@ -400,19 +463,22 @@ contains
        istatus=istatus+iret
     endif
 
+!   Loop over number of coefficients in bias model
+
+    do n=1,nbc
 
 !   Strip off boundary points from subdomains
-    call strip(sub_z,zsm,1)
-    call strip(sub_ps,psm,1)
-    call strip(sub_tskin,tskinsm,1)
-    call strip(sub_vor,vorsm,nsig)
-    call strip(sub_div,divsm,nsig)
-    call strip(sub_u,usm,nsig)
-    call strip(sub_v,vsm,nsig)
-    call strip(sub_tv,tvsm,nsig)
-    call strip(sub_q,qsm,nsig)
-    call strip(sub_oz,ozsm,nsig)
-    call strip(sub_cwmr,cwmrsm,nsig)
+    call strip(sub_z(1,1,n),zsm,1)
+    call strip(sub_ps(1,1,n),psm,1)
+    call strip(sub_tskin(1,1,n),tskinsm,1)
+    call strip(sub_vor(1,1,1,n),vorsm,nsig)
+    call strip(sub_div(1,1,1,n),divsm,nsig)
+    call strip(sub_u(1,1,1,n),usm,nsig)
+    call strip(sub_v(1,1,1,n),vsm,nsig)
+    call strip(sub_tv(1,1,1,n),tvsm,nsig)
+    call strip(sub_q(1,1,1,n),qsm,nsig)
+    call strip(sub_oz(1,1,1,n),ozsm,nsig)
+    call strip(sub_cwmr(1,1,1,n),cwmrsm,nsig)
   
 
 !   For each output grid, the following steps are repeated
@@ -542,6 +608,7 @@ contains
        end do
     endif
     
+    end do ! End loop over nbc
 
 !   Single task writes message to stdout
     if (mype==mype_out) then
@@ -563,11 +630,11 @@ contains
 !-------------------------------------------------------------------------
 !BOP
 !
-! !IROUTINE:  reorder21 --- reorder 2d array to 1d order
+! !IROUTINE:  reorder21s_ --- reorder 2d array to 1d order
 !
 ! !INTERFACE:
 !
- subroutine reorder21(grid_in,grid_out)
+ subroutine reorder21s_(grid_in,grid_out)
 
 ! !USES:
 
@@ -608,18 +675,71 @@ contains
    end do
    
    return
- end subroutine reorder21
+ end subroutine reorder21s_
 
 !-------------------------------------------------------------------------
 !    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
 !-------------------------------------------------------------------------
 !BOP
 !
-! !IROUTINE:  reorder12 --- reorder 1d array to 2d order
+! !IROUTINE:  reorder21d_ --- reorder 2d array to 1d order
 !
 ! !INTERFACE:
 !
- subroutine reorder12(grid_in,grid_out)
+ subroutine reorder21d_(grid_in,grid_out)
+
+! !USES:
+
+   use kinds, only: r_kind,i_kind,r_single
+   use gridmod, only: itotsub,ltosi_s,ltosj_s,nlat,nlon
+   implicit none
+
+! !INPUT PARAMETERS:
+
+   real(r_kind),dimension(nlon,nlat),intent(in):: grid_in   ! input grid
+   real(r_kind),dimension(itotsub),intent(out)::  grid_out  ! output grid
+
+! !DESCRIPTION: This routine transfers the contents of a two-diemnsional,
+!               type r_single array into a one-dimension, type r_kind
+!               array.
+!               
+!
+! !REVISION HISTORY:
+!   2004-08-27  treadon
+!   2007-05-27  todling - add double precision version
+!
+! !REMARKS:
+!   language: f90
+!   machine:  ibm rs/6000
+!
+! !AUTHOR:
+!   treadon          org: np23                date: 2004-08-27
+!
+!EOP
+!-------------------------------------------------------------------------
+!  Declare local variables
+   integer(i_kind) i,j,k
+
+!  Transfer input 2d array to output 1d array
+   do k=1,itotsub
+      i=ltosi_s(k)
+      j=ltosj_s(k)
+      grid_out(k)=grid_in(j,i)
+   end do
+   
+   return
+ end subroutine reorder21d_
+
+!-------------------------------------------------------------------------
+!    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
+!-------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE:  reorder12s_ --- reorder 1d array to 2d order
+!
+! !INTERFACE:
+!
+ subroutine reorder12s_(grid_in,grid_out)
 
 ! !USES:
 
@@ -659,6 +779,58 @@ contains
       grid_out(j,i) = grid_in(k)
    end do
    return
- end subroutine reorder12
+ end subroutine reorder12s_
+
+!-------------------------------------------------------------------------
+!    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
+!-------------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE:  reorder12d_ --- reorder 1d array to 2d order
+!
+! !INTERFACE:
+!
+ subroutine reorder12d_(grid_in,grid_out)
+
+! !USES:
+
+   use kinds, only: r_kind,i_kind,r_single
+   use gridmod, only: itotsub,iglobal,ltosi,ltosj,nlat,nlon
+   implicit none
+
+! !INPUT PARAMETERS:
+
+   real(r_kind),dimension(max(iglobal,itotsub)),intent(in)::  grid_in   ! input grid
+   real(r_kind),dimension(nlon,nlat),intent(out)::            grid_out  ! input grid
+
+! !DESCRIPTION: This routine transfers the contents of a one-diemnsional,
+!               type r_kind array into a two-dimensional, type r_single
+!               array.
+!               
+!
+! !REVISION HISTORY:
+!   2004-08-27  treadon
+!   2007-05-27  todling - add double precision version
+!
+! !REMARKS:
+!   language: f90
+!   machine:  ibm rs/6000
+!
+! !AUTHOR:
+!   treadon          org: np23                date: 2004-08-27
+!
+!EOP
+!-------------------------------------------------------------------------
+!  Declare local variables
+   integer(i_kind) i,j,k
+
+!  Transfer input 1d array to output 2d array
+   do k=1,iglobal
+      i=ltosi(k)
+      j=ltosj(k)
+      grid_out(j,i) = grid_in(k)
+   end do
+   return
+ end subroutine reorder12d_
 
 end module gsi_io

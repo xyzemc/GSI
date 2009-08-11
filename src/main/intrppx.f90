@@ -26,6 +26,7 @@ subroutine intrppx(obstime,h,q,poz,prsl,prsi, &
 !   2006-07-27  derber - work from tsen rather than tv
 !   2006-07-31  kleist - remove interpolation of ln(ps) to ob location
 !   2007-12-12  kim - add cloud profiles
+!   2008-12-05  todling - use dsfct(:,:,ntguessfc) for calculation
 !
 !   input argument list:
 !     obstime  - time of observations for which to get profile
@@ -50,7 +51,7 @@ subroutine intrppx(obstime,h,q,poz,prsl,prsi, &
   use kinds, only: r_kind,i_kind
   use guess_grids, only: ges_u,ges_v,ges_tsen,ges_q,ges_oz,&
        ges_prsl,ges_prsi,tropprs,dsfct, &
-       hrdifsig,nfldsig,hrdifsfc,nfldsfc,ges_tv,isli2,sno2
+       hrdifsig,nfldsig,hrdifsfc,nfldsfc,ntguessfc,ges_tv,isli2,sno2
   use gridmod, only: istart,jstart,nlon,nlat,nsig,lon1
   use constants, only: zero,one
   implicit none
@@ -168,8 +169,8 @@ subroutine intrppx(obstime,h,q,poz,prsl,prsi, &
   if(istyp10 >= 1 .and. sno10 > minsnow)istyp10 = 3
   if(istyp11 >= 1 .and. sno11 > minsnow)istyp11 = 3
 
-  sst00= dsfct(ix ,iy) ; sst01= dsfct(ix ,iyp)
-  sst10= dsfct(ixp,iy ) ; sst11= dsfct(ixp,iyp) 
+  sst00= dsfct(ix ,iy,ntguessfc) ; sst01= dsfct(ix ,iyp,ntguessfc)
+  sst10= dsfct(ixp,iy,ntguessfc) ; sst11= dsfct(ixp,iyp,ntguessfc) 
   dtsavg=sst00*w00+sst10*w10+sst01*w01+sst11*w11
 
   dtskin(0:3)=zero

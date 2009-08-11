@@ -2,7 +2,10 @@ subroutine ret_ssmis(tb,nchanl,n, &
      ssmis_las,ssmis_uas,ssmis_img,ssmis_env, &
      tpwmdl,ts5,cosza,pems5,tpwc,clw,ierr)
 
+!$$$ subprogram documentation block
+!
 ! subprogram:    ret_ssmis    retrieve various parameters for SSMIS
+!
 ! prgmmr: weng, okamoto     org: np23                date: 2005-03-22
 !
 ! abstract: retrieve clw from sounding ch using only 50.3GHz channel 
@@ -31,8 +34,9 @@ subroutine ret_ssmis(tb,nchanl,n, &
 !     2006-04-27  Derber - modify for single profile
 !     2007-01-24  kazumori - modify for UKMO preprocess SSMIS data, add retrieved tpw
 !                            and bias correction of retrieved clw.
+!     2008-04-16  safford  - rm unused uses and vars
 !
-! input argument list:
+!   input argument list:
 !     tb      - Observed brightness temperature [K]
 !     nchanl  - number of channels per obs
 !     ssmis_las    - logical true if ssmis_las (channel 1,2,3,4,5,6,7,24) is processed
@@ -43,7 +47,8 @@ subroutine ret_ssmis(tb,nchanl,n, &
 !     ts5    - sea surface temperature
 !     pems5  - sea surface emissivity
 !     tpwmdl    - column water vapor over ocean  [kg/m2]
-! output argument list:
+!
+!   output argument list:
 !     clw     - column cloud water vapor over ocean  [kg/m2]
 !     ierr    - error flag
 !               [0]pass or escape this subroutine without doing anything
@@ -54,9 +59,10 @@ subroutine ret_ssmis(tb,nchanl,n, &
 !     language: f90
 !     machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind, i_kind
-  use constants, only: two,three,zero,one,half,izero
+  use constants, only: zero,one,izero
   
   implicit none
 
@@ -71,10 +77,8 @@ subroutine ret_ssmis(tb,nchanl,n, &
   real(r_kind),intent(out)::clw
 
 ! Declare local variables
-  real(r_kind)::coeabswv,coeabslw(3),coethkns(2)
-  real(r_kind)::abswv,abslw,tau0
   real(r_kind)::rmis=-9.99e11_r_kind
-  integer(i_kind) :: i,j
+  integer(i_kind) :: i
   integer(i_kind) :: iclwflg
   real(r_kind),parameter:: r285=285.0_r_kind
   real(r_kind),parameter:: r290=290.0_r_kind
@@ -181,16 +185,22 @@ end subroutine ret_ssmis
 
 subroutine ice_check(tbx,seaice,ierr)
 
+!$$$ subprogram documentation block
+!
 ! subprogram:    ice_check 
+!
 ! prgmmr: weng, okamoto     org: np23                date: 2005-03-22
 !
 ! abstract: using imager to estimate sea ice concentration 
+!
 ! program history log:
 !     2005-03-22  okamoto
+!     2008-04-16  safford - rm unused uses
 !
-! input argument list:
+!   input argument list:
 !     tbx      - coefficients for calculation of seaice 
-! output argument list:
+!
+!   output argument list:
 !     seaice     - sea ice concentration 
 !     ierr    - error flag
 !
@@ -198,9 +208,9 @@ subroutine ice_check(tbx,seaice,ierr)
 !     language: f90
 !     machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
   use kinds, only: r_kind, i_kind
-  use constants, only: zero,one
+  use constants, only: zero
   
   implicit none
   

@@ -41,6 +41,8 @@ subroutine setuprw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 !                       - unify NL qc
 !   2006-07-31  kleist - use ges_ps instead of lnps
 !   2006-08-28      su - fix a bug in variational qc
+!   2008-05-23  safford - rm unused vars and uses
+!   2008-12-03  todling - changed handle of tail%time
 !
 !   input argument list:
 !     lunin    - unit from which to read observations
@@ -57,22 +59,20 @@ subroutine setuprw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 !   machine:  ibm RS/6000 SP
 !
 !$$$
-  use kinds, only: r_kind,r_single,r_double,i_kind,i_long,i_llong
+  use kinds, only: r_kind,r_single,r_double,i_kind,i_long
 
-  use raflib, only: indexxi8
-  use obsmod, only: rwhead,rwtail,rmiss_single
+  use obsmod, only: rwhead,rwtail,rmiss_single,i_rw_ob_type,obsdiags,&
+                    lobsdiagsave,nobskeep,lobsdiag_allocated,time_offset
+  use gsi_4dvar, only: nobs_bins,hr_obsbin
   use qcmod, only: npres_print,ptop,pbot
   use guess_grids, only: ges_ps,hrdifsig,geop_hgtl,ges_z,nfldsig,&
        ntguessig,ges_lnprsl,ges_u,ges_v,sfcmod_gfs,sfcmod_mm5,comp_fact10
   use gridmod, only: nsig,nlat,nlon,get_ijk
   use constants, only: flattening,semi_major_axis,grav_ratio,zero,grav,wgtlim,&
-       half,one,two,grav_equator,eccentricity,somigliana,rad2deg,deg2rad, &
-       r1000,r3600
-  use constants, only: tiny_r_kind,half,one_tenth,cg_term,huge_single
-  use qcmod, only: npres_print,dfact
-  use jfunc, only: jiter,last
-  use jfunc, only: l_foto 
-  use jfunc,only: first
+       half,one,two,grav_equator,eccentricity,somigliana,rad2deg,deg2rad
+  use constants, only: tiny_r_kind,half,cg_term,huge_single
+  use qcmod, only: npres_print
+  use jfunc, only: jiter,last,first,miter
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype
   use convinfo, only: icsubtype
   implicit none
@@ -102,24 +102,23 @@ subroutine setuprw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
   real(r_kind) prsltmp(nsig)
   real(r_kind) sfcchk  
   real(r_kind) residual,obserrlm,obserror,ratio,scale,val2
-  real(r_kind) dx,dy,ds,dx1,dy1,ds1,ress,ressw
-  real(r_kind) val,valqc,rwgt,tfact
+  real(r_kind) ress,ressw
+  real(r_kind) val,valqc,rwgt
   real(r_kind) cg_w,wgross,wnotgross,wgt,arg,exp_arg,term,rat_err2
   real(r_double) rstation_id
   real(r_kind) dlat,dlon,dtime,dpres,ddiff,error,slat
   real(r_kind) sinazm,cosazm,costilt
   real(r_kind) ratio_errors
-  real(r_kind) ugesin,vgesin,factw,presrw,skint,sfcr
+  real(r_kind) ugesin,vgesin,factw,skint,sfcr
   real(r_kind) rwwind,presw
   real(r_kind) errinv_input,errinv_adjst,errinv_final
   real(r_kind) err_input,err_adjst,err_final
   real(r_kind),dimension(nele,nobs):: data
-  real(r_kind),dimension(nobs):: dpres0
   real(r_single),allocatable,dimension(:,:)::rdiagbuf
 
-  integer(i_kind) npwdat,npws,i,nchar,nreal,k,j,k1,nz,n,l,ii
-  integer(i_kind) mm1,jj,k2,itype,isli
-  integer(i_kind) jlat,jlon,jsig,ikxx,nn
+  integer(i_kind) i,nchar,nreal,k,j,k1,ii
+  integer(i_kind) mm1,jj,k2,isli
+  integer(i_kind) jsig,ikxx,nn,ibin,ioff
   integer(i_kind) ier,ilat,ilon,ihgt,irwob,ikx,itime,iuse
   integer(i_kind):: ielev,id,itilt,iazm,ilone,ilate,irange
   integer(i_kind):: izsges,ier2,idomsfc,isfcr,iskint,iff10
@@ -172,6 +171,7 @@ subroutine setuprw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
      ii=0
      nchar=1
      nreal=22
+     if (lobsdiagsave) nreal=nreal+4*miter+1
      allocate(cdiagbuf(nobs),rdiagbuf(nreal,nobs))
   end if
 
@@ -196,6 +196,56 @@ subroutine setuprw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
      slat=data(ilate,i)*deg2rad
      wrange=data(irange,i)
      zsges=data(izsges,i)
+
+!    Link observation to appropriate observation bin
+     if (nobs_bins>1) then
+       ibin = NINT( dtime/hr_obsbin ) + 1
+     else
+       ibin = 1
+     endif
+     IF (ibin<1.OR.ibin>nobs_bins) write(6,*)mype,'Error nobs_bins,ibin= ',nobs_bins,ibin
+
+!    Link obs to diagnostics structure
+     if (.not.lobsdiag_allocated) then
+       if (.not.associated(obsdiags(i_rw_ob_type,ibin)%head)) then
+         allocate(obsdiags(i_rw_ob_type,ibin)%head,stat=istat)
+         if (istat/=0) then
+           write(6,*)'setuprw: failure to allocate obsdiags',istat
+           call stop2(286)
+         end if
+         obsdiags(i_rw_ob_type,ibin)%tail => obsdiags(i_rw_ob_type,ibin)%head
+       else
+         allocate(obsdiags(i_rw_ob_type,ibin)%tail%next,stat=istat)
+         if (istat/=0) then
+           write(6,*)'setuprw: failure to allocate obsdiags',istat
+           call stop2(286)
+         end if
+         obsdiags(i_rw_ob_type,ibin)%tail => obsdiags(i_rw_ob_type,ibin)%tail%next
+       end if
+       allocate(obsdiags(i_rw_ob_type,ibin)%tail%muse(miter+1))
+       allocate(obsdiags(i_rw_ob_type,ibin)%tail%nldepart(miter+1))
+       allocate(obsdiags(i_rw_ob_type,ibin)%tail%tldepart(miter))
+       allocate(obsdiags(i_rw_ob_type,ibin)%tail%obssen(miter))
+       obsdiags(i_rw_ob_type,ibin)%tail%indxglb=i
+       obsdiags(i_rw_ob_type,ibin)%tail%nchnperobs=-99999
+       obsdiags(i_rw_ob_type,ibin)%tail%luse=.false.
+       obsdiags(i_rw_ob_type,ibin)%tail%muse(:)=.false.
+       obsdiags(i_rw_ob_type,ibin)%tail%nldepart(:)=-huge(zero)
+       obsdiags(i_rw_ob_type,ibin)%tail%tldepart(:)=zero
+       obsdiags(i_rw_ob_type,ibin)%tail%wgtjo=-huge(zero)
+       obsdiags(i_rw_ob_type,ibin)%tail%obssen(:)=zero
+     else
+       if (.not.associated(obsdiags(i_rw_ob_type,ibin)%tail)) then
+         obsdiags(i_rw_ob_type,ibin)%tail => obsdiags(i_rw_ob_type,ibin)%head
+       else
+         obsdiags(i_rw_ob_type,ibin)%tail => obsdiags(i_rw_ob_type,ibin)%tail%next
+       end if
+       if (obsdiags(i_rw_ob_type,ibin)%tail%indxglb/=i) then
+         write(6,*)'setuprw: index error'
+         call stop2(288)
+       end if
+     endif
+
 
 !    Interpolate log(surface pressure),  
 !    log(pres) at mid-layers, and geopotenital height to 
@@ -390,6 +440,7 @@ subroutine setuprw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
      end if
      
      if (ratio_errors*error <=tiny_r_kind) muse(i)=.false.
+     if (nobskeep>0) muse(i)=obsdiags(i_rw_ob_type,ibin)%tail%muse(nobskeep)
      
      val     = error*ddiff
 
@@ -443,40 +494,42 @@ subroutine setuprw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
            end if
         end do
      end if
+
+     obsdiags(i_rw_ob_type,ibin)%tail%luse=luse(i)
+     obsdiags(i_rw_ob_type,ibin)%tail%muse(jiter)=muse(i)
+     obsdiags(i_rw_ob_type,ibin)%tail%nldepart(jiter)=ddiff
+     obsdiags(i_rw_ob_type,ibin)%tail%wgtjo= (error*ratio_errors)**2
      
 !    If obs is "acceptable", load array with obs info for use
 !    in inner loop minimization (int* and stp* routines)
      if ( .not. last .and. muse(i)) then
 
-        if(.not. associated(rwhead))then
-            allocate(rwhead,stat=istat)
+        if(.not. associated(rwhead(ibin)%head))then
+            allocate(rwhead(ibin)%head,stat=istat)
             if(istat /= 0)write(6,*)' failure to write rwhead '
-            rwtail => rwhead
+            rwtail(ibin)%head => rwhead(ibin)%head
         else
-            allocate(rwtail%llpoint,stat=istat)
-            rwtail => rwtail%llpoint
+            allocate(rwtail(ibin)%head%llpoint,stat=istat)
             if(istat /= 0)write(6,*)' failure to write rwtail%llpoint '
+            rwtail(ibin)%head => rwtail(ibin)%head%llpoint
         end if
 
 !       Set (i,j,k) indices of guess gridpoint that bound obs location
-        call get_ijk(mm1,dlat,dlon,dpres,rwtail%ij(1),rwtail%wij(1))
+        call get_ijk(mm1,dlat,dlon,dpres,rwtail(ibin)%head%ij(1),rwtail(ibin)%head%wij(1))
 
         do j=1,8
-           rwtail%wij(j)=factw*costilt*rwtail%wij(j)  
+           rwtail(ibin)%head%wij(j)=factw*costilt*rwtail(ibin)%head%wij(j)  
         end do
-        rwtail%raterr2 = ratio_errors**2  
-        rwtail%cosazm  = cosazm
-        rwtail%sinazm  = sinazm
-        rwtail%res     = ddiff
-        rwtail%err2    = error**2
-        if(l_foto)then
-          rwtail%time  = dtime*r3600    
-        else
-          rwtail%time  = zero    
-        end if
-        rwtail%luse    = luse(i)
-        rwtail%b       = cvar_b(ikx)
-        rwtail%pg      = cvar_pg(ikx)
+        rwtail(ibin)%head%raterr2 = ratio_errors**2  
+        rwtail(ibin)%head%cosazm  = cosazm
+        rwtail(ibin)%head%sinazm  = sinazm
+        rwtail(ibin)%head%res     = ddiff
+        rwtail(ibin)%head%err2    = error**2
+        rwtail(ibin)%head%time    = dtime
+        rwtail(ibin)%head%luse    = luse(i)
+        rwtail(ibin)%head%b       = cvar_b(ikx)
+        rwtail(ibin)%head%pg      = cvar_pg(ikx)
+        rwtail(ibin)%head%diags => obsdiags(i_rw_ob_type,ibin)%tail
         
      endif
 
@@ -494,7 +547,7 @@ subroutine setuprw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
         rdiagbuf(5,ii)  = data(ielev,i)      ! station elevation (meters)
         rdiagbuf(6,ii)  = presw              ! observation pressure (hPa)
         rdiagbuf(7,ii)  = data(ihgt,i)       ! observation height (meters)
-        rdiagbuf(8,ii)  = dtime              ! obs time (hours relative to analysis time)
+        rdiagbuf(8,ii)  = dtime-time_offset  ! obs time (hours relative to analysis time)
 
         rdiagbuf(9,ii)  = rmiss_single       ! input prepbufr qc or event mark
         rdiagbuf(10,ii) = rmiss_single       ! setup qc or event mark
@@ -533,6 +586,30 @@ subroutine setuprw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
         rdiagbuf(20,ii)=data(iazm,i)*rad2deg ! azimuth angle
         rdiagbuf(21,ii)=data(itilt,i)*rad2deg! tilt angle
         rdiagbuf(22,ii) = factw              ! 10m wind reduction factor
+
+        if (lobsdiagsave) then
+          ioff=22
+          do jj=1,miter 
+            ioff=ioff+1
+            if (obsdiags(i_rw_ob_type,ibin)%tail%muse(jj)) then
+              rdiagbuf(ioff,ii) = one
+            else
+              rdiagbuf(ioff,ii) = -one
+            endif
+          enddo
+          do jj=1,miter+1
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsdiags(i_rw_ob_type,ibin)%tail%nldepart(jj)
+          enddo
+          do jj=1,miter
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsdiags(i_rw_ob_type,ibin)%tail%tldepart(jj)
+          enddo
+          do jj=1,miter
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsdiags(i_rw_ob_type,ibin)%tail%obssen(jj)
+          enddo
+        endif
 
      end if
   end do

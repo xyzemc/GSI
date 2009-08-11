@@ -1,6 +1,5 @@
-!-------------------------------------------------------------------------
-!    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
-!-------------------------------------------------------------------------
+
+module anisofilter
 !$$$   module documentation block
 !                .      .    .                                       .
 ! module:    anisofilter 
@@ -11,9 +10,10 @@
 !
 ! program history log:
 !   2006-08-01  pondeca
+!   2008-06-05  safford - rm unused uses
 !
 ! subroutines included:
-
+!
 !   init_anisofilter_reg          - initialize anisotropic background error
 !                                   related variables
 !   anprewgt_reg                  - main subroutine for computation of the 
@@ -34,14 +34,14 @@
 !                                   model based on the background potential temperature
 !   smther_one                    - apply hanning smoother to 2-dimensional field
 !   
+! variable definitions:
 !
 ! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
 !$$$ end documentation block
-!
-module anisofilter
+
 ! Uses:
   use kinds, only: r_kind,i_kind,r_single,r_double,i_long
   use anberror, only: ids,ide,jds,jde,kds,kde, &
@@ -61,17 +61,15 @@ module anisofilter
                      iglobal,itotsub,lon1,lat1,region_lat,&
                      ltosi,ltosj,ltosi_s,ltosj_s
 
-  use constants, only: izero,zero,half,one,two,rd_over_cp,tiny_r_kind, & 
-                       fv,omega,grav
-  use balmod, only: llmin,llmax,rllat
+  use constants, only: izero,zero,half,one,two,rd_over_cp
+                       
+  use balmod, only: rllat
   use raflib, only: init_raf4,raf_sm4,raf_sm4_ad
   use jfunc, only: varq,qoption
   use guess_grids, only: ges_u,ges_v,ges_prsl,ges_tv,ges_z,ntguessig,& 
                          ges_prslavg,ges_psfcavg,ges_ps,ges_q,geop_hgtl
   use mpimod, only: npe,levs_id,nvar_id,ierror,mpi_real8,mpi_sum, & 
-                    mpi_comm_world,mpi_integer4, & 
-                    iscuv_s,irduv_s,ircuv_s,isduv_s,isduv_g,iscuv_g, & 
-                    nuvlevs,irduv_g,ircuv_g,mpi_rtype
+                    mpi_comm_world,mpi_integer4
 
   implicit none
 
@@ -161,11 +159,12 @@ subroutine anprewgt_reg(mype)
 !
 !   output argument list:
 !
-!
 ! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
+!$$$ end documentation block
+
 ! Declare passed variables
   integer(i_kind),intent(in):: mype
 
@@ -176,8 +175,10 @@ subroutine anprewgt_reg(mype)
   endif
 
  end subroutine anprewgt_reg
+
 !=======================================================================
 !=======================================================================
+
 subroutine get2berr_reg(mype)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -199,18 +200,18 @@ subroutine get2berr_reg(mype)
 !   2006-07-01  pondeca - add terrain following covariances.
 !                         remove eigenvector decomposition
 !   2007-05-30  h.liu - remove ozmz, use factoz
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !     mype     - mpi task id
 !
 !   output argument list:
 !
-!
 ! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
   implicit none
 
 ! Declare passed variables
@@ -223,10 +224,10 @@ subroutine get2berr_reg(mype)
 ! Declare local variables 
   integer(i_kind) i,j,k,l,lp,k1,kvar,ivar,im,ip,jm,jp
 
-  real(r_kind) d,dl1,dl2,factk,factor,hwll_loc
+  real(r_kind) dl1,dl2,factk,factor,hwll_loc
   real(r_kind) a1,a2,a3,a4,a5,a6,detai
   real(r_kind) biga1,biga2,biga3,biga4,biga5,biga6
-  real(r_kind) fx2,fx1,fx3,dxi,dyi,dzi
+  real(r_kind) fx2,fx1,fx3,dxi,dyi
   real(r_kind) asp1,asp2,asp3,factoz
 
   real(r_kind),allocatable,dimension(:,:)::bckgvar,bckgvar0f
@@ -277,9 +278,9 @@ subroutine get2berr_reg(mype)
           asp3=asp30f(i,j)
            
           if(i.eq.nlatf/2.and.j.eq.nlonf/2) then
-             write(6,*)'("at domain center, var,k1,asp1,asp2,asp3 =",2i4,3f11.3)', &
+             write(6,'("at domain center, var,k1,asp1,asp2,asp3 =",2i4,3f11.3)') &
                     nvar_id(k),k1,asp1,asp2,asp3
-             write(6,*)'("at domain center, var,k1,hwll_loc,dxf,dyf =",2i4,3f11.3)', &
+             write(6,'("at domain center, var,k1,hwll_loc,dxf,dyf =",2i4,3f11.3)') &
                     nvar_id(k),k1,hwll_loc,dxf(i,j),dyf(i,j)
           end if
 
@@ -362,14 +363,12 @@ subroutine get2berr_reg(mype)
 
   if(lreadnorm) normal=0
 
-  if (nvar_id(k) <= 5)  then
-     call init_raf4(aspect,triad4,ngauss,rgauss,npass,normal,binom,ifilt_ord,filter_all, &
-                 nvars,idvar,kvar_start,kvar_end,var_names, &
-                 ids, ide, jds, jde, kds, kde, &         ! domain indices
-                 ips, ipe, jps, jpe, kps, kpe, &         ! patch indices
-                 ims, ime, jms, jme, kms, kme, &         ! memory indices
-                 mype, npe)
-  endif
+  call init_raf4(aspect,triad4,ngauss,rgauss,npass,normal,binom,ifilt_ord,filter_all, &
+              nvars,idvar,kvar_start,kvar_end,var_names, &
+              ids, ide, jds, jde, kds, kde, &         ! domain indices
+              ips, ipe, jps, jpe, kps, kpe, &         ! patch indices
+              ims, ime, jms, jme, kms, kme, &         ! memory indices
+              mype, npe)
 
   do k=kps,kpe
     ivar=idvar(k)
@@ -486,8 +485,10 @@ subroutine get2berr_reg(mype)
   deallocate(u0f,u0zf,v0f,v0zf,z0f)
 
 end subroutine get2berr_reg
+
 !=======================================================================
 !=======================================================================
+
 subroutine get3berr_reg(mype)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -510,18 +511,18 @@ subroutine get3berr_reg(mype)
 !                         wind following covariances.
 !                         remove eigenvector decomposition
 !   2007-05-30  h.liu - remove ozmz, use factoz
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !     mype     - mpi task id
 !
 !   output argument list:
 !
-!
 ! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
   implicit none
 
 ! Declare passed variables
@@ -531,13 +532,12 @@ subroutine get3berr_reg(mype)
   real(r_kind),parameter:: r25          = 1.0_r_kind/25.0_r_kind
 
 ! Declare local variables
-  integer(i_kind) i,j,k,l,lp,k1,kvar,ivar,im,ip,jm,jp
-  integer(i_kind) mcount,mcount0
+  integer(i_kind) i,j,k,l,lp,k1,kvar,ivar
 
-  real(r_kind) d,dl1,dl2,factk,factor,hwll_loc
+  real(r_kind) dl1,dl2,factk,factor,hwll_loc
   real(r_kind) a1,a2,a3,a4,a5,a6,detai
   real(r_kind) biga1,biga2,biga3,biga4,biga5,biga6
-  real(r_kind) fx2,fx1,fx3,dxi,dyi,dzi
+  real(r_kind) fx2,fx1,fx3
   real(r_kind) asp1,asp2,asp3,factoz
  
   character*10 chvarname(10)
@@ -763,8 +763,10 @@ subroutine get3berr_reg(mype)
   deallocate(u0f,u0zf,v0f,v0zf,z0f)
 
 end subroutine get3berr_reg
+
 !=======================================================================
 !=======================================================================
+
 subroutine init_anisofilter_reg
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -780,12 +782,11 @@ subroutine init_anisofilter_reg
 !
 !   output argument list:
 !
-!
 ! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-! Declare passed variables
+!$$$ end documentation block
 
   implicit none
 
@@ -804,8 +805,10 @@ subroutine init_anisofilter_reg
   rfact0h(10)=1.0_r_kind   ;  rfact0v(10)=1.25_r_kind
   
 end subroutine init_anisofilter_reg
+
 !=======================================================================
 !=======================================================================
+
 subroutine read_bckgstats(mype)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -824,11 +827,11 @@ subroutine read_bckgstats(mype)
 !
 !   output argument list:
 !
-!
 ! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
+!$$$ end documentation block
   implicit none
 
 ! Declare passed variables
@@ -918,7 +921,7 @@ subroutine read_bckgstats(mype)
      
    if(mype.eq.0) then
       do k=1,nsig
-        write(6,*)'(" var,k,max,min,avg vert corlen =",2i4,3f11.3)', & 
+        write(6,'(" var,k,max,min,avg vert corlen =",2i4,3f11.3)') & 
                n,k,vzimax(k,n),vzimin(k,n),vziavg(k,n)
        end do
     end if
@@ -968,8 +971,10 @@ subroutine read_bckgstats(mype)
   end do
 
 end subroutine read_bckgstats
+
 !=======================================================================
 !=======================================================================
+
 subroutine get_background(mype)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -983,38 +988,35 @@ subroutine get_background(mype)
 !
 ! program history log:
 !   2006-08-01  pondeca
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !    mype     - mpi task id
 !
 !   output argument list:
 !
-!
 ! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
+!$$$ end documentation block
   implicit none
 
 ! Declare passed variables
   integer(i_kind),intent(in):: mype
 
 ! Declare local variables
-  integer(i_kind) i,j,k,l,ip,im,jp,jm,kp,km,mm1,iflg,k1,ivar,lp
-  integer(i_kind) lcount
-  integer(i_kind) mcount0,mcount
+  integer(i_kind) i,j,k,l,kp,km,mm1,iflg,k1,ivar
   integer(i_kind) n
 
-  real(r_kind) d,dl1,dl2,factk,hwll_loc
-  real(r_kind) fx2,fx1,fx3,dxi,dyi,dzi
+  real(r_kind) hwll_loc
+  real(r_kind) dzi
   real(r_kind) asp1,asp2,asp3
 
   real(r_kind),allocatable,dimension(:,:,:)::work_st,work_vp,work_t,work_q, & 
                                              work_oz,work_cwmr,hfine
   real(r_kind),allocatable,dimension(:,:)::work_p,work_sst,work_slndt,work_sicet
 ! real(r_kind),allocatable,dimension(:,:)::hfilter
-  real(r_kind) pbar4a,pbar4(nsig),hgt4(nsig),tbar4(nsig), &
-              thetabar4(nsig),dthetabarz(nsig),dthetabarzmax
   real(r_kind),allocatable,dimension(:,:,:)::field,fieldz
   real(r_single),allocatable,dimension(:,:,:)::field0f,field0zf
 
@@ -1312,8 +1314,10 @@ subroutine get_background(mype)
  deallocate(field0zf)
 
 end subroutine get_background
+
 !=======================================================================
 !=======================================================================
+
 subroutine isotropic_scales(scale1,scale2,scale3,k,mype)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -1325,6 +1329,7 @@ subroutine isotropic_scales(scale1,scale2,scale3,k,mype)
 !
 ! program history log:
 !   2006-08-01  pondeca
+!   2008-06-05  safford - rm unused var
 !
 !   input argument list:
 !    mype     - mpi task id
@@ -1335,11 +1340,11 @@ subroutine isotropic_scales(scale1,scale2,scale3,k,mype)
 !    scale2     - 2d field of correlations lengths in the y-direction
 !    scale3     - 2d field of correlations lengths in the vertical direction
 !
-!
 ! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
+!$$$ end documentation block
   implicit none
 
 !Declare passed variables
@@ -1351,7 +1356,7 @@ subroutine isotropic_scales(scale1,scale2,scale3,k,mype)
  real(r_kind) scale1(nlatf,nlonf)
  real(r_kind) scale2(nlatf,nlonf)
  real(r_kind) scale3(nlatf,nlonf)
- real(r_kind) dl1,dl2,factk,hwll_loc
+ real(r_kind) dl1,dl2,hwll_loc
 
 
     k1=levs_id(k)
@@ -1461,8 +1466,10 @@ subroutine isotropic_scales(scale1,scale2,scale3,k,mype)
        enddo
   return
 end subroutine isotropic_scales
+
 !=======================================================================
 !=======================================================================
+
 subroutine get_theta_corrl_lenghts(mype)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -1474,6 +1481,7 @@ subroutine get_theta_corrl_lenghts(mype)
 !
 ! program history log:
 !   2006-08-01  pondeca
+!   2008-06-05  safford - rm unused vars
 !
 !   input argument list:
 !    mype     - mpi task id
@@ -1484,22 +1492,21 @@ subroutine get_theta_corrl_lenghts(mype)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
+!$$$ end documentation block
+
   implicit none
 
 ! Declare passed variables
   integer(i_kind),intent(in):: mype
 
 ! Declare local variables
-  integer(i_kind) i,j,k,l,ip,im,jp,jm,kp,km,mm1,iflg,k1,ivar,lp
-  integer(i_kind) lcount
+  integer(i_kind) i,j,k,ip,im,jp,jm,kp,km,k1
   integer(i_kind) mcount0,mcount
 
-  real(r_kind) d,dl1,dl2,factk,hwll_loc
   real(r_kind) fx2,fx1,fx3,dxi,dyi,dzi
   real(r_kind) asp1,asp2,asp3
   real(r_kind) rho
 
-  real(r_kind),allocatable,dimension(:,:)::hfilter
   real(r_kind) pbar4a,pbar4(nsig),hgt4(nsig),tbar4(nsig), &
               thetabar4(nsig),dthetabarz(nsig),dthetabarzmax
 
@@ -1682,8 +1689,10 @@ subroutine get_theta_corrl_lenghts(mype)
 
 
 end subroutine get_theta_corrl_lenghts
+
 !=======================================================================
 !=======================================================================
+
 subroutine hanning_smther(g1, npts, ns)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -1707,6 +1716,7 @@ subroutine hanning_smther(g1, npts, ns)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
+!$$$ end documentation block
 
    use kinds, only: r_kind,i_kind
    implicit none
@@ -1729,8 +1739,10 @@ subroutine hanning_smther(g1, npts, ns)
    deallocate(g2)
    return
 end subroutine hanning_smther
+
 !=======================================================================
 !=======================================================================
+
 subroutine smther_one(g1,is,ie,js,je,ns)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -1755,6 +1767,7 @@ subroutine smther_one(g1,is,ie,js,je,ns)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
+!$$$ end documentation block
 
   use kinds,only: r_single,i_long
   implicit none
@@ -1792,6 +1805,7 @@ subroutine smther_one(g1,is,ie,js,je,ns)
 
    return
 end subroutine smther_one
+
 !=======================================================================
 !=======================================================================
 end module anisofilter

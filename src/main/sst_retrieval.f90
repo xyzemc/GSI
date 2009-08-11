@@ -24,7 +24,8 @@ module sst_retrieval
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind,r_single,i_kind
   use radinfo, only: numt
 
@@ -54,6 +55,7 @@ contains
 !   2006-04-06  middlecoff - change lundx from 20 to lendian_in so 
 !                            can be read as little endian
 !   2006-07-28  derber  - modify hanling of lextra
+!   2008-04-11  safford - rm unused vars and uses
 !
 !   input argument list:
 !     obstype - type of tb observation
@@ -66,9 +68,9 @@ contains
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
-    use kinds, only: r_kind,r_single,i_kind
-    use constants, only: one,izero,h1000,ttp
+!$$$ end documentation block
+
+    use constants, only: one,ttp
     use gsi_io, only: lendian_in
     implicit none
 
@@ -77,9 +79,8 @@ contains
     character(10), intent(in) :: obstype,csatid
     integer(i_kind), intent(in) :: mype
 
-    integer(i_kind) iret,iyear,imon,iday,i
+    integer(i_kind) i
     character(9) :: string
-    character(10) :: filex
     character(len=80) :: bufrtabf
     character(30) bufr_sst       ! bufr output for sst2dvar input
 
@@ -121,8 +122,9 @@ contains
 ! program history log:
 !   2004-12-29 li
 !   2005-04-18 treadon - add passed logical lextra
-!   2005-9-28  derber - modify land mask stuff 
-!   200604-27  derber - modify to do single profile
+!   2005-09-28 derber  - modify land mask stuff 
+!   2006-04-27 derber  - modify to do single profile
+!   2008-04-11 safford - rm unused vars and uses
 !
 !   input argument list:
 !     obstype      - observation type
@@ -152,12 +154,11 @@ contains
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
-    use kinds, only: r_kind,r_single,i_kind
+!$$$ end documentation block
     use radinfo, only: npred
     use gridmod, only: nsig
     use obsmod, only: iadate,rmiss_single
-    use constants, only: zero,half,one,two,three,tiny_r_kind,izero,rad2deg,ttp
+    use constants, only: zero,one,two,tiny_r_kind,izero,rad2deg,ttp
 
     implicit none
 
@@ -184,7 +185,7 @@ contains
 
 !   Declare local variables
     real(r_kind) :: ws,wa,wq,errinv
-    integer(i_kind) :: icount,idate,md,ch3,ch4,ch5,iret,nn,i,j,l,n,lndsea
+    integer(i_kind) :: icount,idate,md,ch3,ch4,ch5,iret,nn,i,j,l
     integer(i_kind) :: iextra,jextra
     real(r_kind), dimension(nchanl) :: tb_ta,tb_qa
     real(r_kind), dimension(nchanl) :: w_avh
@@ -468,6 +469,7 @@ contains
 !
 ! program history log:
 !   2003-09-01 xu li
+!   2008-04-11 safford  - rm unused vars and uses
 !
 !   input argument list:
 !     y - cubic spline value at knots
@@ -480,9 +482,9 @@ contains
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
-    use kinds, only: r_kind,i_kind
-    use constants, only: zero,half,one,two,three,izero
+!$$$ end documentation block
+
+    use constants, only: zero,half,one,two,three
 
     implicit none
 
@@ -491,7 +493,7 @@ contains
     real(r_kind), dimension(numt),intent(in) :: y
 
 !   Local variables
-    integer(i_kind) i,j,n
+    integer(i_kind) i,j
     real(r_kind), dimension(numt) :: g,a,d,m,k
 
 !   handle the case when xs beyond [-1,31]
@@ -555,7 +557,8 @@ contains
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
+
     call closbf(lnbufr)
     return
   end subroutine finish_sst_retrieval

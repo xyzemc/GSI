@@ -1,13 +1,12 @@
-!						********************
-!						* module_pmat1.f90 *
-!						* PURSER 1994/1999 *
-!                                               *   FUJITA 1999    *
-!						********************
+MODULE MODULE_pmat1
+!$$$ module documentation block
+!              .      .    .                                       .
+! module:  module_pmat1
 !
+! abstract:  Routines for basic algebraic operations on general matrices 
+!             and vectors
 !
-!   Routines for basic algebraic operations on general matrices and vectors
-!------------------------------------------------------------------------------
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
+! additional notes:
 !  These routines, perform basic algebraic operations on real vectors and
 !  matrices. The task performed by each routine is, as far as possible,
 !  encoded in each routine's name; three letters describe the
@@ -50,8 +49,106 @@
 !   X	    field of parallel X-vectors (aligned like "columns" of a matrix)
 !   Y	    field of parallel Y-vectors (aligned like "rows" of a matrix)
 !
-!------------------------------------------------------------------------------
-MODULE MODULE_pmat1
+! program history:
+!   1994-  -    R.J.Purser - initial coding
+!   2008-04-25  safford    - add standard documentation blocks
+!
+! subroutines included:
+!   pro333
+!   dpro333
+!   cro33
+!   dcro33
+!   norv
+!   dnorv
+!   norq
+!   dnorq
+!   swpvv
+!   dswpvv
+!   mulmd
+!   dmulmd
+!   multd
+!   dmultd
+!   muldm
+!   dmuldm
+!   muldt
+!   dmuldt
+!   mulpp
+!   dmulpp
+!   madpp
+!   dmadpp
+!   msbpp
+!   dmsbpp
+!   difp
+!   ddifp
+!   intp
+!   dintp
+!   invp
+!   dinvp
+!   prgv
+!   dprgv
+!   mulcc
+!   dmulcc
+!   madcc
+!   dmadcc
+!   msbcc
+!   dmsbcc
+!   zerl
+!   dzerl
+!   zeru
+!   dzeru
+!   ldum
+!   dldum
+!   udlmm, udlmv
+!   dudlmm,dudlmv
+!   linvan
+!   dlinvan
+!   copdm
+!   dcopdm
+!   condm
+!   dcondm
+!   copsm
+!   dcopsm
+!   consm
+!   dconsm
+!   addmd
+!   daddmd
+!   submd
+!   dsubmd
+!   addms
+!   daddms
+!   subms
+!   dsubms
+!   l1lm
+!   dl1lm
+!   ldlm
+!   dldlm
+!   invh
+!   dinvh
+!   invl
+!   dinvl
+!   linlv
+!   dlinlv
+!   linuv
+!   dlinuv
+!   powp
+!   dpowp
+!   polps
+!   dpolps
+!   polpp
+!   dpolpp
+!   trcm
+!   dtrcm
+!   invmt, linmmt, linmvt
+!   dinvmt,dlinmmt,dlinmvt
+!
+! variable definitions:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 IMPLICIT NONE
 INTERFACE pro333  ; MODULE PROCEDURE pro333;                 END INTERFACE
 INTERFACE pro333_d; MODULE PROCEDURE dpro333;                END INTERFACE
@@ -142,7 +239,30 @@ INTERFACE inv_d;    MODULE PROCEDURE dinvmt,dlinmmt,dlinmvt; END INTERFACE
 
 CONTAINS
 
-FUNCTION pro333(d,e,f) RESULT(pro_res) ! TRIPLE PRODUCT OF 3 3-VECTORS
+
+FUNCTION pro333(d,e,f) RESULT(pro_res)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    pro333
+!
+!   prgrmmr:
+!
+! abstract:  triple product of 3 3-vectors
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d(3), e(3), f(3) - input vectors
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8)                :: pro_res
 REAL(8),    INTENT(IN) :: d(3), e(3), f(3)
 REAL(8)                :: g(3)
@@ -150,7 +270,30 @@ CALL CRO33(E,F,G)
 pro_res=DOT_PRODUCT(d,g)
 END FUNCTION pro333
 
-FUNCTION dpro333(d,e,f) RESULT(pro_res) ! TRIPLE PRODUCT OF 3 3-VECTORS
+
+FUNCTION dpro333(d,e,f) RESULT(pro_res)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dpro333
+!
+!   prgrmmr:
+!
+! abstract:  triple product of 3 3-vectors
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d(3), e(3), f(3) - input vectors
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8)             :: pro_res
 REAL(8), INTENT(IN) :: d(3), e(3), f(3)
 REAL(8)             :: g(3)
@@ -158,7 +301,31 @@ CALL CRO33_d(E,F,G)
 pro_res=DOT_PRODUCT(d,g)
 END FUNCTION dpro333
 
-SUBROUTINE cro33(a,b,c) ! SPECIAL CASE OF 3-DIMENSIONS: CROSS-PRODUCT
+
+SUBROUTINE cro33(a,b,c) 
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    cro33
+!
+!   prgrmmr:
+!
+! abstract:  special case of 3-dimensions:  cross-product
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a(3), b(3)       - input vectors
+!
+!   output argument list:
+!     c(3)             - resulting cross-product
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block$
+
 REAL(8),    INTENT(IN) :: a(3), b(3)
 REAL(8),    INTENT(OUT):: c(3)
 c(1)=a(2)*b(3)-a(3)*b(2)
@@ -166,7 +333,31 @@ c(2)=a(3)*b(1)-a(1)*b(3)
 c(3)=a(1)*b(2)-a(2)*b(1)
 END SUBROUTINE cro33
 
-SUBROUTINE dcro33(a,b,c) ! SPECIAL CASE OF 3-DIMENSIONS: CROSS-PRODUCT
+
+SUBROUTINE dcro33(a,b,c)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dcro33
+!
+!   prgrmmr:
+!
+! abstract:  special case of 3-dimensions:  cross-product
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a(3), b(3)       - input vectors
+!
+!   output argument list:
+!     c(3)             - resulting cross-product
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(IN) :: a(3), b(3)
 REAL(8), INTENT(OUT):: c(3)
 c(1)=a(2)*b(3)-a(3)*b(2)
@@ -175,19 +366,87 @@ c(3)=a(1)*b(2)-a(2)*b(1)
 END SUBROUTINE dcro33
 
 
-FUNCTION norv(d) RESULT(norv_res)! NORM OF VECTOR..
+FUNCTION norv(d) RESULT(norv_res)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    norv
+!
+!   prgrmmr:
+!
+! abstract:  norm of vector
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d                - input vector
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8)                :: norv_res
 REAL(8),    INTENT(IN) :: d(:)
 norv_res=SQRT(DOT_PRODUCT(D,D))
 END FUNCTION norv
 
-FUNCTION dnorv(d) ! NORM OF VECTOR..
+
+FUNCTION dnorv(d)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dnorv
+!
+!   prgrmmr:
+!
+! abstract:  norm of vector
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d                - input vector
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8):: dnorv
 REAL(8),    INTENT(IN) :: d(:)
 dnorv=SQRT(DOT_PRODUCT(d,d))
 END FUNCTION dnorv
 
-FUNCTION norq(d) ! Norm of a matrix
+
+FUNCTION norq(d)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    norq
+!
+!   prgrmmr:
+!
+! abstract:  norm of a matrix
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d                - input matrix
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8):: norq
 REAL(8),INTENT(IN):: d(:,:)
 INTEGER m2,i2
@@ -196,7 +455,30 @@ norq=0.; DO i2=1,m2; norq=norq+dot_PRODUCT(d(:,i2),d(:,i2)); ENDDO
 norq=SQRT(norq)
 END FUNCTION norq
 
+
 FUNCTION dnorq(d) ! norm of a matrix
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dnorq
+!
+!   prgrmmr:
+!
+! abstract:  norm of a matrix
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d                - input matrix
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8):: dnorq
 REAL(8),INTENT(IN):: d(:,:)
 INTEGER m2,i2
@@ -207,18 +489,89 @@ END FUNCTION dnorq
 
 
 SUBROUTINE swpvv(d,e)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    swpvv 
+!
+!   prgrmmr:
+!
+! abstract:  swap first two operands of input vectors
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d, e       - 
+!
+!   output argument list:
+!     d, e       - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT) :: d(:), e(:)
 REAL(8) :: t(SIZE(d))
 t = d; d = e; e = t
 END SUBROUTINE swpvv
 
+
 SUBROUTINE dswpvv(d,e)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dswpvv
+!
+!   prgrmmr:
+!
+! abstract:  swap first two operads of input vectors
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d, e       - 
+!
+!   output argument list:
+!     d, e       - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT) :: d(:), e(:)
 REAL(8) :: t(SIZE(d))
 t = d; d = e; e = t
 END SUBROUTINE dswpvv
 
+
 SUBROUTINE mulmd(a,d,b)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    mulmd
+!
+!   prgrmmr:
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a, b       - 
+!     d          -
+!   output argument list:
+!     a, b       - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT) :: a(:,:),b(:,:) 
 REAL(8), INTENT(IN)    :: d(*)
 INTEGER:: m2,j
@@ -226,7 +579,32 @@ m2=SIZE(a,2)
 DO j=1,m2; b(:,j)=a(:,j)*d(j); ENDDO
 END SUBROUTINE mulmd
 
+
 SUBROUTINE dmulmd(a,d,b)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dmulmd
+!
+!   prgrmmr:
+!
+! abstract:  special case of 3-dimensions:  cross-product
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a, b       - 
+!     d          - 
+!
+!   output argument list:
+!     a, b       - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT) :: a(:,:),b(:,:)
 REAL(8), INTENT(IN)    :: d(*)
 INTEGER:: m2,j
@@ -234,7 +612,32 @@ m2=SIZE(a,2)
 DO j=1,m2; b(:,j)=a(:,j)*d(j); ENDDO
 END SUBROUTINE dmulmd
 
+
 SUBROUTINE multd(a,d,b)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    multd
+!
+!   prgrmmr:
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a, b       - 
+!     d          - 
+!
+!   output argument list:
+!     a, b       - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT)    :: a(:,:),b(:,:) 
 REAL(8), INTENT(IN)       :: d(*)
 INTEGER:: m2,j
@@ -242,7 +645,32 @@ m2=SIZE(a,1)
 DO j=1,m2; b(:,j) = a(j,:) * d(j); ENDDO
 END SUBROUTINE multd
 
+
 SUBROUTINE dmultd(a,d,b)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dmultd
+!
+!   prgrmmr:
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a, b       -
+!     d          -
+!
+!   output argument list:
+!     a, b       -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT) :: a(:,:),b(:,:) 
 REAL(8), INTENT(IN)    :: d(*)
 INTEGER:: m2,j
@@ -250,7 +678,32 @@ m2=SIZE(a,1)
 DO j=1,m2; b(:,j) = a(j,:) * d(j); ENDDO
 END SUBROUTINE dmultd
 
+
 SUBROUTINE muldm(d,a,b)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    muldm
+!
+!   prgrmmr:
+!
+! abstract: 
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a, b       -
+!     d          -
+!
+!   output argument list:
+!     a, b       -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT)    :: a(:,:),b(:,:) 
 REAL(8), INTENT(IN)       :: d(*)
 INTEGER                :: m1,i
@@ -258,7 +711,32 @@ m1=SIZE(a,1)
 DO i=1,m1; b(i,:) = d(i)*a(i,:); ENDDO
 END SUBROUTINE muldm
 
+
 SUBROUTINE dmuldm(d,a,b)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dmuldm
+!
+!   prgrmmr:
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a, b       -
+!     d          -
+!
+!   output argument list:
+!     a, b       -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT) :: a(:,:),b(:,:) 
 REAL(8), INTENT(IN)    :: d(*)
 INTEGER                :: m1,i
@@ -266,7 +744,32 @@ m1=SIZE(a,1)
 DO i=1,m1; b(i,:) = d(i)*a(i,:); ENDDO
 END SUBROUTINE dmuldm
 
+
 SUBROUTINE muldt(d,a,b)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    muldt
+!
+!   prgrmmr:
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a, b       -
+!     d          -
+!
+!   output argument list:
+!     a, b       -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT)    :: a(:,:),b(:,:) 
 REAL(8), INTENT(IN)       :: d(*)
 INTEGER                :: m1,i
@@ -274,7 +777,32 @@ m1=SIZE(a,2)
 DO i=1,m1; b(i,:) = d(i)*a(:,i); ENDDO
 END SUBROUTINE muldt
 
+
 SUBROUTINE dmuldt(d,a,b)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dmuldt
+!
+!   prgrmmr:
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a, b       -
+!     d          -
+!
+!   output argument list:
+!     a, b       -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT) :: a(:,:),b(:,:) 
 REAL(8), INTENT(IN)    :: d(*)
 INTEGER:: m1,i
@@ -282,11 +810,36 @@ m1=SIZE(a,2)
 DO i=1,m1; b(i,:) = d(i)*a(:,i); ENDDO
 END SUBROUTINE dmuldt
 
-SUBROUTINE mulpp(a,b,c) !  multiply polynomials, possibly in place
+
+SUBROUTINE mulpp(a,b,c)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    mulpp
+!
+!   prgrmmr:
+!
+! abstract:  multiply polynomials, possibly in place
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     a, b       -
+!     c          -
+!
+!   output argument list:
+!     c          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),    INTENT(IN)    :: a(0:), b(0:)
 REAL(8),    INTENT(INOUT) :: c(0:)
-INTEGER                :: m,mcp, i, j
-REAL(8)                   :: s, b0
+INTEGER                :: m,mcp, j
+REAL(8)                   :: s
 m=SIZE(a)-1
 mcp=mcmax(a,b,m)
 c(mcp:m) = 0.0
@@ -332,10 +885,34 @@ ENDDO
 END FUNCTION mcmax
 END SUBROUTINE mulpp
 
+
 SUBROUTINE difp(a,b) ! Symbolically differentiate polynomial
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    difp
+!
+!   prgrmmr:
+!
+! abstract:  Symbolically differentiate polynomial
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     a          -
+!
+!   output argument list:
+!     b          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(IN)  :: a(0:)
 REAL(8), INTENT(OUT) :: b(0:)
-INTEGER           :: m,mcp, i, j
+INTEGER           :: m, i
 REAL(8)              :: s, b0
 m=SIZE(a)-1
 DO i=1,m	! possibly with coincident storage for a and b
@@ -360,11 +937,36 @@ DO i=1,m
 ENDDO
 END SUBROUTINE difp
 
+
 SUBROUTINE dmulpp(a,b,c) !  multiply polynomials, possibly in place
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dmulpp
+!
+!   prgrmmr:
+!
+! abstract:  multiply polynomials, possibly in place
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     a, b       -
+!     c          -
+!
+!   output argument list:
+!     c          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(IN)   :: a(0:), b(0:)
 REAL(8), INTENT(INOUT):: c(0:)
-INTEGER               :: m,mcp, i, j
-REAL(8)               :: s, b0
+INTEGER               :: m,mcp, j
+REAL(8)               :: s
 m=SIZE(a)-1
 mcp=mcmax(a,b,m)
 c(mcp:m) = 0.0
@@ -412,10 +1014,35 @@ END FUNCTION mcmax
 
 END SUBROUTINE dmulpp
 
+
 SUBROUTINE ddifp(a,b) ! Symbolically differentiate polynomial
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    ddifp
+!
+!   prgrmmr:
+!
+! abstract:  Symbolically differentiate polynomial
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     a          -
+!     b          -
+!
+!   output argument list:
+!     b          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(IN)   :: a(0:)
 REAL(8), INTENT(INOUT):: b(0:)
-INTEGER               :: m,mcp, i, j
+INTEGER               :: m, i
 REAL(8)               :: s, b0
 m=SIZE(a)-1
 DO i=1,m	 ! possibly with coincident storage for a and b
@@ -442,6 +1069,29 @@ END SUBROUTINE ddifp
 
 
 SUBROUTINE prgv(d)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    prgv
+!
+!   prgrmmr:
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d          -
+!
+!   output argument list:
+!     d          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), PARAMETER        :: crit=1.E-30
 REAL(8), INTENT(INOUT)    :: d(:)
 INTEGER                :: i,m
@@ -449,7 +1099,31 @@ m=SIZE(d)
 DO i=1,m; IF(ABS(d(i)) <= crit)d(i)=0.; ENDDO
 END SUBROUTINE prgv
 
+
 SUBROUTINE dprgv(d)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dprgv
+!
+!   prgrmmr:
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d          -
+!
+!   output argument list:
+!     d          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), PARAMETER     :: crit=1.D-30
 REAL(8), INTENT(INOUT) :: d(:)
 INTEGER                :: i,m
@@ -458,7 +1132,31 @@ DO i=1,m; IF(ABS(d(i)) <= crit)d(i)=0.; ENDDO
 END SUBROUTINE dprgv
 
 
-SUBROUTINE mulcc(a,b,c,m)  ! Multiply circulant matrices of period M
+SUBROUTINE mulcc(a,b,c,m)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    mulcc
+!
+!   prgrmmr:
+!
+! abstract:  Multiply circulant matrices of period M
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a, b, c    -
+!     m          -
+!
+!   output argument list:
+!     a, b, c    -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN) :: m
 REAL(8), INTENT(INOUT) :: a(0:m-1), b(0:m-1), c(0:m-1)
 INTEGER             :: mm, j
@@ -478,7 +1176,32 @@ DO j=0,mm
 ENDDO
 END SUBROUTINE mulcc
 
+
 SUBROUTINE dmulcc(a,b,c,m)  ! Multiply circulant matrices of period M
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dmulcc
+!
+!   prgrmmr:
+!
+! abstract:  Multiply circulant matrices of period M
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a, b, c    -
+!     m          -
+!
+!   output argument list:
+!     a, b, c    -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN   ) :: m
 REAL(8), INTENT(INOUT) :: a(0:m-1), b(0:m-1), c(0:m-1)
 INTEGER                :: mm, j
@@ -498,7 +1221,31 @@ DO j=0,mm
 ENDDO
 END SUBROUTINE dmulcc
 
-SUBROUTINE zerl(a)  ! Zero out the strictly lower triangle of elements
+
+SUBROUTINE zerl(a)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zerl
+!
+!   prgrmmr:
+!
+! abstract:  Zero out the strictly lower triangle of elements
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          -
+!
+!   output argument list:
+!     a          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),INTENT(INOUT):: a(:,:)
 INTEGER           :: m,j
 m=SIZE(a,1); DO j=1,m; a(j+1:m,j) = 0; ENDDO; RETURN
@@ -507,7 +1254,31 @@ ENTRY zeru(a)       ! Zero out the strictly upper triangle of elements
 m=SIZE(a,1); DO j=1,m; a(1:j-1,j) = 0; ENDDO
 END SUBROUTINE zerl
 
-SUBROUTINE dzerl(a) ! Zero out the strictly lower triangle of elements
+
+SUBROUTINE dzerl(a)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dmuldm
+!
+!   prgrmmr:
+!
+! abstract:  Zero out the strictly lower triangle of elements
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          -
+!
+!   output argument list:
+!     a          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),INTENT(INOUT):: a(:,:)
 INTEGER              :: m,j
 m=SIZE(a,1); DO j=1,m; a(j+1:m,j) = 0; ENDDO; RETURN
@@ -516,16 +1287,33 @@ ENTRY dzeru(a)      ! Zero out the strictly upper triangle of elements
 m=SIZE(a,1); DO j=1,m; a(1:j-1,j) = 0; ENDDO
 END SUBROUTINE dzerl
 
-!------------------------------------------------------------------------------
-!   R.J.Purser, NCEP, Washington D.C.	1996
-!		    SUBROUTINE	LDUM
-!  perform l-d-u decomposition of square matrix a in place with
-!
-!  <-> a    square matrix to be factorized
-!  <-- ipiv array encoding the pivoting sequence
-!  <-- d    indicator for possible sign change of determinant
-!------------------------------------------------------------------------------
+
 SUBROUTINE ldum(a,ipiv,d)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    ldum
+!
+!   prgrmmr:     R.J.Purser, NCEP, Washington D.C.	1996
+!
+! abstract:  perform l-d-u decomposition of square matrix a in place with
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          - square matrix to be factorized
+!
+!   output argument list:
+!     a          - square matrix to be factorized
+!     ipiv       - ipiv array encoding the pivoting sequence
+!     d          - indicator for possible sign change of determinant
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),    INTENT(INOUT) :: a(:,:) 
 REAL(8),    INTENT(OUT  ) :: d
 INTEGER, INTENT(OUT  ) :: ipiv(:)
@@ -578,7 +1366,34 @@ DO j=1,m-1
   ENDDO
 ENDDO
 END SUBROUTINE ldum
+
+
 SUBROUTINE DLDUM(A,IPIV,D)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dldum
+!
+!   prgrmmr:     R.J.Purser, NCEP, Washington D.C.      1996
+!
+! abstract:  perform l-d-u decomposition of square matrix a in place with
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          - square matrix to be factorized
+!
+!   output argument list:
+!     a          - square matrix to be factorized
+!     ipiv       - ipiv array encoding the pivoting sequence
+!     d          - indicator for possible sign change of determinant
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT) :: a(:,:) 
 REAL(8), INTENT(OUT  ) :: d
 INTEGER, INTENT(OUT  ) :: ipiv(:)
@@ -633,18 +1448,36 @@ ENDDO
 END SUBROUTINE dldum
 
 
-!------------------------------------------------------------------------------
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1993
-!		    SUBROUTINE UDLMM
-!  use l-u factors in A to back-substitute for mm rhs in B, using ipiv to
-!  define the pivoting permutation used in the l-u decomposition.
-!
-!  --> A    L-D-U factorization of linear system matrux
-!  <-> B    right-hand-sides on entry, corresponding matrix of solution
-!	    vectors on return
-!  --> IPIV array encoding the pivoting sequence
-!------------------------------------------------------------------------------
 SUBROUTINE udlmm(a,b,ipiv)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    udlmm
+!
+!   prgrmmr:     R.J.Purser, NCEP, Washington D.C.      1993
+!
+! abstract:  use l-u factors in A to back-substitute for mm rhs in B, 
+!            using ipiv to define the pivoting permutation used in the l-u 
+!            decomposition.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          - L-D-U factorization of linear system matrux
+!     b          - right-hand-sides on entry, corresponding matrix of solution
+!	           vectors on return
+!     ipiv       - ipiv array encoding the pivoting sequence
+!
+!   output argument list:
+!     b          - right-hand-sides on entry, corresponding matrix of solution
+!	           vectors on return
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN)    :: ipiv(:) 
 REAL(8),    INTENT(IN)    :: a(:,:) 
 REAL(8),    INTENT(INOUT) :: b(:,:) 
@@ -667,7 +1500,38 @@ DO k=1,mm !loop over columns of b
   ENDDO
 ENDDO
 END SUBROUTINE udlmm
+
+
 SUBROUTINE dudlmm(a,b,ipiv)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dudlmm
+!
+!   prgrmmr:     R.J.Purser, NCEP, Washington D.C.      1993
+!
+! abstract:  use l-u factors in A to back-substitute for mm rhs in B,
+!            using ipiv to define the pivoting permutation used in the l-u
+!            decomposition.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          - L-D-U factorization of linear system matrux
+!     b          - right-hand-sides on entry, corresponding matrix of solution
+!                  vectors on return
+!     ipiv       - ipiv array encoding the pivoting sequence
+!
+!   output argument list:
+!     b          - right-hand-sides on entry, corresponding matrix of solution
+!                  vectors on return
+!     
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN   ) :: ipiv(:) 
 REAL(8), INTENT(IN   ) :: a(:,:) 
 REAL(8), INTENT(INOUT) :: b(:,:) 
@@ -691,18 +1555,37 @@ DO k=1,mm !loop over columns of b
 ENDDO
 END SUBROUTINE dudlmm
 
-!------------------------------------------------------------------------------
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1993
-!		    SUBROUTINE UDLMV
-!  use l-u factors in A to back-substitute for mm rhs in B, using ipiv to
-!  define the pivoting permutation used in the l-u decomposition.
-!
-!  --> A    L-D-U factorization of linear system matrux
-!  <-> B    right-hand-side on entry, corresponding vector solution
-!	    on return
-!  --> IPIV array encoding the pivoting sequence
-!------------------------------------------------------------------------------
+
 SUBROUTINE udlmv(a,b,ipiv)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    udlmv
+!
+!   prgrmmr:     R.J.Purser, NCEP, Washington D.C.      1993
+!
+! abstract:  use l-u factors in A to back-substitute for mm rhs in B, using 
+!            ipiv to define the pivoting permutation used in the l-u 
+!            decomposition.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          - L-D-U factorization of linear system matrux
+!     b          - right-hand-side on entry, corresponding vector solution
+!                  on return
+!     ipiv       - ipiv array encoding the pivoting sequence
+!
+!   output argument list:
+!     b          - right-hand-side on entry, corresponding vector solution
+!                  on return
+!     
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN)    :: ipiv(:) 
 REAL(8),    INTENT(IN)    :: a(:,:) 
 REAL(8),    INTENT(INOUT) :: b(:) 
@@ -723,7 +1606,38 @@ DO i=m-1,1,-1
    b(i)=b(i)*aiii
 ENDDO
 END SUBROUTINE udlmv
+
+
 SUBROUTINE dudlmv(a,b,ipiv)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dudlmv
+!
+!   prgrmmr:     R.J.Purser, NCEP, Washington D.C.      1993
+!
+! abstract:  use l-u factors in A to back-substitute for mm rhs in B, using
+!            ipiv to define the pivoting permutation used in the l-u
+!            decomposition.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          - L-D-U factorization of linear system matrux
+!     b          - right-hand-side on entry, corresponding vector solution
+!                  on return
+!     ipiv       - ipiv array encoding the pivoting sequence
+!
+!   output argument list:
+!     b          - right-hand-side on entry, corresponding vector solution
+!                  on return
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN   ) :: ipiv(:) 
 REAL(8),  INTENT(IN   ) :: a(:,:) 
 REAL(8),  INTENT(INOUT) :: b(:) 
@@ -745,10 +1659,15 @@ DO i=m-1,1,-1
 ENDDO
 END SUBROUTINE dudlmv
 
-!------------------------------------------------------------------------------
-!   R.J.Purser, National Centers for Environmental Prediction, Washington D.C.
-!		    SUBROUTINE LINVAN
+
+SUBROUTINE linvan(w,ab)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    linvan
 !
+!   prgrmmr:     R.J.Purser, NCEP, Washington D.C.      1993
+!
+! abstract:  
 !   Take square matrix W and seek row and column scalings to produce non-
 !   vanishing elements of rescaled W having magnitudes as close to unity
 !   as possible. The approach is make the geometric mean of the nonvanishing
@@ -758,16 +1677,29 @@ END SUBROUTINE dudlmv
 !   Rescale the solution vector (now AB) and put the conditioning indicator
 !   formed by the ratio D/P into the first element of W.
 !
-! <-> W:    Generalized Vandermonde matrix in, conditioning indicator out.
-! <-> AB:   R.h.s. vector in, solution vector of numerical coefficients out.
-!------------------------------------------------------------------------------
-SUBROUTINE linvan(w,ab)
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     W       - Generalized Vandermonde matrix in, conditioning indicator out.
+!     AB      - R.h.s. vector in, solution vector of numerical coefficients out.
+!
+!   output argument list:
+!     W       - Generalized Vandermonde matrix in, conditioning indicator out.
+!     AB      - R.h.s. vector in, solution vector of numerical coefficients out.
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, PARAMETER  :: nit=20
 REAL(8), INTENT(INOUT) :: w(:,:), ab(:)
 REAL(8)                :: d1(SIZE(w,1)), d2(SIZE(w,1)), &
                        w2(SIZE(w,1),SIZE(w,1)),v(SIZE(w,1))
 INTEGER             :: i, j, it, jt, ipiv(SIZE(w,1)), nc
-REAL(8)                :: p, e, dw, c, d, s, d2j
+REAL(8)                :: p, e, dw, c, d, d2j
 REAL(8),ALLOCATABLE    :: wv(:,:) ! work variable for ab(nc) and v(nn)
 
 nc = SIZE(w,DIM=1)
@@ -883,11 +1815,15 @@ w(1,1)=d/p  ! this ratio is an indicator of the overall conditioning
 
 END SUBROUTINE linvan
 
-!------------------------------------------------------------------------------
-!   R.J.Purser, National Centers for Environmental Prediction, Washington D.C.
-!   wd23jp@sun1.wwb.noaa.gov					      1996
-!		    SUBROUTINE DLINVAN
+
+SUBROUTINE dlinvan(w,ab)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dlinvan
+!                .      .    .
+!   prgrmmr:     R.J.Purser, NCEP, Washington D.C.      1996
 !
+! abstract: 
 !   Take square matrix W and seek row and column scalings to produce non-
 !   vanishing elements of rescaled W having magnitudes as close to unity
 !   as possible. The approach is make the geometric mean of the nonvanishing
@@ -897,23 +1833,36 @@ END SUBROUTINE linvan
 !   Rescale the solution vector (now AB) and put the conditioning indicator
 !   formed by the ratio D/P into the first element of W.
 !
-! <-> W:    Generalized Vandermonde matrix in, conditioning indicator out.
-! <-> AB:   R.h.s. vector in, solution vector of numerical coefficients out.
-!------------------------------------------------------------------------------
-SUBROUTINE dlinvan(w,ab)
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     W   -  Generalized Vandermonde matrix in, conditioning indicator out.
+!     AB  -  R.h.s. vector in, solution vector of numerical coefficients out.
+!
+!   output argument list:
+!     W   -  Generalized Vandermonde matrix in, conditioning indicator out.
+!     AB  -  R.h.s. vector in, solution vector of numerical coefficients out.
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, PARAMETER     :: nit=20
 REAL(8), INTENT(INOUT) :: w(:,:), ab(:)
 REAL(8)                :: d1(SIZE(w,1)), d2(SIZE(w,1)), &
                           w2(SIZE(w,1),SIZE(w,1)),v(SIZE(w,1))
 INTEGER                :: i, j, it, jt, ipiv(SIZE(w,1)), nc
-REAL(8)                :: p, e, dw, c, d, s, d2j
+REAL(8)                :: p, e, dw, c, d, d2j
 REAL(8),ALLOCATABLE    :: wv(:,:) ! work variable for ab(nc) and v(nn)
 
 nc = SIZE(w,DIM=1)
 ALLOCATE(wv(nc,1))
 
 w2=w                ! Preserve original W and AB for use
-v = ab(1:nc)	    ! in later "clean-up" operation.
+v = ab(1:nc)        ! in later "clean-up" operation.
 
 d1 = 1.0 	    ! Row scaling factors set to default
 d2 = 1.0 	    ! Column scaling factors set to default
@@ -1022,32 +1971,153 @@ w(1,1)=d/p  ! this ratio is an indicator of the overall conditioning
 
 END SUBROUTINE dlinvan
 
+
 SUBROUTINE copdm(d,a)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    copdm
+!
+!   prgrmmr:     
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d          - 
+!
+!   output argument list:
+!     a          - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),DIMENSION(:),INTENT(IN)::d; REAL(8),DIMENSION(:,:),INTENT(OUT)::a; INTEGER i
                   a=0.; DO i=1,SIZE(a,1); a(i,i)= d(i); ENDDO; RETURN
 ENTRY condm(d,a); a=0.; DO i=1,SIZE(a,1); a(i,i)=-d(i); ENDDO
 END SUBROUTINE copdm
 
+
 SUBROUTINE dcopdm(d,a)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dcopdm
+!
+!   prgrmmr:    
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d          - 
+!
+!   output argument list:
+!     a          - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),DIMENSION(:),INTENT(IN)::d; REAL(8),DIMENSION(:,:),INTENT(OUT)::a
 INTEGER i
                    a=0.; DO i=1,SIZE(a,1); a(i,i)= d(i); ENDDO; RETURN
 ENTRY dcondm(d,a); a=0.; DO i=1,SIZE(a,1); a(i,i)=-d(i); ENDDO
 END SUBROUTINE dcopdm
 
+
 SUBROUTINE copsm(s,a)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    copsm
+!
+!   prgrmmr:    
+!
+! abstract: 
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     s          -
+!
+!   output argument list:
+!     a          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),INTENT(IN) :: s; REAL(8),DIMENSION(:,:),INTENT(OUT):: a; INTEGER i
                   a=0.; DO i=1,SIZE(a,1); a(i,i)= s; ENDDO; RETURN
 ENTRY consm(s,a); a=0.; DO i=1,SIZE(a,1); a(i,i)=-s; ENDDO
 END SUBROUTINE copsm
 
+
 SUBROUTINE dcopsm(s,a)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dcopsm
+!
+!   prgrmmr:    
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     s          - 
+!
+!   output argument list:
+!     a          - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),INTENT(IN) :: s; REAL(8),DIMENSION(:,:),INTENT(OUT):: a; INTEGER i
                    a=0.; DO i=1,SIZE(a,1); a(i,i)= s; ENDDO; RETURN
 ENTRY dconsm(s,a); a=0.; DO i=1,SIZE(a,1); a(i,i)=-s; ENDDO
 END SUBROUTINE dcopsm
 
+
 SUBROUTINE addmd(a,b,d)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    addmd
+!
+!   prgrmmr:    
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a, b       -
+!     d          - 
+!
+!   output argument list:
+!     a, b       -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),DIMENSION(:,:),INTENT(INOUT):: a,b; REAL(8),DIMENSION(:),INTENT(IN):: d
 REAL(8) s;  INTEGER i
                    b=a; DO i=1,SIZE(a,1); b(i,i)=b(i,i)+d(i); ENDDO; RETURN
@@ -1056,7 +2126,32 @@ ENTRY addms(a,b,s);b=a; DO I=1,SIZE(a,1); b(i,i)=b(i,i)+s;    ENDDO; RETURN
 ENTRY SUBMS(A,B,S);b=a; DO I=1,SIZE(a,1); B(I,I)=B(I,I)-S;    ENDDO;
 END SUBROUTINE addmd
 
+
 SUBROUTINE daddmd(a,b,d)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    daddmd
+!
+!   prgrmmr:    
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a, b       - 
+!     d          -
+!
+!   output argument list:
+!     a, b       - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),DIMENSION(:,:),INTENT(INOUT)::A,B;REAL(8),DIMENSION(:),INTENT(IN)::D
 REAL(8) s; INTEGER i
                      b=a; DO i=1,SIZE(a,1); b(i,i)=b(i,i)+d(i); ENDDO; RETURN
@@ -1065,7 +2160,32 @@ ENTRY DADDMS(A,B,S); b=a; DO i=1,SIZE(a,1); b(i,i)=b(i,i)+s;    ENDDO; RETURN
 ENTRY DSUBMS(A,B,S); b=a; DO i=1,SIZE(a,1); b(i,i)=b(i,i)-s;    ENDDO;
 END SUBROUTINE daddmd
 
-SUBROUTINE l1lm(a,b) ! Cholesky, M -> L*U, U(i,j)=L(j,i)
+
+SUBROUTINE l1lm(a,b)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    l1lm
+!
+!   prgrmmr:    
+!
+! abstract:  Cholesky, M -> L*U, U(i,j)=L(j,i)
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          - 
+!     b          - 
+!
+!   output argument list:
+!     b          - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(IN)    :: a(:,:)
 REAL(8), INTENT(INOUT) :: b(:,:)
 INTEGER             :: m,j, jm, jp, i
@@ -1089,7 +2209,32 @@ DO j=1,m
 ENDDO
 END SUBROUTINE l1lm
 
-SUBROUTINE DL1LM(A,B) ! Cholesky, M -> L*U, U(i,j)=L(j,i)
+
+SUBROUTINE DL1LM(A,B)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dl1lm
+!
+!   prgrmmr:    
+!
+! abstract:  Cholesky, M -> L*U, U(i,j)=L(j,i)
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+! 
+!   input argument list:
+!     a          -
+!     b          -
+!
+!   output argument list:
+!     b          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(IN)    :: a(:,:) 
 REAL(8), INTENT(INOUT) :: b(:,:) 
 INTEGER :: m,j, jm, jp, i
@@ -1115,11 +2260,36 @@ RETURN
 END SUBROUTINE dl1lm
 
 SUBROUTINE ldlm(a,b,d) ! Modified Cholesky decompose Q --> L*D*U, U(i,j)=L(j,i)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    ldlm
+!
+!   prgrmmr:    
+!
+! abstract:  Modified Cholesky decompose Q --> L*D*U, U(i,j)=L(j,i)
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block, rm unused vars
+! 
+!   input argument list:
+!     a          -
+!     b          -
+!
+!   output argument list:
+!     b          -
+!     d          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(IN)    :: a(:,:)
 REAL(8), INTENT(INOUT) :: b(:,:)
 REAL(8), INTENT(OUT)   :: d(:)
 INTEGER :: m,j, jm, jp, i
-REAL(8) :: s, bjji
+REAL(8) :: bjji
 m=SIZE(a,1)
 DO j=1,m
   jm=j-1
@@ -1141,12 +2311,38 @@ CALL zeru(b)
 RETURN
 END SUBROUTINE ldlm
 
+
 SUBROUTINE dldlm(a,b,d) ! Modified Cholesky  Q --> L*D*U, U(i,j)=L(j,i)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dldlm
+!
+!   prgrmmr:    
+!
+! abstract:  Modified Cholesky  Q --> L*D*U, U(i,j)=L(j,i)
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block, rm unused vars
+! 
+!   input argument list:
+!     a          -
+!     b          -
+!
+!   output argument list:
+!     b          -
+!     d          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(IN)    :: a(:,:)
 REAL(8), INTENT(INOUT) :: b(:,:)
 REAL(8), INTENT(OUT)   :: d(:)
 INTEGER                :: m,j, jm, jp, i
-REAL(8)                :: s, bjji
+REAL(8)                :: bjji
 m=SIZE(a,1)
 DO j=1,m; jm=j-1; jp=j+1
   d(j)=a(j,j) - SUM(b(1:jm,j)*b(j,1:jm))
@@ -1165,18 +2361,34 @@ CALL zeru_d(b)
 RETURN
 END SUBROUTINE dldlm
 
-!------------------------------------------------------------------------------
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1993
-!		    SUBROUTINE INVH
-!  Inver,t in place, a symmetric matrix
-!
-!  <-> A    symmetric square matrix, output as inverse of input
-!
-!  LIMITATION
-!     This routine incorporates no pivoting - it is intended for matrices
-!     that are already diagonally dominant
-!------------------------------------------------------------------------------
+
 SUBROUTINE invh(a)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    invh
+!
+!   prgrmmr:  R.J.Purser, National Meteorological Center, Washington D.C.  1993
+!
+! abstract:   Inver,t in place, a symmetric matrix
+!
+! limitation:  This routine incorporates no pivoting - it is intended for matrices
+!              that are already diagonally dominant
+!  
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+! 
+!   input argument list:
+!     A          - symmetric square matrix, output as inverse of input
+!
+!   output argument list:
+!     A          - symmetric square matrix, output as inverse of input
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT)      :: a(:,:) 
 INTEGER                  :: m,k, kp, i, ip, j
 REAL(8),DIMENSION(SIZE(a,1)):: d
@@ -1212,7 +2424,34 @@ DO i=1,m
 ENDDO
 END SUBROUTINE invh
 
+
 SUBROUTINE dinvh(a)
+!$$$  subprogram documentation block
+!                .      .    .    
+! subprogram:    dinvh 
+!
+!   prgrmmr:  R.J.Purser, National Meteorological Center, Washington D.C.  1993 
+!
+! abstract:   Inver,t in place, a symmetric matrix
+!
+! limitation:  This routine incorporates no pivoting - it is intended for matrices
+!              that are already diagonally dominant
+!  
+! program history log: 
+!   2008-04-25  safford -- add subprogram doc block
+! 
+!   input argument list:
+!     A          - symmetric square matrix, output as inverse of input
+!
+!   output argument list:
+!     A          - symmetric square matrix, output as inverse of input
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT)      :: a(:,:) 
 INTEGER                     :: m,k, kp, i, ip, j
 REAL(8),DIMENSION(SIZE(a,1)):: d
@@ -1249,12 +2488,31 @@ DO i=1,m
 ENDDO
 END SUBROUTINE dinvh
 
-!------------------------------------------------------------------------------
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE INVL
-!     Invert lower triangular matrix in place if A are same
-!------------------------------------------------------------------------------
+
 SUBROUTINE invl(a)
+!$$$  subprogram documentation block
+!                .      .    .    
+! subprogram:    invl 
+!
+!   prgrmmr:  R.J.Purser, National Meteorological Center, Washington D.C.  1994
+!
+! abstract:   Invert lower triangular matrix in place if A are same
+!
+! program history log: 
+!   2008-04-25  safford -- add subprogram doc block
+! 
+!   input argument list:
+!     a          - 
+!
+!   output argument list:
+!     a          - 
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT) :: a(:,:) 
 INTEGER             :: m,j, i
 REAL(8)                :: s
@@ -1269,7 +2527,31 @@ DO j=m,1,-1
 ENDDO
 END SUBROUTINE invl
 
+
 SUBROUTINE dinvl(a)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dinvl
+!
+!   prgrmmr:  R.J.Purser, National Meteorological Center, Washington D.C.  1994
+!
+! abstract:   Invert lower triangular matrix in place if A are same
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          - 
+!
+!   output argument list:
+!     a          - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(INOUT) :: a(:,:) 
 INTEGER                :: m,j, i
 REAL(8)                :: s
@@ -1284,14 +2566,34 @@ DO j=m,1,-1
 ENDDO
 END SUBROUTINE dinvl
 
-!------------------------------------------------------------------------------
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE LINLV
-!     Solve linear system involving lower triangular (LINLV) or upper
-!     triangular (LINUV) matrix. u is input as right-hand-side, output
-!     as the solution vector.
-!------------------------------------------------------------------------------
+
 SUBROUTINE linlv(a,u)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    linvlv
+!
+!   prgrmmr:  R.J.Purser, National Meteorological Center, Washington D.C.  1994
+!
+! abstract:   Solve linear system involving lower triangular (LINLV) or upper
+!             triangular (LINUV) matrix. u is input as right-hand-side, output
+!             as the solution vector.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          - 
+!     u          - 
+!
+!   output argument list:
+!     u          - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(IN)   :: a(:,:)
 REAL(8), INTENT(INOUT):: u(:)
 INTEGER            :: m,i, j, jp
@@ -1300,7 +2602,33 @@ RETURN
 ENTRY linuv(a,u); m=SIZE(a,1)
 DO j=m,1,-1; jp=j+1; u(j)=(u(j) - SUM(a(jp:m,j)*u(jp:m)))  /a(j,j); ENDDO
 END SUBROUTINE linlv
+
+
 SUBROUTINE dlinlv(a,u)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dlinvlv
+!
+!   prgrmmr:  R.J.Purser, National Meteorological Center, Washington D.C.  1994
+!
+! abstract:   Invert lower triangular matrix in place if A are same
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          - 
+!     u          - 
+!
+!   output argument list:
+!     u          - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8), INTENT(IN)   :: a(:,:)
 REAL(8), INTENT(INOUT):: u(:)
 INTEGER :: m,i, j, jp
@@ -1311,14 +2639,64 @@ DO j=m,1,-1; jp=j+1; u(j) = (u(j) - SUM(a(jp:m,j)*u(jp:m)))/a(j,j); ENDDO
 END SUBROUTINE dlinlv
 
 
-SUBROUTINE powp(a,b,n)	       ! Raise power series A to the power
+SUBROUTINE powp(a,b,n) 
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    powp
+!
+!   prgrmmr: 
+!
+! abstract:  Raise power series A to the power 
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          -  power series
+!     n          -  power to raise to
+!
+!   output argument list:
+!     b          -  output power series
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN) :: n       ! of N and output as B
 REAL(8),    INTENT(IN) :: a(0:)
 REAL(8),    INTENT(OUT):: b(0:)
 REAL(8),DIMENSION(0:SIZE(a)-1):: t; INTEGER :: k
 b(0)=1.; b(1:) = 0.0; DO k=1,n; CALL mulpp(a,b,t); b=t; ENDDO
 END SUBROUTINE powp
-SUBROUTINE DPOWP(A,B,N)	       ! Raise power series A to the power
+
+
+SUBROUTINE DPOWP(A,B,N)        ! Raise power series A to the power
+!$$$  subprogram documentation block
+!                .      .    . 
+! subprogram:    dpowp
+!
+!   prgrmmr:  
+!
+! abstract:  Raise power series A to the power
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          -  power series
+!     n          -  power to raise to
+!
+!   output argument list:
+!     b          -  output power series
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN) :: n      ! of N and output as B
 REAL(8), INTENT(IN) :: a(0:)
 REAL(8), INTENT(OUT):: b(0:)
@@ -1328,13 +2706,63 @@ END SUBROUTINE dpowp
 
 
 SUBROUTINE polps(a,s1,s2) ! Apply series A to scalar S1 to obtain S2
+!$$$  subprogram documentation block
+!                .      .    . 
+! subprogram:    polps
+!
+!   prgrmmr:  
+!
+! abstract:  Apply series A to scalar S1 to obtain S2
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          -  
+!     s1         - 
+!
+!   output argument list:
+!     s2         -  
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),INTENT(IN) :: a(0:)
 REAL(8),INTENT(IN) :: s1
 REAL(8),INTENT(OUT):: s2
 INTEGER m,k
 m=SIZE(a)-1; s2=a(m); DO k=m-1,0,-1; s2=s2*s1+a(k); ENDDO
 END SUBROUTINE polps
+
+
 SUBROUTINE dpolps(a,s1,s2) ! Apply series A to scalar S1 to obtain S2
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dpolps
+!
+!   prgrmmr:
+!
+! abstract:  Apply series A to scalar S1 to obtain S2
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          -  
+!     s1         -  
+!
+!   output argument list:
+!     s2         -  
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),INTENT(IN) :: a(0:)
 REAL(8),INTENT(IN) :: s1
 REAL(8),INTENT(OUT):: s2
@@ -1342,16 +2770,65 @@ INTEGER m,k
 m=SIZE(a)-1; s2=a(m); DO k=m-1,0,-1; s2=s2*s1+a(k); ENDDO
 END SUBROUTINE dpolps
 
-SUBROUTINE polpp(a,b,c) ! Apply power series A to power series B and put
-                        ! the result out as power-series C.
+
+SUBROUTINE polpp(a,b,c)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    polpp
+!
+!   prgrmmr:
+!
+! abstract:  Apply power series A to power series B and put
+!            the result out as power-series C.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a,b,c      -  
+!
+!   output argument list:
+!     a,b,c      -  
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),INTENT(INOUT)         :: a(0:),b(0:),c(0:)
 REAL(8),DIMENSION(0:SIZE(a)-1):: t
 INTEGER m,k
 m=SIZE(a)-1; c(0)=a(m); c(1:m) = 0.0
 DO k=m-1,0,-1; CALL mulpp(b,c,t); c=t; c(0)=c(0)+a(k); ENDDO
 END SUBROUTINE polpp
-SUBROUTINE dpolpp(a,b,c) ! Apply power series A to power series B and put
-                         ! the result out as power-series C.
+
+
+SUBROUTINE dpolpp(a,b,c)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dpolpp
+!
+!   prgrmmr:
+!
+! abstract:  Apply power series A to power series B and put
+!            the result out as power-series C.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a,b,c      -
+!
+!   output argument list:
+!     a,b,c      -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),INTENT(INOUT)         :: a(0:),b(0:),c(0:)
 REAL(8),DIMENSION(0:SIZE(a)-1):: t
 INTEGER m,k
@@ -1360,7 +2837,30 @@ c(0)=a(m); c(1:m) = 0.0
 DO k=m-1,0,-1; CALL mulpp_d(b,c,t); c=t; c(0)=c(0)+a(k); ENDDO
 END SUBROUTINE dpolpp
 
-FUNCTION trcm(a) RESULT(trc_res)	    ! Trace of square matrix A
+
+FUNCTION trcm(a) RESULT(trc_res)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    trcm
+!
+!   prgrmmr:
+!
+! abstract:  Trace of square matrix A
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     a          -
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8)             :: trc_res
 REAL(8), INTENT(IN) :: a(:,:)
 INTEGER          :: i
@@ -1373,7 +2873,31 @@ INTEGER              :: m,i
 trc_res=0.; DO i=1,SIZE(a,1); trc_res=trc_res+a(i,i); ENDDO
 END FUNCTION dtrcm
 
+
 SUBROUTINE invmt(a)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    invmt
+!
+!   prgrmmr:
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          -
+!
+!   output argument list:
+!     a          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),DIMENSION(:,:),INTENT(INOUT):: a
 INTEGER m,i,j,jp,l
 REAL(8) d
@@ -1404,7 +2928,31 @@ ENDDO
 DO j=m-1,1,-1; l=ipiv(j); CALL swpvv(a(:,j),a(:,l)); ENDDO
 END SUBROUTINE invmt
 
+
 SUBROUTINE dinvmt(a)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dinvmt
+!
+!   prgrmmr:
+!
+! abstract: 
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a          -
+!
+!   output argument list:
+!     a          -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),DIMENSION(:,:),INTENT(INOUT):: a
 INTEGER                             :: m,i,j,jp,l
 REAL(8)                             :: d
@@ -1435,7 +2983,31 @@ ENDDO
 DO j=m-1,1,-1; l=ipiv(j); CALL swpvv_d(a(:,j),a(:,l)); ENDDO
 END SUBROUTINE dinvmt
 
+
 SUBROUTINE linmmt(a,b)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    linmmt
+!
+!   prgrmmr:
+!
+! abstract: 
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a,b        -
+!
+!   output argument list:
+!     a,b        -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),DIMENSION(:,:),INTENT(INOUT):: a,b
 INTEGER,DIMENSION(SIZE(a,1))     :: ipiv
 INTEGER                          :: m
@@ -1446,7 +3018,31 @@ IF(m /= SIZE(b,1))STOP 'matrix and vectors in linmmt have unmatched sizes'
 CALL ldum(a,ipiv,d); CALL udlmm(a,b,ipiv)
 END SUBROUTINE linmmt
 
+
 SUBROUTINE dlinmmt(a,b)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dlinmmt
+!
+!   prgrmmr:
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a,b        -
+!
+!   output argument list:
+!     a,b        -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),DIMENSION(:,:),INTENT(INOUT):: a,b
 INTEGER,DIMENSION(SIZE(a,1))        :: ipiv
 INTEGER                             :: m 
@@ -1457,7 +3053,31 @@ IF(m /= SIZE(b,1))STOP 'matrix and vectors in linmmt_d have unmatched sizes'
 CALL ldum_d(a,ipiv,d); CALL udlmm_d(a,b,ipiv)
 END SUBROUTINE dlinmmt
 
+
 SUBROUTINE linmvt(a,b)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    linmvt
+!
+!   prgrmmr:
+!
+! abstract: 
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a,b        -
+!
+!   output argument list:
+!     a,b        -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),DIMENSION(:,:),INTENT(INOUT):: a
 REAL(8),DIMENSION(:),  INTENT(INOUT):: b
 INTEGER,DIMENSION(SIZE(a,1))     :: ipiv
@@ -1469,7 +3089,31 @@ IF(m /= SIZE(b))STOP 'matrix and vectors in linmvt have unmatched sizes'
 CALL ldum(a,ipiv,d); CALL udlmm(a,b,ipiv)
 END SUBROUTINE linmvt
 
+
 SUBROUTINE dlinmvt(a,b)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dlinmvt
+!
+!   prgrmmr:
+!
+! abstract: 
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a,b        -
+!
+!   output argument list:
+!     a,b        -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 REAL(8),DIMENSION(:,:),INTENT(INOUT):: a
 REAL(8),DIMENSION(:),  INTENT(INOUT):: b
 INTEGER,DIMENSION(SIZE(a,1))        :: ipiv
@@ -1482,20 +3126,99 @@ END SUBROUTINE dlinmvt
 
 end module module_pmat1
 
-!ENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDEND
-!						********************
-!						* module_pmat1.f90 *
-!						* PURSER 1994/1999 *
-!                                               *   FUJITA 1999    *
-!						********************
-!ENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDEND
 
-!						********************
-!						* module_pmat2.f90 *
-!						* PURSER 1994/1999 *
-!                                               *   FUJITA 1999    *
-!						********************
+
 MODULE MODULE_pmat2
+!$$$   module documentation block
+!                .      .    .                                     .
+! module:  module_pmat2
+!
+! abstract:
+!
+! program history log:
+!   1994-  -    purser
+!   2008-04-25  safford - add documentation block
+!
+! subroutines included:
+!   avco
+!   davco
+!   dfco
+!   ddfco
+!   dfco2
+!   ddfco2
+!   clib
+!   dclib
+!   cad1b
+!   csb1b
+!   cad2b
+!   csb2b
+!   copbt
+!   conbt
+!   copmb
+!   conmb
+!   copbm
+!   conbm
+!   mulbb
+!   madbb
+!   msbbb
+!   ldub
+!   dldub
+!   l1ubb
+!   dl1ubb
+!   l1ueb
+!   dl1ueb
+!   l1lb
+!   ldlb
+!   dldlb
+!   udub
+!   dudub
+!   mulbv
+!   madbv
+!   msbbv
+!   mulbx
+!   madbx
+!   msbbx
+!   mulby
+!   madby
+!   msbby
+!   mulvb
+!   madvb
+!   msbvb
+!   mulxb
+!   madxb
+!   msbxb
+!   mulyb
+!   madyb
+!   msbyb
+!   mulbd
+!   madbd
+!   msbbd
+!   muldb
+!   maddb
+!   msbdb
+!   udlbv
+!   udlbx
+!   udlby
+!   udlvb
+!   udlxb
+!   udlyb
+!   u1lbv
+!   u1lbx
+!   u1lby
+!   u1lvb
+!   u1lxb
+!   u1lyb
+!   linbv
+!   wrtb
+!
+! variable definitions:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 USE MODULE_pmat1
 IMPLICIT NONE
 
@@ -1573,26 +3296,42 @@ INTERFACE wrtb;   MODULE PROCEDURE wrtb;           END INTERFACE
 
 CONTAINS
 
+
 !=============================================================================
 SUBROUTINE davco(na,nb,za,zb,z0,a,b) 
 !=============================================================================
-!		    SUBROUTINE DAVCO
-!   R.J.Purser, National Centers for Environmental Prediction, Washington D.C.
-!   jpurser@ncep.noaa.gov					      1999
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    davco
 !
-!  Compute one row of the coefficients for the compact mid-interval
-!  interpolation scheme characterized by matrix equation of the form,
+!   prgrmmr:    purser					      1999
+!
+! abstract:  Compute one row of the coefficients for the compact mid-interval
+!            interpolation scheme characterized by matrix equation of the form,
 !			 A.t = B.s			       (*)
-!  Where s is the vector of "source" values, t the staggered "target" values.
+!            Where s is the vector of "source" values, t the staggered "target" 
+!            values.
 !
-! --> NA:   number of t-points operated on by this row of the A of (*)
-! --> NB:   number of s-points operated on by this row of the B of (*)
-! --> ZA:   coordinates of t-points used in this row of (*)
-! --> ZB:   coordinates of s-points used in this row of (*)
-! --> Z0:   nominal point of application of this row of (*)
-! <-- A:    the NA coefficients A for this scheme
-! <-- B:    the NB coefficients B for this scheme
-!=============================================================================
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     NA  - number of t-points operated on by this row of the A of (*)
+!     NB  - number of s-points operated on by this row of the B of (*)
+!     ZA  - coordinates of t-points used in this row of (*)
+!     ZB  - coordinates of s-points used in this row of (*)
+!     Z0  - nominal point of application of this row of (*)
+!
+!   output argument list:
+!     A   - the NA coefficients A for this scheme
+!     B   - the NB coefficients B for this scheme
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN )          :: na,nb
 REAL(8), INTENT(IN )          :: za(na),zb(nb),z0
 REAL(8), INTENT(OUT)          :: a(na),b(nb)
@@ -1613,9 +3352,42 @@ CALL inv_d(w,ab)
 a=ab(1:na); b=ab(na1:nab)
 END SUBROUTINE davco
 
+
 !=============================================================================
 SUBROUTINE avco(na,nb,za,zb,z0,a,b) 
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    avco
+!
+!   prgrmmr:    purser                                        1999
+!
+! abstract:  Compute one row of the coefficients for the compact mid-interval
+!            interpolation scheme characterized by matrix equation of the form,
+!                        A.t = B.s                             (*)
+!            Where s is the vector of "source" values, t the staggered "target"
+!            values.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     NA  - number of t-points operated on by this row of the A of (*)
+!     NB  - number of s-points operated on by this row of the B of (*)
+!     ZA  - coordinates of t-points used in this row of (*)
+!     ZB  - coordinates of s-points used in this row of (*)
+!     Z0  - nominal point of application of this row of (*)
+!
+!   output argument list:
+!     A   - the NA coefficients A for this scheme
+!     B   - the NB coefficients B for this scheme
+!   
+! attributes:  
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN )        :: na,nb
 REAL(8),    INTENT(IN )        :: za(na),zb(nb),z0
 REAL(8),    INTENT(OUT)        :: a(na),b(nb)
@@ -1637,25 +3409,41 @@ a=ab(1:na); b=ab(na1:nab)
 END SUBROUTINE avco 
 
 
+!=============================================================================
 SUBROUTINE ddfco(na,nb,za,zb,z0,a,b) 
 !=============================================================================
-!   R.J.Purser, National Centers for Environmental Prediction, Washington D.C.
-!   jpurser@ncep.noaa.gov					      1999
-!		    SUBROUTINE DDFCO
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    ddfco
 !
-!  Compute one row of the coefficients for either the compact differencing or
-!  quadrature scheme characterized by matrix equation of the form,
+!   prgrmmr:    purser                                        1999
+!
+! abstract:  Compute one row of the coefficients for either the compact 
+!            differencing or quadrature scheme characterized by matrix 
+!            equation of the form,
 !			 A.d = B.c			       (*)
-!  In either case, d is the derivative of c.
+!            In either case, d is the derivative of c.
 !
-! --> NA:   number of d-points operated on by this row of the A of (*)
-! --> NB:   number of c-points operated on by this row of the B of (*)
-! --> ZA:   coordinates of d-points used in this row of (*)
-! --> ZB:   coordinates of c-points used in this row of (*)
-! --> Z0:   nominal point of application of this row of (*)
-! <-- A:    the A-coefficients for this scheme
-! <-- B:    the B-coefficients for this scheme
-!=============================================================================
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     NA  - number of d-points operated on by this row of the A of (*)
+!     NB  - number of c-points operated on by this row of the B of (*)
+!     ZA  - coordinates of d-points used in this row of (*)
+!     ZB  - coordinates of c-points used in this row of (*)
+!     Z0  - nominal point of application of this row of (*)
+!
+!   output argument list:
+!     A   - the A-coefficients for this scheme
+!     B   - the B-coefficients for this scheme
+!   
+! attributes:  
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN)            :: na,nb
 REAL(8), INTENT(IN)            :: za(na),zb(nb),z0
 REAL(8), INTENT(OUT)           :: a(na),b(nb)
@@ -1677,9 +3465,42 @@ CALL inv_d(w,ab)
 a=ab(1:na); b=ab(na1:nab)
 END SUBROUTINE ddfco 
 
+
 !=============================================================================
 SUBROUTINE dfco(na,nb,za,zb,z0,a,b)
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dfco
+!
+!   prgrmmr:    purser                                        1999
+!
+! abstract:  Compute one row of the coefficients for either the compact
+!            differencing or quadrature scheme characterized by matrix
+!            equation of the form,
+!                        A.d = B.c                             (*)
+!            In either case, d is the derivative of c.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     NA  - number of d-points operated on by this row of the A of (*)
+!     NB  - number of c-points operated on by this row of the B of (*)
+!     ZA  - coordinates of d-points used in this row of (*)
+!     ZB  - coordinates of c-points used in this row of (*)
+!     Z0  - nominal point of application of this row of (*)
+!
+!   output argument list:
+!     A   - the A-coefficients for this scheme
+!     B   - the B-coefficients for this scheme
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN )        :: na,nb
 REAL(8),    INTENT(IN )        :: za(na),zb(nb),z0
 REAL(8),    INTENT(OUT)        :: a(na),b(nb)
@@ -1701,26 +3522,41 @@ CALL inv(w,ab)
 a=ab(1:na); b=ab(na1:nab)
 END SUBROUTINE dfco 
 
+
 !=============================================================================
 SUBROUTINE ddfco2(na,nb,za,zb,z0,a,b) 
 !=============================================================================
-!		    SUBROUTINE DDFCO2
-!   R.J.Purser, National Centers for Environmental Prediction, Washington D.C.
-!   jpurser@ncep.noaa.gov					      1999
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    ddfco2
 !
-!  Compute one row of the coefficients for either the compact second-
-!  differencing scheme characterized by matrix equation of the form,
+!   prgrmmr:    purser                                        1999
+!
+! abstract:  Compute one row of the coefficients for either the compact second-
+!            differencing scheme characterized by matrix equation of the form,
 !			 A.d = B.c			       (*)
-!  Where d is the second-derivative of c.
+!            Where d is the second-derivative of c.
 !
-! --> NA:   number of d-points operated on by this row of the A of (*)
-! --> NB:   number of c-points operated on by this row of the B of (*)
-! --> ZA:   coordinates of d-points used in this row of (*)
-! --> ZB:   coordinates of c-points used in this row of (*)
-! --> Z0:   nominal point of application of this row of (*)
-! <-- A:    the NA coefficients A for this scheme
-! <-- B:    the NB coefficients B for this scheme
-!=============================================================================
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     NA   - number of d-points operated on by this row of the A of (*)
+!     NB   - number of c-points operated on by this row of the B of (*)
+!     ZA   - coordinates of d-points used in this row of (*)
+!     ZB   - coordinates of c-points used in this row of (*)
+!     Z0   - nominal point of application of this row of (*)
+!
+!   output argument list:
+!     A    - the NA coefficients A for this scheme
+!     B    - the NB coefficients B for this scheme
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN )           :: na,nb
 REAL(8), INTENT(IN )           :: za(na),zb(nb),z0
 REAL(8), INTENT(OUT)           :: a(na),b(nb)
@@ -1742,9 +3578,41 @@ CALL inv_d(w,ab)
 a=ab(1:na); b=ab(na1:nab)
 END SUBROUTINE ddfco2 
 
+
 !=============================================================================
 SUBROUTINE dfco2(na,nb,za,zb,z0,a,b) 
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dfco2
+!
+!   prgrmmr:    purser                                        1999
+!
+! abstract:  Compute one row of the coefficients for either the compact second-
+!            differencing scheme characterized by matrix equation of the form,
+!                        A.d = B.c                             (*)
+!            Where d is the second-derivative of c.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     NA   - number of d-points operated on by this row of the A of (*)
+!     NB   - number of c-points operated on by this row of the B of (*)
+!     ZA   - coordinates of d-points used in this row of (*)
+!     ZB   - coordinates of c-points used in this row of (*)
+!     Z0   - nominal point of application of this row of (*)
+!
+!   output argument list:
+!     A    - the NA coefficients A for this scheme
+!     B    - the NB coefficients B for this scheme
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN )        :: na,nb
 REAL(8),    INTENT(IN )        :: za(na),zb(nb),z0
 REAL(8),    INTENT(OUT)        :: a(na),b(nb)
@@ -1766,9 +3634,33 @@ CALL inv(w,ab)
 a=ab(1:na); b=ab(na1:nab)
 END SUBROUTINE dfco2 
 
+
 !=============================================================================
 SUBROUTINE clib(a,m1,m2,mah1,mah2) ! Clip the dead space of the band matrix, a
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    clib
+!
+!   prgrmmr:    
+!
+! abstract:  Clip the dead space of the band matrix 
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     m1, m2, mah1, mah2  - 
+!
+!   output argument list:
+!     a                   -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN)   :: m1, m2, mah1, mah2
 REAL(8), INTENT(INOUT):: a(m1,-mah1:mah2)
 INTEGER               :: j
@@ -1778,8 +3670,31 @@ END SUBROUTINE clib
 
 
 !=============================================================================
-SUBROUTINE dclib(a,m1,m2,mah1,mah2) ! Clip dead space of the band matrix, a
+SUBROUTINE dclib(a,m1,m2,mah1,mah2)
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dclib
+!
+!   prgrmmr:    
+!
+! abstract:  Clip the dead space of the band matrix
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     m1, m2, mah1, mah2  - 
+!
+!   output argument list:
+!     a                   - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN)   :: m1, m2, mah1, mah2
 REAL(8), INTENT(INOUT):: a(m1,-mah1:mah2)
 INTEGER               :: j
@@ -1787,17 +3702,39 @@ IF(m2-m1+mah1 < 0)STOP 'In CLIB_d, form of band matrix implies redundant rows'
 DO j=1,mah1; a(1:min(m1,j),-j)=0.; ENDDO; DO j=m2-m1+1,mah2; a(max(1,m2-j+1):m1,j)=0.; ENDDO
 END SUBROUTINE dclib
 
+
+!=============================================================================
 SUBROUTINE cad1b(a,m1,m2,mah1,mah2,mirror2)
 !=============================================================================
-! Incorporate operand symmetry near end-1 of a band matrix operator
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    cad1b
 !
-! <-> A:      Input as unclipped operator, output as symmetrized and clipped.
-! m1, m2:     Sizes of implied full matrix
-! mah1, mah2: Left and right semi-bandwidths of A.
-! mirror2:    2*location of symmetry axis relative to end-1 operand element.
-!      Note: although m2 is not used here, it IS used in companion routines
+!   prgrmmr:    
+!
+! abstract:  Incorporate operand symmetry near end-1 of a band matrix operator
+!
+!     Note:  although m2 is not used here, it IS used in companion routines
 !            cad2b and csb2b; it is retained in the interests of uniformity.
-!=============================================================================
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A          -  Input as unclipped operator, output as symmetrized and clipped.
+!     m1, m2     - Sizes of implied full matrix
+!     mah1, mah2 - Left and right semi-bandwidths of A.
+!     mirror2    - 2*location of symmetry axis relative to end-1 operand element.
+!
+!   output argument list:
+!     A          -  Input as unclipped operator, output as symmetrized and clipped.
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: m1,m2,mah1,mah2,mirror2
 REAL(8),     INTENT(INOUT):: a(0:m1-1,-mah1:mah2)
 INTEGER                :: i,i2,jm,jp,jpmax
@@ -1822,16 +3759,36 @@ DO i=0,m1-1; i2=i*2; jpmax=mirror2+mah1-i2; IF(jpmax < -mah1)EXIT
 ENDDO
 END SUBROUTINE cad1b
 
+
 !=============================================================================
 SUBROUTINE cad2b(a,m1,m2,mah1,mah2,mirror2)
 !=============================================================================
-! Incorporate operand symmetry near end-2 of a band matrix operator
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    cad2b
 !
-! <-> A:      Input as unclipped operator, output as symmetrized and clipped.
-! m1, m2:     Sizes of implied full matrix
-! mah1, mah2: Left and right semi-bandwidths of A.
-! mirror2:    2*location of symmetry axis relative to end-2 operand element.
-!=============================================================================
+!   prgrmmr:    
+!
+! abstract:  Incorporate operand symmetry near end-2 of a band matrix operator
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A          - Input as unclipped operator, output as symmetrized and clipped.
+!     m1, m2     - Sizes of implied full matrix
+!     mah1, mah2 - Left and right semi-bandwidths of A.
+!     mirror2    - 2*location of symmetry axis relative to end-2 operand element.
+!
+!   output argument list:
+!     A         - Input as unclipped operator, output as symmetrized and clipped.
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: m1,m2,mah1,mah2,mirror2
 REAL(8),     INTENT(INOUT):: a(1-m1:0,m1-m2-mah1:m1-m2+mah2)
 INTEGER                :: i,i2,jm,jp,jmmin,nah1,nah2,mirror,j0
@@ -1872,21 +3829,39 @@ DO i=0,1-m1,-1; i2=i*2; jmmin=mirror2-nah2-i2; IF(jmmin >= nah2)EXIT
 ENDDO
 END SUBROUTINE cad2b
 
+
 !=============================================================================
 SUBROUTINE copbt(a,b,m1,m2,mah1,mah2)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE COPBT
-!  Copy transpose of rectangular banded matrix A to B
-!  Note: this routine expects A and B always to occupy separate storage.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    copbt
 !
-! --> A  input matrix in banded format
-! <-- B  output matrix in banded format
-! --> M1 number of rows of A, columns of B
-! --> M2 number of columns of A, rows of B
-! --> MAH1 left-half-bandwidth of A, right-half-bandwidth of B
-! --> MAH2 right-half-bandwidth of A, left-half-bandwidth of B
-!=============================================================================
+!   prgrmmr:  R.J.Purser, National Meteorological Center, Washington D.C.  1994
+!
+! abstract:  Copy transpose of rectangular banded matrix A to B
+!
+!     Note:  This routine expects A and B always to occupy separate storage.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A      - input matrix in banded format
+!     M1     - number of rows of A, columns of B
+!     M2     - number of columns of A, rows of B
+!     MAH1   - left-half-bandwidth of A, right-half-bandwidth of B
+!     MAH2   - right-half-bandwidth of A, left-half-bandwidth of B
+!
+!   output argument list:
+!     B      - output matrix in banded format
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN) :: m1, m2, mah1, mah2
 REAL(8),     INTENT(IN) :: a(m1,-mah1:mah2)
 REAL(8),     INTENT(OUT):: b(m2,-mah2:mah1)
@@ -1903,9 +3878,34 @@ DO j=-mah1,mah2
 ENDDO
 END SUBROUTINE copbt
 
+
 !=============================================================================
 SUBROUTINE copmb(afull,aband,m1,m2,mah1,mah2)
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    copmb
+!
+!   prgrmmr:    
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     m1, m2, mah1, mah2  - 
+!     afull               -
+!
+!   output argument list:
+!     aband               - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,                           INTENT(IN) :: m1, m2, mah1, mah2
 REAL(8),     DIMENSION(m1,m2),        INTENT(IN) :: afull
 REAL(8),     DIMENSION(m1,-mah1:mah2),INTENT(OUT):: aband
@@ -1924,9 +3924,34 @@ DO j=1,m1; i1=MAX(1,1-j); i2=MIN(m1,m2-j)
 ENDDO
 END SUBROUTINE copmb
 
+
 !=============================================================================
 SUBROUTINE copbm(aband,afull,m1,m2,mah1,mah2)
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    copbm
+!
+!   prgrmmr:    
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     m1, m2, mah1, mah2  - 
+!     aband               -
+!
+!   output argument list:
+!     afull               - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,                           INTENT(IN) :: m1, m2, mah1, mah2
 REAL(8),     DIMENSION(m1,-mah1:mah2),INTENT(IN) :: aband
 REAL(8),     DIMENSION(m1,m2),        INTENT(OUT):: afull
@@ -1944,10 +3969,37 @@ DO j=1,m1; i1=MAX(1,1-j); i2=MIN(m1,m2-j)
    DO i=i1,i2; afull(i,j+i)=-aband(i,j); ENDDO
 ENDDO
 END SUBROUTINE copbm
+
  
 !=============================================================================
 SUBROUTINE mulbb(a,b,c,m1,m2,mah1,mah2,mbh1,mbh2,mch1,mch2)
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    mulbb
+!
+!   prgrmmr:    
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     m1, m2, mah1, mah2     - 
+!     mbh1, mbh2, mch1, mch2 - 
+!     a, b                   -
+!     c                      -
+!
+!   output argument list:
+!     c                   - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: m1, m2, mah1, mah2, mbh1, mbh2, mch1, mch2
 REAL(8),     INTENT(IN)   :: a(m1,-mah1:mah2), b(m2,-mbh1:mbh2)
 REAL(8),     INTENT(INOUT):: c(m1,-mch1:mch2)
@@ -1963,9 +4015,35 @@ DO j=-mah1,mah2
 ENDDO
 END SUBROUTINE mulbb
 
+
 !=============================================================================
 SUBROUTINE msbbb(a,b,c,m1,m2,mah1,mah2,mbh1,mbh2,mch1,mch2)
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    msbbb
+!
+!   prgrmmr:    
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     m1, m2, mah1, mah2     - 
+!     mbh1, mbh2, mch1, mch2 -
+!     a, b                   -
+!
+!   output argument list:
+!     c                      - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN) :: m1, m2, mah1, mah2, mbh1, mbh2, mch1, mch2
 REAL(8),     INTENT(IN) :: a(m1,-mah1:mah2), b(m2,-mbh1:mbh2)
 REAL(8),     INTENT(OUT):: c(m1,-mch1:mch2)
@@ -1979,22 +4057,44 @@ DO j=-mah1,mah2
 ENDDO
 END SUBROUTINE msbbb
 
+
 !=============================================================================
 SUBROUTINE LDUB(a,m,mah1,mah2)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE LDUB
-!  Compute [L]*[D**-1]*[U] decomposition of asymmetric band-matrix
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    ldub
 !
-! <-> A: input as the asymmetric band matrix. On output, it contains
-!     the [L]*[D**-1]*[U] factorization of the input matrix, where
-!     [L] is lower triangular with unit main diagonal
-!     [D] is a diagonal matrix
-!     [U] is upper triangular with unit main diagonal
-! --> M:    The number of rows of array A
-! --> MAH1: the left half-bandwidth of fortran array A
-! --> MAH2: the right half-bandwidth of fortran array A
-!=============================================================================
+!   prgrmmr:    R.J.Purser, 1994
+!
+! abstract:  Compute [L]*[D**-1]*[U] decomposition of asymmetric band-matrix
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A       - input as the asymmetric band matrix. On output, it contains
+!               the [L]*[D**-1]*[U] factorization of the input matrix, where
+!               [L] is lower triangular with unit main diagonal
+!               [D] is a diagonal matrix
+!               [U] is upper triangular with unit main diagonal
+!     M       - The number of rows of array A
+!     MAH1    - The left half-bandwidth of fortran array A
+!     MAH2    - The right half-bandwidth of fortran array A
+!
+!   output argument list:
+!     A       - input as the asymmetric band matrix. On output, it contains
+!               the [L]*[D**-1]*[U] factorization of the input matrix, where
+!               [L] is lower triangular with unit main diagonal
+!               [D] is a diagonal matrix
+!               [U] is upper triangular with unit main diagonal
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN)   :: m,mah1, mah2 
 REAL(8),    INTENT(INOUT):: a(m,-mah1:mah2) 
 INTEGER               :: j, imost, jmost, jp, i
@@ -2019,9 +4119,34 @@ DO j=1,m
 ENDDO
 END SUBROUTINE LDUB
 
+
 !=============================================================================
 SUBROUTINE DLDUB(a,m,mah1,mah2)
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dldub
+!
+!   prgrmmr:    
+!
+! abstract:  
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     m, mah1, mah2  - 
+!     a              - 
+!
+!   output argument list:
+!     a              - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: m,mah1, mah2 
 REAL(8),  INTENT(INOUT):: a(m,-mah1:mah2) 
 INTEGER                :: j, imost, jmost, jp, i
@@ -2049,22 +4174,42 @@ END SUBROUTINE DLDUB
 !=============================================================================
 SUBROUTINE L1UBB(a,b,m,mah1,mah2,mbh1,mbh2)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1996
-!		    SUBROUTINE L1UBB
-!  Form the [L]*[D]*[U] decomposition of asymmetric band-matrix  [A] replace
-!  lower triangular elements of [A] by [D**-1]*[L]*[D], the upper by [U],
-!  replace matrix [B] by [D**-1]*[B].
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    l1ubb
 !
-! <-> A input as band matrix, output as lower and upper triangulars with 1s
-!     implicitly assumed to lie on the main diagonal. The product of these
-!     triangular matrices is [D**-1]*[A], where [D] is a diagonal matrix.
-! <-> B in as band matrix, out as same but premultiplied by diagonal [D**-1]
-! --> M    Number of rows of A and B
-! --> MAH1 left half-width of fortran array A
-! --> MAH2 right half-width of fortran array A
-! --> MBH1 left half-width of fortran array B
-! --> MBH2 right half-width of fortran array B
-!=============================================================================
+!   prgrmmr:    R.J.Purser, 1996
+!
+! abstract:  Form the [L]*[D]*[U] decomposition of asymmetric band-matrix  
+!            [A] replace lower triangular elements of [A] by [D**-1]*[L]*[D], 
+!            the upper by [U], replace matrix [B] by [D**-1]*[B].
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A     - input as band matrix, output as lower and upper triangulars with 1s
+!             implicitly assumed to lie on the main diagonal. The product of these
+!             triangular matrices is [D**-1]*[A], where [D] is a diagonal matrix.
+!     B     - in as band matrix, out as same but premultiplied by diagonal [D**-1]
+!     M     - Number of rows of A and B
+!     MAH1  - left half-width of fortran array A
+!     MAH2  - right half-width of fortran array A
+!     MBH1  - left half-width of fortran array B
+!     MBH2  - right half-width of fortran array B
+!
+!   output argument list:
+!     A     - input as band matrix, output as lower and upper triangulars with 1s
+!             implicitly assumed to lie on the main diagonal. The product of these
+!             triangular matrices is [D**-1]*[A], where [D] is a diagonal matrix.
+!     B     - in as band matrix, out as same but premultiplied by diagonal [D**-1]
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN) ::  m,mah1, mah2, mbh1, mbh2 
 REAL(8), INTENT(INOUT) :: a(m,-mah1:mah2), b(m,-mbh1:mbh2)
 INTEGER             :: j, imost, jmost, jleast, jp, i
@@ -2087,9 +4232,46 @@ DO j=1,m
 ENDDO
 END SUBROUTINE L1UBB
 
+
 !=============================================================================
 SUBROUTINE DL1UBB(a,b,m,mah1,mah2,mbh1,mbh2)
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dl1ubb
+!
+!   prgrmmr:    R.J.Purser, 1996
+!
+! abstract:  Form the [L]*[D]*[U] decomposition of asymmetric band-matrix
+!            [A] replace lower triangular elements of [A] by [D**-1]*[L]*[D],
+!            the upper by [U], replace matrix [B] by [D**-1]*[B].
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A     - input as band matrix, output as lower and upper triangulars with 1s
+!             implicitly assumed to lie on the main diagonal. The product of these
+!             triangular matrices is [D**-1]*[A], where [D] is a diagonal matrix.
+!     B     - in as band matrix, out as same but premultiplied by diagonal [D**-1]
+!     M     - Number of rows of A and B
+!     MAH1  - left half-width of fortran array A
+!     MAH2  - right half-width of fortran array A
+!     MBH1  - left half-width of fortran array B
+!     MBH2  - right half-width of fortran array B
+!
+!   output argument list:
+!     A     - input as band matrix, output as lower and upper triangulars with 1s
+!             implicitly assumed to lie on the main diagonal. The product of these
+!             triangular matrices is [D**-1]*[A], where [D] is a diagonal matrix.
+!     B     - in as band matrix, out as same but premultiplied by diagonal [D**-1]
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER                :: m,j, imost, jmost, jleast, jp, i
 INTEGER,  INTENT(IN)   ::  mah1, mah2, mbh1, mbh2 
 REAL(8),  INTENT(INOUT):: a(m,-mah1:mah2), b(m,-mbh1:mbh2)
@@ -2112,29 +4294,50 @@ DO j=1,m
 ENDDO
 END SUBROUTINE DL1UBB
 
+
 !=============================================================================
 SUBROUTINE l1ueb(a,b,m,mah1,mah2,mbh1,mbh2)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1998
-!		    SUBROUTINE L1UEB
-!  Form the [L]*[D]*[U] decomposition of asymmetric band-matrix  [A] replace
-!  all but row zero of the
-!  lower triangular elements of [A] by [D**-1]*[L]*[D], the upper by [U],
-!  replace matrix [B] by [D**-1]*[B].
-!  This is a special adaptation of L1UBB used to process quadarature weights
-!  for QEDBV etc in which the initial quadrature value is provided as input
-!  instead of being implicitly assumed zero (which is the case for QZDBV etc).
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    l1ueb
 !
-! <-> A input as band matrix, output as lower and upper triangulars with 1s
-!     implicitly assumed to lie on the main diagonal. The product of these
-!     triangular matrices is [D**-1]*[A], where [D] is a diagonal matrix.
-! <-> B in as band matrix, out as same but premultiplied by diagonal [D**-1]
-! --> M    number of rows of B, one less than the rows of A (which has "row 0")
-! --> MAH1 left half-width of fortran array A
-! --> MAH2 right half-width of fortran array A
-! --> MBH1 left half-width of fortran array B
-! --> MBH2 right half-width of fortran array B
-!=============================================================================
+!   prgrmmr:    R.J.Purser, 1998
+!
+! abstract:  Form the [L]*[D]*[U] decomposition of asymmetric band-matrix
+!            [A] replace all but row zero of the lower triangular
+!            elements of [A] by [D**-1]*[L]*[D], the upper by [U],
+!            replace matrix [B] by [D**-1]*[B].
+!            This is a special adaptation of L1UBB used to process quadarature weights
+!            for QEDBV etc in which the initial quadrature value is provided as input
+!            instead of being implicitly assumed zero (which is the case for QZDBV etc).
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A     - input as band matrix, output as lower and upper triangulars with 1s
+!             implicitly assumed to lie on the main diagonal. The product of these
+!             triangular matrices is [D**-1]*[A], where [D] is a diagonal matrix.
+!     B     - in as band matrix, out as same but premultiplied by diagonal [D**-1]
+!     M     - number of rows of B, one less than the rows of A (which has "row 0")
+!     MAH1  - left half-width of fortran array A
+!     MAH2  - right half-width of fortran array A
+!     MBH1  - left half-width of fortran array B
+!     MBH2  - right half-width of fortran array B
+!
+!   output argument list:
+!     A     - input as band matrix, output as lower and upper triangulars with 1s
+!             implicitly assumed to lie on the main diagonal. The product of these
+!             triangular matrices is [D**-1]*[A], where [D] is a diagonal matrix.
+!     B     - in as band matrix, out as same but premultiplied by diagonal [D**-1]
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN) :: m,mah1, mah2, mbh1, mbh2 
 REAL(8), INTENT(INOUT) :: a(0:m,-mah1:mah2), b(m,-mbh1:mbh2)
 INTEGER :: j, imost, jmost, jleast, jp, i
@@ -2157,9 +4360,50 @@ DO j=1,m
 ENDDO
 END SUBROUTINE l1ueb
 
+
 !=============================================================================
 SUBROUTINE dl1ueb(a,b,m,mah1,mah2,mbh1,mbh2)
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dl1ueb
+!
+!   prgrmmr:    R.J.Purser, 1998
+!
+! abstract:  Form the [L]*[D]*[U] decomposition of asymmetric band-matrix
+!            [A] replace all but row zero of the lower triangular
+!            elements of [A] by [D**-1]*[L]*[D], the upper by [U],
+!            replace matrix [B] by [D**-1]*[B].
+!            This is a special adaptation of L1UBB used to process quadarature weights
+!            for QEDBV etc in which the initial quadrature value is provided as input
+!            instead of being implicitly assumed zero (which is the case for QZDBV etc).
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A     - input as band matrix, output as lower and upper triangulars with 1s
+!             implicitly assumed to lie on the main diagonal. The product of these
+!             triangular matrices is [D**-1]*[A], where [D] is a diagonal matrix.
+!     B     - in as band matrix, out as same but premultiplied by diagonal [D**-1]
+!     M     - number of rows of B, one less than the rows of A (which has "row 0")
+!     MAH1  - left half-width of fortran array A
+!     MAH2  - right half-width of fortran array A
+!     MBH1  - left half-width of fortran array B
+!     MBH2  - right half-width of fortran array B
+!
+!   output argument list:
+!     A     - input as band matrix, output as lower and upper triangulars with 1s
+!             implicitly assumed to lie on the main diagonal. The product of these
+!             triangular matrices is [D**-1]*[A], where [D] is a diagonal matrix.
+!     B     - in as band matrix, out as same but premultiplied by diagonal [D**-1]
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: m,mah1, mah2, mbh1, mbh2 
 REAL(8),  INTENT(INOUT):: a(0:,-mah1:), b(:,-mbh1:)
 INTEGER                :: j, imost, jmost, jleast, jp, i
@@ -2182,9 +4426,35 @@ DO j=1,m
 ENDDO
 END SUBROUTINE dl1ueb
 
+
 !=============================================================================
-SUBROUTINE L1LB(a,b,m,mah)	! Cholesky LU decomposition of Banded.
+SUBROUTINE L1LB(a,b,m,mah)   ! Cholesky LU decomposition of Banded.
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    l1lb
+!
+!   prgrmmr: 
+!
+! abstract:  Cholesky LU decomposition of Banded.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A     - 
+!     M     - 
+!     MAH   - 
+!
+!   output argument list:
+!     B     - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN) :: m, mah
 REAL(8),     INTENT(IN) :: a(m,-mah:mah)
 REAL(8),     INTENT(OUT):: b(m,-mah:0)
@@ -2207,6 +4477,32 @@ END SUBROUTINE L1LB
 !=============================================================================
 SUBROUTINE LDLB(a,b,d,m,mah) ! Modified Cholesky [L(D**-1)U, without sqrt]
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    ldlb
+!
+!   prgrmmr:    
+!
+! abstract:   Modified Cholesky [L(D**-1)U, without sqrt]
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a     - 
+!     m     - 
+!     mah   - 
+!
+!   output argument list:
+!     b     - 
+!     d     - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN) :: m, mah
 REAL(8),     INTENT(IN) :: a(m,-mah:mah)
 REAL(8),     INTENT(OUT):: b(m,-mah:0)
@@ -2238,6 +4534,32 @@ END SUBROUTINE LDLB
 !=============================================================================
 SUBROUTINE DLDLB(a,b,d,m,mah) ! Modified Cholesky [L(D**-1)U, without sqrt]
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dl1lb
+!
+!   prgrmmr:    
+!
+! abstract:  Modified Cholesky [L(D**-1)U, without sqrt]
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a     - 
+!     m     - 
+!     mah   - 
+!
+!   output argument list:
+!     b     - 
+!     d     - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN) :: m, mah
 REAL(8),  INTENT(IN) :: a(m,-mah:mah)
 REAL(8),  INTENT(OUT):: b(m,-mah:0)
@@ -2271,6 +4593,32 @@ END SUBROUTINE DLDLB
 !=============================================================================
 SUBROUTINE UDUB(a,b,d,m,mah) ! Modified reverse Cholesky [U(D**-1)U^t],
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    udub
+!
+!   prgrmmr:    
+!
+! abstract:   Modified reverse Cholesky [U(D**-1)U^t],
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a     - 
+!     m     - 
+!     mah   - 
+!
+!   output argument list:
+!     b     - 
+!     d     - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,        INTENT(IN) :: m, mah
 REAL(8),           INTENT(IN) :: a(m,-mah:mah)
 REAL(8),           INTENT(OUT):: b(m,0:mah)
@@ -2282,9 +4630,36 @@ at=a(m:1:-1,mah:-mah:-1); CALL ldlb(at,bt,dt,m,mah);
 b=bt(m:1:-1,0:-mah:-1); d=dt(m:1:-1)
 END SUBROUTINE UDUB
 
+
 !=============================================================================
 SUBROUTINE DUDUB(a,b,d,m,mah) ! Modified reverse Cholesky [U(D**-1)U^t],
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    dudub
+!
+!   prgrmmr:       
+!
+! abstract:   Modified reverse Cholesky [U(D**-1)U^t],
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a     - 
+!     m     - 
+!     mah   - 
+!
+!   output argument list:
+!     b     -
+!     d     -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,           INTENT(IN) :: m, mah
 REAL(8),           INTENT(IN) :: a(m,-mah:mah)
 REAL(8),           INTENT(OUT):: b(m,0:mah)
@@ -2296,21 +4671,38 @@ at=a(m:1:-1,mah:-mah:-1); CALL ldlb_d(at,bt,dt,m,mah);
 b=bt(m:1:-1,0:-mah:-1);   d=dt(m:1:-1)
 END SUBROUTINE DUDUB
 
+
 !=============================================================================
 SUBROUTINE mulbv(a,v1,v2, m1,m2,mah1,mah2)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE MULBV
-!  MULtipication of a Banded matrix times a Vector.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    mulbv
 !
-! --> A is the matrix
-! --> V1 the input vector
-! <-- V2 the output vector
-! --> M1 the number of rows assumed for A and for V2
-! --> M2 the number of columns assumed for A and rows for V1
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-!=============================================================================
+!   prgrmmr:     R.J.Purser,  1994
+!
+! abstract:      MULtipication of a Banded matrix times a Vector.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A    - is the matrix
+!     V1   - the input vector
+!     M1   - the number of rows assumed for A and for V2
+!     M2   - the number of columns assumed for A and rows for V1
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!
+!   output argument list:
+!     V2   - the output vector
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN) :: m1, m2, mah1, mah2
 REAL(8),     INTENT(IN) :: a(m1,-mah1:mah2), v1(m2)
 REAL(8),     INTENT(OUT):: v2(m1)
@@ -2331,22 +4723,39 @@ DO j=-mah1,mah2; i1=MAX(1,1-j); i2=MIN(m1,m2-j)
 ENDDO
 END SUBROUTINE mulbv
 
+
 !=============================================================================
 SUBROUTINE mulbx(a,v1,v2, m1,m2,mah1,mah2,my)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE MULBX
-!  MULtipication of a Banded matrix times parallel X-Vectors.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    mulbx
 !
-! --> A is the matrix
-! --> V1 the array of input vectors
-! <-- V2 the array of output vectors
-! --> M1 the number of rows assumed for A and for V2
-! --> M2 the number of columns assumed for A and rows for V1
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-! --> MY the number of parallel X-vectors
-!=============================================================================
+!   prgrmmr:     R.J.Purser,  1994
+!
+! abstract:      MULtipication of a Banded matrix times parallel X-Vectors.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A    - is the matrix
+!     V1   - the array of input vectors
+!     M1   - the number of rows assumed for A and for V2
+!     M2   - the number of columns assumed for A and rows for V1
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!     MY   - the number of parallel X-vectors
+!
+!   output argument list:
+!     V2   - the array of output vectors
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN) :: m1, m2, mah1, mah2, my
 REAL(8),     INTENT(IN) :: a(m1,-mah1:mah2), v1(m2,my)
 REAL(8),     INTENT(OUT):: v2(m1,my)
@@ -2367,22 +4776,39 @@ DO j=-mah1,mah2
 ENDDO
 END SUBROUTINE mulbx
 
+
 !=============================================================================
 SUBROUTINE mulby(a,v1,v2, m1,m2,mah1,mah2,mx)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE MULBY
-!  MULtipication of a Banded matrix times parallel Y-Vectors.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    mulby
 !
-! --> A is the matrix
-! --> V1 the array of input vectors
-! <-- V2 the array of output vectors
-! --> M1 the number of rows assumed for A and for V2
-! --> M2 the number of columns assumed for A and rows for V1
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-! --> MX the length of each of the parallel Y-vectors
-!=============================================================================
+!   prgrmmr:     R.J.Purser,  1994
+!
+! abstract:      MULtipication of a Banded matrix times parallel Y-Vectors.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A    - is the matrix
+!     V1   - the array of input vectors
+!     M1   - the number of rows assumed for A and for V2
+!     M2   - the number of columns assumed for A and rows for V1
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!     MX   - the length of each of the of parallel Y-vectors
+!
+!   output argument list:
+!     V2   - the array of output vectors
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN) :: m1, m2, mah1, mah2, mx
 REAL(8),     INTENT(IN) :: a(m1,-mah1:mah2), v1(mx,m2)
 REAL(8),     INTENT(OUT):: v2(mx,m1)
@@ -2399,21 +4825,38 @@ DO j=-mah1,mah2
 ENDDO
 END SUBROUTINE mulby
 
+
 !=============================================================================
 SUBROUTINE MULVB(v1,a,v2, m1,m2,mah1,mah2)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE MULVB
-!  MULtipication of a Vector times a Banded matrix.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    mulvb
 !
-! --> V1 the input row-vector
-! --> A is the matrix
-! <-- V2 the output vector
-! --> M1 the number of rows assumed for A and columns for V1
-! --> M2 the number of columns assumed for A and for V2
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-!=============================================================================
+!   prgrmmr:     R.J.Purser,  1994
+!
+! abstract:      MULtipication of a Vector times a Banded matrix.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     V1   - the input row-vector
+!     A    - is the matrix
+!     M1   - the number of rows assumed for A and columns for V1
+!     M2   - the number of columns assumed for A and for V2
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!
+!   output argument list:
+!     V2   - the output vector
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN) :: m1, m2, mah1, mah2
 REAL(8),     INTENT(IN) :: v1(m1), a(m1,-mah1:mah2)
 REAL(8),     INTENT(OUT):: v2(m2)
@@ -2434,22 +4877,39 @@ DO j=-mah1,mah2; i1=MAX(1,1-j); i2=MIN(m1,m2-j)
 ENDDO
 END SUBROUTINE mulvb
 
+
 !=============================================================================
 SUBROUTINE mulxb(v1,a,v2, m1,m2,mah1,mah2,my)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE MULXB
-!  MULtipication of X-Vectors times Banded matrix.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    mulxb
 !
-! --> V1 the array of input row-vectors
-! --> A is the matrix
-! <-- V2 the array of output vectors
-! --> M1 the number of rows assumed for A and columns for V1
-! --> M2 the number of columns assumed for A and V2
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-! --> MY the number of parallel X-vectors
-!=============================================================================
+!   prgrmmr:     R.J.Purser,  1994
+!
+! abstract:      MULtipication of X-Vectors times Banded matrix.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     V1   - the array of input row-vectors
+!     A    - is the matrix
+!     M1   - the number of rows assumed for A and columns for V1
+!     M2   - the number of columns assumed for A and V2
+!     MAH1 -  the left half-bandwidth of fortran array A
+!     MAH2 -  the right half-bandwidth of fortran array A
+!     MY   - the number of parallel X-vectors
+!
+!   output argument list:
+!     V2   - the array of output vectors
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN) :: m1, m2, mah1, mah2, my
 REAL(8),     INTENT(IN) :: v1(m1,my), a(m1,-mah1:mah2)
 REAL(8),     INTENT(OUT):: v2(m2,my)
@@ -2470,22 +4930,39 @@ DO j=-mah1,mah2
 ENDDO
 END SUBROUTINE mulxb
 
+
 !=============================================================================
 SUBROUTINE mulyb(v1,a,v2, m1,m2,mah1,mah2,mx)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE MULYB
-!  MULtipication of Y-Vectors times a Banded matrix.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    mulyb
 !
-! --> V1 the array of input row-vectors
-! --> A is the matrix
-! <-- V2 the array of output vectors
-! --> M1 the number of rows assumed for A and columns for V1
-! --> M2 the number of columns assumed for A and V2
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-! --> MX the length of each of the parallel Y-vectors
-!=============================================================================
+!   prgrmmr:     R.J.Purser,  1994
+!
+! abstract:      MULtipication of Y-Vectors times a Banded matrix.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A    - is the matrix
+!     V1   - the array of input row-vectors
+!     M1   - the number of rows assumed for A and colums for V1
+!     M2   - the number of columns assumed for A and V2
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!     MX   - the length of each of the parallel Y-vectors
+!
+!   output argument list:
+!     V2   - the array of output vectors
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN) :: m1, m2, mah1, mah2, mx
 REAL(8),     INTENT(IN) :: v1(mx,m1), a(m1,-mah1:mah2)
 REAL(8),     INTENT(OUT):: v2(mx,m2)
@@ -2502,21 +4979,38 @@ DO j=-mah1,mah2
 ENDDO
 END SUBROUTINE mulyb
 
+
 !=============================================================================
 SUBROUTINE mulbd(a,d,b,m1,m2,mah1,mah2)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE MULBD
-! MULtipication of a Banded matrix times a Diagonal
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    mulbd
 !
-! --> A is the input banded-matrix
-! --> D the diagonal matrix
-! <-- B the output matrix
-! --> M1 the number of rows assumed for A and for B
-! --> M2 number of columns assumed for A and B, number of elements of D
-! --> MAH1 the left half-bandwidth of arrays A and B
-! --> MAH2 the right half-bandwidth of arrays A and B
-!=============================================================================
+!   prgrmmr:     R.J.Purser,  1994
+!
+! abstract:      MULtipication of a Banded matrix times a Diagonal
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A    - is the input banded-matrix
+!     D    - the diagonal matrix
+!     M1   - the number of rows assumed for A and for B
+!     M2   - number of columns assumed for A and B, number of elements of D
+!     MAH1 - the left half-bandwidth of arrays A and B
+!     MAH2 - the right half-bandwidth of arrays A and B
+!
+!   output argument list:
+!     B    - the output matrix
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN   ):: m1, m2, mah1, mah2
 REAL(8),     INTENT(IN   ):: d(m2)
 REAL(8),     INTENT(INOUT):: a(m1,-mah1:mah2),b(m1,-mah1:mah2)
@@ -2541,21 +5035,38 @@ DO j=-mah1,mah2; i1=MAX(1,1-j); i2=MIN(m1,m2-j)
 ENDDO
 END SUBROUTINE mulbd
 
+
 !=============================================================================
 SUBROUTINE muldb(d,a,b,m1,m2,mah1,mah2)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE MULDB
-!  MULtipication of a Banded matrix times a Diagonal
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    muldb
 !
-! --> D the diagonal matrix
-! --> A is the input banded-matrix ! <->  if A and B are actually
-! <-- B the output matrix          ! <->  equivalent arrays.
-! --> M1 the number of rows assumed for A and for B
-! --> M2 number of columns assumed for A and B, number of elements of D
-! --> MAH1 the left half-bandwidth of arrays A and B
-! --> MAH2 the right half-bandwidth of arrays A and B
-!=============================================================================
+!   prgrmmr:     R.J.Purser,  1994
+!
+! abstract:      MULtipication of a Banded matrix times a Diagonal
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     D    - the diagonal matrix
+!     A    - is the input banded-matrix ! <->  if A and B are actually
+!     M1   - the number of rows assumed for A and for B
+!     M2   - number of columns assumed for A and B, number of elements of D
+!     MAH1 - the left half-bandwidth of arrays A and B
+!     MAH2 - the right half-bandwidth of arrays A and B
+!
+!   output argument list:
+!     B    - the output matrix          ! <->  equivalent arrays.
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)    :: m1, m2, mah1, mah2
 REAL(8),     INTENT(IN   ) :: d(m1)
 REAL(8),     INTENT(INOUT) :: a(m1,-mah1:mah2),b(m1,-mah1:mah2)
@@ -2564,9 +5075,40 @@ CALL clib(b,m1,m2,mah1,mah2)
 DO j=-mah1,mah2; b(:,j)=d(:)*a(:,j); ENDDO
 END SUBROUTINE muldb
 
+
 !=============================================================================
 SUBROUTINE maddb(d,a,b,m1,m2,mah1,mah2)
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    maddb
+!
+!   prgrmmr:     
+!
+! abstract:      
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d    - 
+!     M1   - 
+!     M2   -
+!     MAH1 - 
+!     MAH2 -
+!     a    -
+!     b    -
+!
+!   output argument list:
+!     a    -
+!     b    -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)    :: m1, m2, mah1, mah2
 REAL(8),     INTENT(IN   ) :: d(m1)
 REAL(8),     INTENT(INOUT) :: a(m1,-mah1:mah2),b(m1,-mah1:mah2)
@@ -2574,9 +5116,40 @@ INTEGER                 :: j
 DO j=-mah1,mah2; b(:,j)=b(:,j)+d(:)*a(:,j); ENDDO
 END SUBROUTINE maddb
 
+
 !=============================================================================
 SUBROUTINE msbdb(d,a,b,m1,m2,mah1,mah2)
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    msbdb
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     d    - 
+!     M1   - 
+!     M2   - 
+!     MAH1 - 
+!     MAH2 - 
+!     a    -
+!     b    -
+!
+!   output argument list:
+!     a    -
+!     b    -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)    :: m1, m2, mah1, mah2
 REAL(8),     INTENT(IN   ) :: d(m1) 
 REAL(8),     INTENT(INOUT) :: a(m1,-mah1:mah2),b(m1,-mah1:mah2)
@@ -2588,18 +5161,35 @@ END SUBROUTINE msbdb
 !=============================================================================
 SUBROUTINE udlbv(a,v, m,mah1,mah2)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE UDLBV
-!  BACk-substitution step of linear inversion involving
-!  Banded matrix and Vector.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    udlbv
 !
-! --> A encodes the (L)*(D**-1)*(U) factorization of the linear-system
-!     matrix, as supplied by subroutine LDUB
-! <-> V input as right-hand-side vector, output as solution vector
-! --> M the number of rows assumed for A and for V
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-!=============================================================================
+!   prgrmmr:     R.J.Purser, 1994
+!
+! abstract:      BACk-substitution step of linear inversion involving
+!                Banded matrix and Vector.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A    - encodes the (L)*(D**-1)*(U) factorization of the linear-system
+!            matrix, as supplied by subroutine LDUB
+!     V    - input as right-hand-side vector, output as solution vector
+!     M    - the number of rows assumed for A and for V
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!
+!   output argument list:
+!     V    - input as right-hand-side vector, output as solution vector
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: m, mah1, mah2
 REAL(8),     INTENT(IN)   :: a(m,-mah1:mah2)
 REAL(8),     INTENT(INOUT):: v(m)
@@ -2615,23 +5205,41 @@ DO j=m,2,-1
 ENDDO
 END SUBROUTINE udlbv
 
+
 !=============================================================================
 SUBROUTINE udlbx(a,v, mx,mah1,mah2,my)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE UDLBX
-!  BACk-substitution step of parallel linear inversion involving
-!  Banded matrix and X-Vectors.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    udlbx
 !
-! --> A encodes the (L)*(D**-1)*(U) factorization of the linear-system
-!     matrix, as supplied by subroutine LDUB or, if N=NA, by LDUB
-! <-> V input as right-hand-side vectors, output as solution vectors
-! --> MX the number of rows assumed for A and length of
-!     X-vectors stored in V
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-! --> MY number of parallel X-vectors inverted
-!=============================================================================
+!   prgrmmr:     R.J.Purser, 1994
+!
+! abstract:      BACk-substitution step of parallel linear inversion involving
+!                Banded matrix and X-Vectors.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A    - encodes the (L)*(D**-1)*(U) factorization of the linear-system
+!            matrix, as supplied by subroutine LDUB or, if N=NA, by LDUB
+!     V    - input as right-hand-side vectors, output as solution vectors
+!     MX   - the number of rows assumed for A and length of
+!            X-vectors stored in V
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!     MY   - number of parallel X-vectors inverted
+!
+!   output argument list:
+!     V    - input as right-hand-side vectors, output as solution vectors
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: mx, mah1, mah2, my
 REAL(8),     INTENT(IN)   :: a(mx,-mah1:mah2)
 REAL(8),     INTENT(INOUT):: v(mx,my)
@@ -2645,23 +5253,41 @@ DO jx=mx,2,-1
 ENDDO
 END SUBROUTINE udlbx
 
+
 !=============================================================================
 SUBROUTINE udlby(a,v, my,mah1,mah2,mx)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE UDLBY
-!  BACk-substitution step of parallel linear inversion involving
-!  Banded matrix and Y-Vectors.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    udlby
 !
-! --> A encodes the (L)*(D**-1)*(U) factorization of the linear-system
-!     matrix, as supplied by subroutine LDUB or, if N=NA, by LDUB
-! <-> V input as right-hand-side vectors, output as solution vectors
-! --> MY the number of rows assumed for A and length of
-!     Y-vectors stored in V
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-! --> MX number of parallel Y-vectors inverted
-!=============================================================================
+!   prgrmmr:     R.J.Purser, 1994
+!
+! abstract:      BACk-substitution step of parallel linear inversion involving
+!                Banded matrix and Y-Vectors.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A    - encodes the (L)*(D**-1)*(U) factorization of the linear-system
+!            matrix, as supplied by subroutine LDUB or, if N=NA, by LDUB
+!     V    - input as right-hand-side vectors, output as solution vectors
+!     MY   - the number of rows assumed for A and length of
+!            Y-vectors stored in V
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!     MX   - number of parallel Y-vectors inverted
+!
+!   output argument list:
+!     V    - input as right-hand-side vectors, output as solution vectors
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: my, mah1, mah2, mx
 REAL(8),     INTENT(IN)   :: a(my,-mah1:mah2)
 REAL(8),     INTENT(INOUT):: v(mx,my)
@@ -2675,21 +5301,38 @@ DO jy=my,2,-1
 ENDDO
 END SUBROUTINE udlby
 
+
 !=============================================================================
 SUBROUTINE udlvb(v,a, m,mah1,mah2)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE UDLVB
-!  BACk-substitution step of linear inversion involving
-!  row-Vector and Banded matrix.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    udlvb
 !
-! <-> V input as right-hand-side row-vector, output as solution vector
-! --> A encodes the (L)*(D**-1)*(U) factorization of the linear-system
-!     matrix, as supplied by subroutine LDUB
-! --> M the number of rows assumed for A and columns for V
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-!=============================================================================
+!   prgrmmr:     R.J.Purser, 1994
+!
+! abstract:      BACk-substitution step of linear inversion involving
+!                row-Vector and Banded matrix.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A    - encodes the (L)*(D**-1)*(U) factorization of the linear-system
+!            matrix, as supplied by subroutine LDUB
+!     M    - the number of rows assumed for A and columns for V
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!
+!   output argument list:
+!     V    - input as right-hand-side row-vector, output as solution vector
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: m, mah1, mah2
 REAL(8),     INTENT(IN)   :: a(m,-mah1:mah2)
 REAL(8),     INTENT(INOUT):: v(m)
@@ -2706,23 +5349,41 @@ DO i=m,2,-1
 ENDDO
 END SUBROUTINE udlvb
 
+
 !=============================================================================
 SUBROUTINE udlxb(v,a, mx,mah1,mah2,my)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE UDLXB
-!  BACk-substitution step of parallel linear inversion involving
-!  Banded matrix and row-X-Vectors.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    udlxb
 !
-! <-> V input as right-hand-side vectors, output as solution vectors
-! --> A encodes the (L)*(D**-1)*(U) factorization of the linear-system
-!     matrix, as supplied by subroutine LDUB
-! --> MX the number of rows assumed for A and length of
-!     X-vectors stored in V
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-! --> MY number of parallel X-vectors inverted
-!=============================================================================
+!   prgrmmr:     R.J.Purser, National Meteorological Center, 1994
+!
+! abstract:     BACk-substitution step of parallel linear inversion involving
+!               Banded matrix and row-X-Vectors.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     V    - input as right-hand-side vectors, output as solution vectors
+!     A    - encodes the (L)*(D**-1)*(U) factorization of the linear-system
+!            matrix, as supplied by subroutine LDUB
+!     MX   - the number of rows assumed for A and length of
+!            X-vectors stored in V
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!     MY   - number of parallel X-vectors inverted
+!
+!   output argument list:
+!     V    - input as right-hand-side vectors, output as solution vectors
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: mx, mah1, mah2, my
 REAL(8),     INTENT(IN)   :: a(mx,-mah1:mah2)
 REAL(8),     INTENT(INOUT):: v(mx,my)
@@ -2739,20 +5400,37 @@ END SUBROUTINE udlxb
 !=============================================================================
 SUBROUTINE udlyb(v,a, my,mah1,mah2,mx)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE UDLYB
-!  BACk-substitution step of parallel linear inversion involving
-!  Banded matrix and row-Y-Vectors.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    udlyb
 !
-! <-> V input as right-hand-side vectors, output as solution vectors
-! --> A encodes the (L)*(D**-1)*(U) factorization of the linear-system
-!     matrix, as supplied by subroutine LDUB
-! --> MY the number of rows assumed for A and length of
-!     Y-vectors stored in V
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-! --> MX number of parallel Y-vectors inverted
-!=============================================================================
+!   prgrmmr:     R.J.Purser, National Meteorological Center, 1994
+!
+! abstract:      BACk-substitution step of parallel linear inversion involving
+!                Banded matrix and row-Y-Vectors.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     V    - input as right-hand-side vectors, output as solution vectors
+!     A    - encodes the (L)*(D**-1)*(U) factorization of the linear-system
+!            matrix, as supplied by subroutine LDUB
+!     MY   - the number of rows assumed for A and length of
+!            Y-vectors stored in V
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!     MX   - number of parallel Y-vectors inverted
+!
+!   output argument list:
+!     V    - input as right-hand-side vectors, output as solution vectors
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: my, mah1, mah2, mx
 REAL(8),     INTENT(IN)   :: a(my,-mah1:mah2)
 REAL(8),     INTENT(INOUT):: v(mx,my)
@@ -2766,21 +5444,39 @@ DO iy=my,2,-1
 ENDDO
 END SUBROUTINE udlyb
 
+
 !=============================================================================
 SUBROUTINE u1lbv(a,v, m,mah1,mah2)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1996
-!		    SUBROUTINE U1LBV
-!  BACk-substitution step ((U**-1)*(L**-1)) of linear inversion involving
-!  special Banded matrix and right-Vector.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    u1lbv
 !
-! --> A encodes the [L]*[U] factorization of the linear-system
-!     matrix, as supplied by subroutine L1UBB
-! <-> V input as right-hand-side vector, output as solution vector
-! --> M the number of rows assumed for A and for V
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-!=============================================================================
+!   prgrmmr:     R.J.Purser, National Meteorological Center, 1996
+!
+! abstract:      BACk-substitution step ((U**-1)*(L**-1)) of linear inversion 
+!                involving special Banded matrix and right-Vector.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A    - encodes the [L]*[U] factorization of the linear-system
+!            matrix, as supplied by subroutine L1UBB
+!     V    - input as right-hand-side vector, output as solution vector
+!     M    - the number of rows assumed for A and for V
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!
+!   output argument list:
+!     V    - input as right-hand-side vector, output as solution vector
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: m, mah1, mah2
 REAL(8),     INTENT(IN)   :: a(m,-mah1:mah2)
 REAL(8),     INTENT(INOUT):: v(m)
@@ -2796,23 +5492,41 @@ DO j=m,2,-1
 ENDDO
 END SUBROUTINE u1lbv
 
+
 !=============================================================================
 SUBROUTINE u1lbx(a,v, mx,mah1,mah2,my)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1996
-!		    SUBROUTINE U1LBX
-!  Special BaCk-substitution step of parallel linear inversion involving
-!  Banded matrix and X-right-Vectors.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    u1lbx
 !
-! --> A encodes the [L]*[U] factorization of the linear-system
-!     matrix, as supplied by subroutine L1UBB
-! <-> V input as right-hand-side vectors, output as solution vectors
-! --> MX the number of rows assumed for A and length of
-!     X-vectors stored in V
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-! --> MY number of parallel X-vectors inverted
-!=============================================================================
+!   prgrmmr:     R.J.Purser, National Meteorological Center, 1996
+!
+! abstract:      Special BaCk-substitution step of parallel linear inversion 
+!                involving Banded matrix and X-right-Vectors.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A    - encodes the [L]*[U] factorization of the linear-system
+!            matrix, as supplied by subroutine L1UBB
+!     V    - input as right-hand-side vectors, output as solution vectors
+!     MX   - the number of rows assumed for A and length of
+!            X-vectors stored in V
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!     MY   - number of parallel X-vectors inverted
+!
+!   output argument list:
+!     V    - input as right-hand-side vectors, output as solution vectors
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: mx, mah1, mah2, my
 REAL(8),     INTENT(IN)   :: a(mx,-mah1:mah2)
 REAL(8),     INTENT(INOUT):: v(mx,my)
@@ -2825,23 +5539,41 @@ DO jx=mx,2,-1
 ENDDO
 END SUBROUTINE u1lbx
 
+
 !=============================================================================
 SUBROUTINE u1lby(a,v, my,mah1,mah2,mx)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1996
-!		    SUBROUTINE U1LBY
-!  Special BaCk-substitution step of parallel linear inversion involving
-!  Banded matrix and Y-right-Vectors.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    u1lby
 !
-! --> A encodes the [L]*[U] factorization of the linear-system
-!     matrix, as supplied by subroutine L1UBB
-! <-> V input as right-hand-side vectors, output as solution vectors
-! --> MY the number of rows assumed for A and length of
-!     Y-vectors stored in V
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-! --> MX number of parallel Y-vectors inverted
-!=============================================================================
+!   prgrmmr:     R.J.Purser, National Meteorological Center, 1996
+!
+! abstract:      Special BaCk-substitution step of parallel linear inversion 
+!                involving Banded matrix and Y-right-Vectors.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A    - encodes the [L]*[U] factorization of the linear-system
+!            matrix, as supplied by subroutine L1UBB
+!     V    - input as right-hand-side vectors, output as solution vectors
+!     MY   - the number of rows assumed for A and length of
+!            Y-vectors stored in V
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!     MX   - number of parallel Y-vectors inverted
+!
+!   output argument list:
+!     V    - input as right-hand-side vectors, output as solution vectors
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: my, mah1, mah2, mx
 REAL(8),     INTENT(IN)   :: a(my,-mah1:mah2)
 REAL(8),     INTENT(INOUT):: v(mx,my)
@@ -2854,21 +5586,39 @@ DO jy=my,2,-1
 ENDDO
 END SUBROUTINE u1lby
 
+
 !=============================================================================
 SUBROUTINE u1lvb(v,a, m,mah1,mah2)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1996
-!		    SUBROUTINE U1LVB
-!  Special BaCk-substitution step of linear inversion involving
-!  left-Vector and Banded matrix.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    u1lvb
 !
-! <-> V input as right-hand-side row-vector, output as solution vector
-! --> A encodes the special [L]*[U] factorization of the linear-system
-!     matrix, as supplied by subroutine L1UBB
-! --> M the number of rows assumed for A and columns for V
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-!=============================================================================
+!   prgrmmr:     R.J.Purser, National Meteorological Center, 1996
+!
+! abstract:      Special BaCk-substitution step of linear inversion involving
+!                left-Vector and Banded matrix.
+!
+! program history log:
+!   2008-04-28  safford -- add subprogram doc block
+!
+!   input argument list:
+!     V    - input as right-hand-side row-vector, output as solution vector
+!     A    - encodes the special [L]*[U] factorization of the linear-system
+!            matrix, as supplied by subroutine L1UBB
+!     M    - the number of rows assumed for A and columns for V
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!
+!   output argument list:
+!     V    - input as right-hand-side row-vector, output as solution vector
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN)   :: m, mah1, mah2
 REAL(8),    INTENT(IN)   :: a(m,-mah1:mah2)
 REAL(8),    INTENT(INOUT):: v(m)
@@ -2884,23 +5634,41 @@ DO i=m,2,-1
 ENDDO
 END SUBROUTINE u1lvb
 
+
 !=============================================================================
 SUBROUTINE u1lxb(v,a, mx,mah1,mah2,my)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1996
-!		    SUBROUTINE U1LXB
-!  Special BaCk-substitution step of parallel linear inversion involving
-!  Banded matrix and X-left-Vectors.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    u1lxb
 !
-! <-> V input as right-hand-side vectors, output as solution vectors
-! --> A encodes the special [L]*[U] factorization of the linear-system
-!     matrix, as supplied by subroutine L1UBB
-! --> MX the number of rows assumed for A and length of
-!     X-vectors stored in V
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-! --> MY number of parallel X-vectors inverted
-!=============================================================================
+!   prgrmmr:     R.J.Purser, National Meteorological Center, 1996
+!
+! abstract:      Special BaCk-substitution step of parallel linear inversion 
+!                involving Banded matrix and X-left-Vectors.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     V    - input as right-hand-side vectors, output as solution vectors
+!     A    - encodes the special [L]*[U] factorization of the linear-system
+!            matrix, as supplied by subroutine L1UBB
+!     MX   - the number of rows assumed for A and length of
+!            X-vectors stored in V
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!     MY   - number of parallel X-vectors inverted
+!
+!   output argument list:
+!     V    - input as right-hand-side vectors, output as solution vectors
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: mx, mah1, mah2, my
 REAL(8),     INTENT(IN)   :: a(mx,-mah1:mah2)
 REAL(8),     INTENT(INOUT):: v(mx,my)
@@ -2913,23 +5681,41 @@ DO ix=mx,2,-1
 ENDDO
 END SUBROUTINE u1lxb
 
+
 !=============================================================================
 SUBROUTINE u1lyb(v,a, my,mah1,mah2,mx)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1996
-!		    SUBROUTINE U1LYB
-!  Special BaCk-substitution step of parallel linear inversion involving
-!  special Banded matrix and Y-left-Vectors.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    u1lyb
 !
-! <-> V input as right-hand-side vectors, output as solution vectors
-! --> A encodes the [L]*[U] factorization of the linear-system
-!     matrix, as supplied by subroutine L1UBB
-! --> MY the number of rows assumed for A and length of
-!     Y-vectors stored in V
-! --> MAH1 the left half-bandwidth of fortran array A
-! --> MAH2 the right half-bandwidth of fortran array A
-! --> MX number of parallel Y-vectors inverted
-!=============================================================================
+!   prgrmmr:     R.J.Purser, National Meteorological Center, 1996
+!
+! abstract:      Special BaCk-substitution step of parallel linear inversion 
+!                involving special Banded matrix and Y-left-Vectors.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     V    - input as right-hand-side vectors, output as solution vectors
+!     A    - encodes the [L]*[U] factorization of the linear-system
+!            matrix, as supplied by subroutine L1UBB
+!     MY   - the number of rows assumed for A and length of
+!            Y-vectors stored in V
+!     MAH1 - the left half-bandwidth of fortran array A
+!     MAH2 - the right half-bandwidth of fortran array A
+!     MX   - number of parallel Y-vectors inverted
+!
+!   output argument list:
+!     V    - input as right-hand-side vectors, output as solution vectors
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN)   :: my, mah1, mah2, mx
 REAL(8),     INTENT(IN)   :: a(my,-mah1:mah2)
 REAL(8),     INTENT(INOUT):: v(mx,my)
@@ -2942,28 +5728,74 @@ DO iy=my,2,-1
 ENDDO
 END SUBROUTINE u1lyb
 
+
 !=============================================================================
 SUBROUTINE linbv(a,v,m,mah1,mah2)
 !=============================================================================
-!   R.J.Purser, National Meteorological Center, Washington D.C.  1994
-!		    SUBROUTINE LINBV
-!   Solve LINear system with square Banded-matrix and vector V
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    linbv
 !
-! <-> A system matrix on input, its [L]*[D**-1]*[U] factorization on exit
-! <-> V vector of right-hand-sides on input, solution vector on exit
-! --> M order of matrix A
-! --> MAH1 left half-bandwidth of A
-! --> MAH2 right half-bandwidth of A
-!=============================================================================
+!   prgrmmr:     R.J.Purser, National Meteorological Center, 1994
+!
+! abstract:      Solve LINear system with square Banded-matrix and vector V
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     A    - system matrix on input, its [L]*[D**-1]*[U] factorization on exit
+!     V    - vector of right-hand-sides on input, solution vector on exit
+!     M    - order of matrix A
+!     MAH1 - left half-bandwidth of A
+!     MAH2 - right half-bandwidth of A
+!
+!   output argument list:
+!     A    - system matrix on input, its [L]*[D**-1]*[U] factorization on exit
+!     V    - vector of right-hand-sides on input, solution vector on exit
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER, INTENT(IN)    :: m, mah1, mah2
 REAL(8),    INTENT(INOUT) :: a(m,-mah1:mah2), v(m)
 CALL ldub(a,m,mah1,mah2)
 CALL udlbv(a,v,m,mah1,mah2)
 END SUBROUTINE linbv
 
+
 !=============================================================================
 SUBROUTINE wrtb(a,m1,m2,mah1,mah2)
 !=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    wrtb
+!
+!   prgrmmr:     
+!
+! abstract:     
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     m1   -
+!     m2   -
+!     mah1 - 
+!     mah2 -
+!     a    -
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 INTEGER,  INTENT(IN) :: m1, m2, mah1, mah2
 REAL(8),     INTENT(IN) :: a(m1,-mah1:mah2)
 INTEGER              :: i1, i2, i, j1, j2, j, nj1
@@ -2988,29 +5820,58 @@ END SUBROUTINE wrtb
 END MODULE MODULE_pmat2
 
 
-!ENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDEND
-!						********************
-!						* module_pmat2.f90 *
-!						* PURSER 1994/1999 *
-!                                               *   FUJITA 1999    *
-!						********************
-!ENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDEND
 
-!						**********************
-!						* module_fitcons.f90 *
-!						* PURSER 1994/1999   *
-!                                               *   FUJITA 1999      *
-!						**********************
-
-!============================================================================
 module vkind
+!$$$ module documentation block
+!
+! module:  vkind
+!
+! abstract:
+!
+! program history log:
+!   2008-04-28  safford - add stander module documentation block
+!
+! subroutines included:
+!
+! variable definitions:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 !============================================================================
   integer, parameter :: vp=kind(1.0d0)
 !  integer, parameter :: vp=kind(1.0)
 end module vkind
 
-!============================================================================
+
+
+
 module module_fitcons
+!$$$ module documentation block
+!
+! module:  module_fitcons
+!
+! abstract:
+!
+! program history log:
+!   1994-  -    purser
+!   2008-04-28  safford - add stander module documentation block
+!
+! subroutines included:
+!   setq
+!   lagw
+!   infit
+!
+! variable definitions:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 !============================================================================
 use vkind
 implicit none
@@ -3025,17 +5886,36 @@ real(vp)                      :: rcrit,ldsig,ldsig4
 !============================================================================
 
 contains
+
+
 !============================================================================
 SUBROUTINE setq(q,x,n) 
 !============================================================================
-!                SUBROUTINE SETQ
-! Precompute the N constant denominator factors of the N-point Lagrange
-! polynomial interpolation formula.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    setq
 !
-! <-- Q:    The N denominator constants.
-! --> X:    The N abscissae.
-! --> N:    The number of points involved.
-!============================================================================
+!   prgrmmr:     R.J.Purser, National Meteorological Center, 1994
+!
+! abstract:      Precompute the N constant denominator factors of the 
+!                N-point Lagrange polynomial interpolation formula.
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     X -   The N abscissae.
+!     N -   The number of points involved.
+!
+!   output argument list:
+!     Q -   The N denominator constants.
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   use vkind
   IMPLICIT NONE
   INTEGER,          INTENT(in) :: n
@@ -3052,20 +5932,39 @@ DO i=1,n
 ENDDO
 END SUBROUTINE setq 
 
+
 !============================================================================
 SUBROUTINE lagw(x,xt,q,w,dw,n) 
 !============================================================================
-!      SUBROUTINE LAGW
-! Construct the Lagrange weights and their derivatives when target abscissa
-! is known and denominators Q have already been precomputed
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    lagw
 !
-! --> X:    Grid abscissae
-! --> XT:   Target abscissa
-! --> Q:    Q factors (denominators of the Lagrange weight formula)
-! <-- W:    Lagrange weights
-! <-- DW:   Derivatives, dW/dX, of Lagrange weights W
-! --> N:    Number of grid points involved in the interpolation
-!============================================================================
+!   prgrmmr:     R.J.Purser, National Meteorological Center, 1994
+!
+! abstract:      Construct the Lagrange weights and their derivatives when 
+!                target abscissa is known and denominators Q have already 
+!                been precomputed
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     X   - Grid abscissae
+!     XT  - Target abscissa
+!     Q   - Q factors (denominators of the Lagrange weight formula)
+!     N   - Number of grid points involved in the interpolation
+!
+!   output argument list:
+!     W   - Lagrange weights
+!     DW  - Derivatives, dW/dX, of Lagrange weights W
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   use vkind
   IMPLICIT NONE
   INTEGER,              INTENT(in) :: n
@@ -3119,11 +6018,34 @@ ELSE             ! xt is not a grid point - use generic code:
 ENDIF
 END SUBROUTINE lagw 
 
+
+
 !============================================================================
 subroutine infit
 !============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    infit
+!
+!   prgrmmr:     R.J.Purser, National Meteorological Center, 1994
+!
+! abstract:     
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 implicit none
-integer :: i,l
+integer :: i
 real(vp):: divq,divd
 !============================================================================
 ! Initialize quantities that relate to interpolations:
@@ -3148,25 +6070,36 @@ ldsig4=ldsig**4
 end subroutine infit
 end module module_fitcons
 
-!ENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDEND
-!						**********************
-!						* module_fitcons.f90 *
-!						* PURSER 1994/1999   *
-!                                               *   FUJITA 1999      *
-!						**********************
-!ENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDEND
 
-!						********************
-!						* coefrf.f90       *
-!						* PURSER 1994/1999 *
-!                                               *   FUJITA 1999    *
-!						********************
 
 !=============================================================================
 subroutine coefrf(sig,nu,n,m,bnf,lnf)
 !=============================================================================
-! R. J. Purser NCEP 2001
-!-----------------------------------------------------------------------------
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    coefrf
+!
+!   prgrmmr:     R.J.Purser, NCEP 2001
+!
+! abstract:    
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     n, m    -
+!     sig, nu - 
+!
+!   output argument list:
+!     bnf     -
+!     lnf     -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 use module_pmat2
 implicit none
 integer,              intent(IN   ) :: n,m
@@ -3252,26 +6185,41 @@ enddo
 end subroutine coefrf
 
 
-!ENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDEND
-!						********************
-!						* coefrf.f90       *
-!						* PURSER 1994/1999 *
-!                                               *   FUJITA 1999    *
-!						********************
-!ENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDEND
-
-!						********************
-!						* hgnrf.f90        *
-!						* PURSER 1994/1999 *
-!                                               *   FUJITA 1999    *
-!						********************
-
 !============================================================================
 subroutine ldlb1i(nol,lnf,bnf,                                              &
        ids,ide,                                                             &
        ims,ime,                                                             &
        its,ite                                                              )
 !============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    ldlb1i
+!
+!   prgrmmr:     
+!
+! abstract:    
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol      -
+!     ids, ide - 
+!     ims, ime -
+!     its, ite -
+!     bnf      -
+!     lnf      -
+!
+!   output argument list:
+!     bnf      -
+!     lnf      -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3303,6 +6251,7 @@ do i=its,ite
    bnf(i)=s
 enddo
 end subroutine ldlb1i
+
    
 !============================================================================
 subroutine ldlb2i(nol,lnf,bnf,                                              &
@@ -3310,6 +6259,35 @@ subroutine ldlb2i(nol,lnf,bnf,                                              &
        ims,ime, jms,jme,                                                    &
        its,ite, jts,jte                                                     )
 !============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    ldlb2i
+!
+!   prgrmmr:     
+!
+! abstract:     
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol                -
+!     ids, ide, jds, jde -
+!     ims, ime, jms, jme -
+!     its, ite, jts, jte -
+!     bnf                -
+!     lnf                -
+!
+!   output argument list:
+!     bnf                -
+!     lnf                -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3343,6 +6321,7 @@ do i=its,ite
 enddo
 enddo
 end subroutine ldlb2i
+
    
 !============================================================================
 subroutine ldlb2j(nol,lnf,bnf,                                              &
@@ -3350,6 +6329,35 @@ subroutine ldlb2j(nol,lnf,bnf,                                              &
        ims,ime, jms,jme,                                                    &
        its,ite, jts,jte                                                     )
 !============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    ldlb2
+!
+!   prgrmmr:     
+!
+! abstract:     
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol              -
+!     ids,ide, jds,jde -
+!     ims,ime, jms,jme -
+!     its,ite, jts,jte -
+!     bnf              -
+!     lnf              -
+! 
+!   output argument list:
+!     bnf              -
+!     lnf              -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3383,6 +6391,7 @@ do j=jts,jte
    enddo
 enddo
 end subroutine ldlb2j
+
    
 !============================================================================
 subroutine ldlb3i(nol,lnf,bnf,                                              &
@@ -3390,6 +6399,35 @@ subroutine ldlb3i(nol,lnf,bnf,                                              &
        ims,ime, jms,jme, kms,kme,                                           &
        its,ite, jts,jte, kts,kte                                            )
 !============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    ldlb3i
+!
+!   prgrmmr:    
+!
+! abstract:    
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol                       -
+!     ids,ide, jds,jde, kds,kde -
+!     ims,ime, jms,jme, kms,kme -
+!     its,ite, jts,jte, kts,kte -
+!     bnf                       -
+!     lnf                       -
+!
+!   output argument list:
+!     bnf                       -
+!     lnf                       -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3425,6 +6463,7 @@ enddo
 enddo
 enddo
 end subroutine ldlb3i
+
    
 !============================================================================
 subroutine ldlb3j(nol,lnf,bnf,                                              &
@@ -3432,6 +6471,35 @@ subroutine ldlb3j(nol,lnf,bnf,                                              &
        ims,ime, jms,jme, kms,kme,                                           &
        its,ite, jts,jte, kts,kte                                            )
 !============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    ldlb3j
+!
+!   prgrmmr:     R.J.Purser, National Meteorological Center, 1994
+!
+! abstract:     
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol                       -
+!     ids,ide, jds,jde, kds,kde -
+!     ims,ime, jms,jme, kms,kme -
+!     its,ite, jts,jte, kts,kte -
+!     bnf                       -
+!     lnf                       -
+!
+!   output argument list:
+!     bnf                       -
+!     lnf                       -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3467,15 +6535,45 @@ do j=jts,jte
    enddo
 enddo
 end subroutine ldlb3j
+
    
 SUBROUTINE hbnrf1i(a,nol,lnf,bnf,                                           &
        ids,ide,                                                             &
        ims,ime,                                                             &
        its,ite                                                              )
 !============================================================================
-! Horizontal basic inhomogeneous recursive filter, 
-! 1-dimensional, active index i
-!============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    hbnrf1i
+!
+!   prgrmmr:    
+!
+! abstract:      Horizontal basic inhomogeneous recursive filter, 
+!                1-dimensional, active index i
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol     -
+!     ids,ide -
+!     ims,ime -
+!     its,ite -
+!     a       -
+!     bnf     -
+!     lnf     -
+!
+!   output argument list:
+!     a       -
+!     bnf     -
+!     lnf     -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3509,14 +6607,44 @@ DO i=ite-1,its,-1
 ENDDO
 END SUBROUTINE hbnrf1i
 
+
 SUBROUTINE hbnrf2i(a,nol,lnf,bnf,                                           &
        ids,ide, jds,jde,                                                    &
        ims,ime, jms,jme,                                                    &
        its,ite, jts,jte                                                     )
 !============================================================================
-! Horizontal basic inhomogeneous recursive filter, 
-! 2-dimensional, active index i
-!============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    hbnrf2i
+!
+!   prgrmmr:   
+!
+! abstract:      Horizontal basic inhomogeneous recursive filter, 
+!                2-dimensional, active index i
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol              -
+!     ids,ide, jds,jde -
+!     ims,ime, jms,jme -
+!     its,ite, jts,jte -
+!     a                -
+!     bnf              -
+!     lnf              -
+!
+!   output argument list:
+!     a                -
+!     bnf              -
+!     lnf              -
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3552,14 +6680,44 @@ DO j=jts,jte
 ENDDO
 END SUBROUTINE hbnrf2i
 
+
 SUBROUTINE hbnrf2j(a,nol,lnf,bnf,                                           &
        ids,ide, jds,jde,                                                    &
        ims,ime, jms,jme,                                                    &
        its,ite, jts,jte                                                     )
 !============================================================================
-! Horizontal basic inhomogeneous recursive filter, 
-! 2-dimensional, active index j
-!============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    hbnrf1i
+!
+!   prgrmmr:   
+!
+! abstract:      Horizontal basic inhomogeneous recursive filter, 
+!                2-dimensional, active index j
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol              -
+!     ids,ide, jds,jde -
+!     ims,ime, jms,jme -
+!     its,ite, jts,jte -
+!     a                -
+!     bnf              -
+!     lnf              -
+!
+!   output argument list:
+!     a                -
+!     bnf              -
+!     lnf              -
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3599,14 +6757,44 @@ DO j=jte-1,jts,-1
 ENDDO
 END SUBROUTINE hbnrf2j
 
+
 SUBROUTINE hbnrf3i(a,nol,lnf,bnf,                                           &
        ids,ide, jds,jde, kds,kde,                                           &
        ims,ime, jms,jme, kms,kme,                                           &
        its,ite, jts,jte, kts,kte                                            )
 !============================================================================
-! Horizontal basic inhomogeneous recursive filter, 
-! 3-dimensional, active index i
-!============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    hbnrf3i
+!
+!   prgrmmr:   
+!
+! abstract:      Horizontal basic inhomogeneous recursive filter, 
+!                3-dimensional, active index i
+!
+! program history log:
+!   2008-04-28  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol                       -
+!     ids,ide, jds,jde, kds,kde -
+!     ims,ime, jms,jme, kms,kme -
+!     its,ite, jts,jte, kts,kte -
+!     a                         -
+!     bnf                       -
+!     lnf                       -
+!
+!   output argument list:
+!     a                         -
+!     bnf                       -
+!     lnf                       -
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3644,14 +6832,44 @@ DO j=jts,jte
 ENDDO
 END SUBROUTINE hbnrf3i
 
+
 SUBROUTINE hbnrf3j(a,nol,lnf,bnf,                                           &
        ids,ide, jds,jde, kds,kde,                                           &
        ims,ime, jms,jme, kms,kme,                                           &
        its,ite, jts,jte, kts,kte                                            )
 !============================================================================
-! Horizontal basic inhomogeneous recursive filter, 
-! 3-dimensional, active index j
-!============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    hbnrf3j
+!
+!   prgrmmr:   
+!
+! abstract:      Horizontal basic inhomogeneous recursive filter, 
+!                3-dimensional, active index j
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol                       -
+!     ids,ide, jds,jde, kds,kde -
+!     ims,ime, jms,jme, kms,kme -
+!     its,ite, jts,jte, kts,kte -
+!     a                         -
+!     bnf                       -
+!     lnf                       -
+!
+!   output argument list:
+!     a                         -
+!     bnf                       -
+!     lnf                       -
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3703,9 +6921,38 @@ SUBROUTINE vbnrf1k(a,nol,lnf,bnf,                                           &
        kms,kme,                                                             &
        kts,kte                                                              )
 !============================================================================
-! Vertical bounded grid inhomogeneous recursive filter, 
-! 1-dimensional, active index k
-!============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    vbnrf1k
+!
+!   prgrmmr:   
+!
+! abstract:      Vertical bounded grid inhomogeneous recursive filter, 
+!                1-dimensional, active index k
+!
+! program history log:
+!   2008-04-28  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol     -
+!     kds,kde -
+!     kms,kme -
+!     kts,kte -
+!     a       -
+!     bnf     -
+!     lnf     -
+!
+!   output argument list:
+!     a       -
+!     bnf     -
+!     lnf     -
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3739,14 +6986,44 @@ DO k=kte-1,kts,-1
 ENDDO
 END SUBROUTINE vbnrf1k
 
+
 SUBROUTINE vbnrf2k(a,nol,lnf,bnf,                                           &
        ids,ide, kds,kde,                                                    &
        ims,ime, kms,kme,                                                    &
        its,ite, kts,kte                                                     )
 !============================================================================
-! Vertical bounded grid inhomogeneous recursive filter, 
-! 2-dimensional, active index k
-!============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    vbnrf2k
+!
+!   prgrmmr:   
+!
+! abstract:      Vertical bounded grid inhomogeneous recursive filter, 
+!                2-dimensional, active index k
+!
+! program history log:
+!   2008-04-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol              -
+!     ids,ide, kds,kde -
+!     ims,ime, kms,kme -
+!     its,ite, kts,kte -
+!     a                -
+!     bnf              -
+!     lnf              -
+!
+!   output argument list:
+!     a                -
+!     bnf              -
+!     lnf              -
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3786,14 +7063,44 @@ DO k=kte-1,kts,-1
 ENDDO
 END SUBROUTINE vbnrf2k
 
+
 SUBROUTINE vbnrf3k(a,nol,lnf,bnf,                                           &
        ids,ide, jds,jde, kds,kde,                                           &
        ims,ime, jms,jme, kms,kme,                                           &
        its,ite, jts,jte, kts,kte                                            )
 !============================================================================
-! Vertical bounded grid inhomogeneous recursive filter, 
-! 3-dimensional, active index k
-!============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    vbnrf3k
+!
+!   prgrmmr:   
+!
+! abstract:      Vertical bounded grid inhomogeneous recursive filter, 
+!                3-dimensional, active index k
+!
+! program history log:
+!   2008-04-28  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol                       -
+!     ids,ide, jds,jde, kds,kde -
+!     ims,ime, jms,jme, kms,kme -
+!     its,ite, jts,jte, kts,kte -
+!     a                         -
+!     bnf                       -
+!     lnf                       -
+!
+!   output argument list:
+!     a                         -
+!     bnf                       -
+!     lnf                       -
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3835,11 +7142,41 @@ DO j=jts,jte
 ENDDO
 END SUBROUTINE vbnrf3k
 
+
 SUBROUTINE hbncij(a,hamp,nol,lnfi,bnfi,lnfj,bnfj,                           &
      ids,ide, jds,jde,                                                      &
      ims,ime, jms,jme,                                                      &
      its,ite, jts,jte                                                       )
 !============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    hbncij 
+!
+!   prgrmmr:   
+!
+! abstract:      
+!
+! program history log:
+!   2008-04-28  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol              -
+!     ids,ide, jds,jde -
+!     ims,ime, jms,jme -
+!     its,ite, jts,jte -
+!     hamp,bnfi,bnfj   -
+!     lnfi,lnfj        -
+!     a                -
+!
+!   output argument list:
+!     a                -
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3874,11 +7211,41 @@ CALL hbnrf2j(a,nol,lnfj,bnfj,             &
 !----------
 END SUBROUTINE hbncij
 
+
 SUBROUTINE hbncji(a,hamp,nol,lnfi,bnfi,lnfj,bnfj,                           &
      ids,ide, jds,jde,                                                      &
      ims,ime, jms,jme,                                                      &
      its,ite, jts,jte                                                       )
 !============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    hbncji
+!
+!   prgrmmr:   
+!
+! abstract:     
+!
+! program history log:
+!   2008-04-28  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol              -
+!     ids,ide, jds,jde -
+!     ims,ime, jms,jme -
+!     its,ite, jts,jte -
+!     hamp,bnfi,bnfj   -
+!     lnfi,lnfj        -
+!     a                -
+!
+!   output argument list:
+!     a                -
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3913,11 +7280,41 @@ ENDDO
 !---------------
 END SUBROUTINE hbncji
 
+
 SUBROUTINE hbncijk(a,hamp,nol,lnfi,bnfi,lnfj,bnfj,lnfk,bnfk,                &
        ids,ide, jds,jde, kds,kde,                                           &
        ims,ime, jms,jme, kms,kme,                                           &
        its,ite, jts,jte, kts,kte                                            )
 !============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    hbncijk
+!
+!   prgrmmr:   
+!
+! abstract: 
+!
+! program history log:
+!   2008-04-28  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol                       -
+!     ids,ide, jds,jde, kds,kde -
+!     ims,ime, jms,jme, kms,kme -
+!     its,ite, jts,jte, kts,kte -
+!     hamp,bnfi,bnfj,bnfk       -
+!     lnfi,lnfj,lnfk            -
+!     a                         -
+!
+!   output argument list:
+!     a                         -
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -3958,11 +7355,41 @@ call vbnrf3k(a,nol,lnfk,bnfk,             &
        its,ite, jts,jte, kts,kte)
 END SUBROUTINE hbncijk
 
+
 SUBROUTINE hbnckji(a,hamp,nol,lnfi,bnfi,lnfj,bnfj,lnfk,bnfk,                &
        ids,ide, jds,jde, kds,kde,                                           &
        ims,ime, jms,jme, kms,kme,                                           &
        its,ite, jts,jte, kts,kte                                            )
 !============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    hbnckji
+!
+!   prgrmmr:   
+!
+! abstract:
+!
+! program history log:
+!   2008-04-28  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nol                       -
+!     ids,ide, jds,jde, kds,kde -
+!     ims,ime, jms,jme, kms,kme -
+!     its,ite, jts,jte, kts,kte -
+!     hamp,bnfi,bnfj,bnfk       -
+!     lnfi,lnfj,lnfk            -
+!     a                         -
+!
+!   output argument list:
+!     a                         -
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   IMPLICIT NONE
 
   INTEGER, INTENT(IN   ) :: nol
@@ -4005,25 +7432,38 @@ ENDDO
 END SUBROUTINE hbnckji
 
 
-!ENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDEND
-!						********************
-!						* hgnrf.f90        *
-!						* PURSER 1994/1999 *
-!                                               *   FUJITA 1999    *
-!						********************
-!ENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDEND
-
-!						********************
-!						* rfit.f90         *
-!						* PURSER 1994/1999 *
-!                                               *   FUJITA 1999    *
-!						********************
-
 !============================================================================
 subroutine rfit(ng,sig,nu, ns,nw,ssig,snu,ins1,wts)  
 !============================================================================
-! R. J. Purser, NCEP 2001
-!----------------------------------------------------------------------------
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    rfit
+!
+!   prgrmmr:     R. J. Purser, NCEP 2001
+!
+! abstract:     
+!
+! program history log:
+!   2008-04-28  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     ng
+!     sig,nu
+!     ins1
+!     wts
+!
+!   output argument list:
+!     ins1
+!     wts
+!     ns,nw
+!     ssig,snu
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 use vkind
 use module_fitcons
 implicit none
@@ -4034,12 +7474,11 @@ real(vp),dimension(ng),       intent(OUT  ):: ssig,snu
 integer, dimension(ng),       intent(INOUT):: ins1
 real(vp),dimension(no,ng),    intent(INOUT):: wts
 !----------------------------------------------------------------------------
-integer                                    :: i,i1,im,k,l,is,is0,is1,isn
+integer                                    :: i,i1,im,k,l,is
 real(vp)                                   :: t
 real(vp),dimension(-nohm:ng+noh)           :: dcdg
 real(vp),dimension(-noh:ng+noh)            :: cofg,cofs
-real(vp),dimension(ng)                     :: dsdg,dhdg,rsnu
-real(vp)                                   :: rnu
+real(vp),dimension(ng)                     :: dsdg,dhdg
 !============================================================================
 nw=0
 do i=1,ng
@@ -4174,11 +7613,42 @@ call stogt(ns,ng,ins1,wts, snu,nu)
 
 end subroutine rfit
 
+
 !============================================================================
 subroutine jfit(ng,ig1,igm,ns,iw,cofg,dsdg,dhdg,cofs,ins1,wts)
 !============================================================================
-! R. J. Purser, NCEP 2001
-!----------------------------------------------------------------------------
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    jfit
+!
+!   prgrmmr:     R. J. Purser, NCEP 2001
+!
+! abstract: 
+!
+! program history log:
+!   2008-04-28  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     ng,ig1,igm
+!     ns,iw
+!     dsdg,dhdg
+!     cofg
+!     cofs
+!     ins1
+!     wts
+!
+!   output argument list:
+!     ns,iw
+!     cofs
+!     ins1
+!     wts
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 use vkind
 use module_fitcons
 implicit none
@@ -4191,8 +7661,8 @@ integer, dimension(ng),          intent(INOUT):: ins1
 real(vp),dimension(no,ng),       intent(INOUT):: wts
 !----------------------------------------------------------------------------
 real(vp),dimension(-noh:ng+noh) :: sofg,dsdgt
-real(vp)                        :: et,estar,destar,r,dr,sm,hm
-integer                         :: i,l,ie,iep,ie0,ie1,ien,ig0,is0,ism,init
+real(vp)                        :: et,estar,destar,r,dr,sm
+integer                         :: i,l,ie,iep,ie1,ien,ig0,is0,ism,init
 !============================================================================
 
 !----------------------------------------------------------------------------
@@ -4345,17 +7815,36 @@ enddo
 cofs(ism)=cofg(igm)                            ! <- End value directly
 end subroutine jfit
 
+
 !============================================================================
 subroutine stog(ns,ng,ins1,wts, as,ag) 
 !============================================================================
-! R. J. Purser NCEP 2001
-! Forward interpolation from s-grid to g-grid
-! --> ns,ng: sizes of s and g grids
-! --> ins1 : array of 1st stencil indices (s-grid) for each target (g) point.
-! --> wts  : interpolation weights for each target (g-grid point).
-! --> as   : s-grid array of source data.
-! <-- ag   : g-grid array of interpolated target data.
-!============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    stog
+!
+!   prgrmmr:     R. J. Purser NCEP 2001
+!
+! abstract:      Forward interpolation from s-grid to g-grid
+!
+! program history log:
+!   2008-04-28  safford -- add subprogram doc block
+!
+!   input argument list:
+!     ns,ng - sizes of s and g grids
+!     ins1  - array of 1st stencil indices (s-grid) for each target (g) point.
+!     wts   - interpolation weights for each target (g-grid point).
+!     as    - s-grid array of source data.
+!
+!   output argument list:
+!     ag    - g-grid array of interpolated target data.
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 use vkind
 implicit none
 integer, parameter                      :: noh=3,no=noh*2,nom=no-1
@@ -4380,12 +7869,36 @@ do i=1,ng
 enddo
 end subroutine stog
 
+
 !============================================================================
 subroutine stogt(ns,ng,ins1,wts, as,ag) 
 !============================================================================
-! Perform the transpose of the operation defined by stog
-! R. J. Purser NCEP 2001
-!============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    stogt
+!
+!   prgrmmr:     R. J. Purser NCEP 2001
+!
+! abstract:      Perform the transpose of the operation defined by stog
+!
+! program history log:
+!   2008-04-28  safford -- add subprogram doc block
+!
+!   input argument list:
+!     ns,ng
+!     ins1
+!     wts
+!     ag
+!
+!   output argument list:
+!     as
+!
+! attributes:
+!   language:  f90  
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 use vkind
 implicit none
 integer, parameter                      :: noh=3,no=noh*2,nom=no-1
@@ -4410,11 +7923,4 @@ do i=1,ng
 enddo
 end subroutine stogt
 
-!ENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDEND
-!						********************
-!						* rfit.f90         *
-!						* PURSER 1994/1999 *
-!                                               *   FUJITA 1999    *
-!						********************
-!ENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDENDEND
 

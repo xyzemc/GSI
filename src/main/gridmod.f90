@@ -36,6 +36,8 @@ module gridmod
 !   2007-05-07  treadon - add ncep_sigio, ncepgfs_head(v)
 !   2007-05-08  kleist  - add variables for fully generalized vertical coordinate
 !   2007-10-24  parrish - fix error in wind rotation reference angle field
+!   2009-01-28  todling - remove original GMAO interface
+!   2009-01-09  gayno   - added variables lpl_gfs and dx_gfs
 !
 ! !AUTHOR: 
 !   kleist           org: np20                date: 2003-09-25
@@ -46,12 +48,11 @@ module gridmod
   logical regional          ! .t. for regional background/analysis
   logical diagnostic_reg    ! .t. to activate regional analysis diagnostics
 
-  logical gmao_intfc        ! .t. if model is GMAO gcm
-
   logical ncep_sigio        ! .t. if using ncep sgio format file
 
   logical eta_regional      !
   logical wrf_nmm_regional  !
+  logical nems_nmmb_regional! .t. to run with NEMS NMMB model
   logical wrf_mass_regional !
   logical twodvar_regional  ! .t. to run code in regional 2D-var mode
   logical netcdf            ! .t. for regional netcdf i/o
@@ -61,7 +62,16 @@ module gridmod
   logical half_grid         !
   logical update_regsfc     !
 
-  integer(i_kind) nsig1o            ! no. of levels distributed on each processor
+  character(1) nmmb_reference_grid      ! ='H': use nmmb H grid as reference for analysis grid
+                                        ! ='V': use nmmb V grid as reference for analysis grid
+  real(r_kind) grid_ratio_nmmb ! ratio of analysis grid to nmmb model grid in nmmb model grid units.
+  character(3) nmmb_verttype   !   'OLD' for old vertical coordinate definition
+                               !                old def: p = eta1*pdtop+eta2*(psfc-pdtop-ptop)+ptop
+                               !   'NEW' for new vertical coordinate definition
+                               !                new def: p = eta1*pdtop+eta2*(psfc-ptop)+ptop
+
+  integer(i_kind) nsig1o            ! max no. of levels distributed on each processor
+  integer(i_kind) nnnn1o            ! actual of levels distributed on current processor
   integer(i_kind) nlat              ! no. of latitudes
   integer(i_kind) nlon              ! no. of longitudes
   integer(i_kind) nlat_sfc          ! no. of latitudes surface files
@@ -103,6 +113,7 @@ module gridmod
   integer(i_kind) lon2              ! no. of lons on subdomain (buffer points on ends)
   integer(i_kind) latlon11          ! horizontal points in subdomain (with buffer)
   integer(i_kind) latlon1n          ! no. of points in subdomain (with buffer)
+  integer(i_kind) latlon1n1         ! no. of points in subdomain for 3d prs (with buffer)
   integer(i_kind) iglobal           ! number of horizontal points on global grid
   integer(i_kind) itotsub           ! number of horizontal points of all subdomains combined
   integer(i_kind) msig              ! number of profile layers to use when calling RTM
@@ -112,28 +123,21 @@ module gridmod
   logical periodic                              ! logical flag for periodic e/w domains
   logical,allocatable,dimension(:):: periodic_s ! logical flag for periodic e/w subdomain (all tasks)
 
+  integer(i_kind),allocatable,dimension(:):: lpl_gfs ! number grid points for each row, GFS grid
   integer(i_kind),allocatable,dimension(:):: jstart  ! start lon of the whole array on each pe
   integer(i_kind),allocatable,dimension(:):: istart  ! start lat of the whole array on each pe
   integer(i_kind),allocatable,dimension(:):: ilat1   ! no. of lats for each subdomain (no buffer)
   integer(i_kind),allocatable,dimension(:):: jlon1   ! no. of lons for each subdomain (no buffer)
   integer(i_kind),allocatable,dimension(:):: ijn_s   ! no. of horiz. points for each subdomain (with buffer)
   integer(i_kind),allocatable,dimension(:):: ijn     ! no. of horiz. points for each subdomain (no buffer)
-  integer(i_kind),allocatable,dimension(:):: ijn_s3  ! 3 times no. of horiz. pnts for each subdomain (with buffer)
   integer(i_kind),allocatable,dimension(:):: isc_g   ! no. array, count for send to global; size of subdomain
-  integer(i_kind),allocatable,dimension(:):: ijn3    ! 3 times no. of horiz. pnts for each subdomain (no buffer)
 
                                                ! comm. array ...
   integer(i_kind),allocatable,dimension(:):: irc_s     !   count for receive on subdomain
-  integer(i_kind),allocatable,dimension(:):: irc_s3    !   count for receive on subdomain
-  integer(i_kind),allocatable,dimension(:):: isc_g3    !   count for send to global; 3*size of subdomain
   integer(i_kind),allocatable,dimension(:):: ird_s     !   displacement for receive on subdomain
   integer(i_kind),allocatable,dimension(:):: isd_g     !   displacement for send to global
-  integer(i_kind),allocatable,dimension(:):: ird_s3    !   displacement for receive on subdomain
-  integer(i_kind),allocatable,dimension(:):: isd_g3    !   displacement for send to global
   integer(i_kind),allocatable,dimension(:):: displs_s  !   displacement for send from subdomain
-  integer(i_kind),allocatable,dimension(:):: displs_s3 !   displacement for send from subdomain
   integer(i_kind),allocatable,dimension(:):: displs_g  !   displacement for receive on global grid
-  integer(i_kind),allocatable,dimension(:):: displs_g3 !   displacement for receive on global grid
 
                                              ! array element indices for location of ...
   integer(i_kind),allocatable,dimension(:):: ltosi   !   lats in iglobal array excluding buffer
@@ -149,6 +153,7 @@ module gridmod
   real(r_kind) dlm0,dph0
   real(r_kind) gencode
 
+  real(r_kind),allocatable,dimension(:):: dx_gfs  ! resolution of GFS grid in degrees
   real(r_kind),allocatable,dimension(:):: rlats   ! grid latitudes (radians)
   real(r_kind),allocatable,dimension(:):: rlons   ! grid longitudes (radians)
   real(r_kind),allocatable,dimension(:):: rlats_sfc   ! grid latitudes (radians) surface
@@ -186,7 +191,6 @@ module gridmod
   integer(i_kind) nlon_regional,nlat_regional,nsoil_regional
   integer(i_kind) itb_regional,jtb_regional
   integer(i_kind) order_a2e,order_e2a
-  integer(i_kind) nhr_assimilation
   real(r_kind) regional_fhr
   integer(i_kind) regional_time(6)
 
@@ -276,6 +280,7 @@ contains
 !
 !EOP
 !-------------------------------------------------------------------------
+    use constants, only: two
     implicit none
 
     integer k
@@ -293,16 +298,19 @@ contains
     ncloud=0
     gencode = 80
     regional = .false.
-    gmao_intfc = .false.
     ncep_sigio = .true.
     periodic = .false.
     wrf_nmm_regional = .false.
     wrf_mass_regional = .false.
+    nems_nmmb_regional = .false.
     twodvar_regional = .false. 
     netcdf = .false.
     hybrid = .false.
     filled_grid = .false.
     half_grid = .false.
+    grid_ratio_nmmb=sqrt(two)
+    nmmb_reference_grid='H'
+    nmmb_verttype='OLD'
     lat1 = nlat
     lon1 = nlon
     lat2 = lat1+2
@@ -312,7 +320,6 @@ contains
     update_regsfc=.false.
     nlon_regional=0
     nlat_regional=0
-    nhr_assimilation=6
 
     msig = nsig
     do k=1,100
@@ -383,6 +390,7 @@ contains
     vlevs=(6*nsig)+4
     nsig1o=vlevs/npe
     if(mod(vlevs,npe)/=0) nsig1o=nsig1o+1
+    nnnn1o=nsig1o                  ! temporarily set the number of levels to nsig1o
 
 ! Sum total number of vertical layers for RTM call
     msig = 0
@@ -411,6 +419,7 @@ contains
 !   2004-05-13  kleist, documentation
 !   2004-07-15  todling, protex-compliant prologue
 !   2005-03-03  treadon - add implicit none
+!   2008-11-28  todling - latlon1n1 (for 3d prs)
 !
 ! !REMARKS:
 !   language: f90
@@ -427,6 +436,7 @@ contains
     lon2 = lon1+2
     latlon11 = lat2*lon2
     latlon1n = latlon11*nsig
+    latlon1n1= latlon1n+latlon11
 
     return
   end subroutine init_subdomain_vars
@@ -449,7 +459,6 @@ contains
 !   2004-05-13  kleist, documentation
 !   2004-07-15  todling, protex-compliant prologue
 !   2005-03-03  treadon - add implicit none
-!   2009-08-07  Hu - initialize ak5 and bk5
 !
 ! !REMARKS:
 !   language: f90
@@ -465,8 +474,6 @@ contains
     allocate(rlats(nlat),rlons(nlon),coslon(nlon),sinlon(nlon),&
              wgtlats(nlat),rbs2(nlat),corlats(nlat))
     allocate(ak5(nsig+1),bk5(nsig+1),ck5(nsig+1),tref5(nsig))
-    ak5=0
-    bk5=0
     return
   end subroutine create_grid_vars
     
@@ -502,6 +509,7 @@ contains
     deallocate(rlats,rlons,corlats,coslon,sinlon,wgtlats,rbs2)
     deallocate(ak5,bk5,ck5,tref5)
     if (allocated(cp5)) deallocate(cp5)
+    if (allocated(dx_gfs)) deallocate(dx_gfs)
     return
   end subroutine destroy_grid_vars
 
@@ -546,25 +554,10 @@ contains
 !-------------------------------------------------------------------------
     integer(i_kind) i
 
-    allocate(ltosi(nlat*nlon),ltosj(nlat*nlon),&
-         ltosi_s(2*nlat*nlon),ltosj_s(2*nlat*nlon))
-
     allocate(periodic_s(npe),jstart(npe),istart(npe),&
          ilat1(npe),jlon1(npe),&
        ijn_s(npe),irc_s(npe),ird_s(npe),displs_s(npe),&
-       ijn_s3(npe),irc_s3(npe),ird_s3(npe),displs_s3(npe),&
-       ijn(npe),isc_g(npe),isd_g(npe),displs_g(npe),&
-       ijn3(npe),isc_g3(npe),isd_g3(npe),displs_g3(npe))
-
-    do i=1,nlat*nlon
-      ltosi(i)=izero
-      ltosj(i)=izero
-    end do
-    
-    do i=1,2*nlat*nlon
-      ltosi_s(i)=izero
-      ltosj_s(i)=izero
-    end do
+       ijn(npe),isc_g(npe),isd_g(npe),displs_g(npe))
 
     do i=1,npe
       periodic_s(i)= .false.
@@ -576,18 +569,10 @@ contains
       irc_s(i)     = izero
       ird_s(i)     = izero
       displs_s(i)  = izero
-      ijn_s3(i)    = izero
-      irc_s3(i)    = izero
-      ird_s3(i)    = izero
-      displs_s3(i) = izero
       ijn(i)       = izero
       isc_g(i)     = izero
       isd_g(i)     = izero
       displs_g(i)  = izero
-      ijn3(i)      = izero
-      isc_g3(i)    = izero
-      isd_g3(i)    = izero
-      displs_g3(i) = izero
     end do
 
     return
@@ -611,6 +596,7 @@ contains
 !   2004-05-13  kleist, documentation
 !   2004-07-15  todling, protex-compliant prologue
 !   2005-03-03  treadon - add implicit none
+!   2007-02-20  todling - somehow dealloc for irc_s,ird_s got lost
 !
 ! !REMARKS:
 !   language: f90
@@ -624,10 +610,8 @@ contains
     implicit none
     deallocate(ltosi,ltosj,ltosi_s,ltosj_s)
     deallocate(periodic_s,jstart,istart,ilat1,jlon1,&
-       ijn_s,displs_s,&
-       ijn_s3,irc_s3,ird_s3,displs_s3,&
-       ijn,isc_g,isd_g,displs_g,&
-       ijn3,isc_g3,isd_g3,displs_g3)
+       ijn_s,irc_s,ird_s,displs_s,&
+       ijn,isc_g,isd_g,displs_g)
 
     return
   end subroutine destroy_mapping
@@ -648,6 +632,7 @@ contains
 
     use kinds, only: r_kind,r_single,i_kind
     use constants, only: zero, one, three, deg2rad,pi,half, two
+    use mod_nmmb_to_a, only: init_nmmb_to_a,nxa,nya,nmmb_h_to_a
     implicit none
 
 ! !INPUT PARAMETERS:
@@ -689,6 +674,7 @@ contains
 !   2004-12-15  treadon - explicity set value for inges
 !   2005-05-24  pondeca - add the surface analysis option
 !   2006-04-06  middlecoff - changed inges from 21 to lendian_in so it can be set to little endian.
+!   2009-01-02  todling - remove unused vars
 !
 ! !REMARKS:
 !   language: f90
@@ -700,16 +686,11 @@ contains
 !EOP
 !-------------------------------------------------------------------------
 
-    real(r_kind) del,pthis,rlongl
     logical fexist
-    real(r_single) dt
-    integer(i_kind) nfcst,nbc,list
-    integer(i_kind) im,jm,lm
-    integer(i_kind) i,j,k,kk
-    real(r_single)dy,cpgfv,en,ent,r,pt,tddamp,f4d,f4q,ef4t,pdtop
+    integer(i_kind) i,j,k
+    real(r_single)pt,pdtop
     real(r_single),allocatable:: deta1(:),aeta1(:),eta1(:),deta2(:),aeta2(:),eta2(:)
-    real(r_single),allocatable:: ptbl(:,:),ttbl(:,:)
-    real(r_single) r1,pt1,tsph,wbd,sbd,tlm0d,tph0d,dlmd,dphd
+    real(r_single) dlmd,dphd
     real(r_single),allocatable:: glat(:,:),glon(:,:)
     real(r_single),allocatable:: dx_nmm(:,:),dy_nmm(:,:)
     real(r_single),allocatable:: dx_mc(:,:),dy_mc(:,:)
@@ -723,12 +704,10 @@ contains
 
     real(r_kind),allocatable::glat_an(:,:),glon_an(:,:)
     real(r_kind),allocatable:: dx_an(:,:),dy_an(:,:)
-    integer(i_kind) ierror
     character(6) filename
-    real(r_kind) rlong_sw,rlatg_sw,rlatgl,errmax
     integer(i_kind) ihr
-    logical outside
     real(r_kind),allocatable::gxtemp(:,:),gytemp(:,:)
+    real(r_single),allocatable::gxtemp4(:,:),gytemp4(:,:)
     real(r_kind),allocatable::gxtemp_an(:,:),gytemp_an(:,:)
     real(r_kind) rtemp
     real(r_kind) rlon_min_ll,rlon_max_ll,rlat_min_ll,rlat_max_ll
@@ -1036,8 +1015,178 @@ contains
       deallocate(aeta1,eta1,glat,glon,glat_an,glon_an)
       deallocate(dx_mc,dy_mc)
 
-    end if   ! end if wrf_nmm section
+    end if   ! end if wrf mass core section
 
+    if(nems_nmmb_regional) then     ! begin nems nmmb section
+! This is a nems_nmmb regional run.
+      if(diagnostic_reg.and.mype.eq.0)  &
+        write(6,*)' in init_reg_glob_ll, initializing for nems nmmb regional run'
+
+! Get regional constants
+      ihr=-999
+      do i=0,12
+        write(filename,'("sigf",i2.2)')i
+        inquire(file=filename,exist=fexist)
+        if(fexist) then
+          ihr=i
+          exit
+        end if
+      end do
+      if(ihr.lt.0) then
+        write(6,*)' NO INPUT FILE AVAILABLE FOR REGIONAL (NEMS NMMB) ANALYSIS.  PROGRAM STOPS'
+        call stop2(99)
+      end if
+
+      if(diagnostic_reg.and.mype.eq.0) write(6,*)' in init_reg_glob_ll, lendian_in=',lendian_in
+      open(lendian_in,file=filename,form='unformatted')
+      rewind lendian_in
+      read(lendian_in) regional_time,regional_fhr,nlon_regional,nlat_regional,nsig, &
+                  dlmd,dphd,pt,pdtop
+
+      if(diagnostic_reg.and.mype.eq.0) write(6,'(" in init_reg_glob_ll, yr,mn,dy,h,m,s=",6i6)') &
+               regional_time
+      if(diagnostic_reg.and.mype.eq.0) write(6,'(" in init_reg_glob_ll, nlon_regional=",i6)') &
+               nlon_regional
+      if(diagnostic_reg.and.mype.eq.0) write(6,'(" in init_reg_glob_ll, nlat_regional=",i6)') &
+               nlat_regional
+      if(diagnostic_reg.and.mype.eq.0) write(6,'(" in init_reg_glob_ll, nsig=",i6)') nsig
+
+      call init_nmmb_to_a(nmmb_reference_grid,grid_ratio_nmmb,nlon_regional,nlat_regional)
+      nlon=nxa ; nlat=nya
+
+      rlon_min_ll=1
+      rlat_min_ll=1
+      rlon_max_ll=nlon
+      rlat_max_ll=nlat
+   !  rlat_min_dd=rlat_min_ll+three/grid_ratio_nmmb
+   !  rlat_max_dd=rlat_max_ll-three/grid_ratio_nmmb
+   !  rlon_min_dd=rlon_min_ll+six/grid_ratio_nmmb
+   !  rlon_max_dd=rlon_max_ll-six/grid_ratio_nmmb
+      rlat_min_dd=rlat_min_ll+r1_5*1.412/grid_ratio_nmmb
+      rlat_max_dd=rlat_max_ll-r1_5*1.412/grid_ratio_nmmb
+      rlon_min_dd=rlon_min_ll+three*1.412/grid_ratio_nmmb
+      rlon_max_dd=rlon_max_ll-three*1.412/grid_ratio_nmmb
+
+      if(diagnostic_reg.and.mype.eq.0) then
+        write(6,*)' in init_reg_glob_ll, rlat_min_dd=',rlat_min_dd
+        write(6,*)' in init_reg_glob_ll, rlat_max_dd=',rlat_max_dd
+        write(6,*)' in init_reg_glob_ll, rlon_min_dd=',rlon_min_dd
+        write(6,*)' in init_reg_glob_ll, rlon_max_dd=',rlon_max_dd
+        write(6,*)' in init_reg_glob_ll, rlat_min_ll=',rlat_min_ll
+        write(6,*)' in init_reg_glob_ll, rlat_max_ll=',rlat_max_ll
+        write(6,*)' in init_reg_glob_ll, rlon_min_ll=',rlon_min_ll
+        write(6,*)' in init_reg_glob_ll, rlon_max_ll=',rlon_max_ll
+        write(6,*)' in init_reg_glob_ll, nmmb_reference_grid=',nmmb_reference_grid
+        write(6,*)' in init_reg_glob_ll, grid_ratio_nmmb=',grid_ratio_nmmb
+        write(6,*)' in init_reg_glob_ll, nlon,nlat=',nlon,nlat
+      end if
+
+! Get vertical info for hybrid coordinate and sigma coordinate we will interpolate to
+      allocate(aeta1_ll(nsig),eta1_ll(nsig+1),aeta2_ll(nsig),eta2_ll(nsig+1))
+      allocate(deta1(nsig),aeta1(nsig),eta1(nsig+1),deta2(nsig),aeta2(nsig),eta2(nsig+1))
+      allocate(glat(nlon_regional,nlat_regional),glon(nlon_regional,nlat_regional))
+      allocate(dx_nmm(nlon_regional,nlat_regional),dy_nmm(nlon_regional,nlat_regional))
+      read(lendian_in) deta1
+      read(lendian_in) aeta1
+      read(lendian_in) eta1
+      read(lendian_in) deta2
+      read(lendian_in) aeta2
+      read(lendian_in) eta2
+!----------------------------------------detect if new nmmb coordinate:
+      nmmb_verttype='OLD'
+      if(aeta1(1).lt..6_r_single) then
+        if(diagnostic_reg.and.mype.eq.0) write(6,*)' in init_reg_glob_ll, detect new nmmb vert coordinate'
+        aeta1=aeta1+aeta2
+        eta1=eta1+eta2
+        nmmb_verttype='NEW'
+      end if
+
+      if(diagnostic_reg.and.mype.eq.0) write(6,*)' in init_reg_glob_ll, pdtop,pt=',pdtop,pt
+      if(diagnostic_reg.and.mype.eq.0) then
+        write(6,*)' in init_reg_glob_ll, aeta1 aeta2 follow:'
+        do k=1,nsig
+          write(6,'(" k,aeta1,aeta2=",i3,2f10.4)') k,aeta1(k),aeta2(k)
+        end do
+        write(6,*)' in init_reg_glob_ll, deta1 deta2 follow:'
+        do k=1,nsig
+          write(6,'(" k,deta1,deta2=",i3,2f10.4)') k,deta1(k),deta2(k)
+        end do
+        write(6,*)' in init_reg_glob_ll, deta1 deta2 follow:'
+        do k=1,nsig+1
+          write(6,'(" k,eta1,eta2=",i3,2f10.4)') k,eta1(k),eta2(k)
+        end do
+      end if
+
+      pdtop_ll=r0_01*pdtop                    !  check units--this converts to mb
+      pt_ll=r0_01*pt                          !  same here
+
+      if(diagnostic_reg.and.mype.eq.0) write(6,*)' in init_reg_glob_ll, pdtop_ll,pt_ll=',pdtop_ll,pt_ll
+      eta1_ll=eta1
+      aeta1_ll=aeta1
+      eta2_ll=eta2
+      aeta2_ll=aeta2
+      read(lendian_in) glat,dx_nmm
+      read(lendian_in) glon,dy_nmm
+      close(lendian_in)
+
+      allocate(region_lat(nlat,nlon),region_lon(nlat,nlon))
+      allocate(region_dy(nlat,nlon),region_dx(nlat,nlon))
+      allocate(coeffy(nlat,nlon),coeffx(nlat,nlon))
+
+!   generate earth lats and lons on analysis grid
+
+      allocate(glat_an(nlon,nlat),glon_an(nlon,nlat))
+      allocate(dx_an(nlat,nlon),dy_an(nlat,nlon))
+
+      allocate(gxtemp4(nlon_regional,nlat_regional))
+      allocate(gytemp4(nlon_regional,nlat_regional))
+      allocate(gxtemp_an(nlat,nlon))
+      allocate(gytemp_an(nlat,nlon))
+      sign_pole=-one
+      pihalf=half*pi
+      if(maxval(glat)/deg2rad.lt.zero) sign_pole=one
+      do j=1,nlat_regional
+       do i=1,nlon_regional
+        rtemp=pihalf-sign_pole*glat(i,j)
+        gxtemp4(i,j)=rtemp*cos(one*glon(i,j))
+        gytemp4(i,j)=rtemp*sin(one*glon(i,j))
+       end do
+      end do
+      call nmmb_h_to_a(gxtemp4,gxtemp_an)
+      call nmmb_h_to_a(gytemp4,gytemp_an)
+      do i=1,nlon
+        do j=1,nlat
+        rtemp=sqrt(gxtemp_an(j,i)**2+gytemp_an(j,i)**2)
+        glat_an(i,j)=sign_pole*(pihalf-rtemp)
+        glon_an(i,j)=atan2(gytemp_an(j,i),gxtemp_an(j,i))
+       end do
+      end do
+      gxtemp4=dx_nmm
+      gytemp4=dy_nmm
+      call nmmb_h_to_a(gxtemp4,dx_an)
+      call nmmb_h_to_a(gytemp4,dy_an)
+      dx_an=grid_ratio_nmmb*dx_an
+      dy_an=grid_ratio_nmmb*dy_an
+      deallocate(gxtemp4,gytemp4,gxtemp_an,gytemp_an)
+
+      do k=1,nlon
+        do i=1,nlat
+          region_lat(i,k)=glat_an(k,i)
+          region_lon(i,k)=glon_an(k,i)
+          region_dy(i,k)=dy_an(i,k)
+          region_dx(i,k)=dx_an(i,k)
+          coeffy(i,k)=half/dy_an(i,k)
+          coeffx(i,k)=half/dx_an(i,k)
+        end do
+      end do
+
+! ???????  later change glat_an,glon_an to region_lat,region_lon, with dimensions flipped
+      call init_general_transform(glat_an,glon_an,mype)
+
+      deallocate(deta1,aeta1,eta1,deta2,aeta2,eta2,glat,glon,glat_an,glon_an)
+      deallocate(dx_nmm,dy_nmm,dx_an,dy_an)
+
+    end if   ! end if nems nmmb section
 
 !   Begin surface analysis section (regional 2D-var)
     if(twodvar_regional) then 
@@ -1154,6 +1303,7 @@ contains
   integer(i_kind) mype
 
   real(r_kind),parameter:: r0_01=0.01_r_kind
+  real(r_kind),parameter:: rbig =1.0e30_r_kind
   real(r_kind) xbar_min,xbar_max,ybar_min,ybar_max
   real(r_kind) clon,slon,r_of_lat,xbar,ybar
   integer(i_kind) i,j,istart0,iend,iinc,itemp,ilast,jlast
@@ -1252,9 +1402,9 @@ contains
    cos_beta_ref(i,j)=cos(beta_ref(i,j))
    sin_beta_ref(i,j)=sin(beta_ref(i,j))
   end do
-  beta_diff_max=-huge(beta_diff_max)
-  beta_diff_max_gt_20=-huge(beta_diff_max_gt_20)
-  beta_diff_min= huge(beta_diff_min)
+  beta_diff_max=-rbig
+  beta_diff_max_gt_20=-rbig
+  beta_diff_min= rbig
   beta_diff_rms=zero
   count_beta_diff=zero
   count_beta_diff_gt_20=zero
@@ -1423,10 +1573,9 @@ contains
 !EOP
 !-------------------------------------------------------------------------
 
-    real(r_kind) clon,slon,r_of_lat,xtilde,ytilde
+    real(r_kind) r_of_lat,xtilde,ytilde
     real(r_kind) dtilde,etilde,xbar,ybar
     real(r_kind) d1tilde,d2tilde,e1tilde,e2tilde
-    integer(i_kind) itilde,jtilde
     integer(i_kind) i0,j0,ip,jp
 
     i0=nint(x)
@@ -1481,7 +1630,7 @@ contains
   real(r_kind),intent(in)::x0(nx0,ny0),y0(nx0,ny0)
  
   real(r_kind) dista,distb,dist2,dist2min
-  integer(i_kind) i,i1mirror,inext,j,j1mirror,jnext
+  integer(i_kind) i,inext,j,jnext
 
   do
    i0=ilast
@@ -2272,7 +2421,7 @@ contains
 !-------------------------------------------------------------------------
 !  Declare local variables
    integer(i_kind) i,j,k,jj,nlatm2
-   real(r_kind) rnlon,polnu,polnv,polsu,polsv
+   real(r_kind) polnu,polnv,polsu,polsv
    real(r_kind),dimension(nlon,nlat):: grid,grid2
 
 !  Transfer contents of input grid to local work array

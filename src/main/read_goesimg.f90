@@ -1,5 +1,6 @@
 subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
-     infile,lunout,obstype,nread,ndata,nodata,twind,sis)
+     infile,lunout,obstype,nread,ndata,nodata,twind,sis, &
+     mype_root,mype_sub,npe_sub,mpi_comm_sub)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    read_goesimg                    read goes imager data
@@ -31,6 +32,9 @@ subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
 !   2006-05-19  eliu    - add logic to reset relative weight when all channels not used
 !   2006-06-19  kleist - correct bug in global grid relative dlat,dlon
 !   2006-07-28  derber  - add solar and satellite azimuth angles remove isflg from output
+!   2007-03-01  tremolet - measure time from beginning of assimilation window
+!   2008-10-14  derber - allow mpi_io
+!   2009-04-21  derber  - add ithin to call to makegrids
 !
 !   input argument list:
 !     mype     - mpi task id
@@ -57,21 +61,26 @@ subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
 !$$$
   use kinds, only: r_kind,r_double,i_kind
   use satthin, only: super_val,itxmax,makegrids,map2tgrid,destroygrids, &
-            checkob,finalcheck
+            checkob,finalcheck,score_crit
   use gridmod, only: diagnostic_reg,regional,nlat,nlon,txy2ll,tll2xy,rlats,rlons
-  use constants, only: deg2rad,zero,one,izero,ione,rad2deg
+  use constants, only: deg2rad,zero,one,izero,ione,rad2deg,r60inv
   use obsmod, only: iadate,offtime_data
   use radinfo, only: iuse_rad,jpch_rad,nusis
+  use gsi_4dvar, only: iadatebgn,iadateend,l4dvar,idmodel,iwinbgn,winlen
   implicit none
 
 ! Declare passed variables
-  character(10),intent(in):: infile,obstype,jsatid
-  character(20),intent(in):: sis
+  character(len=*),intent(in):: infile,obstype,jsatid
+  character(len=*),intent(in):: sis
   integer(i_kind),intent(in):: mype,lunout,ithin
   integer(i_kind),intent(inout):: ndata,nodata
   integer(i_kind),intent(inout):: nread
   real(r_kind),intent(in):: rmesh,gstime,twind
   real(r_kind),intent(inout):: val_img
+  integer(i_kind),intent(in) :: mype_root
+  integer(i_kind),intent(in) :: mype_sub
+  integer(i_kind),intent(in) :: npe_sub
+  integer(i_kind),intent(in) :: mpi_comm_sub
 
 ! Declare local parameters
   integer(i_kind),parameter:: nimghdr=13
@@ -84,19 +93,18 @@ subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
         'SAID YEAR MNTH DAYS HOUR MINU SECO CLAT CLON SAZA SOZA BEARAZ SOLAZI'
 
 ! Declare local variables
-  logical mixed,outside,iuse,assim
+  logical outside,iuse,assim
 
-  character(10) date
   character(8) subset,subfgn
 
   integer(i_kind) nchanl,ilath,ilonh,ilzah,iszah
-  integer(i_kind) isc,nmind,lnbufr,idate,ilat,ilon
-  integer(i_kind) ihh,ireadmg,ireadsb,idd,iret,iy,im,nele,itt
-  integer(i_kind) itx,i,nk,k,iout,isflg,kidsat,n,iscan,idomsfc
+  integer(i_kind) nmind,lnbufr,idate,ilat,ilon
+  integer(i_kind) ireadmg,ireadsb,iret,nele,itt
+  integer(i_kind) itx,i,k,iout,isflg,kidsat,n,iscan,idomsfc
   integer(i_kind) idate5(5)
 
-  real(r_kind) dg2ew,sstime,tdiff,sfcr
-  real(r_kind) dlon,dlat,timedif,rflag,crit1,dist1
+  real(r_kind) dg2ew,sstime,tdiff,t4dv,sfcr
+  real(r_kind) dlon,dlat,timedif,crit1,dist1
   real(r_kind) dlon_earth,dlat_earth
   real(r_kind) pred
   real(r_kind),dimension(0:4):: rlndsea
@@ -118,6 +126,10 @@ subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
   disterrmax=zero
   ntest=0
   dg2ew = r360*deg2rad
+
+  ilon=3
+  ilat=4
+
   rlndsea(0) = 0._r_kind
   rlndsea(1) = 15._r_kind
   rlndsea(2) = 10._r_kind
@@ -149,7 +161,7 @@ subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
 
 
 ! Make thinning grids
-  call makegrids(rmesh)
+  call makegrids(rmesh,ithin)
 
 
 ! Open bufr file.
@@ -168,34 +180,22 @@ subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
   end if
 
 ! Check the data time
-  iy=0
-  im=0
-  idd=0
-  ihh=0
-  write(date,'( i10)') idate
-  read(date,'(i4,3i2)') iy,im,idd,ihh
-  write(6,*) 'READ_GOESIMG:  bufr file data is ',iy,im,idd,ihh,infile
-  if (im/=iadate(2).or.idd/=iadate(3).or.&
-       ihh/=iadate(4)) then
+  write(6,*)'READ_GOESIMG: bufr file date is ',idate,infile
+  IF (idate<iadatebgn.OR.idate>iadateend) THEN
      if(offtime_data) then
        write(6,*)'***READ_GOESIMG analysis and data file date differ, but use anyway'
      else
        write(6,*)'***READ_GOESIMG ERROR*** ',&
           'incompatable analysis and observation date/time'
      end if
-     write(6,*)' year  anal/obs ',iadate(1),iy
-     write(6,*)' month anal/obs ',iadate(2),im
-     write(6,*)' day   anal/obs ',iadate(3),idd
-     write(6,*)' hour  anal/obs ',iadate(4),ihh
+     write(6,*)'Analysis start  :',iadatebgn
+     write(6,*)'Analysis end    :',iadateend
+     write(6,*)'Observation time:',idate
      if(.not.offtime_data) go to 900
-  end if
+  ENDIF
 
-! Write header record to scratch file.  Allocate array to
-! hold all data for given satellite
+! Allocate arrays to hold all data for given satellite
   nele=maxinfo+nchanl
-  ilon=3
-  ilat=4
-  write(lunout) obstype,sis,maxinfo,nchanl,ilat,ilon
   allocate(data_all(nele,itxmax))
 
 
@@ -215,8 +215,8 @@ subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
         call ufbrep(lnbufr,dataimg,3,6,iret,'TMBRST NCLDMNT SDTB')
         nread=nread+nchanl
 !      first step QC filter out data with less clear sky fraction
-        if (hdrgoesarr(1) ==12 .and. dataimg(2,3) < 70.0_r_kind) cycle read_loop
-        if (hdrgoesarr(1) ==10 .and. dataimg(2,3) < 40.0_r_kind) cycle read_loop
+        if (hdrgoesarr(1) == 256 .and. dataimg(2,3) < 70.0_r_kind) cycle read_loop
+        if (hdrgoesarr(1) == 254 .and. dataimg(2,3) < 40.0_r_kind) cycle read_loop
         if (hdrgoesarr(ilzah) >60.0_r_kind) cycle read_loop
 
 
@@ -227,11 +227,15 @@ subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
         idate5(3) = hdrgoesarr(4)     ! day
         idate5(4) = hdrgoesarr(5)     ! hours
         idate5(5) = hdrgoesarr(6)     ! minutes
-        isc       = hdrgoesarr(7)     ! second
         call w3fs21(idate5,nmind)
-        sstime=float(nmind) + isc/60.0_r_kind
-        tdiff=(sstime-gstime)/60.0_r_kind
-        if (abs(tdiff)>twind) cycle read_loop
+        t4dv = (real((nmind-iwinbgn),r_kind) + real(hdrgoesarr(7),r_kind)*r60inv)*r60inv
+        if (l4dvar) then
+          if (t4dv<zero .OR. t4dv>winlen) cycle read_loop
+        else
+          sstime = real(nmind,r_kind) + real(hdrgoesarr(7),r_kind)*r60inv
+          tdiff=(sstime-gstime)*r60inv
+          if (abs(tdiff)>twind) cycle read_loop
+        endif
 
 !       Convert obs location from degrees to radians
         if (hdrgoesarr(ilonh)>=r360) hdrgoesarr(ilonh)=hdrgoesarr(ilonh)-r360
@@ -250,8 +254,8 @@ subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
            if(diagnostic_reg) then
               call txy2ll(dlon,dlat,dlon00,dlat00)
               ntest=ntest+1
-              disterr=acosd(sin(dlat_earth)*sin(dlat00)+cos(dlat_earth)*cos(dlat00)* &
-                   (sin(dlon_earth)*sin(dlon00)+cos(dlon_earth)*cos(dlon00)))
+              disterr=acos(sin(dlat_earth)*sin(dlat00)+cos(dlat_earth)*cos(dlat00)* &
+                   (sin(dlon_earth)*sin(dlon00)+cos(dlon_earth)*cos(dlon00)))*rad2deg
               disterrmax=max(disterrmax,disterr)
            end if
 
@@ -267,10 +271,13 @@ subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
            call grdcrd(dlon,1,rlons,nlon,1)
         endif
 
-
-        timedif = 6.0_r_kind*abs(tdiff)        ! range:  0 to 18
-        crit1=0.01_r_kind+timedif
-        call map2tgrid(dlat_earth,dlon_earth,dist1,crit1,itx,ithin,itt,iuse)
+        if (l4dvar) then
+          crit1=0.01_r_kind
+        else
+          timedif = 6.0_r_kind*abs(tdiff)        ! range:  0 to 18
+          crit1=0.01_r_kind+timedif
+        endif
+        call map2tgrid(dlat_earth,dlon_earth,dist1,crit1,itx,ithin,itt,iuse,sis)
         if(.not. iuse)cycle read_loop
 
 
@@ -283,14 +290,8 @@ subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
 !                2 sea ice
 !                3 snow
 !                4 mixed                         
-!      sfcpct(0:3)- percentage of 4 surface types
-!                 (0) - sea percentage
-!                 (1) - land percentage
-!                 (2) - sea ice percentage
-!                 (3) - snow percentage
 
-        call deter_sfc(dlat,dlon,dlat_earth,dlon_earth,tdiff,isflg,idomsfc,sfcpct,ts,tsavg, &
-                vty,vfr,sty,stp,sm,sn,zz,ff10,sfcr,mype)
+        call deter_sfc_type(dlat_earth,dlon_earth,tdiff,isflg,tsavg)
 
 !       Set common predictor parameters
 
@@ -304,61 +305,45 @@ subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
 
 !       Compute "score" for observation.  All scores>=0.0.  Lowest score is "best"
         crit1 = crit1+pred 
-        call finalcheck(dist1,crit1,ndata,itx,iout,iuse,sis)
+        call finalcheck(dist1,crit1,itx,iuse)
         if(.not. iuse) cycle read_loop
 
 !       Map obs to grids
-        if(hdrgoesarr(1) == 12) then
+        if(hdrgoesarr(1) == 256) then
          dataimg(1,5)=dataimg(1,6)              ! use  brightness tem. 6 not 5
          dataimg(3,5)=dataimg(3,6)              ! use BT tem. var. 6 not 5 
         endif
         iscan = nint(hdrgoesarr(ilzah))+1.001_r_kind ! integer scan position
         
 !       Transfer information to work array
-        data_all( 1,iout) = hdrgoesarr(1)              ! satellite id
-        data_all( 2,iout) = tdiff                      ! analysis relative time
-        data_all( 3,iout) = dlon                       ! grid relative longitude
-        data_all( 4,iout) = dlat                       ! grid relative latitude
-        data_all( 5,iout) = hdrgoesarr(ilzah)*deg2rad  ! satellite zenith angle (radians)
-        data_all( 6,iout) = hdrgoesarr(12)             ! satellite azimuth angle (radians)
-        data_all( 7,iout) = dataimg(2,1)               ! clear sky amount
-        data_all( 8,iout) = iscan                      ! integer scan position
-        data_all( 9,iout) = hdrgoesarr(iszah)          ! solar zenith angle
-        data_all(10,iout) = hdrgoesarr(12)             ! solar azimuth angle
-        data_all(11,iout) = sfcpct(0)                  ! ocean percentage
-        data_all(12,iout) = sfcpct(1)                  ! land percentage
-        data_all(13,iout) = sfcpct(2)                  ! ice percentage
-        data_all(14,iout) = sfcpct(3)                  ! snow percentage
-        data_all(15,iout) = ts(0)                      ! ocean skin temperature
-        data_all(16,iout) = ts(1)                      ! land skin temperature
-        data_all(17,iout) = ts(2)                      ! ice skin temperature
-        data_all(18,iout) = ts(3)                      ! snow skin temperature
-        data_all(19,iout) = tsavg                      ! average skin temperature
-        data_all(20,iout) = vty                        ! vegetation type
-        data_all(21,iout) = vfr                        ! vegetation fraction
-        data_all(22,iout) = sty                        ! soil type
-        data_all(23,iout) = stp                        ! soil temperature
-        data_all(24,iout) = sm                         ! soil moisture
-        data_all(25,iout) = sn                         ! snow depth
-        data_all(26,iout) = zz                         ! surface height
-        data_all(27,iout)= idomsfc + 0.001             ! dominate surface type
-        data_all(28,iout)= sfcr                        ! surface roughness
-        data_all(29,iout) = ff10                       ! ten meter wind factor
-        data_all(30,iout) = dlon_earth*rad2deg         ! earth relative longitude (degrees)
-        data_all(31,iout) = dlat_earth*rad2deg         ! earth relative latitude (degrees)
+        data_all( 1,itx) = hdrgoesarr(1)              ! satellite id
+        data_all( 2,itx) = t4dv                       ! analysis relative time
+        data_all( 3,itx) = dlon                       ! grid relative longitude
+        data_all( 4,itx) = dlat                       ! grid relative latitude
+        data_all( 5,itx) = hdrgoesarr(ilzah)*deg2rad  ! satellite zenith angle (radians)
+        data_all( 6,itx) = hdrgoesarr(12)             ! satellite azimuth angle (radians)
+        data_all( 7,itx) = dataimg(2,1)               ! clear sky amount
+        data_all( 8,itx) = iscan                      ! integer scan position
+        data_all( 9,itx) = hdrgoesarr(iszah)          ! solar zenith angle
+        data_all(10,itx) = hdrgoesarr(13)             ! solar azimuth angle
+        data_all(30,itx) = dlon_earth                 ! earth relative longitude (degrees)
+        data_all(31,itx) = dlat_earth                 ! earth relative latitude (degrees)
 
-        data_all(36,iout) = val_img
-        data_all(37,iout) = itt
+        data_all(36,itx) = val_img
+        data_all(37,itx) = itt
 
 !       Transfer observation location and other data to local arrays
 
         do k=1,nchanl
-           data_all(k+31,iout)=dataimg(3,k+1)
-           data_all(k+maxinfo,iout)=dataimg(1,k+1)
+           data_all(k+31,itx)=dataimg(3,k+1)
+           data_all(k+maxinfo,itx)=dataimg(1,k+1)
         end do
 
      enddo read_loop
   enddo
+
+  call combine_radobs(mype,mype_sub,mype_root,npe_sub,mpi_comm_sub,&
+       nele,itxmax,nread,ndata,data_all,score_crit)
 
 ! If no observations read, jump to end of routine.
 
@@ -369,9 +354,40 @@ subroutine read_goesimg(mype,val_img,ithin,rmesh,jsatid,gstime,&
     end do
     itt=nint(data_all(maxinfo,n))
     super_val(itt)=super_val(itt)+val_img
+    tdiff = data_all(2,n)                ! time (hours)
+    dlon=data_all(3,n)                   ! grid relative longitude
+    dlat=data_all(4,n)                   ! grid relative latitude
+    dlon_earth = data_all(30,n)  ! earth relative longitude (degrees)
+    dlat_earth = data_all(31,n)  ! earth relative latitude (degrees)
+
+    call deter_sfc(dlat,dlon,dlat_earth,dlon_earth,tdiff,isflg,idomsfc,sfcpct, &
+            ts,tsavg,vty,vfr,sty,stp,sm,sn,zz,ff10,sfcr)
+    data_all(11,n) = sfcpct(0)           ! sea percentage of
+    data_all(12,n) = sfcpct(1)           ! land percentage
+    data_all(13,n) = sfcpct(2)           ! sea ice percentage
+    data_all(14,n) = sfcpct(3)           ! snow percentage
+    data_all(15,n)= ts(0)                ! ocean skin temperature
+    data_all(16,n)= ts(1)                ! land skin temperature
+    data_all(17,n)= ts(2)                ! ice skin temperature
+    data_all(18,n)= ts(3)                ! snow skin temperature
+    data_all(19,n)= tsavg                ! average skin temperature
+    data_all(20,n)= vty                  ! vegetation type
+    data_all(21,n)= vfr                  ! vegetation fraction
+    data_all(22,n)= sty                  ! soil type
+    data_all(23,n)= stp                  ! soil temperature
+    data_all(24,n)= sm                   ! soil moisture
+    data_all(25,n)= sn                   ! snow depth
+    data_all(26,n)= zz                   ! surface height
+    data_all(27,n)= idomsfc + 0.001      ! dominate surface type
+    data_all(28,n)= sfcr                 ! surface roughness
+    data_all(29,n)= ff10                 ! ten meter wind factor
+    data_all(30,n)= data_all(30,n)*rad2deg  ! earth relative longitude (degrees)
+    data_all(31,n)= data_all(31,n)*rad2deg  ! earth relative latitude (degrees)
+
   end do
 
-! Write retained data to local file
+! Write final set of "best" observations to output file
+  write(lunout) obstype,sis,maxinfo,nchanl,ilat,ilon
   write(lunout) ((data_all(k,n),k=1,nele),n=1,ndata)
 
 ! Deallocate local arrays

@@ -45,6 +45,9 @@ subroutine prewgt(mype)
 !   2006-09-18  derber  - change minimum moisture variance
 !   2007-05-30  h.liu   - use oz stats from berror file
 !   2007-07-03  kleist  - add option for flow-dependent background error variances
+!   2008-04-23  safford - rm unused uses and vars
+!   2008-07-30  guo     - read stats using m_berror_stats
+!   2009-01-12  gayno   - rm use of read_gfssfc_full
 !
 !   input argument list:
 !     mype     - mpi task id
@@ -59,37 +62,34 @@ subroutine prewgt(mype)
 !$$$
   use kinds, only: r_kind,i_kind,r_single
   use berror, only: dssvp,dssvt,wtaxs,&
-       bw,wtxrs,inaxs,inxrs,as,nr,ny,nx,mr,ndeg,nta,&
+       bw,wtxrs,inaxs,inxrs,as,nr,ny,nx,mr,ndeg,&
        nf,vs,be,dssv,norh,bl2,bl,init_rftable,nlath,hzscl,&
-       pert_berr,pert_berr_fct,bkgv_flowdep,tsfc_sdv
+       pert_berr,bkgv_flowdep,tsfc_sdv,slw,slw1,slw2
+  use m_berror_stats,only : berror_read_wgt
   use mpimod, only: nvar_id,levs_id
   use mpimod, only: mpi_comm_world,ierror,mpi_rtype,strip
   use jfunc, only: qoption,varq
   use gridmod, only: istart,jstart,lat2,lon2,rlats,nlat,nlon,nsig,&
-       nsig1o,lat1,lon1,itotsub,iglobal,ltosi,ltosj,ijn,displs_g
+       nnnn1o,lat1,lon1,itotsub,iglobal,ltosi,ltosj,ijn,displs_g
   use constants, only: zero,one_tenth,quarter,half,one,two,&
        rearth_equator,pi,izero,four,tiny_r_kind,r1000
   use guess_grids, only: isli2
   use smooth_polcarf, only: norsp,setup_smooth_polcas
 
-  use gridmod    , only : gmao_intfc
-  use m_fvAnaGrid, only : fvAnaGrid_surface_getvar
-  use ncepgfs_io, only: read_gfssfc_full
   implicit none
 
 ! Declare passed variables
   integer(i_kind),intent(in):: mype
 
 ! Declare local variables
-  character(6) tag
   integer(i_kind) nrr,iii,jjj,nxg,i2,im,jm,j2
-  integer(i_kind) i,j,k,l,n,nbuf,nmix,nxe,nor,ndx,ndy
-  integer(i_kind) nel,nlathh,mm1,nolp,mm,ir,k1,m
-  integer(i_kind) ix,jx,nsigstat,mlat,inerr
-  integer(i_kind) kd,kt,kq,kc,koz
+  integer(i_kind) i,j,k,nbuf,nmix,nxe,nor,ndx,ndy
+  integer(i_kind) nel,nlathh,mm1,nolp,mm,ir,k1
+  integer(i_kind) ix,jx,mlat
+  integer(i_kind) kd,kt,kq,kc,koz,nf2p
   integer(i_kind),dimension(0:40):: iblend
 
-  real(r_kind) wlipi,wlipih,df,r
+  real(r_kind) wlipi,wlipih,df
   real(r_kind) samp,y,s2u,x,dxx,df2,pi2
   real(r_kind),dimension(ndeg):: rate
   real(r_kind),dimension(ndeg,ndeg):: turn
@@ -98,39 +98,34 @@ subroutine prewgt(mype)
   real(r_kind),dimension(lat2,lon2)::temp
   real(r_kind),dimension(0:nlat+1):: hwllp
   real(r_kind),dimension(nlat,nlon):: sl,factx
-  real(r_kind),dimension(-nf:nf,-nf:nf) :: fact1,fact2,wf
+  real(r_kind),dimension(-nf:nf,-nf:nf) :: fact1,fact2
   real(r_kind),dimension(mr:nlat-2):: rs
-  real(r_kind),dimension(ny,nx,3,nsig1o):: sli
   real(r_kind),dimension(lat1*lon1)::zsm
   real(r_kind),dimension(itotsub)::work1
-  real(r_kind),dimension(-nf:nf,-nf:nf,3,nsig1o):: sli1,sli2 
   real(r_kind),dimension(ny,nx,3):: scsli
   real(r_kind),dimension(-nf:nf,-nf:nf,3):: scs12
   real(r_single),dimension(nlat,nsig):: corz,cord,corh,corq,corc,corq2,coroz
   real(r_single),dimension(nlat):: corp
   real(r_single),dimension(nlat,nlon):: corsst
   real(r_single) hsstmin
-  real(r_kind) minhsst,fact,corq2x
+  real(r_kind) minhsst,corq2x
   real(r_kind),allocatable:: randfct(:)
+  real(r_kind),allocatable,dimension(:,:,:,:):: sli,sli1,sli2
 
   real(r_single),dimension(nlat,nsig*6+1):: hwllin
   real(r_single),dimension(nlat,nlon):: hsst
   real(r_single),dimension(nlat,nsig*6):: vscalesin
-  real(r_single),dimension(nlat,nsig,nsig):: agvin
-  real(r_single),dimension(nlat,nsig) :: wgvin,bvin
 
   real(r_kind),dimension(lat2,lon2,nsig):: sfvar,vpvar,tvar
   real(r_kind),dimension(lat2,lon2):: psvar
 
-  real(r_kind),parameter:: eight_tenths = 0.8_r_kind
+! real(r_kind),parameter:: eight_tenths = 0.8_r_kind
   real(r_kind),parameter:: three        = 3.0_r_kind
-  real(r_kind),parameter:: six          = 6.0_r_kind
-  real(r_kind),parameter:: r400         = 400.0_r_kind
-  real(r_kind),parameter:: r800         = 800.0_r_kind
-  real(r_kind),parameter:: r40000       = 40000.0_r_kind
-  real(r_kind),parameter:: r25          = 1.0_r_kind/25.0_r_kind
-
-  data inerr / 22 /
+! real(r_kind),parameter:: six          = 6.0_r_kind
+! real(r_kind),parameter:: r400         = 400.0_r_kind
+! real(r_kind),parameter:: r800         = 800.0_r_kind
+! real(r_kind),parameter:: r40000       = 40000.0_r_kind
+! real(r_kind),parameter:: r25          = 1.0_r_kind/25.0_r_kind
 
 ! Initialize local variables
   pi2=two*pi
@@ -139,6 +134,7 @@ subroutine prewgt(mype)
   nor=norh*2
   mm1=mype+1
   nlathh=nlat/4
+  nf2p=2*nf+1
 
 
 ! Setup blending
@@ -189,102 +185,81 @@ subroutine prewgt(mype)
 
 ! Setup sea-land mask
   sl=zero
-  do j=1,lon1*lat1
-    zsm(j)=zero
-  end do
-  do j=1,lon2
-    do i=1,lat2
-      temp(i,j)=float(isli2(i,j))
+  if(bw /= zero)then
+    do j=1,lon1*lat1
+      zsm(j)=zero
     end do
-  end do
+    do j=1,lon2
+      do i=1,lat2
+        temp(i,j)=float(isli2(i,j))
+      end do
+    end do
 
-  call strip(temp,zsm,1)
+    call strip(temp,zsm,1)
 
-  call mpi_allgatherv(zsm,ijn(mm1),mpi_rtype,&
-     work1,ijn,displs_g,mpi_rtype,&
-     mpi_comm_world,ierror)
+    call mpi_allgatherv(zsm,ijn(mm1),mpi_rtype,&
+       work1,ijn,displs_g,mpi_rtype,&
+       mpi_comm_world,ierror)
 
-  do k=1,iglobal
-    i=ltosi(k) ; j=ltosj(k)
-    sl(i,j)=work1(k)
-  end do
+    do k=1,iglobal
+      i=ltosi(k) ; j=ltosj(k)
+      sl(i,j)=work1(k)
+    end do
 
 
 
-  do j=1,nlon
-    do i=1,nlat
-      if(sl(i,j) > one)sl(i,j)=zero
+    do j=1,nlon
+      do i=1,nlat
+        if(sl(i,j) > one)sl(i,j)=zero
+      enddo
     enddo
-  enddo
-! nel=nlath/3
-! do j=1,nlon
-!   do i=1,nel
-!     sl(i,j)=one
+!   nel=nlath/3
+!   do j=1,nlon
+!     do i=1,nel
+!       sl(i,j)=one
+!     enddo
 !   enddo
-! enddo
 ! 
-! do j=1,nlon
+!   do j=1,nlon
 !               ! The first index range of sl(:,j) is 1:nlat, where nlat
 !               ! can be either even (Gaussian) or odd (other grid).
 !               ! nlath*7/9:nlath*11/9 is not symmetric about the
 !               ! Equaitor.  For a symmetric grid band, one should
 !               ! use i=nlat*7/18,nlat+1-nlat*7/18.  No fix is made 
 !               ! until further verification.  (Jing Guo)
-!   do i=nlath*7/9,nlath*11/9
-!     sl(i,j)=one
+!     do i=nlath*7/9,nlath*11/9
+!       sl(i,j)=one
+!     enddo
 !   enddo
-! enddo
   
-! nel=nlath/3
-! do j=1,nlon
+!   nel=nlath/3
+!   do j=1,nlon
 !               ! I believe for sl(nlat-i,j), the range of i should be
 !               ! i=0,nel-1, not i=1,nel, thus this fix.  (Jing Guo)
-!   do i=0,nel-1
-!     sl(nlat-i,j)=one
+!     do i=0,nel-1
+!       sl(nlat-i,j)=one
+!     enddo
 !   enddo
-! enddo
-  call smoothww(nlat,nlon,sl,half,2,1)
-  do j=1,nlon
-    do i=1,nlat
-      sl(i,j)=min(max(sl(i,j),zero),one)
+    call smoothww(nlat,nlon,sl,half,2,1)
+    do j=1,nlon
+      do i=1,nlat
+        sl(i,j)=min(max(sl(i,j),zero),one)
+      enddo
     enddo
-  enddo
-
-! Open background error statistics file
-  open(inerr,file='berror_stats',form='unformatted')
-
-! Read header.  Ensure that vertical resolution is consistent
-! with that specified via the user namelist
-
- read(inerr)nsigstat,mlat
- if(mype==0) then
-   write(6,*)'PREWGT:  read error amplitudes.  mype,nsigstat,mlat =',&
-   mype,nsigstat,mlat
- end if
-
-  if (nsig/=nsigstat .or. nlat/=mlat) then
-     write(6,*)'PREWGT:  ***ERROR*** resolution of berror_stats ',&
-          'incompatiable with guess'
-     write(6,*)'PREWGT:  berror nsigstat,mlat=',nsigstat,mlat,&
-          ' -vs- guess nsig,nlat=',nsig,nlat
-     call stop2(73)
   end if
 
-! Read amplitudes
-  rewind inerr
-  read(inerr)nsigstat,mlat,&
-       corz,cord,corh,corq,corq2,coroz,corc,corp,&
-       hwllin,vscalesin,&
-       agvin,bvin,wgvin,&
-       corsst,hsst
-  close(inerr)
+! Get background error statistics from a file ("berror_stats").
+  call berror_read_wgt(corz,cord,corh,corq,corq2,coroz,corc,corp,&
+    hwllin,vscalesin,corsst,hsst,mype)
+  mlat=nlat
+
 
 ! load the horizontal length scales
   do k=1,nsig
-     kd=nsig+k
-     kt=nsig*2+k
-     kq=nsig*3+k
-     koz=nsig*4+k
+    kd=nsig+k
+    kt=nsig*2+k
+    kq=nsig*3+k
+    koz=nsig*4+k
     do i=1,nlat
       hwll(i,k,1)=hwllin(i,k)
       hwll(i,k,2)=hwllin(i,kd)
@@ -345,6 +320,18 @@ subroutine prewgt(mype)
 ! apply scaling (deflate/inflate) to vertical length scales
 ! note: parameter vs needs to be inverted
   vs=one/vs
+
+! Initialize full array to zero before loading part of array below
+  do i=0,nlat+1
+     do k=1,nsig
+        vz(k,i)=zero
+        vd(k,i)=zero
+        vt(k,i)=zero
+        vq(k,i)=zero
+        voz(k,i)=zero
+        vcwm(k,i)=zero
+     end do
+  end do
 
 ! load vertical length scales
   do k=1,nsig
@@ -434,15 +421,19 @@ subroutine prewgt(mype)
 
     do i=1,lon2
       dssvp(j,i)=psvar(j,i)*as(3)             ! surface pressure
-      dssvt(j,i,2)= tsfc_sdv(1)               ! land surface temperature
-      dssvt(j,i,3)= tsfc_sdv(2)               ! ice surface temperature
 
-      ix=jstart(mm1)+i-2
-      if (ix==0) ix=nlon
-      ix=max(ix,1)
-      if (ix==nlon+1) ix=1
-      ix=min(nlon,ix)
-      dssvt(j,i,1)=corsst(jx,ix)*as(7)        ! sea surface temperature
+      if(isli2(j,i) == 1)then
+        dssvt(j,i,2)= tsfc_sdv(1)               ! land surface temperature
+      else if(isli2(j,i) == 2)then
+        dssvt(j,i,3)= tsfc_sdv(2)               ! ice surface temperature
+      else
+        ix=jstart(mm1)+i-2
+        if (ix==0) ix=nlon
+        ix=max(ix,1)
+        if (ix==nlon+1) ix=1
+        ix=min(nlon,ix)
+        dssvt(j,i,1)=corsst(jx,ix)*as(7)        ! sea surface temperature
+      end if
 
     end do
   end do
@@ -471,14 +462,8 @@ subroutine prewgt(mype)
     factx(nlat,j)=factx(nlat-1,j)
   end do
 
-  nxg=nxe+norh
-  nrr=ubound(rs,1)	! was nf*3/2
-  ndx=(nx-nlon)/2
   wlipi=nlon/pi2
   wlipih=nlon/pi2*half*samp*samp
-  call polcasl(factx,fact1,fact2,1,nf,mr,nrr,nor,rs,df,nxe,nxg)
-  fact1(0,0)=quarter*(fact1(1,0)+fact1(0,1)+fact1(-1,0)+fact1(0,-1))
-  fact2(0,0)=quarter*(fact2(1,0)+fact2(0,1)+fact2(-1,0)+fact2(0,-1))
   do j=1,nx
     jjj=j-ndx
     if(jjj.lt.1)jjj=nlon+jjj
@@ -491,6 +476,13 @@ subroutine prewgt(mype)
       scsli(i,j,3)=cos(rlats(iii))*factx(iii,jjj)
     enddo
   enddo
+
+  nxg=nxe+norh
+  nrr=ubound(rs,1)	! was nf*3/2
+  ndx=(nx-nlon)/2
+  call polcasl(factx,fact1,fact2,1,nf,mr,nrr,nor,rs,df,nxe,nxg)
+  fact1(0,0)=quarter*(fact1(1,0)+fact1(0,1)+fact1(-1,0)+fact1(0,-1))
+  fact2(0,0)=quarter*(fact2(1,0)+fact2(0,1)+fact2(-1,0)+fact2(0,-1))
 
   df2=df*df
   do j=-nf,nf
@@ -513,11 +505,11 @@ subroutine prewgt(mype)
   s2u=(two*pi*rearth_equator)/float(nlon)
 
 
-! This first loop for nsig1o will be if we aren't dealing with
-! surface pressure, skin temperature, or ozone
+  allocate(sli(ny,nx,2,nnnn1o),sli1(-nf:nf,-nf:nf,2,nnnn1o), &
+                            sli2(-nf:nf,-nf:nf,2,nnnn1o))
 
 !$omp parallel do  schedule(dynamic,1) private(k,k1,j,iii,jjj,i,factx,fact1,fact2)
-  do k=1,nsig1o
+  do k=1,nnnn1o
     k1=levs_id(k)
     if (k1==izero) then
       do j=1,nlon
@@ -611,27 +603,28 @@ subroutine prewgt(mype)
       if(jjj > nlon)jjj=jjj-nlon
       do i=1,ny
         iii=i+ndy
-        sli(i,j,1,k)=scsli(i,j,1)*factx(iii,jjj)**2
-        sli(i,j,2,k)=scsli(i,j,2)*factx(iii,jjj)        
-        sli(i,j,3,k)=scsli(i,j,3)*factx(iii,jjj)        
+        slw((j-1)*ny+i,k)=scsli(i,j,1)*factx(iii,jjj)**2
+        sli(i,j,1,k)=scsli(i,j,2)*factx(iii,jjj)        
+        sli(i,j,2,k)=scsli(i,j,3)*factx(iii,jjj)        
       enddo
     enddo           
 ! now load sli1/sli2 
     do j=-nf,nf
       do i=-nf,nf
-        sli2(i,j,1,k)=scs12(i,j,1)*fact1(i,j)**2
-        sli1(i,j,1,k)=scs12(i,j,1)*fact2(i,j)**2
-        sli2(i,j,2,k)=scs12(i,j,2)*fact1(i,j)
-        sli1(i,j,2,k)=scs12(i,j,2)*fact2(i,j)
-        sli2(i,j,3,k)=scs12(i,j,3)*fact1(i,j)
-        sli1(i,j,3,k)=scs12(i,j,3)*fact2(i,j)
+        slw2((j+nf)*nf2p+nf+1+i,k)=scs12(i,j,1)*fact1(i,j)**2
+        slw1((j+nf)*nf2p+nf+1+i,k)=scs12(i,j,1)*fact2(i,j)**2
+        sli2(i,j,1,k)=scs12(i,j,2)*fact1(i,j)
+        sli1(i,j,1,k)=scs12(i,j,2)*fact2(i,j)
+        sli2(i,j,2,k)=scs12(i,j,3)*fact1(i,j)
+        sli1(i,j,2,k)=scs12(i,j,3)*fact2(i,j)
       enddo
     enddo
   end do ! end do over nsig1o/loadling of sli arrays
 
 
 ! Load tables used in recursive filters
-  call init_rftable(mype,rate,sli,sli1,sli2)
+  call init_rftable(mype,rate,nnnn1o,sli,sli1,sli2)
+  deallocate(sli,sli1,sli2)
 
   return
 end subroutine prewgt
@@ -647,6 +640,7 @@ subroutine blend(n,iblend)
 !
 ! program history log:
 !   2004-05-13  kleist  documentation
+!   2008-04-23  safford - rm unused uses
 !
 !   input argument list:
 !     n      - number of powers to blend
@@ -666,7 +660,7 @@ subroutine blend(n,iblend)
 !   machine:  ibm rs/6000 sp
 !
 !$$$
-  use kinds, only: r_kind,i_kind
+  use kinds, only: i_kind
   implicit none
 
 ! Declare passed variables
@@ -714,6 +708,7 @@ subroutine get_randoms(count,randnums,mype)
 !
 ! program history log:
 !   2006-04-21  kleist
+!   2008-04-23  safford - rm unused uses
 !
 !   input argument list:
 !     count    - number or random numbers to generate
@@ -729,7 +724,7 @@ subroutine get_randoms(count,randnums,mype)
 !$$$
 
   use kinds, only: r_kind,i_kind
-  use obsmod, only: iadate,ran01dom
+  use obsmod, only: iadate
   use berror, only: pert_berr_fct
   use constants, only: one, two
   implicit none

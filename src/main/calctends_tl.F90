@@ -1,5 +1,4 @@
-subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
-   q_x,q_y,oz_x,oz_y,cw_x,cw_y,mype,u_t,v_t,t_t,p_t,q_t,oz_t,cw_t,pri,tracer)
+subroutine calctends_tl(u,v,t,q,oz,cw,mype,nnn,u_t,v_t,t_t,p_t,q_t,oz_t,cw_t,pri)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    calctends_tl       tlm of calctends
@@ -24,6 +23,7 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
 !                          call getprs_horiz_tl;
 !                          remove ps from argument list
 !   2007-08-08  derber - optimize
+!   2008-06-05  safford - rm unused uses
 !
 ! usage:
 !   input argument list:
@@ -33,21 +33,8 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
 !     q        - q on subdomain
 !     oz       - ozone on subdomain
 !     cw       - cloud water mixing ratio on subdomain 
-!     u_x      - zonal derivative of u
-!     u_y      - meridional derivative of u
-!     v_x      - zonal derivative of v
-!     v_y      - meridional derivative of v
-!     t_x      - zonal derivative of t
-!     t_y      - meridional derivative of t
-!     ps_x     - zonal derivative of ps
-!     ps_y     - meridional derivative of ps
-!     q_x      - zonal derivative of q
-!     q_y      - meridional derivative of q
-!     oz_x     - zonal derivative of ozone
-!     oz_y     - meridional derivative of ozone
-!     cw_x     - zonal derivative of cloud water
-!     cw_y     - meridional derivative of cloud water
 !     mype     - task id
+!     nnn      - number of levels on each processor
 !     tracer   - logical flag if true tracer time derivatives calculated
 !
 !   output argument list:
@@ -68,9 +55,9 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
 !
 !$$$
   use kinds,only: r_kind,i_kind
-  use gridmod, only: lat2,lon2,nsig,istart,rlats,nlat,idvc5,bk5,&
-      wrf_nmm_regional,eta2_ll,nsig1o,regional
-  use constants, only: zero,half,one,two,rearth,rd,rcp,omega,grav
+  use gridmod, only: lat2,lon2,nsig,istart,nlat,idvc5,bk5,&
+      wrf_nmm_regional,nems_nmmb_regional,eta2_ll,regional
+  use constants, only: zero,half,two,rd,rcp
   use tendsmod, only: what9,prsth9,r_prsum9,prdif9,r_prdif9,pr_xsum9,pr_xdif9,&
       pr_ysum9,pr_ydif9,curvfct,coriolis
   use guess_grids, only: ntguessig,ges_u,&
@@ -80,18 +67,16 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
   implicit none
 
 ! Declare passed variables
-  real(r_kind),dimension(lat2,lon2,nsig),intent(in):: u,v,t,u_x,u_y,&
-     v_x,v_y,t_x,t_y
-  real(r_kind),dimension(lat2,lon2,nsig),intent(in):: q,oz,cw,q_x,q_y,&
-     oz_x,oz_y,cw_x,cw_y
-  real(r_kind),dimension(lat2,lon2),intent(in):: ps_x,ps_y
-  integer(i_kind),intent(in):: mype
+  integer(i_kind),intent(in):: mype,nnn
   real(r_kind),dimension(lat2,lon2,nsig),intent(out):: u_t,v_t,t_t,q_t,oz_t,cw_t
   real(r_kind),dimension(lat2,lon2,nsig+1),intent(out):: p_t
   real(r_kind),dimension(lat2,lon2,nsig+1),intent(in):: pri
-  logical,intent(in):: tracer
+  real(r_kind),dimension(lat2,lon2,nsig),intent(in):: u,v,t,q,oz,cw
 
 ! Declare local variables
+  real(r_kind),dimension(lat2,lon2,nsig):: u_x,u_y,v_x,v_y,t_x,t_y
+  real(r_kind),dimension(lat2,lon2,nsig):: q_x,q_y,oz_x,oz_y,cw_x,cw_y
+  real(r_kind),dimension(lat2,lon2):: ps_x,ps_y,sst_x,sst_y,sst
   real(r_kind),dimension(lat2,lon2,nsig+1):: pri_x,pri_y
   real(r_kind),dimension(lat2,lon2,nsig+1):: prsth,what
   real(r_kind),dimension(lat2,lon2,nsig):: prsum,prdif,pr_xsum,pr_xdif,&
@@ -110,6 +95,13 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
   jstop=lon2
 
 ! preliminaries:
+  sst=zero
+
+  call get_derivatives( &
+     u ,v ,t ,pri ,q ,oz ,sst ,cw , &
+     u_x, v_x, t_x , ps_x, q_x, oz_x, sst_x, cw_x, &
+     u_y, v_y, t_y , ps_y, q_y, oz_y, sst_y, cw_y, &
+     nnn,mype,1)
 
   call getprs_horiz_tl(ps_x,ps_y,mype,pri,pri_x,pri_y)
 
@@ -147,7 +139,7 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
             ges_u(i,j,k,it)*pr_xdif(i,j,k) + v(i,j,k)*pr_ydif9(i,j,k) + &
             ges_v(i,j,k,it)*pr_ydif(i,j,k) + &
             (u_x(i,j,k) + v_y(i,j,k))*(prdif9(i,j,k)) + &
-            (ges_u_lon(i,j,k,it) + ges_v_lat(i,j,k,it))*(prdif(i,j,k)) )
+            (ges_u_lon(i,j,k) + ges_v_lat(i,j,k))*(prdif(i,j,k)) )
        end do
      end do
    end do
@@ -157,8 +149,8 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
     do j=jstart,jstop
       do i=1,lat2
         tmp=rd*ges_tv(i,j,k,it)*r_prsum9(i,j,k)
-        t_t(i,j,k)=-u(i,j,k)*ges_tvlon(i,j,k,it) - ges_u(i,j,k,it)*t_x(i,j,k) - &
-           v(i,j,k)*ges_tvlat(i,j,k,it) - ges_v(i,j,k,it)*t_y(i,j,k) +          &
+        t_t(i,j,k)=-u(i,j,k)*ges_tvlon(i,j,k) - ges_u(i,j,k,it)*t_x(i,j,k) - &
+           v(i,j,k)*ges_tvlat(i,j,k) - ges_v(i,j,k,it)*t_y(i,j,k) +          &
            tmp*rcp*( ges_u(i,j,k,it)*pr_xsum(i,j,k) + &
            u(i,j,k)*pr_xsum9(i,j,k) + &
            ges_v(i,j,k,it)*pr_ysum(i,j,k) + &
@@ -182,8 +174,8 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
         do i=1,lat2
           tmp=rd*ges_tv(i,j,k,it)*r_prsum9(i,j,k)
   
-          t_thor9(i,j,k)=-ges_u(i,j,k,it)*ges_tvlon(i,j,k,it) - &
-               ges_v(i,j,k,it)*ges_tvlat(i,j,k,it)
+          t_thor9(i,j,k)=-ges_u(i,j,k,it)*ges_tvlon(i,j,k) - &
+               ges_v(i,j,k,it)*ges_tvlat(i,j,k)
           t_thor9(i,j,k)=t_thor9(i,j,k) -tmp*rcp * ( ges_u(i,j,k,it)*pr_xsum9(i,j,k) + &
              ges_v(i,j,k,it)*pr_ysum9(i,j,k) + &
              prsth9(i,j,k) + prsth9(i,j,k+1) )
@@ -195,7 +187,7 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
     do k=2,nsig
       do j=jstart,jstop
         do i=1,lat2
-          if(wrf_nmm_regional) then
+          if(wrf_nmm_regional.or.nems_nmmb_regional) then
             what(i,j,k)=prsth(i,j,k)-eta2_ll(k)*prsth(i,j,1)
           else
             what(i,j,k)=prsth(i,j,k)-bk5(k)*prsth(i,j,1)
@@ -237,11 +229,11 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
   do k=1,nsig
     do j=jstart,jstop
       do i=1,lat2
-        u_t(i,j,k)=-u(i,j,k)*ges_u_lon(i,j,k,it) - ges_u(i,j,k,it)*u_x(i,j,k) - &
-           v(i,j,k)*ges_u_lat(i,j,k,it) - ges_v(i,j,k,it)*u_y(i,j,k) + &
+        u_t(i,j,k)=-u(i,j,k)*ges_u_lon(i,j,k) - ges_u(i,j,k,it)*u_x(i,j,k) - &
+           v(i,j,k)*ges_u_lat(i,j,k) - ges_v(i,j,k,it)*u_y(i,j,k) + &
            coriolis(i,j)*v(i,j,k)
-        v_t(i,j,k)=-u(i,j,k)*ges_v_lon(i,j,k,it) - ges_u(i,j,k,it)*v_x(i,j,k) - &
-           v(i,j,k)*ges_v_lat(i,j,k,it) - ges_v(i,j,k,it)*v_y(i,j,k) - &
+        v_t(i,j,k)=-u(i,j,k)*ges_v_lon(i,j,k) - ges_u(i,j,k,it)*v_x(i,j,k) - &
+           v(i,j,k)*ges_v_lat(i,j,k) - ges_v(i,j,k,it)*v_y(i,j,k) - &
            coriolis(i,j)*u(i,j,k) - two*curvfct(i,j)*(ges_u(i,j,k,it)*u(i,j,k) + &
            ges_v(i,j,k,it)*v(i,j,k))
 
@@ -307,11 +299,11 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
            prdif(i,j,k) - tmp3* prsum(i,j,k) )*r_prsum9(i,j,k) ) ) )
 
         sum2k = sum2km1(i,j) + t_x(i,j,k)*tmp3 + &
-           ges_tvlon(i,j,k,it)*( (prdif(i,j,k) - &
+           ges_tvlon(i,j,k)*( (prdif(i,j,k) - &
            tmp3*prsum(i,j,k))*r_prsum9(i,j,k))
 
         sum2vk = sum2vkm1(i,j) + t_y(i,j,k)*tmp3 + &
-           ges_tvlat(i,j,k,it)*( (prdif(i,j,k) - &
+           ges_tvlat(i,j,k)*( (prdif(i,j,k) - &
            tmp3*prsum(i,j,k))*r_prsum9(i,j,k))
 
         u_t(i,j,k) = u_t(i,j,k) - sumkm1(i,j) - rd*sum2km1(i,j) - &
@@ -332,7 +324,7 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
   call turbl_tl(ges_prsi(1,1,1,it),ges_tv  (1,1,1,it),ges_teta(1,1,1,it),&
                u,v,pri,t,u_t,v_t,t_t,jstart,jstop)
 
-  if(.not.wrf_nmm_regional)then
+  if(.not.wrf_nmm_regional.and..not.nems_nmmb_regional)then
     do k=1,nsig
 
 ! 5) Zero out time derivatives at poles
@@ -348,17 +340,16 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
 
     end do  !end do k 
   end if
-  if(tracer)then
     do k=1,nsig
       do j=jstart,jstop
         do i=1,lat2
 ! tracer advection terms
-          q_t(i,j,k) = -u(i,j,k)*ges_qlon(i,j,k,it) - ges_u(i,j,k,it)*q_x(i,j,k) - &
-             v(i,j,k)*ges_qlat(i,j,k,it) - ges_v(i,j,k,it)*q_y(i,j,k)
-          oz_t(i,j,k) = -u(i,j,k)*ges_ozlon(i,j,k,it) - ges_u(i,j,k,it)*oz_x(i,j,k) - &
-             v(i,j,k)*ges_ozlat(i,j,k,it) - ges_v(i,j,k,it)*oz_y(i,j,k)
-          cw_t(i,j,k) = -u(i,j,k)*ges_cwmr_lon(i,j,k,it) - ges_u(i,j,k,it)*cw_x(i,j,k) - &
-             v(i,j,k)*ges_cwmr_lat(i,j,k,it) - ges_v(i,j,k,it)*cw_y(i,j,k)
+          q_t(i,j,k) = -u(i,j,k)*ges_qlon(i,j,k) - ges_u(i,j,k,it)*q_x(i,j,k) - &
+             v(i,j,k)*ges_qlat(i,j,k) - ges_v(i,j,k,it)*q_y(i,j,k)
+          oz_t(i,j,k) = -u(i,j,k)*ges_ozlon(i,j,k) - ges_u(i,j,k,it)*oz_x(i,j,k) - &
+             v(i,j,k)*ges_ozlat(i,j,k) - ges_v(i,j,k,it)*oz_y(i,j,k)
+          cw_t(i,j,k) = -u(i,j,k)*ges_cwmr_lon(i,j,k) - ges_u(i,j,k,it)*cw_x(i,j,k) - &
+             v(i,j,k)*ges_cwmr_lat(i,j,k) - ges_v(i,j,k,it)*cw_y(i,j,k)
           if(k > 1)then
             tmp=half*what(i,j,k)*r_prdif9(i,j,k)
             tmp2=half*what9(i,j,k)*r_prdif9(i,j,k)
@@ -388,7 +379,6 @@ subroutine calctends_tl(u,v,t,q,oz,cw,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
         end do
       end do
     end do
-  end if
 !!!$omp end parallel
 
   return

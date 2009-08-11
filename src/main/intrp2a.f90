@@ -15,6 +15,7 @@ subroutine intrp2a(f,g,dx,dy,n,nlevs,mype)
 !   2004-05-17  kleist, documentation
 !   2004-08-02  treadon - add only to module use, add intent in/out
 !   2006-04-03  derber  - optimize
+!   2008-05-31  safford - rm unused use
 !
 !   input argument list:
 !     f        - input interpolator
@@ -35,7 +36,7 @@ subroutine intrp2a(f,g,dx,dy,n,nlevs,mype)
 !
 !$$$
   use kinds, only: r_kind,i_kind
-  use gridmod, only: istart,jstart,lon1,lat2,lon2,nlat,nsig,nlon
+  use gridmod, only: istart,jstart,lon1,lat2,lon2,nlat,nlon
   use constants, only: zero,one
   implicit none
 

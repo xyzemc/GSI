@@ -5,29 +5,67 @@ module lagmod
 ! prgmmr:  purser/cucurull           org: np23            date: 2005-12-01
 !
 ! abstract: This module contains routines (including tangent linear and adjoint code)
-! to perform basic operations related to Lagrange polynomial interpolation.
+!           to perform basic operations related to Lagrange polynomial interpolation.
 !
 ! program history log:
 !   2003        purser   - routines for the forward code
 !   2005-12-01  cucurull - implement tangent linear and adjoint code 
 !                        - adapt the code to GSI standards
+!   2008-05-09  safford  - complete documentation block
+! 
+! subroutines included:
+!   setq
+!   setq_TL
+!   setq_AD
+!   lagdw
+!   lagdw_TL
+!   lagdw_AD
+!   slagdw
+!   slagdw_TL
+!   slagdw_AD
+!
+! variables defined:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 !============================================================================
 use kinds, only: r_kind,i_kind
 use constants, only: zero,one
 contains
 
-!============================================================================
+
 subroutine setq(q,x,n)
-!============================================================================
-!                SUBROUTINE SETQ
-! Precompute the N constant denominator factors of the N-point Lagrange
-! polynomial interpolation formula.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    setq
 !
-! <-- Q:    The N denominator constants.
-! --> X:    The N abscissae.
-! --> N:    The number of points involved.
-!============================================================================
+!   prgrmmr:
+!
+! abstract:      Precompute the N constant denominator factors of the N-point 
+!                Lagrange polynomial interpolation formula.
+!
+! program history log:
+!   2008-05-09  safford - add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     X -    The N abscissae.
+!     N -    The number of points involved.
+!
+!   output argument list:
+!     Q -    The N denominator constants.
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 IMPLICIT NONE
+
 INTEGER(i_kind),          INTENT(in) :: n
 REAL(r_kind),DIMENSION(n),INTENT(out):: q
 REAL(r_kind),DIMENSION(n),INTENT(in) :: x
@@ -42,8 +80,35 @@ DO i=1,n
 ENDDO
 end subroutinE setq
 
+
 !============================================================================
 subroutine setq_TL(q,q_TL,x,x_TL,n)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    setq_TL
+!
+!   prgrmmr:
+!
+! abstract:     
+!
+! program history log:
+!   2008-05-09  safford - add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     x     - 
+!     x_TL  - 
+!     n     -    The number of points involved.
+!
+!   output argument list:
+!     q    -   
+!     Q_TL
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 !============================================================================
 IMPLICIT NONE
 INTEGER(i_kind),          INTENT(in) :: n
@@ -65,8 +130,37 @@ DO i=1,n
    ENDDO
 ENDDO
 end subroutine setq_TL
+
+
 !============================================================================
 subroutine setq_AD(q_AD,x,x_AD,n)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    setq_AD
+!
+!   prgrmmr:
+!
+! abstract:     
+!
+! program history log:
+!   2008-05-09  safford - add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     q_AD - 
+!     x    -
+!     x_AD -
+!     n    -    The number of points involved.
+!
+!   output argument list:
+!     x_AD -
+!     q_AD - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 !============================================================================
 IMPLICIT NONE
 INTEGER(i_kind),          INTENT(in) :: n
@@ -90,19 +184,39 @@ DO i=1,n
 ENDDO
 x_AD=x_AD+matmul(jac,q_AD)
 end subroutine setq_AD
+
+
 !============================================================================
 subroutine lagdw(x,xt,q,w,dw,n)
-!============================================================================
-!      SUBROUTINE LAGDW
-! Construct the Lagrange weights and their derivatives when target abscissa
-! is known and denominators Q have already been precomputed
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    lagdw
 !
-! --> X:    Grid abscissae
-! --> XT:   Target abscissa
-! --> Q:    Q factors (denominators of the Lagrange weight formula)
-! <-- W:    Lagrange weights
-! <-- DW:   Derivatives, dW/dX, of Lagrange weights W
-! --> N:    Number of grid points involved in the interpolation
+!   prgrmmr:
+!
+! abstract:      Construct the Lagrange weights and their derivatives when 
+!                target abscissa is known and denominators Q have already 
+!                been precomputed
+!
+! program history log:
+!   2008-05-09  safford - add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     X   - Grid abscissae
+!     XT  - Target abscissa
+!     Q   - Q factors (denominators of the Lagrange weight formula)
+!     N   - Number of grid points involved in the interpolation
+!
+!   output argument list:
+!     W   - Lagrange weights
+!     DW  - Derivatives, dW/dX, of Lagrange weights W
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 !============================================================================
 IMPLICIT NONE
 INTEGER(i_kind),          INTENT(IN) :: n
@@ -133,8 +247,40 @@ do j=1,n
    dw(j)=(pa(j)*dpb(j)+dpa(j)*pb(j))*q(j)
 enddo
 end subroutine lagdw
+
+
 !============================================================================
 subroutine lagdw_TL(x,x_TL,xt,q,q_TL,w,w_TL,dw,dw_TL,n)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    lagdw_TL
+!
+!   prgrmmr:
+!
+! abstract:     
+!
+! program history log:
+!   2008-05-09  safford - add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     x     -
+!     xt    - 
+!     q     -
+!     q_TL  -
+!     n     - The number of points involved.
+!
+!   output argument list:
+!     w     - 
+!     dw    -
+!     w_TL  -
+!     dw_TL -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 !============================================================================
 IMPLICIT NONE
 INTEGER(i_kind),          INTENT(IN) :: n
@@ -180,8 +326,43 @@ do j=1,n
             (pa(j)*dpb(j)+dpa(j)*pb(j))*q_TL(j)
 enddo
 end subroutine lagdw_TL
+
+
 !============================================================================
 subroutine lagdw_AD(x,x_AD,xt,q,q_AD,w_AD,dw_AD,n)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    lagdw_AD
+!
+!   prgrmmr:
+!
+! abstract:     
+!
+! program history log:
+!   2008-05-09  safford - add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     n     -
+!     xt    -
+!     x     -
+!     q     -
+!     q_AD  -
+!     x_AD  -
+!     w_AD  -
+!     dw_AD -
+!
+!   output argument list:
+!     q_AD  -
+!     x_AD  -
+!     w_AD  -
+!     dw_AD -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 !============================================================================
 IMPLICIT NONE
 INTEGER(i_kind),          INTENT(IN) :: n
@@ -245,25 +426,47 @@ do j=n-1,1,-1
 enddo
 
 end subroutine lagdw_AD
+
+
 !============================================================================
 subroutine slagdw(x,xt,aq,bq,w,dw,n)
-!============================================================================
-!      SUBROUTINE SLAGDW
-! Construct weights and their derivatives for interpolation to a given target
-! based on a linearly weighted mixture of the pair of Lagrange interpolators
-! which omit the respective end points of the source nodes provided. The
-! number of source points provided must be even and the nominal target
-! interval is the unique central one. The linear weighting pair is determined
-! by the relative location of the target within this central interval, or
-! else the extreme values, 0 and 1, when target lies outside this interval.
-! The objective is to provide an interpolator whose derivative is continuous.
-! --> X:     Grid abscissae (N points)
-! --> XT:    Target abscissa
-! --> AQ,BQ: Q factors (denominators of the Lagrange weight formula for
-!            the two respective consecutive subsets of N-1 grid points)
-! <-- W:     Final weights (N values)
-! <-- DW:    Final derivatives, dW/dX, of weights W (N values)
-! --> N:     Even number of grid points involved in the interpolation
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    slagdw
+!
+!   prgrmmr:
+!
+! abstract:      Construct weights and their derivatives for interpolation 
+!                to a given target based on a linearly weighted mixture of 
+!                the pair of Lagrange interpolators which omit the respective 
+!                end points of the source nodes provided. The number of source 
+!                points provided must be even and the nominal target interval 
+!                is the unique central one. The linear weighting pair is 
+!                determined by the relative location of the target within 
+!                this central interval, or else the extreme values, 0 and 1, 
+!                when target lies outside this interval.  The objective is to 
+!                provide an interpolator whose derivative is continuous.
+!
+! program history log:
+!   2008-05-09  safford - add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     X     - Grid abscissae (N points)
+!     XT    - Target abscissa
+!     AQ,BQ - Q factors (denominators of the Lagrange weight formula for
+!             the two respective consecutive subsets of N-1 grid points)
+!     N     - Even number of grid points involved in the interpolation
+!
+!   output argument list:
+!     W     - Final weights (N values)
+!     DW    - Final derivatives, dW/dX, of weights W (N values)
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 !============================================================================
 IMPLICIT NONE
 INTEGER(i_kind),            INTENT(IN ) :: n
@@ -301,8 +504,37 @@ dbw=dbw-daw
 w=aw+wb*bw
 dw=daw+wb*dbw+dwb*bw
 end subroutine slagdw
+
+
 !============================================================================
 subroutine slagdw_TL(x,x_TL,xt,aq,aq_TL,bq,bq_TL,dw,dw_TL,n)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    slagdw_TL
+!
+!   prgrmmr:
+!
+! abstract:      
+!
+! program history log:
+!   2008-05-09  safford - add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     n
+!     xt
+!     x,x_TL
+!     aq,bq,aq_TL,bq_TL
+!     dw_TL,dw
+!
+!   output argument list:
+!     dw_TL,dw
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 !============================================================================
 IMPLICIT NONE
 INTEGER(i_kind),            INTENT(IN ) :: n
@@ -362,8 +594,40 @@ dbw_TL=dbw_TL-daw_TL
 dw=daw+wb*dbw+dwb*bw
 dw_TL=daw_TL+(wb_TL*dbw+wb*dbw_TL)+(dwb_TL*bw+dwb*bw_TL)
 end subroutine slagdw_TL
+
+
 !============================================================================
 SUBROUTINE slagdw_AD(x,x_AD,xt,aq,aq_AD,bq,bq_AD,w_AD,dw,dw_AD,n)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    slagdw_AD
+!
+!   prgrmmr:
+!
+! abstract:      
+!
+! program history log:
+!   2008-05-09  safford - add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     n
+!     xt
+!     x
+!     aq,bq
+!     aq_AD,bq_AD
+!     x_AD,dw_AD,w_AD
+!
+!   output argument list:
+!     aq_AD,bq_AD
+!     dw
+!     x_AD,dw_AD,w_AD
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 !============================================================================
 IMPLICIT NONE
 INTEGER(i_kind),            INTENT(IN ) :: n

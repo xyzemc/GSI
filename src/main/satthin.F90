@@ -27,6 +27,7 @@ module satthin
 !   2007-05-01  wu      - correct error in subroutine makegvals which incorrectly
 !                         defines longitude range on regional grid when domain
 !                         includes north pole.
+!   2009-04-21  derber  - add ithin to call to makegrids - account for negative ithin
 !
 ! Subroutines Included:
 !   sub makegvals      - set up for superob weighting
@@ -44,8 +45,8 @@ module satthin
 !   def maxthin        - maximum number of obs to retain in thinning grid box
 !   def itxmax         - total number of points in thinning grid
 !   def istart_val     - starting location on thinning grid for superobs
-!   def icount         - observation counter
-!   def ibest_obs      - index of "best" quality obs in thinning grid box
+!   def icount         - observation flag  true - no obs in this thinning box previously
+!                                          false - previous ob in box
 !   def isli_full      - snow/land/ice mask
 !   def glat           - latitudes on thinning grid
 !   def super_val      - super obs factor across data types
@@ -71,13 +72,14 @@ module satthin
   integer(i_kind) mlat,superp,maxthin,itxmax
   integer(i_kind),dimension(0:51):: istart_val
   
-  integer(i_kind),allocatable,dimension(:):: mlon,icount,ibest_obs
+  integer(i_kind),allocatable,dimension(:):: mlon
   integer(i_kind),allocatable,dimension(:,:):: isli_full
+  logical,allocatable,dimension(:)::icount
 
   real(r_kind) rlat_min,rlat_max,rlon_min,rlon_max,dlat_grid,dlon_grid
   real(r_kind),allocatable,dimension(:):: glat,score_crit
   real(r_kind),allocatable,dimension(:):: super_val,super_val1
-  real(r_kind),allocatable,dimension(:,:):: glon,hll,zs_full
+  real(r_kind),allocatable,dimension(:,:):: glon,hll,zs_full,zs_full_gfs
   real(r_kind),allocatable,dimension(:,:):: veg_type_full,soil_type_full
   real(r_kind),allocatable,dimension(:,:,:):: veg_frac_full,soil_temp_full
   real(r_kind),allocatable,dimension(:,:,:):: soil_moi_full,sfc_rough_full
@@ -103,6 +105,8 @@ contains
 !   2006-07-28  derber  - use r1000 from constants
 !   2007-05-01  wu      - correct error which incorrectly defines longitude range 
 !                         on regional grid when domain includes north pole.
+!   2008-05-23  safford - rm unused vars
+!   2008-09-08  lueken  - merged ed's changes into q1fy09 code
 !
 !   input argument list:
 !
@@ -123,12 +127,11 @@ contains
     real(r_kind),parameter:: r360  = 360.0_r_kind
     real(r_kind),parameter:: r999  = 999.0_r_kind
 
-    logical odd
-    integer(i_kind) i,ii,j,k
+    integer(i_kind) i,ii,j
     integer(i_kind) mlonx,icnt,mlony,mlonj
     real(r_kind) delonx,delat,dgv,dx,dy
     real(r_kind) twopi,dlon_g,dlat_g,dlon_e,dlat_e
-    real(r_kind) factor,factors,delon
+    real(r_kind) factor,delon
     real(r_kind) rkm2dg,glatm,glatx
 
 !   Initialize variables, set constants
@@ -217,7 +220,7 @@ contains
   end subroutine makegvals
 
 
-  subroutine makegrids(rmesh)
+  subroutine makegrids(rmesh,ithin)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    makegrids                            
@@ -230,6 +233,8 @@ contains
 !   2002-10-17  treadon
 !   2004-06-22  treadon - update documentation
 !   2004-12-09  treadon - allocate thinning grids consistent with analysis domain
+!   2008-05-23  safford - rm unused vars
+!   2008-09-08  lueken  - merged ed's changes into q1fy09 code
 !
 !   input argument list:
 !     rmesh - mesh size (km) of thinning grid.  If (rmesh <= one), 
@@ -247,19 +252,20 @@ contains
 
     implicit none
 
+    real(r_kind),intent(in)::rmesh
+    integer(i_kind),intent(in)::ithin
     real(r_kind),parameter:: r360 = 360.0_r_kind
-    logical odd
-    integer(i_kind) i,j,k
+    integer(i_kind) i,j
     integer(i_kind) mlonx,mlonj
     real(r_kind) delonx,delat,dgv,halfpi,dx,dy
     real(r_kind) twopi
-    real(r_kind) factor,factors,delon,rmesh
+    real(r_kind) factor,delon
     real(r_kind) rkm2dg,glatm
 
 
 !   If there is to be no thinning, simply return to calling routine
     use_all=.false.
-    if(abs(rmesh) <= one)then
+    if(abs(rmesh) <= one .or. ithin <= 0)then
       use_all=.true.
       itxmax=2.e7
       return
@@ -317,18 +323,17 @@ contains
 
 !   Allocate  and initialize arrays
     allocate(icount(itxmax))
-    allocate(ibest_obs(itxmax))
     allocate(score_crit(itxmax))
 
     do j=1,itxmax
-       icount(j) = 0
-       score_crit(j) = 9.99e6_r_kind
+       icount(j) = .true.
+       score_crit(j) = 9.99e10_r_kind
     end do
 
     return
   end subroutine makegrids
 
-  subroutine getsfc(mype)
+  subroutine getsfc(mype,use_sfc)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    getsfc
@@ -340,6 +345,8 @@ contains
 !
 ! program history log:
 !   2002-10-17  parrish
+!   2008-12-05  todling - add ESMF blocks; update bias_tskin
+!   2009-01-28  todling - remove reference to original GMAO interface
 !
 !   input argument list:
 !
@@ -350,40 +357,46 @@ contains
 !   machine:  ibm rs/6000 sp
 !
 !$$$
-    use kinds, only: r_kind,i_kind
+    use kinds, only: r_kind,i_kind,r_single
     use gridmod, only:  nlat,nlon,lat2,lon2,lat1,lon1,jstart,&
-       ltosi,ltosj,iglobal,itotsub,ijn,displs_g,regional,gmao_intfc,istart, &
+       ltosi,ltosj,iglobal,itotsub,ijn,displs_g,regional,istart, &
        rlats,rlons,nlat_sfc,nlon_sfc,rlats_sfc,rlons_sfc
     use guess_grids, only: ntguessig,isli,sfct,sno,fact10,ges_u,ges_v,ges_z, &
        nfldsfc,ntguessfc,nfldsig,soil_moi,soil_temp,veg_type,soil_type, &
-       veg_frac,sfc_rough,ifilesfc,bias_tskin,isli2,sno2
+       veg_frac,sfc_rough,ifilesfc,isli2,sno2
+    use m_gsiBiases, only: bias_tskin,compress_bias,bias_hour
     use jfunc, only: biascor
 
     use mpimod, only: mpi_comm_world,ierror,mpi_rtype,strip
     use constants, only: zero,izero,half,pi,two
-    use ncepgfs_io, only: read_gfsatm,read_gfssfc2
+    use ncepgfs_io, only: read_gfsatm,read_gfssfc,sfc_interpolate
+    use sfcio_module, only: sfcio_realfill
 
     implicit none
 
-    integer(i_kind) mype
+    integer(i_kind),intent(in):: mype
+    logical,intent(in)::use_sfc
 
-    character(24) filename
 
 ! Local variables
     real(r_kind),dimension(lat1*lon1):: zsm
     real(r_kind),dimension(itotsub):: work1
     real(r_kind),dimension(lat2,lon2):: work2
+    real(r_kind),dimension(lat2,lon2):: b_tskin
     real(r_kind),dimension(nlat,nlon):: bias
     real(r_kind),dimension(nlat):: ailoc
     real(r_kind),dimension(nlon):: ajloc
     real(r_kind),allocatable,dimension(:)::wlatx,slatx
-    real(r_kind) :: dlon
+    real(r_kind) :: dlon, missing
+    real(r_kind),allocatable,dimension(:,:)::dum
+    real(r_single),allocatable,dimension(:,:)::dummy
     integer(i_kind) mm1,i,j,k,it,il,jl,jmax,idrt
+    character(24) filename
 
     mm1=mype+1
 
     if(mype == 0)write(6,*) ' nlat,nlon = ',nlat_sfc,nlon_sfc,nlat,nlon
-    if(gmao_intfc .or. regional)then
+    if(regional)then
       nlat_sfc=nlat
       nlon_sfc=nlon
     end if
@@ -391,15 +404,22 @@ contains
     allocate(rlats_sfc(nlat_sfc),rlons_sfc(nlon_sfc))
 
     allocate(isli_full(nlat_sfc,nlon_sfc),fact10_full(nlat_sfc,nlon_sfc,nfldsfc))
-    allocate(soil_moi_full(nlat_sfc,nlon_sfc,nfldsfc),soil_temp_full(nlat_sfc,nlon_sfc,nfldsfc))
-    allocate(veg_frac_full(nlat_sfc,nlon_sfc,nfldsfc),soil_type_full(nlat_sfc,nlon_sfc))
-    allocate(veg_type_full(nlat_sfc,nlon_sfc),sfc_rough_full(nlat_sfc,nlon_sfc,nfldsfc))
     allocate(sst_full(nlat_sfc,nlon_sfc,nfldsfc),sno_full(nlat_sfc,nlon_sfc,nfldsfc))
     allocate(zs_full(nlat,nlon))
+    allocate(sfc_rough_full(nlat_sfc,nlon_sfc,nfldsfc))
+
+    if(use_sfc)then
+      allocate(soil_moi_full(nlat_sfc,nlon_sfc,nfldsfc),soil_temp_full(nlat_sfc,nlon_sfc,nfldsfc))
+      allocate(veg_frac_full(nlat_sfc,nlon_sfc,nfldsfc),soil_type_full(nlat_sfc,nlon_sfc))
+      allocate(veg_type_full(nlat_sfc,nlon_sfc))
+    else
+     allocate(dum(nlat_sfc,nlon_sfc))
+    end if
 
 
 !  Global read
-    if (.not. gmao_intfc .and. .not. regional) then
+#ifndef HAVE_ESMF
+    if (.not. regional) then
       if (nlon == nlon_sfc .and. nlat == nlat_sfc) then
         rlats_sfc=rlats
         rlons_sfc=rlons
@@ -421,15 +441,27 @@ contains
         deallocate(slatx,wlatx)
       end if
 
-      do it=1,nfldsfc
-        write(filename,200)ifilesfc(it)
-200     format('sfcf',i2.2)
-        call read_gfssfc2(filename,mype,&
+
+      allocate(zs_full_gfs(nlat_sfc,nlon_sfc))
+      if(use_sfc)then
+        do it=1,nfldsfc
+          write(filename,200)ifilesfc(it)
+200       format('sfcf',i2.2)
+          call read_gfssfc(filename,mype,&
              fact10_full(1,1,it),sst_full(1,1,it),sno_full(1,1,it), &
              veg_type_full(1,1),veg_frac_full(1,1,it), &
              soil_type_full(1,1),soil_temp_full(1,1,it),&
-             soil_moi_full(1,1,it),isli_full(1,1),sfc_rough_full(1,1,it))
-      end do
+             soil_moi_full(1,1,it),isli_full(1,1),sfc_rough_full(1,1,it),zs_full_gfs)
+        end do
+      else
+        do it=1,nfldsfc
+          write(filename,200)ifilesfc(it)
+          call read_gfssfc(filename,mype,&
+             fact10_full(1,1,it),sst_full(1,1,it),sno_full(1,1,it), &
+             dum,dum,dum,dum,dum,isli_full(1,1),sfc_rough_full(1,1,it),zs_full_gfs)
+        end do
+        deallocate(dum)
+      end if
 
       if (biascor > zero) then
         if (mype==0) write(6,*)'GETSFC:   add bias correction to guess field ',&
@@ -438,9 +470,10 @@ contains
           zsm(j)=zero
         end do
 
+        call compress_bias(b_tskin,bias_tskin,bias_hour)
         do j=1,lon2
           do i=1,lat2
-            work2(i,j)=bias_tskin(i,j)
+            work2(i,j)=b_tskin(i,j)
           end do
         end do
         call strip(work2,zsm,1)
@@ -463,13 +496,14 @@ contains
             end do
           end do
         else
-          write(6,*)'satthin bias correction - incompatable surface resolution',&
+          write(6,*)'satthin bias correction - incompatible surface resolution',&
               nlon,nlon_sfc,nlat,nlat_sfc
           call stop2(82)
         end if
       end if
 
     else
+#endif /* HAVE_ESMF */
 
       it=ntguessfc
       rlats_sfc=rlats
@@ -509,19 +543,6 @@ contains
           sst_full(i,j,it)=work1(k)
         end do
 
-! sno_full
-        do j=1,lon1*lat1
-          zsm(j)=zero
-        end do
-        call strip(sno(1,1,it),zsm,1)
-        call mpi_allgatherv(zsm,ijn(mm1),mpi_rtype,&
-           work1,ijn,displs_g,mpi_rtype,&
-           mpi_comm_world,ierror)
-        do k=1,iglobal
-          i=ltosi(k) ; j=ltosj(k)
-          sno_full(i,j,it)=work1(k)
-        end do
-
 ! fact10_full
         do j=1,lon1*lat1
           zsm(j)=zero
@@ -533,32 +554,6 @@ contains
         do k=1,iglobal
           i=ltosi(k) ; j=ltosj(k)
           fact10_full(i,j,it)=work1(k)
-        end do
-
-! veg_frac_full
-        do j=1,lon1*lat1
-          zsm(j)=zero
-        end do
-        call strip(veg_frac(1,1,it),zsm,1)
-        call mpi_allgatherv(zsm,ijn(mm1),mpi_rtype,&
-           work1,ijn,displs_g,mpi_rtype,&
-           mpi_comm_world,ierror)
-        do k=1,iglobal
-          i=ltosi(k) ; j=ltosj(k)
-          veg_frac_full(i,j,it)=work1(k)
-        end do
-
-! soil_temp_full
-        do j=1,lon1*lat1
-          zsm(j)=zero
-        end do
-        call strip(soil_temp(1,1,it),zsm,1)
-        call mpi_allgatherv(zsm,ijn(mm1),mpi_rtype,&
-           work1,ijn,displs_g,mpi_rtype,&
-           mpi_comm_world,ierror)
-        do k=1,iglobal
-          i=ltosi(k) ; j=ltosj(k)
-          soil_temp_full(i,j,it)=work1(k)
         end do
 
 ! sfc_rough_full
@@ -574,6 +569,49 @@ contains
           sfc_rough_full(i,j,it)=work1(k)
         end do
 
+! sno_full
+        do j=1,lon1*lat1
+          zsm(j)=zero
+        end do
+        call strip(sno(1,1,it),zsm,1)
+        call mpi_allgatherv(zsm,ijn(mm1),mpi_rtype,&
+           work1,ijn,displs_g,mpi_rtype,&
+           mpi_comm_world,ierror)
+        do k=1,iglobal
+          i=ltosi(k) ; j=ltosj(k)
+          sno_full(i,j,it)=work1(k)
+        end do
+
+! veg_frac_full
+        do j=1,lon1*lat1
+          zsm(j)=zero
+        end do
+        call strip(veg_frac(1,1,it),zsm,1)
+        call mpi_allgatherv(zsm,ijn(mm1),mpi_rtype,&
+           work1,ijn,displs_g,mpi_rtype,&
+           mpi_comm_world,ierror)
+        if(use_sfc)then
+          do k=1,iglobal
+            i=ltosi(k) ; j=ltosj(k)
+            veg_frac_full(i,j,it)=work1(k)
+          end do
+        end if
+! soil_temp_full
+        do j=1,lon1*lat1
+          zsm(j)=zero
+        end do
+        call strip(soil_temp(1,1,it),zsm,1)
+        call mpi_allgatherv(zsm,ijn(mm1),mpi_rtype,&
+           work1,ijn,displs_g,mpi_rtype,&
+           mpi_comm_world,ierror)
+        if(use_sfc)then
+          do k=1,iglobal
+            i=ltosi(k) ; j=ltosj(k)
+            soil_temp_full(i,j,it)=work1(k)
+          end do
+        end if
+
+
 ! soil_moi_full
         do j=1,lon1*lat1
           zsm(j)=zero
@@ -582,15 +620,18 @@ contains
         call mpi_allgatherv(zsm,ijn(mm1),mpi_rtype,&
            work1,ijn,displs_g,mpi_rtype,&
            mpi_comm_world,ierror)
-        do k=1,iglobal
-          i=ltosi(k) ; j=ltosj(k)
-          soil_moi_full(i,j,it)=work1(k)
-        end do
+        if(use_sfc)then
+          do k=1,iglobal
+            i=ltosi(k) ; j=ltosj(k)
+            soil_moi_full(i,j,it)=work1(k)
+          end do
+        end if
       end do  !end do ntguessfc
+
+
 
 ! Now single time level surface fields
       it=ntguessfc
-
 ! soil_type_full
       do j=1,lon1*lat1
         zsm(j)=zero
@@ -599,10 +640,12 @@ contains
       call mpi_allgatherv(zsm,ijn(mm1),mpi_rtype,&
          work1,ijn,displs_g,mpi_rtype,&
          mpi_comm_world,ierror)
-      do k=1,iglobal
-        i=ltosi(k) ; j=ltosj(k)
-        soil_type_full(i,j)=work1(k)
-      end do
+      if(use_sfc)then
+        do k=1,iglobal
+          i=ltosi(k) ; j=ltosj(k)
+          soil_type_full(i,j)=work1(k)
+        end do
+      end if
 
 ! veg_type_full
       do j=1,lon1*lat1
@@ -612,12 +655,16 @@ contains
       call mpi_allgatherv(zsm,ijn(mm1),mpi_rtype,&
          work1,ijn,displs_g,mpi_rtype,&
          mpi_comm_world,ierror)
-      do k=1,iglobal
-        i=ltosi(k) ; j=ltosj(k)
-        veg_type_full(i,j)=work1(k)
-      end do
+      if(use_sfc)then
+        do k=1,iglobal
+          i=ltosi(k) ; j=ltosj(k)
+          veg_type_full(i,j)=work1(k)
+        end do
+      end if
 
+#ifndef HAVE_ESMF
     end if
+#endif /* HAVE_ESMF */
 
 ! Now stuff that isn't model dependent
 ! zs_full
@@ -633,6 +680,23 @@ contains
       i=ltosi(k) ; j=ltosj(k)
       zs_full(i,j)=work1(k)
     end do
+
+!   old gfs surface files do not have a terrain record.
+!   therefore, need to interpolate the terrain from the atm
+!   grid to the surface grid, which may not be the same.
+    if (.not. regional) then
+      missing = sfcio_realfill + 1.0_r_kind
+      if (maxval(zs_full_gfs) < missing) then
+        if (nlon == nlon_sfc .and. nlat == nlat_sfc) then
+          zs_full_gfs = zs_full
+        else
+          allocate(dummy(nlat_sfc,nlon_sfc))
+          call sfc_interpolate(zs_full,nlon,nlat,dummy,nlon_sfc,nlat_sfc)
+          zs_full_gfs = dummy
+          deallocate(dummy)
+        endif
+      endif
+    endif
 
 !   find subdomain for isli2
     if (nlon == nlon_sfc .and. nlat == nlat_sfc) then
@@ -671,10 +735,11 @@ contains
       end do
 
     end if
+    return
 
   end subroutine getsfc
 
-  subroutine map2tgrid(dlat_earth,dlon_earth,dist1,crit1,itx,ithin,itt,iuse)
+  subroutine map2tgrid(dlat_earth,dlon_earth,dist1,crit1,itx,ithin,itt,iuse,sis)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    map2tgrid
@@ -691,12 +756,11 @@ contains
 !     dlon_earth - earth relative observation longitude (radians)
 !     crit1      - quality indicator for observation (smaller = better)
 !     ithin      - number of obs to retain per thinning grid box
+!     sis        - sensor/instrument/satellite
 !
 !   output argument list:
-!     iobs  - observation counter
 !     itx   - combined (i,j) index of observation on thinning grid
 !     itt   - superobs thinning counter
-!     iobsout- location for observation to be put
 !     iuse  - .true. if observation should be used
 !     
 !
@@ -713,16 +777,22 @@ contains
     integer(i_kind),intent(out):: itt,itx
     real(r_kind),intent(in):: dlat_earth,dlon_earth,crit1
     real(r_kind),intent(out):: dist1
+    character(20),intent(in)::sis
 
     integer(i_kind) ix,iy
     real(r_kind) dlat1,dlon1,dx,dy,dxx,dyy
 
 
 !   If using all data (no thinning), simply return to calling routine
-    if(use_all)then
+    if(use_all .or. ithin <= 0)then
        iuse=.true.
-       itt=0
-       itx=1
+       itt=1
+       if(itx < itxmax) then
+         itx=itx+1
+       else
+         iuse = .false.
+         write(6,*)' ndata > maxobs when reading data for ',sis,itxmax
+       end if
        return
     end if
 
@@ -760,7 +830,7 @@ contains
                                     !.5 (at center of box)
     iuse=.true.
 
-    if(dist1*crit1 > score_crit(itx) .and. icount(itx) == 0)iuse=.false.
+    if(dist1*crit1 > score_crit(itx) .and. icount(itx))iuse=.false.
 
     return
   end subroutine map2tgrid
@@ -797,13 +867,13 @@ contains
     real(r_kind),intent(in):: dist1,crit1
 
 !   If using all data (no thinning), simply return to calling routine
-    if(use_all .or. .not. iuse .or. icount(itx)==0)return
+    if(use_all .or. .not. iuse .or. icount(itx))return
 
     if(crit1*dist1 > score_crit(itx))iuse=.false.
 
     return
   end subroutine checkob
-  subroutine finalcheck(dist1,crit1,iobs,itx,iobsout,iuse,sis)
+  subroutine finalcheck(dist1,crit1,itx,iuse)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    finalcheck
@@ -819,13 +889,8 @@ contains
 !     dist1  - quality indicator for distance (smaller = better)
 !     crit1  - quality indicator for observation (smaller = better)
 !     itx    - combined (i,j) index of observation on thinning grid
-!     iobs   - observation counter
-!     iuse   - .true. if observation should be used
-!     sis    - sensor/instrument/satellite 
 !
 !   output argument list:
-!     iobs   - observation counter
-!     iobsout- location for observation to be put
 !     iuse   - .true. if observation should be used
 !     
 !
@@ -837,53 +902,24 @@ contains
     use kinds, only: r_kind,i_kind
     implicit none
     logical,intent(inout):: iuse
-    integer(i_kind),intent(inout):: iobs,iobsout
     integer(i_kind),intent(in):: itx
     real(r_kind),intent(in):: dist1,crit1
-    character(20),intent(in):: sis
 
     real(r_kind) crit
 
-    if(.not. iuse)return
-
 !   If using all data (no thinning), simply return to calling routine
-
-    if(use_all)then
-      if(iobs < itxmax)then
-       iobs=iobs+1
-       iobsout=iobs	
-      else
-       iuse = .false.
-       write(6,*)' ndata > maxobs when reading data for ',sis,itxmax
-      end if
-      return
-    end if
+    if(.not. iuse .or. use_all)return
 
     crit=crit1*dist1
 
-    if(icount(itx) == 0)then
-
 !   Increment obs counter
 
-      if(iobs < itxmax)then
-       iobs=iobs+1
-       iobsout=iobs
-       score_crit(itx)= crit
-       ibest_obs(itx) = iobs
-       icount(itx)=icount(itx)+1
-      else
-       iuse = .false.
-       write(6,*)' ndata > maxobs when reading data for ',sis,itxmax
-      end if
-
-    else if(crit < score_crit(itx))then
+    if(icount(itx) .or. crit < score_crit(itx))then
       score_crit(itx)= crit
-      iobsout=ibest_obs(itx)
-      icount(itx)=icount(itx)+1
+      icount(itx)=.false.
     else
       iuse = .false.
     end if
-
 
     return
   end subroutine finalcheck
@@ -919,7 +955,6 @@ contains
 
     deallocate(mlon,glat,glon,hll)
     deallocate(icount)
-    deallocate(ibest_obs)
     deallocate(score_crit)
     return
   end subroutine destroygrids
@@ -946,9 +981,18 @@ contains
 !$$$
     implicit none
 
-    deallocate(sst_full,sno_full,fact10_full,isli_full)
-    deallocate(veg_type_full,soil_type_full,veg_frac_full,soil_temp_full)
-    deallocate(soil_moi_full,zs_full,sfc_rough_full)
+    if(allocated(sst_full))deallocate(sst_full)
+    if(allocated(sno_full))deallocate(sno_full)
+    if(allocated(fact10_full))deallocate(fact10_full)
+    if(allocated(isli_full))deallocate(isli_full)
+    if(allocated(veg_type_full))deallocate(veg_type_full)
+    if(allocated(soil_type_full))deallocate(soil_type_full)
+    if(allocated(veg_frac_full))deallocate(veg_frac_full)
+    if(allocated(soil_temp_full))deallocate(soil_temp_full)
+    if(allocated(soil_moi_full))deallocate(soil_moi_full)
+    if(allocated(zs_full))deallocate(zs_full)
+    if(allocated(sfc_rough_full))deallocate(sfc_rough_full)
+    if(allocated(zs_full_gfs)) deallocate(zs_full_gfs)
 
     return
   end subroutine destroy_sfc

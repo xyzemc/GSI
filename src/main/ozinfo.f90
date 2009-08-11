@@ -95,6 +95,7 @@ contains
 !   2004-04-10  treadon
 !   2004-06-16  treadon, documentation
 !   2005-10-11  treadon - change ozinfo read to free format
+!   2008-04-29  safford - rm redundant use
 !
 !   input argument list:
 !     mype - mpi task id
@@ -106,7 +107,6 @@ contains
 !   machine:  ibm rs/6000 sp
 !
 !$$$
-    use kinds, only: r_kind,i_kind
     use obsmod, only: iout_oz
     implicit none
 

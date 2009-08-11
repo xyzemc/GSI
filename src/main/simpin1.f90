@@ -12,6 +12,7 @@ subroutine simpin1(wgts,wgtsx1,wgtsx11,iwgts, &
 ! program history log:
 !   2000-01-01  parrish
 !   2004-06-22  treadon - update documentation
+!   2008-04-12  safford - rm unused vars
 !
 !   input argument list:
 !     x1in    - coordinates of interpolatees
@@ -42,7 +43,8 @@ subroutine simpin1(wgts,wgtsx1,wgtsx11,iwgts, &
 !   language: f90
 !   machine:  ibm rs/6000 sp
 !
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind,i_kind
   use constants, only: zero, one
   implicit none
@@ -58,7 +60,7 @@ subroutine simpin1(wgts,wgtsx1,wgtsx11,iwgts, &
   real(r_kind) dx1gridi(-3:n1grid+3)
   integer(i_kind) i1ref(nin)
   integer(i_kind) ix1sign(nin)
-  real(r_kind) x1temp(nin),x1p(nin)
+  real(r_kind) x1p(nin)
   integer(i_kind) ix1temp(nin)
   integer(i_kind) iflag(nin)
   real(r_kind) z0(max(64,nin/lbig),lbig)
@@ -389,7 +391,8 @@ subroutine vinvmm(b,a,m,nb,na,ninv,ninv0)
 !   language: f90
 !   machine:  ibm rs/6000 sp
 !
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind,i_kind
   use constants, only: zero, one
   implicit none
@@ -502,7 +505,8 @@ subroutine vlufm(a,ipiv,d,m,na,ninv,ninv0,s)
 !   language: f90
 !   machine:  ibm rs/6000 sp
 !
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind,i_kind
   use constants, only: zero, one
   implicit none

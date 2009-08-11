@@ -1,4 +1,25 @@
-subroutine stpsst(rsst,ssst,out,sges)
+module stpsstmod
+
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    stpsstmod    module for stpsst and its tangent linear stpsst_tl
+!
+! abstract: module for stpsst and its tangent linear stpsst_tl
+!
+! program history log:
+!   2005-05-20  Yanqiu zhu - wrap stpsst and its tangent linear stpsst_tl into one module
+!   2005-11-16  Derber - remove interfaces
+!   2008-12-02  Todling - remove stpsst_tl
+!
+
+implicit none
+
+PRIVATE
+PUBLIC stpsst
+
+contains
+
+subroutine stpsst(ssthead,rsst,ssst,out,sges)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    stpsst      calculate penalty and contribution to stepsize
@@ -18,7 +39,9 @@ subroutine stpsst(rsst,ssst,out,sges)
 !                       - unify NL qc
 !   2006-09-18  derber  - modify output for b1 and b3
 !   2006-12-11  li      - correct bug in alpha and add cc
+!   2007-03-19  tremolet - binning of observations
 !   2007-06-04  derber  - use quad precision to get reproducability over number of processors
+!   2008-06-02  safford - rm unused var and uses
 !
 !   input argument list:
 !     rsst     - search direction for sst
@@ -39,23 +62,25 @@ subroutine stpsst(rsst,ssst,out,sges)
 !
 !$$$
   use kinds, only: r_kind,i_kind,r_quad
-  use obsmod, only: ssthead,sstptr
-  use qcmod, only: nlnqc_iter
+  use obsmod, only: sst_ob_type
+  use qcmod, only: nlnqc_iter,varqc_iter
   use constants, only: zero,half,one,two,tiny_r_kind,cg_term,zero_quad
   use gridmod, only: latlon11
   implicit none
 
 ! Declare passed variables
+  type(sst_ob_type),pointer,intent(in):: ssthead
   real(r_quad),dimension(6),intent(out):: out
   real(r_kind),dimension(latlon11),intent(in):: rsst,ssst
   real(r_kind),dimension(4),intent(in)::sges
 
 ! Declare local variables  
-  integer(i_kind) i,j1,j2,j3,j4
+  integer(i_kind) j1,j2,j3,j4
   real(r_kind) w1,w2,w3,w4
   real(r_kind) val,val2
   real(r_kind) cg_sst,pen1,pen2,pen3,pencur,sst0,sst1,sst2,sst3,wgross,wnotgross
-  real(r_kind) alpha,ccoef,bcoef1,bcoef2,cc
+  real(r_kind) alpha,ccoef,bcoef1,bcoef2,cc,pg_sst
+  type(sst_ob_type), pointer :: sstptr
 
   out=zero_quad
   alpha=one/(sges(3)-sges(2))
@@ -91,9 +116,10 @@ subroutine stpsst(rsst,ssst,out,sges)
 !  Modify penalty term if nonlinear QC
      if (nlnqc_iter .and. sstptr%pg > tiny_r_kind .and.  &
                           sstptr%b  > tiny_r_kind) then
+        pg_sst=sstptr%pg*varqc_iter
         cg_sst=cg_term/sstptr%b
-        wnotgross= one-sstptr%pg
-        wgross = sstptr%pg*cg_sst/wnotgross
+        wnotgross= one-pg_sst
+        wgross = pg_sst*cg_sst/wnotgross
         pencur = -two*log((exp(-half*pencur) + wgross)/(one+wgross))
         pen1   = -two*log((exp(-half*pen1  ) + wgross)/(one+wgross))
         pen2   = -two*log((exp(-half*pen2  ) + wgross)/(one+wgross))
@@ -115,3 +141,5 @@ subroutine stpsst(rsst,ssst,out,sges)
   
   return
 end subroutine stpsst
+
+end module stpsstmod

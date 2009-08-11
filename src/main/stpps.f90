@@ -1,4 +1,25 @@
-subroutine stpps(rp,sp,out,sges,drp,dsp)
+module stppsmod
+
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    stppsmod    module for stpps and its tangent linear stpps_tl
+!
+! abstract: module for stpps and its tangent linear stpps_tl
+!
+! program history log:
+!   2005-05-18  Yanqiu zhu - wrap stpps and its tangent linear stpps_tl into one module
+!   2005-11-16  Derber - remove interfaces
+!   2008-12-02  Todling - remove stpps_tl
+!
+
+implicit none
+
+PRIVATE
+PUBLIC stpps
+
+contains
+
+subroutine stpps(pshead,rp,sp,out,sges)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    stpps       calculate penalty and contribution to
@@ -22,12 +43,11 @@ subroutine stpps(rp,sp,out,sges,drp,dsp)
 !   2006-09-18  derber  - modify to output of b1 and b3
 !   2007-02-15  rancic  - add foto
 !   2007-06-04  derber  - use quad precision to get reproducability over number of processors
+!   2008-12-03  todling - changed handling of ptr%time
 !
 !   input argument list:
 !     rp       - search direction for ps
 !     sp       - analysis increment for ps
-!     drp      - search direction for time derivative of ps
-!     dsp      - analysis increment for time derivative of ps
 !     sges     - step size estimates (4)
 !                                         
 !   output argument list:         
@@ -44,23 +64,25 @@ subroutine stpps(rp,sp,out,sges,drp,dsp)
 !
 !$$$
   use kinds, only: r_kind,i_kind,r_quad
-  use obsmod, only: psptr,pshead
-  use qcmod, only: nlnqc_iter,c_varqc
-  use constants, only: zero,half,one,two,tiny_r_kind,cg_term,zero_quad
-  use gridmod, only: latlon11
-  use jfunc, only: iter,jiter,niter_no_qc,jiterstart
+  use obsmod, only: ps_ob_type
+  use qcmod, only: nlnqc_iter,varqc_iter
+  use constants, only: zero,half,one,two,tiny_r_kind,cg_term,zero_quad,r3600
+  use gridmod, only: latlon1n1
+  use jfunc, only: iter,jiter,niter_no_qc,jiterstart,l_foto,xhat_dt,dhat_dt
   implicit none
 
 ! Declare passed variables
+  type(ps_ob_type),pointer,intent(in):: pshead
   real(r_quad),dimension(6),intent(out):: out
-  real(r_kind),dimension(latlon11),intent(in):: rp,sp,drp,dsp
+  real(r_kind),dimension(latlon1n1),intent(in):: rp,sp
   real(r_kind),dimension(4),intent(in):: sges
 
 ! Declare local variables
   integer(i_kind) i,j1,j2,j3,j4
   real(r_kind) val,val2,w1,w2,w3,w4,time_ps
   real(r_kind) alpha,ccoef,bcoef1,bcoef2,cc,ps0
-  real(r_kind) cg_ps,pen1,pen2,pen3,pencur,ps1,ps2,ps3,wgross,wnotgross,ps_pg,varqc_iter
+  real(r_kind) cg_ps,pen1,pen2,pen3,pencur,ps1,ps2,ps3,wgross,wnotgross,ps_pg
+  type(ps_ob_type), pointer :: psptr
 
   out=zero_quad
   alpha=one/(sges(3)-sges(2))
@@ -79,11 +101,15 @@ subroutine stpps(rp,sp,out,sges,drp,dsp)
      w2 = psptr%wij(2)
      w3 = psptr%wij(3)
      w4 = psptr%wij(4)
-     time_ps = psptr%time
-     val =w1* rp(j1)+w2* rp(j2)+w3* rp(j3)+w4* rp(j4)+  &
-         (w1*drp(j1)+w2*drp(j2)+w3*drp(j3)+w4*drp(j4))*time_ps
-     val2=w1* sp(j1)+w2* sp(j2)+w3* sp(j3)+w4* sp(j4)+   &     
-         (w1*dsp(j1)+w2*dsp(j2)+w3*dsp(j3)+w4*dsp(j4))*time_ps-psptr%res
+     val =w1* rp(j1)+w2* rp(j2)+w3* rp(j3)+w4* rp(j4)
+     val2=w1* sp(j1)+w2* sp(j2)+w3* sp(j3)+w4* sp(j4)-psptr%res
+     if(l_foto) then
+       time_ps = psptr%time*r3600
+       val =val +(w1*dhat_dt%p3d(j1)+w2*dhat_dt%p3d(j2)+ &
+                  w3*dhat_dt%p3d(j3)+w4*dhat_dt%p3d(j4))*time_ps
+       val2=val2+(w1*xhat_dt%p3d(j1)+w2*xhat_dt%p3d(j2)+ &
+                  w3*xhat_dt%p3d(j3)+w4*xhat_dt%p3d(j4))*time_ps
+     end if
 
      ps0=val2+sges(1)*val
      ps1=val2+sges(2)*val
@@ -96,17 +122,10 @@ subroutine stpps(rp,sp,out,sges,drp,dsp)
      pen3   = ps3*ps3*psptr%err2
 
 !  Modify penalty term if nonlinear QC
-!    Variational qc is gradually increased to avoid possible convergence problems
-     if(jiter == jiterstart .and. nlnqc_iter .and. psptr%pg > tiny_r_kind) then
-        varqc_iter=c_varqc*(iter-niter_no_qc(1)+one)
-        if(varqc_iter >=one) varqc_iter= one
-        ps_pg=psptr%pg*varqc_iter
-     else
-        ps_pg=psptr%pg
-     endif
 
      if (nlnqc_iter .and. psptr%pg > tiny_r_kind .and.  &
                           psptr%b  > tiny_r_kind) then
+        ps_pg=psptr%pg*varqc_iter
         cg_ps=cg_term/psptr%b
         wnotgross= one-ps_pg
         wgross =ps_pg*cg_ps/wnotgross
@@ -130,3 +149,5 @@ subroutine stpps(rp,sp,out,sges,drp,dsp)
   
   return
 end subroutine stpps
+
+end module stppsmod

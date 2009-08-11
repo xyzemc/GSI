@@ -1,4 +1,4 @@
-  subroutine read_pcp(nread,ndata,nodata,mype,jsatid,infile,lunout,obstype, &
+  subroutine read_pcp(nread,ndata,nodata,mype,jsatid,gstime,infile,lunout,obstype, &
               twind,sis)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -38,6 +38,8 @@
 !   2006-02-01  parrish - remove getsfc, destroy_sfc (different version called in read_obs)
 !   2006-02-03  derber  - modify for new obs control and obs count
 !   2006-05-25  treadon - replace obstype "pcp_ssm/i" with "pcp_ssmi"
+!   2007-03-01  tremolet - measure time from beginning of assimilation window
+!   2008-04-18  safford - rm unused vars
 !
 !   input argument list:
 !     mype     - mpi task id
@@ -57,24 +59,25 @@
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$  end documentation block
   use kinds, only: r_kind,r_double,i_kind
   use gridmod, only: nlat,nlon,regional,tll2xy,rlats,rlons
-  use constants, only: izero,zero,deg2rad,quarter,tiny_r_kind,one,two,rad2deg
-  use obsmod, only: iadate,offtime_data
+  use constants, only: izero,zero,deg2rad,tiny_r_kind,rad2deg,r60inv
+  use obsmod, only: offtime_data
+  use gsi_4dvar, only: iadatebgn,iadateend,l4dvar,idmodel,iwinbgn,winlen
 
   implicit none
 
 ! Declare passed variables
-  character(10),intent(in):: obstype,infile,jsatid
-  character(20),intent(in):: sis
+  character(len=*),intent(in):: obstype,infile,jsatid
+  character(len=*),intent(in):: sis
   integer(i_kind),intent(in):: lunout,mype
   integer(i_kind),intent(inout):: nread
   integer(i_kind),intent(inout):: ndata,nodata
+  real(r_kind),intent(in):: gstime
   real(r_kind),intent(in):: twind
 
 ! Declare local parameters
-  real(r_kind),parameter:: r60=60.0_r_kind
   real(r_kind),parameter:: r100=100.0_r_kind
   real(r_kind),parameter:: r360=360.0_r_kind
   real(r_kind),parameter:: r3600=3600.0_r_kind
@@ -82,7 +85,7 @@
 ! Declare local variables
   logical pcp_ssmi,pcp_tmi,pcp_amsu,pcp_stage3,outside
 
-  character(6) ptype,tag
+  character(6) ptype
   character(8) subset
   character(40) strhdr7,strsmi4,strsmi2_old,strsmi2,strtmi7,stramb5
   character(10) date
@@ -90,14 +93,13 @@
   integer(i_kind) imn,k,i,iyr,lnbufr,maxobs,isflg,idomsfc
   integer(i_kind) ihh,idd,im,kx,jdate
   integer(i_kind) mincy,ndatout,nreal,nchanl,iy,iret,idate,itype,ihr,idy,imo
-  integer(i_kind) minobs,isc,lndsea,ilat,ilon
-  integer(i_kind) ithin
+  integer(i_kind) minobs,lndsea,ilat,ilon
   integer(i_kind) idate5(5)
 
   real(r_kind) scli,sclw,dlon,dlat,scnt,sfcr
   real(r_kind) dlat_earth,dlon_earth
-  real(r_kind) scnv,stdv,spcp,tdiff,rmesh
-  real(r_kind) bmiss,dom_sfc_type
+  real(r_kind) scnv,stdv,spcp,tdiff,sstime,t4dv
+  real(r_kind) bmiss
   real(r_kind),dimension(0:3)::sfcpct
   real(r_kind),dimension(0:3):: ts
   real(r_kind) :: tsavg,vty,vfr,sty,stp,sm,sn,zz,ff10
@@ -114,8 +116,6 @@
 
   data lnbufr /10/
   data bmiss / 10e10 /
-  data ithin / -9 /
-  data rmesh / -99.999 /
 
 
 !**************************************************************************
@@ -156,30 +156,20 @@
   iy=izero; im=izero; idd=izero; ihh=izero
   write(date,'( i10)') idate
   read (date,'(i4,3i2)') iy,im,idd,ihh
-  write(6,*)'READ_PCP:      ',ptype,'_pcp bufr file date is ',iy,im,idd,ihh,infile
-  if(iy/=iadate(1).or.im/=iadate(2).or.idd/=iadate(3).or.&
-       ihh/=iadate(4)) then
+  write(6,*)'READ_PCP:  ',ptype,'_pcp bufr file date is ',idate,infile
+  IF (idate<iadatebgn.OR.idate>iadateend) THEN
      if(offtime_data) then
        write(6,*)'***READ_BUFRTOVS analysis and data file date differ, but use anyway'
      else
-       write(6,*)'***READ_PCP ERROR*** incompatable analysis and observation ',&
-          'date/time'
+       write(6,*)'***READ_PCP ERROR*** ',&
+          'incompatable analysis and observation date/time'
      end if
-     write(6,*)' year  anal/obs ',iadate(1),iy
-     write(6,*)' month anal/obs ',iadate(2),im
-     write(6,*)' day   anal/obs ',iadate(3),idd
-     write(6,*)' hour  anal/obs ',iadate(4),ihh
+     write(6,*)'Analysis start  :',iadatebgn
+     write(6,*)'Analysis end    :',iadateend
+     write(6,*)'Observation time:',idate
      if(.not.offtime_data) call stop2(93)
-  end if
+  ENDIF
          
-  idate5(1) = iy    ! year
-  idate5(2) = im    ! month
-  idate5(3) = idd   ! day
-  idate5(4) = ihh   ! hour
-  idate5(5) = izero ! minute
-  call w3fs21(idate5,mincy)
-
-
 ! Write header record to pcp obs output file
   ilon=3
   ilat=4
@@ -205,7 +195,6 @@
      idy = hdr7(4)
      ihr = hdr7(5)
      imn = hdr7(6)
-     isc = hdr7(7)
      
      idate5(1) = iyr
      idate5(2) = imo
@@ -213,11 +202,13 @@
      idate5(4) = ihr
      idate5(5) = imn
      call w3fs21(idate5,minobs)
-     tdiff   = (minobs - mincy)/r60
-
-     if (abs(tdiff) > twind) then
-        write(6,*)'READ_PCP:      time outside window ',tdiff
-        goto 10
+     t4dv=real(minobs-iwinbgn,r_kind)*r60inv
+     if (l4dvar) then
+       if (t4dv<zero .OR. t4dv>winlen) goto 10
+     else
+       sstime=real(minobs,r_kind)
+       tdiff = (sstime-gstime)*r60inv
+       if (abs(tdiff) > twind) goto 10
      endif
 
      if (pcp_ssmi)   kx = 264
@@ -325,13 +316,13 @@
 !                 (2) - sea ice percentage
 !                 (3) - snow percentage
 
-     call deter_sfc(dlat,dlon,dlat_earth,dlon_earth,tdiff,isflg,idomsfc,sfcpct,ts,tsavg, &
-                vty,vfr,sty,stp,sm,sn,zz,ff10,sfcr,mype)
+     call deter_sfc(dlat,dlon,dlat_earth,dlon_earth,t4dv,isflg,idomsfc,sfcpct,ts,tsavg, &
+                vty,vfr,sty,stp,sm,sn,zz,ff10,sfcr)
 
 !    Load output array
 
      pcpdata(1,ndata) = kx                    ! satellite id
-     pcpdata(2,ndata) = tdiff                 ! time relative to cycle (hours)
+     pcpdata(2,ndata) = t4dv                  ! time relative to cycle (hours)
      pcpdata(3,ndata) = dlon                  ! grid relative longitude
      pcpdata(4,ndata) = dlat                  ! grid relative latitude
      pcpdata(5,ndata) = isflg + .001          ! surface tag

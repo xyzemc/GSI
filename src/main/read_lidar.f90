@@ -24,6 +24,9 @@ subroutine read_lidar(nread,ndata,nodata,infile,obstype,lunout,twind,sis)
 !   2006-02-03  derber  - add new obs control
 !   2006-02-08  derber  - modify to use new convinfo module
 !   2006-02-24  derber  - modify to take advantage of convinfo module
+!   2006-07-27  msq/terry - removed cosine factor for line of sight winds and obs err
+!   2007-03-01  tremolet - measure time from beginning of assimilation window
+!   2008-04-18  safford - rm unused vars
 !
 !   input argument list:
 !     infile   - unit from which to read BUFR data
@@ -48,11 +51,12 @@ subroutine read_lidar(nread,ndata,nodata,infile,obstype,lunout,twind,sis)
         ncmiter,ncgroup,ncnumgrp,icuse,ictype,icsubtype,ioctype
   use constants, only: deg2rad,rad2deg,zero
   use obsmod, only: iadate,offtime_data
+  use gsi_4dvar, only: l4dvar,idmodel,iadatebgn,iadateend,time_4dvar,winlen
   implicit none
 
 ! Declare passed variables
-  character(10),intent(in):: obstype,infile
-  character(20),intent(in):: sis
+  character(len=*),intent(in):: obstype,infile
+  character(len=*),intent(in):: sis
   integer(i_kind),intent(in):: lunout
   integer(i_kind),intent(inout):: nread,ndata,nodata
   real(r_kind),intent(in):: twind
@@ -70,13 +74,13 @@ subroutine read_lidar(nread,ndata,nodata,infile,obstype,lunout,twind,sis)
   character(10) date
   character(8) subset
 
-  integer(i_kind) lunin,i,kx,ithin,ilat,ikx,idomsfc
+  integer(i_kind) lunin,i,kx,ilat,ikx,idomsfc
   integer(i_kind) jdate,ihh,idd,idate,iret,im,iy,k,levs
-  integer(i_kind) nbadlat,nmrecs,lat,ilon,nreal,nchanl
+  integer(i_kind) nbadlat,nmrecs,ilon,nreal,nchanl
 
 
-  real(r_kind) time,rmesh,usage,dlat,dlon,dlat_earth,dlon_earth
-  real(r_kind) rlon0,rlat0,loswind,sfcr,tsavg,ff10
+  real(r_kind) time,usage,dlat,dlon,dlat_earth,dlon_earth
+  real(r_kind) loswind,sfcr,tsavg,ff10,toff,t4dv
   real(r_kind),allocatable,dimension(:,:):: cdata_all
 
   real(r_double) rstation_id
@@ -90,8 +94,6 @@ subroutine read_lidar(nread,ndata,nodata,infile,obstype,lunout,twind,sis)
   data dwstr  /'ADWL ELEV BORA NOLS NOLC ADPL LOSC SDLE'/
   
   data lunin / 10 /
-  data ithin / -9 /
-  data rmesh / -99.999 /
 
 
 !**************************************************************************
@@ -113,6 +115,8 @@ subroutine read_lidar(nread,ndata,nodata,infile,obstype,lunout,twind,sis)
   call readmg(lunin,subset,idate,iret)
   if(iret/=0) goto 1010
 
+! Time offset
+  call time_4dvar(idate,toff)
 
 ! If date in lidar file does not agree with analysis date, 
 ! print message and stop program execution.
@@ -144,22 +148,22 @@ subroutine read_lidar(nread,ndata,nodata,infile,obstype,lunout,twind,sis)
   else
      time_correction=zero
   end if
-  write(6,*)'READ_LIDAR: bufr file date is ',iy,im,idd,ihh
-  if(iy/=iadate(1).or.im/=iadate(2).or.idd/=iadate(3).or.&
-       ihh/=iadate(4)) then
+
+  write(6,*)'READ_LIDAR: bufr file date is ',idate
+  write(6,*)'READ_LIDAR: time offset is ',toff,' hours.'
+  IF (idate<iadatebgn.OR.idate>iadateend) THEN
      if(offtime_data) then
        write(6,*)'***READ_BUFRTOVS analysis and data file date differ, but use anyway'
      else
        write(6,*)'***READ_LIDAR ERROR*** incompatable analysis ',&
           'and observation date/time'
      end if
-     write(6,*)' year  anal/obs ',iadate(1),iy
-     write(6,*)' month anal/obs ',iadate(2),im
-     write(6,*)' day   anal/obs ',iadate(3),idd
-     write(6,*)' hour  anal/obs ',iadate(4),ihh
+     write(6,*)'Analysis start  :',iadatebgn
+     write(6,*)'Analysis end    :',iadateend
+     write(6,*)'Observation time:',idate
      if(offtime_data) write(6,'(" time_correction = ",f12.2)') time_correction
      if(.not.offtime_data) call stop2(91)
-  end if
+  ENDIF
 
 
 ! Big loop over bufr file	
@@ -186,8 +190,13 @@ subroutine read_lidar(nread,ndata,nodata,infile,obstype,lunout,twind,sis)
      if(.not. dwl) go to 10
      nread=nread+1
 
-     time=hdr(4) + time_correction
-     if (abs(time) > ctwind(ikx) .or. abs(time) > twind) go to 10
+     t4dv = toff + hdr(4)
+     if (l4dvar) then
+       if (t4dv<zero .OR. t4dv>winlen) go to 10
+     else
+       time=hdr(4) + time_correction
+       if (abs(time) > ctwind(ikx) .or. abs(time) > twind) go to 10
+     endif
 
      rstation_id=hdr(1)
 
@@ -221,12 +230,12 @@ subroutine read_lidar(nread,ndata,nodata,infile,obstype,lunout,twind,sis)
 
         call ufbint(lunin,dwld,8,1,levs,dwstr)
 
-        loswind=dwld(7)/(cos(dwld(2)*deg2rad)*cos(dlat_earth))   ! obs wind (line of sight component)
-        call deter_sfc2(dlat_earth,dlon_earth,time,idomsfc,tsavg,ff10,sfcr)
+        loswind=dwld(7)/(cos(dwld(2)*deg2rad))    ! obs wind (line of sight component)
+        call deter_sfc2(dlat_earth,dlon_earth,t4dv,idomsfc,tsavg,ff10,sfcr)
         cdata_all(1,ndata)=ikx                    ! obs type
         cdata_all(2,ndata)=dlon                   ! grid relative longitude
         cdata_all(3,ndata)=dlat                   ! grid relative latitude
-        cdata_all(4,ndata)=time                   ! obs time (analyis relative hour)
+        cdata_all(4,ndata)=t4dv                   ! obs time (analyis relative hour)
         cdata_all(5,ndata)=dwld(1)                ! obs height (altitude) (m)
         cdata_all(6,ndata)=dwld(2)*deg2rad        ! elevation angle (radians)
         cdata_all(7,ndata)=dwld(3)*deg2rad        ! bearing or azimuth (radians)
@@ -234,7 +243,7 @@ subroutine read_lidar(nread,ndata,nodata,infile,obstype,lunout,twind,sis)
         cdata_all(9,ndata)=dwld(5)                ! number of cloud laser shots
         cdata_all(10,ndata)=dwld(6)               ! atmospheric depth
         cdata_all(11,ndata)=loswind               ! obs wind (line of sight component) msq
-        cdata_all(12,ndata)=dwld(8)/cos(dlat_earth)! standard deviation (obs error) msq
+        cdata_all(12,ndata)=dwld(8)               ! standard deviation (obs error) msq
         cdata_all(13,ndata)=rstation_id           ! station id
         cdata_all(14,ndata)=usage                 ! usage parameter
         cdata_all(15,ndata)=idomsfc+0.001         ! dominate surface type

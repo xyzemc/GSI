@@ -9,6 +9,7 @@ subroutine get_semimp_mats(tbar,pbar,ahat,bhat,chat,amat,bmat,hmat,smat)
 !
 ! program history log:
 !   2007-05-08  kleist
+!   2008-06-04  safford - rm unused uses
 !
 ! usage:
 !   input argument list:
@@ -33,8 +34,8 @@ subroutine get_semimp_mats(tbar,pbar,ahat,bhat,chat,amat,bmat,hmat,smat)
 !
 !$$$
   use kinds,only: r_kind,i_kind
-  use constants,only: zero,half,one,two,three,four,rd,rd_over_cp
-  use gridmod,only: nsig,tref5,idvc5
+  use constants,only: zero,half,one,two,four,rd,rd_over_cp
+  use gridmod,only: nsig
   implicit none
 
 ! Declare passed variables
@@ -47,7 +48,7 @@ subroutine get_semimp_mats(tbar,pbar,ahat,bhat,chat,amat,bmat,hmat,smat)
   real(r_kind),dimension(nsig-1,nsig-1):: zm
   real(r_kind),dimension(nsig-1,nsig):: tm,wtm
   real(r_kind),dimension(nsig,nsig-1):: pm
-  real(r_kind),dimension(nsig-1):: lll,mmm
+  integer(i_kind),dimension(nsig-1):: lll,mmm
   real(r_kind),dimension(nsig):: dpkref,rpkref,rp2ref,dbkref,bbkref,rdlref,&
        hmat0,hmatk,alpha,beta,gamma,delta,dup,dum
   real(r_kind),dimension(nsig+1):: c0kref
@@ -266,42 +267,50 @@ subroutine get_semimp_mats(tbar,pbar,ahat,bhat,chat,amat,bmat,hmat,smat)
   return
 end subroutine get_semimp_mats
 
+
       subroutine iminv (a,n,d,l,m)                                              
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    iminv    invert a matrix
+!
+!   prgrmmr:
+!
+! abstract:      the standard gauss-jordan method is used. the determinant           
+!                is also calculated. a determinant of zero indicates that            
+!                the matrix is singular.                                             
 !                                                                               
-!     ..................................................................       
-!                                                                               
-!        ................                                                       
-!                                                                               
-!        purpose                                                                
-!           invert a matrix                                                     
-!                                                                               
-!        usage                                                                  
-!           call iminv (a,n,d,l,m)                                              
-!                                                                               
-!        description of parameters                                              
-!           a - input matrix, destroyed in computation and replaced by          
-!               resultant inverse.                                              
-!           n - order of matrix a                                               
-!           d - resultant determinant                                           
-!           l - work vector of length n                                         
-!           m - work vector of length n                                         
-!                                                                               
-!        remarks                                                                
-!           matrix a must be a general matrix                                   
-!                                                                               
-!        .............................................                          
-!           none                                                                
-!                                                                               
-!        method                                                                 
-!           the standard gauss-jordan method is used. the determinant           
-!           is also calculated. a determinant of zero indicates that            
-!           the matrix is singular.                                             
-!                                                                               
-!     ..................................................................        
-!                                                                               
-      dimension a(n*n),l(n),m(n)                                                
-!                                                                               
-!        ...............................................................        
+! remarks        matrix a must be a general matrix                                   
+!
+! program history log:
+!   2008-06-04  safford -- add subprogram doc block
+!
+!   input argument list:
+!     a - input matrix, destroyed in computation and replaced by resultant inverse
+!     n - order of matrix a                                               
+!     d - resultant determinant                                           
+!     l - work vector of length n                                         
+!     m - work vector of length n                                         
+!
+!   output argument list:
+!     a - input matrix, destroyed in computation and replaced by resultant inverse
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
+        use kinds,only: r_kind,i_kind
+        implicit none
+
+        integer(i_kind):: n
+        integer(i_kind),dimension(n):: l,m
+        real(r_kind),dimension(n*n):: a
+
+        integer(i_kind):: nk,k,j,iz,i,ij
+        integer(i_kind):: kj,ik,jr,jq,jk,ki,kk,jp,ji
+
+        real(r_kind):: d,biga,hold
 !                                                                               
 !        if a double precision version of this routine is desired, the          
 !        ! in column 1 should be removed from the double precision              

@@ -1,5 +1,5 @@
    subroutine setuprad(lunin,mype,aivals,stats,nchanl,nreal,nobs,&
-     obstype,isis,is,rad_diagsave,channelinfo)
+     obstype,isis,is,rad_diagsave)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    setuprad    compute rhs of oi equation for radiances
@@ -74,14 +74,19 @@
 !   2006-07-28  derber  - modify to use new inner loop obs data structure
 !                       - unify NL qc and add satellite and solar azimuth angles
 !   2006-07-31  kleist  - change call to intrppx, no longer get ps at ob location
+!   2006-12-21  sienkiewicz - add 'no85GHz' flag for F8 SSM/I 
 !   2007-01-24  kazumori- modify to qcssmi subroutine output and use ret_ssmis
 !                         for ssmis_las only (assumed UKMO SSMIS data)
 !   2007-03-09      su  - remove the perturbation to the observation
+!   2007-03-19  tremolet - binning of observations
 !   2007-04-04  wu      - do not load ozone jacobian if running regional mode
 !   2007-05-30  h.liu   - replace c1 with constoz in ozone jacobian
+!   2007-06-05  tremolet - add observation diagnostics structure
 !   2007-06-08  kleist/treadon - add prefix (task id or path) to diag_rad_file
 !   2007-06-29  jung    - update CRTM interface
 !   2008-01-30  h.liu/treadon - add SSU cell pressure correction block
+!   2008-05-21  safford - rm unused vars and uses
+!   2008-12-03  todling - changed handle of tail%time
 !
 !   input argument list:
 !     lunin   - unit from which to read radiance (brightness temperature, tb) obs
@@ -111,12 +116,13 @@
       crtm_allocate_atmosphere,grass_scrub,grass_soil, meadow_grass,urban_concrete, &
       irrigated_low_vegetation,broadleaf_pine_forest,pine_forest,compacted_soil, &
       broadleaf_forest,broadleaf_brush,tundra,tilled_soil,scrub,scrub_soil,&
-      crtm_options_type
+      crtm_options_type,crtm_init,crtm_destroy,success,crtm_destroy_options, &
+      crtm_allocate_options
   use crtm_rtsolution_define, only: crtm_rtsolution_type, crtm_allocate_rtsolution, &
-      crtm_destroy_rtsolution 
+      crtm_destroy_rtsolution
   use crtm_spccoeff, only: sc
   use crtm_atmosphere_define, only:h2o_id,crtm_assign_atmosphere, & 
-      crtm_destroy_atmosphere,volume_mixing_ratio_units,crtm_zero_atmosphere
+      crtm_destroy_atmosphere,volume_mixing_ratio_units,crtm_zero_atmosphere  
   use crtm_surface_define, only: crtm_assign_surface,crtm_destroy_surface, &
       crtm_zero_surface
   use crtm_channelinfo_define, only: crtm_channelinfo_type
@@ -124,19 +130,21 @@
   use message_handler, only: success
   use radinfo, only: nuchan,tlapmean,ifactq,predx,cbias,ermax_rad,&
        npred,jpch_rad,varch,iuse_rad,nusis,fbias,retrieval,b_rad,pg_rad,&
-       n_sensors
-  use guess_grids, only: nfldsig,hrdifsig,add_rtm_layers,sfcmod_gfs,sfcmod_mm5,&
+       crtm_coeffs_path
+  use guess_grids, only: add_rtm_layers,sfcmod_gfs,sfcmod_mm5,&
        comp_fact10
-  use obsmod, only: iadate,ndat,mype_diaghdr,lunobs_obs,nchan_total, &
+  use obsmod, only: iadate,ianldate,ndat,mype_diaghdr,lunobs_obs,nchan_total, &
            dplat,dtbduv_on,rmiss_single,rad_ob_type,radhead,radtail,&
-           dirname
+           i_rad_ob_type,obsdiags,obsptr,lobsdiagsave,nobskeep,lobsdiag_allocated,&
+           dirname,time_offset
+  use gsi_4dvar, only: nobs_bins,hr_obsbin
   use gridmod, only: istart,jstart,jlon1,nlon,nsig,nlat,nsig2,nsig3,nsig3p1,&
        lat2,regional,nsig4,nsig5,nsig3p2,nsig3p3,msig,nlayers,get_ij
   use satthin, only: super_val1
   use constants, only: half,ozcon,constoz,amsua_clw_d1,amsua_clw_d2,tiny_r_kind,&
        fv,zero,one,izero,deg2rad,rad2deg,one_tenth,quarter,two,three,four,five,&
-       zero_single,ttp,grav,cg_term,tpwcon,t0c,r1000,wgtlim,r3600
-  use jfunc, only: jiter,l_foto     
+       zero_single,ttp,grav,cg_term,tpwcon,t0c,r1000,wgtlim
+  use jfunc, only: jiter,miter
   use sst_retrieval, only: setup_sst_retrieval,avhrr_sst_retrieval,&
        finish_sst_retrieval,spline_cub
   implicit none
@@ -148,7 +156,6 @@
   integer(i_kind),intent(in):: lunin,mype,nchanl,nreal,nobs,is
   real(r_kind),dimension(40,ndat),intent(inout):: aivals
   real(r_kind),dimension(7,jpch_rad),intent(inout):: stats
-  type(crtm_channelinfo_type),dimension(n_sensors), intent(in) :: channelinfo
 
 ! Declare local parameters
   integer(i_kind),parameter:: ipchan=7
@@ -158,6 +165,7 @@
   integer(i_kind),parameter::  n_absorbers = 2
   integer(i_kind),parameter::  n_clouds = 0
   integer(i_kind),parameter::  n_aerosols = 0
+  type(crtm_channelinfo_type),dimension(1) :: channelinfo
 
 ! Mapping land surface type of GFS to CRTM
 !  Note: index 0 is water, and index 13 is ice. The two indices are not
@@ -186,8 +194,8 @@
   real(r_kind),parameter:: r0_03=0.03_r_kind
   real(r_kind),parameter:: r0_05=0.05_r_kind
 
-  real(r_kind),parameter:: r0_1=0.1_r_kind
-  real(r_kind),parameter:: r0_2=0.2_r_kind
+! real(r_kind),parameter:: r0_1=0.1_r_kind
+! real(r_kind),parameter:: r0_2=0.2_r_kind
   real(r_kind),parameter:: r0_3=0.3_r_kind
   real(r_kind),parameter:: r0_4=0.4_r_kind
   real(r_kind),parameter:: r0_5=0.5_r_kind
@@ -196,7 +204,7 @@
   real(r_kind),parameter:: r0_8=0.8_r_kind
   real(r_kind),parameter:: r0_9=0.9_r_kind
   real(r_kind),parameter:: r1_1=1.1_r_kind
-  real(r_kind),parameter:: r1_2=1.2_r_kind
+! real(r_kind),parameter:: r1_2=1.2_r_kind
   real(r_kind),parameter:: r1_3=1.3_r_kind
   real(r_kind),parameter:: r1_4=1.4_r_kind
 
@@ -205,7 +213,7 @@
   real(r_kind),parameter:: r40=40.0_r_kind
   real(r_kind),parameter:: r70=70.0_r_kind
   real(r_kind),parameter:: r100=100.0_r_kind
-  real(r_kind),parameter:: r200=200.0_r_kind
+! real(r_kind),parameter:: r200=200.0_r_kind
   real(r_kind),parameter:: r284=284.0_r_kind
   real(r_kind),parameter:: r285=285.0_r_kind
   real(r_kind),parameter:: r400=400.0_r_kind
@@ -224,21 +232,21 @@
   character(128) diag_rad_file
 
   integer(i_kind) iextra,jextra,error_status,itype,istat
-  integer(i_kind) err1,err2,err3,err4,ich9
+  integer(i_kind) err1,err2,err3,err4,err5,ich9
   integer(i_kind) isatid,itime,ilon,ilat,ilzen_ang,iscan_ang,ilazi_ang
   integer(i_kind) iszen_ang,ifrac_sea,ifrac_lnd,ifrac_ice
-  integer(i_kind) ifrac_sno,ilone,ilate,isst_ncep_ges,isst_ncep_anl
+  integer(i_kind) ifrac_sno,ilone,ilate
   integer(i_kind) isst_hires,isst_navy,idata_type,iclr_sky,iscan_pos,iclavr
   integer(i_kind) isazi_ang,isgnt_ang,its_sea,its_lnd,its_ice,its_sno
   integer(i_kind) itsavg,ivty,ivfr,isty,istp,ism,isn,izz,idomsfc,isfcr,iff10
-  integer(i_kind) l,ll,jx,isli
-  integer(i_kind) m,mm,nblktot,jc,nobs1,nblk
+  integer(i_kind) isli
+  integer(i_kind) m,mm,jc
   integer(i_kind) icc
-  integer(i_kind) j,k,ncnt,i,ksat
+  integer(i_kind) j,k,ncnt,i
   integer(i_kind) mm1
   integer(i_kind) ixx
-  integer(i_kind) jsat,kk,n,nlev,kval,kk2
-  integer(i_kind) itmp,iflg,ii,loc,lcloud,idate
+  integer(i_kind) kk,n,nlev,kval,kk2,ibin,ioff,iii
+  integer(i_kind) ii,jj,lcloud,idiag
   integer(i_kind) nadir
   integer(i_kind) kraintype,ierrret
   integer(i_kind) sensorindex
@@ -252,7 +260,7 @@
   real(r_kind) demisf,fact,dtempf,dtbf,tbcx1,tbcx2
   real(r_kind) term,sum,tlap,dsval,tb_obsbc1,clwx
   real(r_kind) de1,de2,de3,dtde1,dtde2,dtde3
-  real(r_kind) fact1,fact2,fact3,fact4,fact5,dsi,si
+  real(r_kind) fact1,fact2,fact3,fact4,fact5,dsi
   real(r_kind) drad,factch4,factch6
   real(r_kind) dradnob,varrad,delta,error
   real(r_kind) tmp,sum2,sum3,dts
@@ -267,7 +275,7 @@
   real(r_kind) ys_bias_sst
   real(r_kind) sstnv,sstfg,sstcu,dtp_avh
   real(r_kind) cosza,val_obs
-  real(r_kind) earth_lon,earth_lat,cenlatx,tpw5
+  real(r_kind) cenlatx,tpw5
   real(r_kind) uwind,vwind,f10
   real(r_kind) clw,tpwc,si85,sgagl,total_od
 
@@ -275,13 +283,13 @@
 
   real(r_single),dimension(ireal):: diagbuf
   real(r_single),allocatable,dimension(:,:):: diagbufex
-  real(r_single),dimension(ipchan+npred+1,nchanl)::diagbufchan
+  real(r_single),allocatable,dimension(:,:):: diagbufchan
 
   real(r_kind),dimension(npred+1,nchanl)::predterms
   real(r_kind),dimension(npred-2):: pred
   real(r_kind),dimension(nchanl):: varinv,varinv_use,error0,errf
   real(r_kind),dimension(nchanl):: tb_obs,tbc,tbcnob,tlapchn,tb_obs_sdv
-  real(r_kind),dimension(nchanl):: tmpvar,tnoise,errmax
+  real(r_kind),dimension(nchanl):: tnoise,errmax
   real(r_kind),dimension(nchanl):: var,ratio_raderr,radinv,pred_tlap
   real(r_kind),dimension(nchanl):: emissivity,ts,emissivity_k
   real(r_kind),dimension(nchanl):: uwind_k,vwind_k
@@ -299,20 +307,23 @@
   real(r_kind),dimension(5):: tmp_time
   real(r_kind),dimension(0:3):: dtskin
   real(r_kind) dtsavg
+  real(r_kind):: sqrt_tiny_r_kind
 
   integer(i_kind),dimension(nchanl):: ich,icxx,id_qc
   integer(i_kind),dimension(msig):: klevel
 
   character(10) filex
   character(12) string
+  character(len=20),dimension(1):: sensorlist
 
   logical hirs2,msu,goessndr,hirs3,hirs4,hirs,amsua,amsub,airs,hsb,goes_img,mhs
   logical avhrr,avhrr_navy,lextra,ssu,iasi
   logical ssmi,ssmis,amsre,amsre_low,amsre_mid,amsre_hig
   logical ssmis_las,ssmis_uas,ssmis_env,ssmis_img
-  logical sea,mixed,land,ice,snow,toss
+  logical sea,mixed,land,ice,snow,toss,l_may_be_passive
   logical micrim,microwave
   logical,dimension(nobs):: luse
+  logical no85GHz
 
   type(crtm_atmosphere_type),dimension(1)   :: atmosphere
   type(crtm_surface_type),dimension(1)      :: surface
@@ -348,6 +359,7 @@
   do j=1,npred-2
      pred(j)=zero
   end do
+  sqrt_tiny_r_kind = ten*sqrt(tiny_r_kind)
 
 ! Initialize logical flags for satellite platform
 
@@ -392,7 +404,7 @@
   ilon      = 3  ! index of grid relative obs location (x)
   ilat      = 4  ! index of grid relative obs location (y)
   ilzen_ang = 5  ! index of local (satellite) zenith angle (radians)
-  ilazi_ang = 6  ! index of local (satellite) zenith angle (radians)
+  ilazi_ang = 6  ! index of local (satellite) azimuth angle (radians)
   iscan_ang = 7  ! index of scan (look) angle (radians)
   iscan_pos = 8  ! index of integer scan position 
   iszen_ang = 9  ! index of solar zenith angle (degrees)
@@ -420,14 +432,71 @@
   ilate     = 31 ! index of earth relative latitude (degrees)
 
 
+! Initialize channel related information
+  tnoise = r1e10
+  errmax = r1e10
+  l_may_be_passive = .false.
+  toss = .true.
+  jc=izero
+  do j=1,jpch_rad
+     if(isis == nusis(j))then 
+        jc=jc+1
+        if(jc > nchanl)then
+           write(6,*)'SETUPRAD:  ***ERROR*** in channel numbers, jc,nchanl=',jc,nchanl,&
+                '  ***STOP IN SETUPRAD***'
+           call stop2(71)
+        end if
+
+!       Load channel numbers into local array based on satellite type
+
+        ich(jc)=j
+!
+!       Set error instrument channels
+        tnoise(jc)=varch(j)
+        errmax(jc)=ermax_rad(j)
+        if (iuse_rad(j)< -1 .or. (iuse_rad(j) == -1 .and.  &
+              .not.rad_diagsave)) tnoise(jc)=r1e10
+        if (iuse_rad(j)>-1) l_may_be_passive=.true.
+        if (tnoise(jc) < 1.e4) toss = .false.
+     end if
+  end do
+  if ( mype == 0 .and. .not.l_may_be_passive) write(6,*)mype,'setuprad: passive obs',is,isis
+  if(nchanl > jc) write(6,*)'SETUPRAD:  channel number reduced for ', &
+       obstype,nchanl,' --> ',jc
+  if(jc == izero) then
+     if(mype == izero) write(6,*)'SETUPRAD: No channels found for ', &
+          obstype,isis
+     if(nobs > izero)read(lunin)
+     go to 135
+  end if
+  if (toss) then
+     if(mype == izero)write(6,*)'SETUPRAD: all obs var > 1e4.  do not use ',&
+          'data from satellite is=',isis
+     if(nobs >izero)read(lunin)                    
+     goto 135
+  endif
+
+!  Initialize radiative transfer
+
+   sensorlist(1)=isis
+   if( crtm_coeffs_path /= "" ) then
+    if(mype==0) write(6,*)'SETUPRAD: crtm_init() on path "'//trim(crtm_coeffs_path)//'"'
+    error_status = crtm_init(channelinfo,SensorID=sensorlist,&
+       Process_ID=mype,Output_Process_ID=0, &
+       File_Path = crtm_coeffs_path )
+   else
+     error_status = crtm_init(channelinfo,SensorID=sensorlist,&
+       Process_ID=mype,Output_Process_ID=0)
+   endif
+   if (error_status /= success) then
+     write(6,*)'SETUPRAD:  ***ERROR*** crtm_init error_status=',error_status,&
+          '   TERMINATE PROGRAM EXECUTION'
+     call stop2(71)
+   endif
+
    sensorindex = 0
 !  determine specific sensor
-   sensor_search: do j = 1, n_sensors
-     if (channelinfo(j)%sensor_id == isis ) then
-         sensorindex = j
-         exit sensor_search
-     endif
-   end do sensor_search
+   if (channelinfo(1)%sensor_id == isis ) sensorindex = 1
    if (sensorindex == 0 ) then
       write(6,*)'SETUPRAD:  ***WARNING*** problem with sensorindex=',isis,&
            ' --> CAN NOT PROCESS isis=',isis,'   TERMINATE PROGRAM EXECUTION'
@@ -445,7 +514,7 @@
      iclavr        = 32 ! index CLAVR cloud flag with AVHRR data
      isst_hires    = 31 ! index of interpolated hires sst (K)
   elseif (amsre) then
-     isgnt_ang     = 30 ! index of sun glint angle (degrees)
+     isgnt_ang     = 32 ! index of sun glint angle (degrees)
   endif
 
 ! Set number of extra pieces of information to write to diagnostic file
@@ -486,7 +555,7 @@
        atmosphere_k(channelinfo(sensorindex)%n_channels,1),&
        surface_k   (channelinfo(sensorindex)%n_channels,1))
 
-  err1=0; err2=0; err3=0; err4=0
+  err1=0; err2=0; err3=0; err4=0; err5=0
   if(msig > max_n_layers)then
     write(6,*) 'SETUPRAD:  msig > max_n_layers - increase crtm max_n_layers ',&
          msig,max_n_layers
@@ -496,10 +565,13 @@
   err2 = crtm_allocate_surface(channelinfo(sensorindex)%n_channels,surface(1))
   err3 = crtm_allocate_rtsolution(msig,rtsolution)
   err4 = crtm_allocate_rtsolution(msig,rtsolution_k)
+  err5 = crtm_allocate_options(nchanl,options)
   if (err1/=success) write(6,*)' ***ERROR** allocating atmosphere.    err=',err1
   if (err2/=success) write(6,*)' ***ERROR** allocating surface.       err=',err2
   if (err3/=success) write(6,*)' ***ERROR** allocating rtsolution.    err=',err3
   if (err4/=success) write(6,*)' ***ERROR** allocating rtsolution_k.  err=',err4
+  if (err5/=success) write(6,*)' ***ERROR** allocating options.       err=',err5
+
 
   atmosphere(1)%n_layers = msig
 !  atmosphere%level_temperature_input = 0
@@ -514,66 +586,47 @@
 
 ! Load surface sensor data structure
   surface(1)%sensordata%n_channels = channelinfo(sensorindex)%n_channels
+!! REL-1.2 CRTM
+!!  surface(1)%sensordata%select_wmo_sensor_id  = channelinfo(1)%wmo_sensor_id
+!! RB-1.1.rev1855 CRTM
   surface(1)%sensordata%sensor_id  = channelinfo(sensorindex)%wmo_sensor_id
+
 
   do i=1,nchanl
 
-    error_status = crtm_assign_atmosphere(atmosphere(1),atmosphere_k(i,1))
-    if (error_status /= success) &
-         write(6,*)'  ***ERROR*** crtm_assign_atmosphere ',&
-         error_status
-
-    error_status = crtm_assign_surface(surface(1),surface_k(i,1))
-    if (error_status /= success) &
-         write(6,*)'  ***ERROR*** crtm_assign_surface ',&
-         error_status
-
+     error_status = crtm_assign_atmosphere(atmosphere(1),atmosphere_k(i,1))
+     if (error_status /= success) &
+          write(6,*)'  ***ERROR*** crtm_assign_atmosphere ',&
+          error_status
+     error_status = crtm_assign_surface(surface(1),surface_k(i,1))
+     if (error_status /= success) &
+          write(6,*)'  ***ERROR*** crtm_assign_surface ',&
+          error_status
 
   end do
 
-! Initialize channel related information
-  tnoise = r1e10
-  errmax = r1e10
-  toss = .true.
-  jc=izero
-  do j=1,jpch_rad
-     if(isis == nusis(j))then 
-        jc=jc+1
-        if(jc > nchanl)then
-           write(6,*)'SETUPRAD:  ***ERROR*** in channel numbers, jc,nchanl=',jc,nchanl,&
-                '  ***STOP IN SETUPRAD***'
-           call stop2(71)
-        end if
-
-!       Load channel numbers into local array based on satellite type
-
-        ich(jc)=j
-!
-!       Set error instrument channels
-        tnoise(jc)=varch(j)
-        errmax(jc)=ermax_rad(j)
-        if (iuse_rad(j)< -1 .or. (iuse_rad(j) == -1 .and.  &
-              .not.rad_diagsave)) tnoise(jc)=r1e10
-        if (tnoise(jc) < 1.e4) toss = .false.
-     end if
-  end do
-  if(nchanl > jc) write(6,*)'SETUPRAD:  channel number reduced for ', &
-       obstype,nchanl,' --> ',jc
-  if(jc == izero) then
-     if(mype == izero) write(6,*)'SETUPRAD: No channels found for ', &
-          obstype,isis
-     if(nobs > izero)read(lunin)
-     go to 135
-  end if
-  if (toss) then
-     if(mype == izero)write(6,*)'SETUPRAD: all obs var > 1e4.  do not use ',&
-          'data from satellite is=',isis
-     if(nobs >izero)read(lunin)                    
-     goto 135
-  endif
 
 ! Special setup for SST retrieval
   if (retrieval) call setup_sst_retrieval(obstype,dplat(is),mype)
+
+
+! If SSM/I, check for non-use of 85GHz channel, for QC workaround
+! set no85GHz true if any 85GHz is not used, and other freq channel is used
+  no85GHz = .false.
+  if (ssmi) then
+    if (iuse_rad(ich(6)) < 1 .or. iuse_rad(ich(7)) < 1 ) then
+       do j = 1,5
+         if (iuse_rad(ich(j)) == 1) then
+            no85GHz = .true.
+            cycle
+         endif
+       enddo
+       if (no85GHz .and. mype == izero) write(6,*) &
+          'SETUPRAD: using no85GHZ workaround for SSM/I ',isis
+    endif
+  endif
+
+
 
 ! If diagnostic file requested, open unit to file and write header.
   if (rad_diagsave) then
@@ -581,17 +634,16 @@
      write(string,1976) jiter
 1976 format('_',i2.2)
      diag_rad_file= trim(dirname) // trim(filex) // '_' // trim(dplat(is)) // trim(string)
-     open(4,file=diag_rad_file,form='unformatted')
+     open(4,file=trim(diag_rad_file),form='unformatted')
      rewind 4
      if (lextra) allocate(diagbufex(iextra,jextra))
 
 !    Initialize/write parameters for satellite diagnostic file on
 !    first outer iteration.
      if (mype==mype_diaghdr(is)) then
-        idate=iadate(4)+iadate(3)*100+iadate(2)*10000+iadate(1)*1000000
-        write(4) isis,dplat(is),obstype,jiter,nchanl,npred,idate,ireal,ipchan,iextra,jextra
+        write(4) isis,dplat(is),obstype,jiter,nchanl,npred,ianldate,ireal,ipchan,iextra,jextra
         write(6,*)'SETUPRAD:  write header record for ',&
-             isis,ireal,iextra,' to file ',trim(diag_rad_file),' ',iadate
+             isis,ireal,iextra,' to file ',trim(diag_rad_file),' ',ianldate
         do i=1,nchanl
            n=ich(i)
            if( n < 1 )cycle
@@ -609,11 +661,18 @@
      endif
   endif
 
+  idiag=ipchan+npred+1
+  if (lobsdiagsave) idiag=idiag+4*miter+1
+  allocate(diagbufchan(idiag,nchanl))
   
 
 ! Load data array for current satellite
   read(lunin) data_s,luse
 
+  if (nobskeep>0) then
+     write(6,*)'setuprad: nobskeep',nobskeep
+     call stop2(275)
+  end if
 
 ! PROCESSING OF SATELLITE DATA
 
@@ -817,6 +876,7 @@
      end if
 
      surface(1)%wind_speed            = f10*sqrt(uwind*uwind+vwind*vwind)
+     surface(1)%wind_direction        = rad2deg*atan2(-uwind,-vwind)
      surface(1)%water_coverage        = sfcpct(1)
      surface(1)%land_coverage         = sfcpct(2)
      surface(1)%ice_coverage          = sfcpct(3)
@@ -898,6 +958,7 @@
                   surface_k(i,1)%land_temperature + &
                   surface_k(i,1)%ice_temperature + &
                   surface_k(i,1)%snow_temperature
+        if (abs(ts(i))<sqrt_tiny_r_kind) ts(i) = sign(sqrt_tiny_r_kind,ts(i))
         if (surface(1)%wind_speed>small_wind) then
           term = surface_k(i,1)%wind_speed * f10*f10 / surface(1)%wind_speed
           uwind_k(i) = term * uwind
@@ -926,6 +987,9 @@
            total_od   = total_od + rtsolution(i,1)%layer_optical_depth(k)
 !          if (total_od*secant < limit_exp)ptau5(kk,i) = exp(-total_od*secant_term)
            ptau5(kk,i) = exp(-min(limit_exp,total_od*secant_term))
+        end do
+        do k=1,nsig
+           if (abs(temp(k,i))<sqrt_tiny_r_kind) temp(k,i)=sign(sqrt_tiny_r_kind,temp(k,i))
         end do
      end do
 
@@ -984,7 +1048,7 @@
 
        else if(ssmi .or. ssmis_uas) then
 
-           call retrieval_mi(tb_obs(1),nchanl, ssmi,ssmis,     &
+           call retrieval_mi(tb_obs(1),nchanl, ssmi,ssmis,no85GHz, &
                 tpwc,clw,si85,kraintype,ierrret ) 
 
        endif
@@ -1010,10 +1074,10 @@
         tlap = tlapchn(i)-tlapmean(mm)
 
         predterms(1,i) = cbias(nadir,mm)             !global_satangbias
-        predterms(2,i) = tlap*predx(mm,npred)        !tlap
-        predterms(3,i) = tlap*tlap*predx(mm,npred-1) !tlap*tlap
+        predterms(2,i) = tlap*predx(npred,mm)        !tlap
+        predterms(3,i) = tlap*tlap*predx(npred-1,mm) !tlap*tlap
         do j = 1,npred-2
-           predterms(j+3,i) = predx(mm,j)*pred(j)
+           predterms(j+3,i) = predx(j,mm)*pred(j)
         end do
 
 !       Apply SST dependent bias correction with cubic spline
@@ -1464,7 +1528,7 @@
 !                Adjust observation error based on magnitude of liquid
 !                water correction.  0.2 is empirical factor
 
-                 term=term+0.2_r_kind*(predx(ich(i),3)*pred(3))**2
+                 term=term+0.2_r_kind*(predx(3,ich(i))*pred(3))**2
 
                  errf(i)   = efactmc*errf(i)
                  varinv(i) = vfactmc*varinv(i)
@@ -1804,6 +1868,7 @@
          end do
             
 !        Reduce qc bounds in tropics
+         cenlatx=abs(cenlat)*oneover25
          if (cenlatx < one) then
             if(luse(n))aivals(6,is) = aivals(6,is) + one
             efact = half*(cenlatx+one)
@@ -2006,52 +2071,122 @@
 !    End loop over channels.
      end do
 
-!    Load data into output arrays
-     if(.not. retrieval)then
-        if(icc > 0)then
-          ncnt =ncnt+1
-          if(.not. associated(radhead))then
-             allocate(radhead,stat=istat)
-             if(istat /= 0)write(6,*)' failure to write radhead '
-             radtail => radhead
-          else
-             allocate(radtail%llpoint,stat=istat)
-             radtail => radtail%llpoint
-             if(istat /= 0)write(6,*)' failure to write radtail%llpoint '
-          end if
-          allocate(radtail%res(icc),radtail%err2(icc), &
-                   radtail%raterr2(icc),radtail%pred1(npred-2), &
-                   radtail%pred2(icc),radtail%dtb_dvar(nsig3p3,icc), &
-                   radtail%icx(icc))
-             
-          radtail%nchan  = icc         ! profile observation count
-          call get_ij(mm1,slats,slons,radtail%ij(1),radtail%wij(1))
-          if(l_foto)then
-            radtail%time = dtime*r3600    
-          else
-            radtail%time = zero    
-          end if
-          radtail%luse=luse(n)
-          do m=1,npred-2
-            radtail%pred1(m)=pred(m)
-          end do
-          do m=1,icc
-            radtail%res(m)=radinv(m)
-            radtail%err2(m)=var(m)
-            radtail%raterr2(m)=ratio_raderr(m)
-            radtail%pred2(m)=pred_tlap(m)
-            radtail%icx(m)=icxx(m)
-            do k=1,nsig3p3
-              radtail%dtb_dvar(k,m)=htlto(k,m)
-            end do
-          end do
-          
-            
-        
-!         Write data to output file
-          nchan_total=nchan_total+icc
-        end if
+!    In principle, we want ALL obs in the diagnostics structure but for
+!    passive obs (monitoring), it is difficult to do if rad_diagsave
+!    is not on in the first outer loop. For now we use l_may_be_passive...
+     if (l_may_be_passive) then
+!      Link observation to appropriate observation bin
+       if (nobs_bins>1) then
+         ibin = NINT( dtime/hr_obsbin ) + 1
+       else
+         ibin = 1
+       endif
+       IF (ibin<1.OR.ibin>nobs_bins) write(6,*)mype,'Error nobs_bins,ibin= ',nobs_bins,ibin
 
+!      Load data into output arrays
+       if(.not. retrieval)then
+          if(icc > 0)then
+            ncnt =ncnt+1
+            nchan_total=nchan_total+icc
+
+            if(.not. associated(radhead(ibin)%head))then
+               allocate(radhead(ibin)%head,stat=istat)
+               if(istat /= 0)write(6,*)' failure to write radhead '
+               radtail(ibin)%head => radhead(ibin)%head
+            else
+               allocate(radtail(ibin)%head%llpoint,stat=istat)
+               if(istat /= 0)write(6,*)' failure to write radtail%llpoint '
+               radtail(ibin)%head => radtail(ibin)%head%llpoint
+            end if
+
+            allocate(radtail(ibin)%head%res(icc),radtail(ibin)%head%err2(icc), &
+                     radtail(ibin)%head%diags(icc),&
+                     radtail(ibin)%head%raterr2(icc),radtail(ibin)%head%pred1(npred-2), &
+                     radtail(ibin)%head%pred2(icc),radtail(ibin)%head%dtb_dvar(nsig3p3,icc), &
+                     radtail(ibin)%head%icx(icc))
+             
+            radtail(ibin)%head%nchan  = icc         ! profile observation count
+            call get_ij(mm1,slats,slons,radtail(ibin)%head%ij(1),radtail(ibin)%head%wij(1))
+            radtail(ibin)%head%time=dtime
+            radtail(ibin)%head%luse=luse(n)
+            do m=1,npred-2
+              radtail(ibin)%head%pred1(m)=pred(m)
+            end do
+          end if
+       endif ! <.not. retrieval>
+
+!      Link obs to diagnostics structure
+       iii=0
+       do ii=1,nchanl
+         if (.not.lobsdiag_allocated) then
+           if (.not.associated(obsdiags(i_rad_ob_type,ibin)%head)) then
+             allocate(obsdiags(i_rad_ob_type,ibin)%head,stat=istat)
+             if (istat/=0) then
+               write(6,*)'setuprad: failure to allocate obsdiags',istat
+               call stop2(276)
+             end if
+             obsdiags(i_rad_ob_type,ibin)%tail => obsdiags(i_rad_ob_type,ibin)%head
+           else
+             allocate(obsdiags(i_rad_ob_type,ibin)%tail%next,stat=istat)
+             if (istat/=0) then
+               write(6,*)'setuprad: failure to allocate obsdiags',istat
+               call stop2(277)
+             end if
+             obsdiags(i_rad_ob_type,ibin)%tail => obsdiags(i_rad_ob_type,ibin)%tail%next
+           end if
+           allocate(obsdiags(i_rad_ob_type,ibin)%tail%muse(miter+1))
+           allocate(obsdiags(i_rad_ob_type,ibin)%tail%nldepart(miter+1))
+           allocate(obsdiags(i_rad_ob_type,ibin)%tail%tldepart(miter))
+           allocate(obsdiags(i_rad_ob_type,ibin)%tail%obssen(miter))
+           obsdiags(i_rad_ob_type,ibin)%tail%indxglb=(n-1)*nchanl+ii
+           obsdiags(i_rad_ob_type,ibin)%tail%nchnperobs=-99999
+           obsdiags(i_rad_ob_type,ibin)%tail%luse=.false.
+           obsdiags(i_rad_ob_type,ibin)%tail%muse(:)=.false.
+           obsdiags(i_rad_ob_type,ibin)%tail%nldepart(:)=-huge(zero)
+           obsdiags(i_rad_ob_type,ibin)%tail%tldepart(:)=zero
+           obsdiags(i_rad_ob_type,ibin)%tail%wgtjo=-huge(zero)
+           obsdiags(i_rad_ob_type,ibin)%tail%obssen(:)=zero
+         else
+           if (.not.associated(obsdiags(i_rad_ob_type,ibin)%tail)) then
+             obsdiags(i_rad_ob_type,ibin)%tail => obsdiags(i_rad_ob_type,ibin)%head
+           else
+             obsdiags(i_rad_ob_type,ibin)%tail => obsdiags(i_rad_ob_type,ibin)%tail%next
+           end if
+           if (obsdiags(i_rad_ob_type,ibin)%tail%indxglb/=(n-1)*nchanl+ii) then
+             write(6,*)'setuprad: index error'
+             call stop2(278)
+           endif
+         endif
+         if (ii==1) obsptr => obsdiags(i_rad_ob_type,ibin)%tail
+         if (ii==1) obsdiags(i_rad_ob_type,ibin)%tail%nchnperobs = nchanl
+         obsdiags(i_rad_ob_type,ibin)%tail%luse = luse(n)
+         obsdiags(i_rad_ob_type,ibin)%tail%nldepart(jiter) = tbc(ii)
+         obsdiags(i_rad_ob_type,ibin)%tail%wgtjo=varinv(ii)
+
+!        Load data into output arrays
+         m=ich(ii)
+         if (varinv(ii)>tiny_r_kind .and. iuse_rad(m)==1) then
+           if(.not. retrieval)then
+             iii=iii+1
+             radtail(ibin)%head%res(iii)=radinv(iii)
+             radtail(ibin)%head%err2(iii)=var(iii)
+             radtail(ibin)%head%raterr2(iii)=ratio_raderr(iii)
+             radtail(ibin)%head%pred2(iii)=pred_tlap(iii)
+             radtail(ibin)%head%icx(iii)=icxx(iii)
+             do k=1,nsig3p3
+               radtail(ibin)%head%dtb_dvar(k,iii)=htlto(k,iii)
+             end do
+             radtail(ibin)%head%diags(iii)%ptr => obsdiags(i_rad_ob_type,ibin)%tail
+             obsdiags(i_rad_ob_type,ibin)%tail%muse(jiter) = .true.
+           endif
+         endif
+       enddo
+       if(.not. retrieval.and.(iii/=icc)) then
+         write(6,*)'setuprad: error iii icc',iii,icc
+         call stop2(279)
+       endif
+
+!    End of l_may_be_passive block
      endif
 
 !    Write diagnostics to output file.
@@ -2060,7 +2195,7 @@
         diagbuf(2)  = cenlon                         ! observation longitude (degrees)
         diagbuf(3)  = zsges                          ! model (guess) elevation at observation location
 
-        diagbuf(4)  = dtime                          ! observation time (hours relative to analysis time)
+        diagbuf(4)  = dtime-time_offset              ! observation time (hours relative to analysis time)
 
         diagbuf(5)  = data_s(iscan_pos,n)            ! sensor scan position
         diagbuf(6)  = zasat*rad2deg                  ! satellite zenith angle (degrees)
@@ -2116,6 +2251,48 @@
            end do
         end do
 
+        if (lobsdiagsave) then
+          if (l_may_be_passive) then
+            do ii=1,nchanl
+              if (.not.associated(obsptr)) then
+                write(6,*)'setuprad: error obsptr'
+                call stop2(280)
+              end if
+              if (obsptr%indxglb/=(n-1)*nchanl+ii) then
+                write(6,*)'setuprad: error writing diagnostics'
+                call stop2(281)
+              end if
+  
+              ioff=7+npred+1
+              do jj=1,miter
+                ioff=ioff+1
+                if (obsptr%muse(jj)) then
+                  diagbufchan(ioff,ii) = one
+                else
+                  diagbufchan(ioff,ii) = -one
+                endif
+              enddo
+              do jj=1,miter+1
+                ioff=ioff+1
+                diagbufchan(ioff,ii) = obsptr%nldepart(jj)
+              enddo
+              do jj=1,miter
+                ioff=ioff+1
+                diagbufchan(ioff,ii) = obsptr%tldepart(jj)
+              enddo
+              do jj=1,miter
+                ioff=ioff+1
+                diagbufchan(ioff,ii) = obsptr%obssen(jj)
+              enddo
+
+              obsptr => obsptr%next
+            enddo
+          else
+            ioff=7+npred+1
+            diagbufchan(ioff+1:ioff+4*miter+1,1:nchanl) = zero
+          endif
+        endif
+
         if (.not.lextra) then
            write(4) diagbuf,diagbufchan
         else
@@ -2133,19 +2310,24 @@
 ! If retrieval, close open bufr sst file  
   if (retrieval) call finish_sst_retrieval
 
-
 ! Jump here when there is no data to process for current satellite
-135 continue
 ! Deallocate arrays
-  err1=0; err2=0; err3=0; err4=0
+  deallocate(diagbufchan)
+  error_status = crtm_destroy(channelinfo)
+  if (error_status /= success) &
+  write(6,*)'OBSERVER:  ***ERROR*** crtm_destroy error_status=',error_status
+
+  err1=0; err2=0; err3=0; err4=0; err5=0
   err1 = crtm_destroy_atmosphere(atmosphere(1))
   err2 = crtm_destroy_surface(surface(1))
   err3 = crtm_destroy_rtsolution(rtsolution)
   err4 = crtm_destroy_rtsolution(rtsolution_k)
+  err5 = crtm_destroy_options(options)
   if (err1/=success) write(6,*)'***ERROR** destroy atmosphere.    err=',err1
   if (err2/=success) write(6,*)'***ERROR** destroy surface.       err=',err2
   if (err3/=success) write(6,*)'***ERROR** destroy rtsolution.    err=',err3
   if (err4/=success) write(6,*)'***ERROR** destroy rtsolution_k.  err=',err4
+  if (err5/=success) write(6,*)'***ERROR** destroy options.       err=',err5
   deallocate(rtsolution,rtsolution_k,atmosphere_k,surface_k)
 
 
@@ -2154,6 +2336,7 @@
      if (lextra) deallocate(diagbufex)
   endif
 
+135 continue
 
 ! End of routine
   return

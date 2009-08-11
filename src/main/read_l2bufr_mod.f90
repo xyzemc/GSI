@@ -16,6 +16,7 @@ module read_l2bufr_mod
 !   2006-04-21  parrish, complete rewrite.
 !   2006-05-22  parrish, fix bug which causes infinite loop when no data pass initial checks
 !   2007-10-24  parrish  add l2superob_only option
+!   2009-04-18  woollen  improve mpi_io interface with bufrlib routines
 !
 ! subroutines included:
 !   sub initialize_superob_radar - initialize superob parameters to defaults
@@ -36,7 +37,7 @@ module read_l2bufr_mod
 !
 !$$$ end documentation block
 
-  use kinds, only: r_kind,i_kind
+  use kinds, only: r_kind,i_kind,r_single
   implicit none
 
 
@@ -47,6 +48,26 @@ module read_l2bufr_mod
 contains
 
   subroutine initialize_superob_radar
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    initialize_superob_radar
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-21  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$
 
     del_azimuth=5._r_kind       !   (5 degrees)
     del_elev=.25_r_kind         !   (.25 degrees for elevation angle bin)
@@ -60,14 +81,33 @@ contains
   end subroutine initialize_superob_radar
 
   subroutine radar_bufr_read_all(npe,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    radar_bufr_read_all
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-21  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$  end documentation block
 
-    use kinds, only: i_kind,r_single,r_kind,r_double
-    use constants, only: zero,half,one,two,rearth,deg2rad
+    use kinds, only: r_double
+    use constants, only: zero,half,one,two,rearth,deg2rad,rad2deg
     use mpimod, only: mpi_comm_world,mpi_min,mpi_sum,mpi_real4,mpi_real8,ierror
     use mpimod, only: mpi_max,mpi_integer4
-    use mpi_bufr_mod, only: mpi_openbf,mpi_closbf,nblocks,mpi_nextblock,mpi_readmg,&
-         mpi_ireadsb,mpi_ufbint
-    use gridmod,only: regional_time,region_lat,region_lon,nlat,nlon,region_dx,region_dy
+    use gridmod,only: regional_time
     implicit none
 
     integer(i_kind) npe,mype
@@ -89,15 +129,15 @@ contains
 !            var  rbin azbin elbin rad#
 
     integer(i_kind) nazbin,nrbin,nelbin
-    integer(i_kind) i,ibyte,idate,inbufr,iret,isubset,krad,levs,lundx,mmblocks,n_gates
+    integer(i_kind) i,ibyte,idate,inbufr,iret,isubset,krad,levs,lundx,n_gates
     integer(i_kind) k,ii,iii,j,jjj,numzzzz,num_radars_0
     integer(i_kind) iyref,imref,idref,ihref
     integer(i_kind) iazbin,irbin,ielbin
     integer(i_kind) nminref,nminthis
-    integer(i_kind) num_radars
+    integer(i_kind) num_radars,ireadsb,ireadmg,irec,isub,next
     integer(i_kind) idate5(5)
     real(r_double) hdr(14),rwnd(3,n_gates_max),rdisttest(n_gates_max)
-    character(4) chdr
+    character(8) chdr
     equivalence (chdr,hdr(1))
     character(8) subset
     real(r_kind) delaz,delel,delr,t
@@ -115,7 +155,6 @@ contains
     real(r_single) master_lat_table(max_num_radars)
     real(r_single) master_lon_table(max_num_radars)
     real(r_single) master_hgt_table(max_num_radars)
-    real(r_single) master_max_range_table(max_num_radars)
     real(r_single) stn_lat,stn_lon,stn_hgt,stn_az,stn_el
     real(r_single) stn_lat_table(max_num_radars),stn_lon_table(max_num_radars)
     real(r_single) stn_hgt_table(max_num_radars)
@@ -125,18 +164,22 @@ contains
     integer(i_kind) krad_map(max_num_radars)
     integer(i_kind),allocatable::histo_el(:)
     real(r_kind) timemax,timemin
+    real(r_kind) timemax1,timemin1
     integer(i_kind) nradials_in,nradials_fail_angmax,nradials_fail_time,nradials_fail_elb
+    integer(i_kind) nradials_in1,nradials_fail_angmax1,nradials_fail_time1,nradials_fail_elb1
     integer(i_kind) nobs_in,nobs_badvr,nobs_badsr,nobs_lrbin,nobs_hrbin,nrange_max
+    integer(i_kind) nobs_in1,nobs_badvr1,nobs_badsr1,nobs_lrbin1,nobs_hrbin1,nrange_max1
     integer(i_kind) num_radars_max,num_radars_min
     integer(i_kind) loops_total
     real(r_single) this_stalat,this_stalon,this_stahgt
     real(r_kind) rlon0,clat0,slat0,rlonglob,rlatglob,clat1,caz0,saz0,cdlon,sdlon,caz1,saz1
+    real(r_kind) this_stalatr,thisazimuthr,thistiltr
     real(r_single) thiscount,thisrange,thisazimuth,thistilt,thisvr,thisvr2
     real(r_single) corrected_tilt
     real(r_single) thiserr,thistime,thislat,thislon,corrected_azimuth
     real(r_single) rad_per_meter,thishgt
     real(r_kind) rlonloc,rlatloc
-    real(r_single) a43,aactual,b,c,selev0,celev0,elev0,epsh,erad,h,ha
+    real(r_single) a43,aactual,b,c,selev0,celev0,epsh,erad,h,ha
     real(r_single) celev,selev,gamma
     character(4) this_staid
     integer(i_kind) nsuper,nsuperall
@@ -177,29 +220,18 @@ contains
     
 !   Open bufr file with openbf to initialize bufr table, etc in bufrlib
     inbufr=10
-    open(inbufr,file='l2rwbufr',form='unformatted',iostat=iret)
-    if(iret.ne.0) then
-       write(6,*)'RADAR_BUFR_READ_ALL:  cannot open file "l2rwbufr"'
-       return
-    end if
+    open(inbufr,file='l2rwbufr',form='unformatted')
     read(inbufr,iostat=iret)subset
     if(iret.ne.0) then
        if(rite) write(6,*)'RADAR_BUFR_READ_ALL:  problem opening level 2 bufr file "l2rwbufr"'
        deallocate(bins)
-       close(inbufr)
+       close(inbufr)                                       
        return
     end if
     rewind inbufr
     lundx=inbufr
     call openbf(inbufr,'IN',lundx)
     call datelen(10)
-    call readmg(inbufr,subset,idate,iret)
-    if(iret.ne.0) then
-       if(rite) write(6,*)'RADAR_BUFR_READ_ALL:  problem reading level 2 bufr file "l2rwbufr"'
-       deallocate(bins)
-       call closbf(inbufr)
-       return
-    end if
     if(l2superob_only) then
       write(date,'( i10)') idate
       read (date,'(i4,3i2)') iyref,imref,idref,ihref
@@ -218,10 +250,6 @@ contains
     idate5(4)=ihref
     idate5(5)=0             ! minutes
     call w3fs21(idate5,nminref)
-    close(inbufr)
-
-!   Now reopen file for mpi-io
-    call mpi_openbf('l2rwbufr',npe,mype,mpi_comm_world)
 
 !    Do an initial read of a bit of data to infer what multiplying factor is for 
 !    radial distance.  There is a possible ambiguity, where the scaling is either 
@@ -230,29 +258,26 @@ contains
 
     idups=0
     ddiffmin=huge(ddiffmin)
-    do mmblocks=0,nblocks-1,npe
-       if(mmblocks+mype.gt.min(npe,nblocks-1)) exit
-       call mpi_nextblock(mmblocks+mype)
-       do
-          call mpi_readmg(inbufr,subset,idate,iret)
-          if(iret.ne.0) exit
-          read(subset,'(2x,i6)')isubset
-          if(isubset.gt.6033) then
-             iret=6034
-             exit
+    next=mype+1
+    do while(ireadmg(inbufr,subset,idate)>=0)
+    call ufbcnt(inbufr,irec,isub)
+    if(irec/=next)cycle; next=next+npe
+       read(subset,'(2x,i6)')isubset
+       if(isubset.gt.6033) then
+          iret=6034
+          exit
+       end if
+       do while (ireadsb(inbufr).eq.0)
+          call ufbint(inbufr,rdisttest,1,n_gates_max,n_gates,'DIST125M')
+          if(n_gates.gt.1) then
+             do i=1,n_gates-1
+                if(nint(abs(rdisttest(i+1)-rdisttest(i))).eq.0) then
+                   idups=idups+1
+                else
+                   ddiffmin=min(abs(rdisttest(i+1)-rdisttest(i)),ddiffmin)
+                end if
+             end do
           end if
-          do while (mpi_ireadsb(inbufr).eq.0)
-             call mpi_ufbint(inbufr,rdisttest,1,n_gates_max,n_gates,'DIST125M')
-             if(n_gates.gt.1) then
-                do i=1,n_gates-1
-                   if(nint(abs(rdisttest(i+1)-rdisttest(i))).eq.0) then
-                      idups=idups+1
-                   else
-                      ddiffmin=min(abs(rdisttest(i+1)-rdisttest(i)),ddiffmin)
-                   end if
-                end do
-             end if
-          end do
        end do
     end do
     call mpi_barrier(mpi_comm_world,ierror)
@@ -281,19 +306,24 @@ contains
     nobs_lrbin=0
     nobs_hrbin=0
     nrange_max=0
-    do mmblocks=0,nblocks-1,npe
-       if(mmblocks+mype.gt.nblocks-1) exit
-       call mpi_nextblock(mmblocks+mype)
-       do
-          call mpi_readmg(inbufr,subset,idate,iret)
-          if(iret.ne.0) exit
+
+! reopen and reread the file for data this time
+
+    call closbf(inbufr)
+    open(inbufr,file='l2rwbufr',form='unformatted')
+    call openbf(inbufr,'IN',inbufr)
+
+    next=mype+1
+    do while(ireadmg(inbufr,subset,idate)>=0)
+    call ufbcnt(inbufr,irec,isub)
+    if(irec/=next)cycle; next=next+npe
           read(subset,'(2x,i6)')isubset
           if(isubset.gt.6033) then
              iret=6034
              exit
           end if
-          do while (mpi_ireadsb(inbufr).eq.0)
-             call mpi_ufbint(inbufr,hdr,14,1,levs, &
+          do while (ireadsb(inbufr).eq.0)
+             call ufbint(inbufr,hdr,14,1,levs, &
                   'SSTN YEAR MNTH DAYS HOUR MINU SECO CLAT CLON HSMSL HSALG ANAZ ANEL QCRW')
              nradials_in=nradials_in+1
              if(hdr(13).gt.elev_angle_max) then
@@ -310,7 +340,7 @@ contains
                 nradials_fail_time=nradials_fail_time+1
                 cycle
              end if
-             call mpi_ufbint(inbufr,rwnd,3,n_gates_max,n_gates,'DIST125M DMVR DVSW')
+             call ufbint(inbufr,rwnd,3,n_gates_max,n_gates,'DIST125M DMVR DVSW')
              nobs_in=nobs_in+n_gates
              stn_az=90-hdr(12)
              stn_el=hdr(13)
@@ -380,9 +410,7 @@ contains
              end do
              
           end do          !  end do while
-       end do            !  end loop over messages in one block
     end do              !  loop over blocks
-    call mpi_closbf
     call closbf(inbufr)
     call mpi_barrier(mpi_comm_world,ierror)
     call mpi_allreduce(num_radars,num_radars_max,1,&
@@ -392,21 +420,21 @@ contains
             'continue without level 2 data'
        return
     end if
-    call mpi_reduce(nradials_in,nradials_in,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
-    call mpi_reduce(nradials_fail_angmax,nradials_fail_angmax,1,&
+    call mpi_reduce(nradials_in,nradials_in1,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
+    call mpi_reduce(nradials_fail_angmax,nradials_fail_angmax1,1,&
          mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
-    call mpi_reduce(nradials_fail_time,nradials_fail_time,1,&
+    call mpi_reduce(nradials_fail_time,nradials_fail_time1,1,&
          mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
-    call mpi_reduce(nradials_fail_elb,nradials_fail_elb,1,&
+    call mpi_reduce(nradials_fail_elb,nradials_fail_elb1,1,&
          mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
-    call mpi_reduce(nobs_in,nobs_in,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
-    call mpi_reduce(nobs_badvr,nobs_badvr,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
-    call mpi_reduce(nobs_badsr,nobs_badsr,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
-    call mpi_reduce(nobs_lrbin,nobs_lrbin,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
-    call mpi_reduce(nobs_hrbin,nobs_hrbin,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
-    call mpi_reduce(nrange_max,nrange_max,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
-    call mpi_reduce(timemax,timemax,1,mpi_real8,mpi_max,0,mpi_comm_world,ierror)
-    call mpi_reduce(timemin,timemin,1,mpi_real8,mpi_min,0,mpi_comm_world,ierror)
+    call mpi_reduce(nobs_in,nobs_in1,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
+    call mpi_reduce(nobs_badvr,nobs_badvr1,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
+    call mpi_reduce(nobs_badsr,nobs_badsr1,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
+    call mpi_reduce(nobs_lrbin,nobs_lrbin1,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
+    call mpi_reduce(nobs_hrbin,nobs_hrbin1,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
+    call mpi_reduce(nrange_max,nrange_max1,1,mpi_integer4,mpi_sum,0,mpi_comm_world,ierror)
+    call mpi_reduce(timemax,timemax1,1,mpi_real8,mpi_max,0,mpi_comm_world,ierror)
+    call mpi_reduce(timemin,timemin1,1,mpi_real8,mpi_min,0,mpi_comm_world,ierror)
     
 !  Create master station list
 
@@ -547,17 +575,17 @@ contains
     
 !   Print out histogram of counts by ielbin to see where angles are
     if(rite) then
-       write(6,*)' timemin,max=',timemin,timemax
-       write(6,*)' nradials_in=',nradials_in
-       write(6,*)' nradials_fail_angmax=',nradials_fail_angmax
-       write(6,*)' nradials_fail_time=',nradials_fail_time
-       write(6,*)' nradials_fail_elb=',nradials_fail_elb
-       write(6,*)' nobs_in=',nobs_in
-       write(6,*)' nobs_badvr=',nobs_badvr
-       write(6,*)' nobs_badsr=',nobs_badsr
-       write(6,*)' nobs_lrbin=',nobs_lrbin
-       write(6,*)' nobs_hrbin=',nobs_hrbin
-       write(6,*)' nrange_max=',nrange_max
+       write(6,*)' timemin,max=',timemin1,timemax1
+       write(6,*)' nradials_in=',nradials_in1
+       write(6,*)' nradials_fail_angmax=',nradials_fail_angmax1
+       write(6,*)' nradials_fail_time=',nradials_fail_time1
+       write(6,*)' nradials_fail_elb=',nradials_fail_elb1
+       write(6,*)' nobs_in=',nobs_in1
+       write(6,*)' nobs_badvr=',nobs_badvr1
+       write(6,*)' nobs_badsr=',nobs_badsr1
+       write(6,*)' nobs_lrbin=',nobs_lrbin1
+       write(6,*)' nobs_hrbin=',nobs_hrbin1
+       write(6,*)' nrange_max=',nrange_max1
        allocate(histo_el(nelbin))
        histo_el=0
        do krad=1,num_radars_0
@@ -604,7 +632,8 @@ contains
           if(abs(this_stalat).gt.89.5) cycle
           this_stalon=master_lon_table(krad)
           rlon0=deg2rad*this_stalon
-          clat0=cosd(this_stalat) ; slat0=sind(this_stalat)
+          this_stalatr=this_stalat*deg2rad
+          clat0=cos(this_stalatr) ; slat0=sin(this_stalatr)
           this_staid=master_stn_table(krad)
           this_stahgt=master_hgt_table(krad)
           do ielbin=1,nelbin
@@ -634,8 +663,9 @@ contains
 
                    aactual=erad+this_stahgt
                    a43=4*aactual/3
-                   selev0=sind(thistilt)
-                   celev0=cosd(thistilt)
+                   thistiltr=thistilt*deg2rad
+                   selev0=sin(thistiltr)
+                   celev0=cos(thistiltr)
                    b=thisrange*(thisrange+two*aactual*selev0)
                    c=sqrt(aactual*aactual+b)
                    ha=b/(aactual+c)
@@ -650,7 +680,7 @@ contains
                       celev=a43*celev0/(a43+h)
                       selev=(thisrange*thisrange+h*h+two*a43*h)/(two*thisrange*(a43+h))
                    end if
-                   corrected_tilt=atan2d(selev,celev)
+                   corrected_tilt=atan2(selev,celev)*rad2deg
                    deltiltmax=max(corrected_tilt-thistilt,deltiltmax)
                    deltiltmin=min(corrected_tilt-thistilt,deltiltmin)
                    gamma=half*thisrange*(celev0+celev)
@@ -658,21 +688,22 @@ contains
                    deldistmin=min(gamma-thisrange,deldistmin)
 
 !                  Get earth lat lon of superob
-                   rlonloc=rad_per_meter*gamma*cosd(thisazimuth)
-                   rlatloc=rad_per_meter*gamma*sind(thisazimuth)
+                   thisazimuthr=thisazimuth*deg2rad
+                   rlonloc=rad_per_meter*gamma*cos(thisazimuthr)
+                   rlatloc=rad_per_meter*gamma*sin(thisazimuthr)
                    call invtllv(rlonloc,rlatloc,rlon0,clat0,slat0,rlonglob,rlatglob)
-                   thislat=rlatglob/deg2rad
-                   thislon=rlonglob/deg2rad
+                   thislat=rlatglob*rad2deg
+                   thislon=rlonglob*rad2deg
 
 !                  Get corrected azimuth
                    clat1=cos(rlatglob)
-                   caz0=cosd(thisazimuth)
-                   saz0=sind(thisazimuth)
+                   caz0=cos(thisazimuthr)
+                   saz0=sin(thisazimuthr)
                    cdlon=cos(rlonglob-rlon0)
                    sdlon=sin(rlonglob-rlon0)
                    caz1=clat0*caz0/clat1
                    saz1=saz0*cdlon-caz0*sdlon*slat0
-                   corrected_azimuth=atan2d(saz1,caz1)
+                   corrected_azimuth=atan2(saz1,caz1)*rad2deg
                    delazmmax=max(min(abs(corrected_azimuth-thisazimuth-720.),&
                         abs(corrected_azimuth-thisazimuth-360.),&
                         abs(corrected_azimuth-thisazimuth     ),&
@@ -716,23 +747,39 @@ contains
              call mpi_finalize(ierror)
              stop
           end if
-    
+
   end subroutine radar_bufr_read_all
 
 end module read_l2bufr_mod
 
 SUBROUTINE tllv(ALM,APH,TLMO,CTPH0,STPH0,TLM,TPH)
-
-! input:
-!   alm   -- input earth longitude
-!   aph   -- input earth latitude
-!   tlmo  -- input earth longitude of rotated grid origin (radrees)
-!   ctph0 -- cos(earth lat of rotated grid origin)
-!   stph0 -- sin(earth lat of rotated grid origin)
-
-! output:
-!   tlm   -- rotated grid longitude
-!   tph   -- rotated grid latitude
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    tllv             
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-21  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     alm   -- input earth longitude
+!     aph   -- input earth latitude
+!     tlmo  -- input earth longitude of rotated grid origin (radrees)
+!     ctph0 -- cos(earth lat of rotated grid origin)
+!     stph0 -- sin(earth lat of rotated grid origin)
+!
+!   output argument list:
+!     tlm   -- rotated grid longitude
+!     tph   -- rotated grid latitude
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$ end documentation block
 
   use kinds, only:  r_kind
   implicit none
@@ -754,9 +801,34 @@ SUBROUTINE tllv(ALM,APH,TLMO,CTPH0,STPH0,TLM,TPH)
 END SUBROUTINE tllv
 
 SUBROUTINE invtllv(ALM,APH,TLMO,CTPH0,STPH0,TLM,TPH)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    invtllv
 !
-! inverse of tllv:  input ALM,APH is rotated lon,lat
+!   prgrmmr:
+!
+! abstract:  inverse of tllv:  input ALM,APH is rotated lon,lat
 !                   output is earth lon,lat, TLM,TPH
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     alm   -- input earth longitude
+!     aph   -- input earth latitude
+!     tlmo  -- input earth longitude of rotated grid origin (radrees)
+!     ctph0 -- cos(earth lat of rotated grid origin)
+!     stph0 -- sin(earth lat of rotated grid origin)
+!
+!   output argument list:
+!     tlm   -- rotated grid longitude
+!     tph   -- rotated grid latitude
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$ end documentation block
 
   use kinds, only:  r_kind
   implicit none

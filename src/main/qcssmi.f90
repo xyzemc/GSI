@@ -4,8 +4,11 @@ subroutine qcssmi(nchanl,cenlat,cenlon,   &
      tbcnob,tb_obs,ssmi,amsre_low,amsre_mid,amsre_hig,ssmis, &
      varinv,errf,aivals,id_qc )
 
+!$$$ subprogram documentation block
+!               .      .    .
 ! subprogram:  qcssmi      QC for ssmi/amsre
-! prgmmr: okamoto          org: np23            date: 2004-12-01
+!
+!   prgmmr: okamoto          org: np23            date: 2004-12-01
 !
 ! abstract: set quality control criteria for SSM/I,AMSR-E,SSMIS(UKMO)
 !
@@ -22,7 +25,8 @@ subroutine qcssmi(nchanl,cenlat,cenlon,   &
 !     2006-07-27  kazumori - modify AMSR-E qc and input of the subroutine
 !     2006-12-01  derber - modify id_qc flags
 !     2007-01-24  kazumori - modify SSMIS qc and input of the subroutine
-! 
+!     2008-04-23  safford  - rm unused vars              
+!
 ! input argument list:
 !     nchanl  - number of channels per obs
 !     sfchgt  - surface height (not use now)
@@ -75,7 +79,8 @@ subroutine qcssmi(nchanl,cenlat,cenlon,   &
 !     language: f90
 !     machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind, i_kind
   use constants, only: one,izero,zero,tiny_r_kind
   use obsmod, only: iadate
@@ -99,8 +104,8 @@ subroutine qcssmi(nchanl,cenlat,cenlon,   &
   real(r_kind),dimension(40),intent(inout):: aivals
 
 ! Declare local variables
-  integer(i_kind) :: n,ll,l,m,i
-  real(r_kind) :: efact,vfact,dtempf,fact,dtbf,dtbf2,chdiff,term
+  integer(i_kind) :: l,i
+  real(r_kind) :: efact,vfact,dtempf,fact,dtbf,term
   real(r_kind),dimension(nchanl) :: demisf_mi,clwcutofx 
   real(r_kind),parameter:: r2000=2000.0_r_kind
   real(r_kind),parameter:: r4000=4000.0_r_kind

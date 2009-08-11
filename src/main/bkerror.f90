@@ -1,5 +1,5 @@
 subroutine bkerror(gradx,grady)
-!-----------------
+
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    bkerror  apply background error covariance            
@@ -16,6 +16,11 @@ subroutine bkerror(gradx,grady)
 !   2004-10-26  kleist - u,v removed from vector
 !   2005-01-22  parrish - add module balmod to access balance and tbalance
 !   2005-03-30  treadon - add more comments to periodic block
+!   2006-11-30  todling - add fpsproj as arg to (t)balance routine(s)
+!   2007-04-13  tremolet - use control vectors
+!   2007-10-01  todling  - add timer
+!   2008-12-29  todling - update interface to strong_bk/bk_ad
+!   2009-04-13  derber - move strong_bk into balance
 !
 !   input argument list:
 !     gradx    - input field  
@@ -27,27 +32,35 @@ subroutine bkerror(gradx,grady)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
   use kinds, only: r_kind,i_kind
-  use berror, only: varprd
+  use berror, only: varprd,fpsproj
   use balmod, only: balance,tbalance
-  use mpimod, only: levs_id,nvar_id
-  use gridmod, only: lat2,lon2,nlat,nlon,nsig1o,periodic
-  use jfunc, only: nvp,nst,np,nt,ncw,nsst,noz,nq,&
-       nclen,nclen1,nrclen
+  use gsi_4dvar, only: nsubwin, lsqrtb
+  use gridmod, only: lat2,lon2,nlat,nlon,nnnn1o,periodic
+  use jfunc, only: nsclen,npclen
   use constants, only:  zero,half,one,two,four
+  use control_vectors
+  use timermod, only: timer_ini,timer_fnl
   implicit none
 
 ! Declare passed variables
-  real(r_kind),dimension(nclen),intent(inout):: gradx
-  real(r_kind),dimension(nclen),intent(out):: grady
+  type(control_vector),intent(inout):: gradx
+  type(control_vector),intent(inout):: grady
 
 ! Declare local variables
-  integer(i_kind) k,i,j,nnn,iflg
-  real(r_kind),dimension(nlat,nlon,nsig1o):: work
+  integer(i_kind) k,i,j,iflg,ii
+  real(r_kind),dimension(nlat,nlon,nnnn1o):: work
   real(r_kind),dimension(lat2,lon2):: slndt,sicet
 
-!
+  if (lsqrtb) then
+    write(6,*)'bkerror: not for use with lsqrtb'
+    call stop2(317)
+  end if
+
+! Initialize timer
+  call timer_ini('bkerror')
+
 !  nvar_id = 1 vorticity
 !            2 divergence
 !            3 surface pressure
@@ -59,51 +72,59 @@ subroutine bkerror(gradx,grady)
 !            9 land skin temperature
 !           10 ice temperature
 
-! Determine how many vertical levels each mpi task will
-! handle in the horizontal smoothing  
-  nnn=0
-  do k=1,nsig1o
-     if (levs_id(k)/=0) nnn=nnn+1
-  end do
-
-
 ! If dealing with periodic (sub)domain, gather full domain grids,
 ! account for periodicity, and redistribute to subdomains.  This
 ! only needs to be done when running with a single mpi task and
 ! then only for array gradx.
   if (periodic) then
-     iflg=2
-     do j=1,lon2
-        do i=1,lat2
-           slndt(i,j)=zero
-           sicet(i,j)=zero
-        end do
-     end do
-     call sub2grid(work,gradx(nt),gradx(np),gradx(nq),gradx(noz),gradx(nsst),&
-          slndt,sicet,gradx(ncw),gradx(nst),gradx(nvp),iflg)
-     call grid2sub(work,gradx(nt),gradx(np),gradx(nq),gradx(noz),gradx(nsst),&
-          slndt,sicet,gradx(ncw),gradx(nst),gradx(nvp))
+    iflg=2
+    do j=1,lon2
+       do i=1,lat2
+          slndt(i,j)=zero
+          sicet(i,j)=zero
+       end do
+    end do
+    do ii=1,nsubwin
+      call sub2grid(work,gradx%step(ii)%t,gradx%step(ii)%p,gradx%step(ii)%rh, &
+                    gradx%step(ii)%oz,gradx%step(ii)%sst,slndt,sicet, &
+                    gradx%step(ii)%cw,gradx%step(ii)%st,gradx%step(ii)%vp,iflg)
+      call grid2sub(work,gradx%step(ii)%t,gradx%step(ii)%p,gradx%step(ii)%rh, &
+                    gradx%step(ii)%oz,gradx%step(ii)%sst,slndt,sicet, &
+                    gradx%step(ii)%cw,gradx%step(ii)%st,gradx%step(ii)%vp)
+    end do
   endif
 
 ! Put things in grady first since operations change input variables
-  do i=1,nclen
-     grady(i)=gradx(i)
+  grady=gradx
+
+! Loop on control steps
+  do ii=1,nsubwin
+
+!   Transpose of balance equation
+    call tbalance(grady%step(ii)%t ,grady%step(ii)%p , &
+                  grady%step(ii)%st,grady%step(ii)%vp,fpsproj)
+
+!   Apply variances, as well as vertical & horizontal parts of background error
+    call bkgcov(grady%step(ii)%st,grady%step(ii)%vp,grady%step(ii)%t, &
+                grady%step(ii)%p ,grady%step(ii)%rh,grady%step(ii)%oz, &
+                grady%step(ii)%sst,grady%step(ii)%cw,nnnn1o)
+
+!   Balance equation
+    call balance(grady%step(ii)%t ,grady%step(ii)%p ,&
+                 grady%step(ii)%st,grady%step(ii)%vp,fpsproj)
+
   end do
-
-! Transpose of balance equation
-  call tbalance(grady(nt),grady(np),grady(nq),grady(nst),grady(nvp))
-
-! Apply variances, as well as vertical & horizontal parts of background error
-  call bkgcov(grady(nst),grady(nvp),grady(nt),grady(np),grady(nq),&
-       grady(noz),grady(nsst),grady(ncw),nnn)
-
-! Balance equation
-  call balance(grady(nt),grady(np),grady(nq),grady(nst),grady(nvp))
 
 ! Take care of background error for bias correction terms
-  do i=1,nrclen
-     grady(i+nclen1)=grady(i+nclen1)*varprd(i)
+  do i=1,nsclen
+    grady%predr(i)=grady%predr(i)*varprd(i)
   end do
+  do i=1,npclen
+    grady%predp(i)=grady%predp(i)*varprd(nsclen+i)
+  end do
+
+! Finalize timer
+  call timer_fnl('bkerror')
 
   return
 end subroutine bkerror

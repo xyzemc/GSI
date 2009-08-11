@@ -29,8 +29,6 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
   use pcpinfo, only: nupcp
 
   use gridmod, only: nlat, nlon     ! no. lat/lon
-  use gridmod, only: lat1, lon1     ! no. lat/lon on subdomain (no buffer)
-  use gridmod, only: lat2, lon2     ! no. lat/lon on subdomain (buffer pnts on ends)
   use gridmod, only: nsig,nsig2,nsig3,nsig4,nsig5       ! no. levels
   use gridmod, only: rbs2           ! 1./sin(grid latitudes))**2
   use gridmod, only: istart, jstart ! start lat/lon of the whole array on each pe
@@ -40,15 +38,15 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
   use guess_grids, only: ges_prsl,ges_prsi,ges_div,ges_cwmr,ges_tsen,ges_u,ges_v
   use guess_grids, only: ges_q,ges_tv_ten,ges_q_ten,ges_prs_ten,isli2
 
-  use obsmod, only: ndat,iadate,dplat,pcp_ob_type,pcphead,pcptail
-  use obsmod, only: lunobs_obs
-  use obsmod, only: mype_diaghdr,dirname
+  use obsmod, only: ndat,dplat,pcp_ob_type,pcphead,pcptail,time_offset
+  use obsmod, only: i_pcp_ob_type,obsdiags,lobsdiagsave,ianldate
+  use obsmod, only: mype_diaghdr,nobskeep,lobsdiag_allocated,dirname
+  use gsi_4dvar, only: nobs_bins,hr_obsbin,l4dvar
   
-  use constants, only: rd,cp,pi,grav,deg2rad,zero,one_tenth,quarter,&
+  use constants, only: rd,cp,pi,deg2rad,zero,quarter,r60, &
        half,one,two,tiny_r_kind,one_tenth,izero,cg_term,r1000,wgtlim,fv,r3600
 
-  use jfunc, only: jiter
-  use jfunc, only: l_foto
+  use jfunc, only: jiter,miter
 
   implicit none    ! Turn off implicit typing
 
@@ -119,8 +117,12 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
 !   2006-07-31  kleist  - use separate derivative arrays, change to use ges_ps
 !   2006-10-12  treadon - replace virtual temperature with sensible
 !   2007-01-19  derber  - load log(one+satpcp) instead of satpcp into structure
+!   2007-03-19  tremolet - binning of observations
 !   2007-03-21      su  - remove option to perturb observation
+!   2007-06-05  tremolet - add observation diagnostics structure
 !   2007-06-08  kleist/treadon - add prefix (task id or path) to diag_pcp_file
+!   2008-05-23  safford - rm unused vars and uses
+!   2008-12-03  todling - changed handle of tail%time
 !
 !
 ! !REMARKS:  This routine is NOT correctly set up if running
@@ -140,7 +142,6 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
 
 ! Declare local parameters
   integer(i_kind),parameter:: iint=8
-  integer(i_kind),parameter:: ireal=22
   integer(i_kind),parameter:: ncld=1
 
 ! Declare local variables
@@ -149,18 +150,18 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
   integer(i_kind) itim,itimp,istat,idomsfc,isfcr
 
   logical sea
-  logical ssmi,amsu,tmi,stage3
+  logical ssmi,amsu,tmi,stage3,muse
   logical land,coast,ice
+  logical,allocatable,dimension(:):: luse
 
   character(10) filex
   character(12) string        
   character(128) diag_pcp_file
 
-  integer(i_kind) km1,mm1,iiflg,idate,iextra
-  integer(i_kind) ii,i,j,k,m,n
+  integer(i_kind) km1,mm1,iiflg,iextra,ireal
+  integer(i_kind) ii,i,j,k,m,n,ibin,ioff
   integer(i_kind) ipt,npassv
   integer(i_kind) nsphys,ixp,iyp,ixx,iyy
-  integer(i_kind) nblk,nblktot
   integer(i_kind) km,ncnt
   integer(i_kind) kx,jj
   integer(i_kind) kdt
@@ -173,17 +174,17 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
 
   real(r_kind) avg,sdv,rterm1,rterm2,rterm
   real(r_kind) error,a0,a1,simerr
-  real(r_kind) errlog,rsum
+  real(r_kind) errlog
   real(r_kind) rdocp,frain,dtp,dtf,sum,sixthpi
   real(r_kind) drad,vfact,efact,fhour,rtime
-  real(r_kind) varrad,xlo,xhi
+  real(r_kind) xlo,xhi
   real(r_kind) obserr_wgt,simerr_wgt,wgtij
   real(r_kind) rmiss,pterm,delt,deltp
   real(r_kind) rmmhr,term,detect_threshold
-  real(r_kind) dzmax,dtdz,dqdz,dudz,dvdz,dcwmdz,dlnsig
+  real(r_kind) dzmax,dtdz,dqdz,dudz,dvdz,dcwmdz
   real(r_kind) cg_pcp,wgross,wnotgross,wgt,arg
 
-  real(r_single),dimension(ireal):: diagbuf
+  real(r_single),allocatable,dimension(:):: diagbuf
 
   real(r_kind),dimension(nsig):: worki,worko
   real(r_kind),dimension(nsig):: sl
@@ -191,12 +192,11 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
   real(r_kind),dimension(4):: wgrd
   real(r_kind),dimension(npredp):: pred
   real(r_kind),dimension(2):: dpcpmag
-  real(r_kind) errf,varinv,error0,obstime,slats,slons,satpcp,pcpsdv, &
+  real(r_kind) errf,varinv,error0,dtime,slats,slons,satpcp,pcpsdv, &
        pcpnum,cenlat,cenlon,satclw,satcli,obserr,pcpnbc,varinvint, &
        pcpbc,pcpsas,pcplrg4,pcpsas4,xkt4,rbs0,rmask0,psexp4,satcnv, &
        plon0,plat0,pcplrg,rn1_ad,rn4,psexp,cldwrk,cldwrk4,xkt2
 
-  logical,allocatable,dimension(:):: luse
   real(r_kind),allocatable,dimension(:,:):: data_p
   real(r_kind),dimension(nsig)::tsas,qsas,tlrg,qlrg, &
        t0,q0,cwm0,u0,v0,div0,t1,q1,cwm1,u1,v1,&
@@ -213,10 +213,9 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
   real(r_kind),parameter::  r10     = 10.0_r_kind
   real(r_kind),parameter::  r15     = 15.0_r_kind
   real(r_kind),parameter::  r25     = 25.0_r_kind
-  real(r_kind),parameter::  r40     = 40.0_r_kind
+! real(r_kind),parameter::  r40     = 40.0_r_kind
   real(r_kind),parameter::  r45     = 45.0_r_kind
-  real(r_kind),parameter::  r60     = 60.0_r_kind
-  real(r_kind),parameter::  r272_16 = 272.16_r_kind
+! real(r_kind),parameter::  r272_16 = 272.16_r_kind
   real(r_kind),parameter::  r10000  = 10000.0_r_kind
 
   data  rmiss / -999. /
@@ -268,16 +267,20 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
    write(string,1976)jiter
 1976  format('_',i2.2)
    diag_pcp_file= trim(dirname) // trim(filex) // '_' // trim(dplat(is)) // trim(string)
-   open(4,file=diag_pcp_file,form='unformatted')
+   open(4,file=trim(diag_pcp_file),form='unformatted')
    rewind 4
+
+   ireal=22
+   if (lobsdiagsave) ireal=ireal+4*miter+1
+   allocate(diagbuf(ireal))
+
 !
 ! Initialize/write parameters for precip. diagnostic file on
 ! first outer iteration.
    if (mype==mype_diaghdr(is)) then
-      idate=iadate(4)+iadate(3)*100+iadate(2)*10000+iadate(1)*1000000
-      write(4) isis,dplat(is),obstype,jiter,idate,iint,ireal,iextra
+      write(4) isis,dplat(is),obstype,jiter,ianldate,iint,ireal,iextra
       write(6,*)'SETUPPCP:  write header record for ',&
-           isis,iint,ireal,iextra,' to file ',trim(diag_pcp_file),' ',iadate
+           isis,iint,ireal,iextra,' to file ',trim(diag_pcp_file),' ',ianldate
    endif
    idiagbuf= izero
    diagbuf = rmiss
@@ -346,7 +349,7 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
      error0 = varchp(kx)
 !
 !    Extract obs date/time.
-     obstime = data_p(itime,n)
+     dtime = data_p(itime,n)
 !
 !    Extract obs lon and lat.
      slons  = data_p(ilon,n) ! grid relative longitude
@@ -425,6 +428,55 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
 !    If negative precipitation, reset to zero
      if (satpcp < zero) satpcp=zero
 
+!    Link observation to appropriate observation bin
+     if (nobs_bins>1) then
+       ibin = NINT( dtime/hr_obsbin ) + 1
+     else
+       ibin = 1
+     endif
+     IF (ibin<1.OR.ibin>nobs_bins) write(6,*)mype,'Error nobs_bins,ibin= ',nobs_bins,ibin
+
+!    Link obs to diagnostics structure
+     if (.not.lobsdiag_allocated) then
+       if (.not.associated(obsdiags(i_pcp_ob_type,ibin)%head)) then
+         allocate(obsdiags(i_pcp_ob_type,ibin)%head,stat=istat)
+         if (istat/=0) then
+           write(6,*)'setuppcp: failure to allocate obsdiags',istat
+           call stop2(263)
+         end if
+         obsdiags(i_pcp_ob_type,ibin)%tail => obsdiags(i_pcp_ob_type,ibin)%head
+       else
+         allocate(obsdiags(i_pcp_ob_type,ibin)%tail%next,stat=istat)
+         if (istat/=0) then
+           write(6,*)'setuppcp: failure to allocate obsdiags',istat
+           call stop2(264)
+         end if
+         obsdiags(i_pcp_ob_type,ibin)%tail => obsdiags(i_pcp_ob_type,ibin)%tail%next
+       end if
+       allocate(obsdiags(i_pcp_ob_type,ibin)%tail%muse(miter+1))
+       allocate(obsdiags(i_pcp_ob_type,ibin)%tail%nldepart(miter+1))
+       allocate(obsdiags(i_pcp_ob_type,ibin)%tail%tldepart(miter))
+       allocate(obsdiags(i_pcp_ob_type,ibin)%tail%obssen(miter))
+       obsdiags(i_pcp_ob_type,ibin)%tail%indxglb=i
+       obsdiags(i_pcp_ob_type,ibin)%tail%nchnperobs=-99999
+       obsdiags(i_pcp_ob_type,ibin)%tail%luse=.false.
+       obsdiags(i_pcp_ob_type,ibin)%tail%muse(:)=.false.
+       obsdiags(i_pcp_ob_type,ibin)%tail%nldepart(:)=-huge(zero)
+       obsdiags(i_pcp_ob_type,ibin)%tail%tldepart(:)=zero
+       obsdiags(i_pcp_ob_type,ibin)%tail%wgtjo=-huge(zero)
+       obsdiags(i_pcp_ob_type,ibin)%tail%obssen(:)=zero
+     else
+       if (.not.associated(obsdiags(i_pcp_ob_type,ibin)%tail)) then
+         obsdiags(i_pcp_ob_type,ibin)%tail => obsdiags(i_pcp_ob_type,ibin)%head
+       else
+         obsdiags(i_pcp_ob_type,ibin)%tail => obsdiags(i_pcp_ob_type,ibin)%tail%next
+       end if
+       if (obsdiags(i_pcp_ob_type,ibin)%tail%indxglb/=i) then
+          write(6,*)'setuppcp: index error'
+          call stop2(265)
+       end if
+     endif
+
 
 !
 !    Do some prelimiary qc of the data.  Check for points covered
@@ -464,15 +516,15 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
      pcpsas = zero
      pcplrg = zero
 
-     if(obstime > hrdifsig(1) .and. obstime < hrdifsig(nfldsig))then
+     if(dtime > hrdifsig(1) .and. dtime < hrdifsig(nfldsig))then
       do jj=1,nfldsig-1
-       if(obstime > hrdifsig(jj) .and. obstime <= hrdifsig(jj+1))then
+       if(dtime > hrdifsig(jj) .and. dtime <= hrdifsig(jj+1))then
         itim=jj
         itimp=jj+1
-        delt=((hrdifsig(jj+1)-obstime)/(hrdifsig(jj+1)-hrdifsig(jj)))
+        delt=((hrdifsig(jj+1)-dtime)/(hrdifsig(jj+1)-hrdifsig(jj)))
        end if
       end do
-     else if(obstime <=hrdifsig(1))then
+     else if(dtime <=hrdifsig(1))then
        itim=1
        itimp=1
        delt=one
@@ -539,6 +591,7 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
 !          NOTE:  k=1 is surface pressure tendency
            p_ten0(k)  = ges_prs_ten(i,j,k+1)
 
+
         end do
         k=nsig+1
         prsi0(k) = delt *ges_prsi(i,j,k,itim ) + deltp*ges_prsi(i,j,k,itimp)
@@ -582,6 +635,7 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
         pcplrg4 = zero
 
 !       Call forward/adjoint model for current analysis gridpoint
+
         call pcp_k(km,dtp,del0,sl0,rbs0, &
              rmask0,xkt4,ncloud,frain,rmmhr,&
              psexp4,plat0,plon0,&
@@ -605,7 +659,6 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
         psexp  = psexp  + wgtij*psexp4
         cldwrk = cldwrk + wgtij*cldwrk4
         xkt2   = xkt2   + wgtij*xkt4
-
         do k=1,nsig
            t0_ad(k)    = t0_ad(k)    + wgtij*t4_ad(k)
            q0_ad(k)    = q0_ad(k)    + wgtij*q4_ad(k)
@@ -754,18 +807,15 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
 !    Prepare for application of bias correction to simulated values.
 !
 !    Construct predictors for bias correction.
-     pred(1) = zero
-     pred(2) = zero
-     pred(3) = zero
-     pred(4) = zero
-     pred(5) = zero
-     pred(6) = zero
+     do k=1,npredp
+       pred(k) = zero
+     end do
 !  
 !    Apply bias correction to simulated values.
 
      sum = zero
      do j = 1,npredp
-        sum = sum + predxp(kx,j)*pred(j)*ibias(kx)
+        sum = sum + predxp(j,kx)*pred(j)*ibias(kx)
      end do
      pcpbc = pcpnbc + sum
      pcpbc = max(pcpbc,zero)
@@ -816,11 +866,13 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
         end if
 !
 !       Reduce weight and tighten obs-ges bound as function of obs time.
-        term  = cos(sixthpi*obstime)
-        term  = term**3
-        term  = max(zero,min(term,one))
-        efact = term*efact
-        vfact = term*vfact
+        if(.not. l4dvar)then
+          term  = cos(sixthpi*(dtime-half*hr_obsbin))
+          term  = term**3
+          term  = max(zero,min(term,one))
+          efact = term*efact
+          vfact = term*vfact
+        end if
 
 
 !       If the rain rate is greater than zero but less than the 
@@ -846,13 +898,22 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
 !    Apply gross check to good pcp obs.
      xlo = -gross_pcp(kx)*errf
      xhi = +gross_pcp(kx)*errf
+     drad = log(one+satpcp) - log(one+pcpbc)
      if (varinv > r1em6) then
-        drad = log(one+satpcp) - log(one+pcpbc)
         if (drad < xlo .or. drad > xhi) then
            varinv = zero
            if(luse(n))aivals(12,is)  = aivals(12,is) + one
         endif
      endif
+
+     muse= (varinv>r1em6.and.iusep(kx)>=1)
+     if (nobskeep>0) muse=obsdiags(i_pcp_ob_type,ibin)%tail%muse(nobskeep)
+
+     obsdiags(i_pcp_ob_type,ibin)%tail%luse=luse(n)
+     obsdiags(i_pcp_ob_type,ibin)%tail%muse(jiter)=muse
+     obsdiags(i_pcp_ob_type,ibin)%tail%nldepart(jiter)= drad
+     obsdiags(i_pcp_ob_type,ibin)%tail%wgtjo= varinv
+
 
 !
 !***
@@ -860,49 +921,46 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
 !***
 !
 !    Optionally, set parameter iusep to turn off data.
-     if (varinv>r1em6 .and. iusep(kx) >= 1) then
+     if (muse) then
         ncnt  = ncnt+1
 
-        if(.not. associated(pcphead))then
-           allocate(pcphead,stat=istat)
+        if(.not. associated(pcphead(ibin)%head))then
+           allocate(pcphead(ibin)%head,stat=istat)
            if(istat /= 0)write(6,*)' failure to write pcphead '
-           pcptail => pcphead
+           pcptail(ibin)%head => pcphead(ibin)%head
         else
-           allocate(pcptail%llpoint,stat=istat)
-           pcptail => pcptail%llpoint
+           allocate(pcptail(ibin)%head%llpoint,stat=istat)
            if(istat /= 0)write(6,*)' failure to write pcptail%llpoint '
+           pcptail(ibin)%head => pcptail(ibin)%head%llpoint
         end if
-        allocate(pcptail%predp(npredp),pcptail%dpcp_dvar(nsig5), &
+        allocate(pcptail(ibin)%head%predp(npredp),pcptail(ibin)%head%dpcp_dvar(nsig5), &
              stat=istat)
         if(istat /=0)write(6,*)' failure to write pcptail arrays '
 
         do m=1,4
-          pcptail%ij(m)=jgrd(m)
-          pcptail%wij(m)=wgrd(m)
+          pcptail(ibin)%head%ij(m)=jgrd(m)
+          pcptail(ibin)%head%wij(m)=wgrd(m)
         end do
 
-        pcptail%err2=one/error0**2
-        pcptail%raterr2=error0**2*varinv
+        pcptail(ibin)%head%err2=one/error0**2
+        pcptail(ibin)%head%raterr2=error0**2*varinv
         do m=1,npredp
-          pcptail%predp(m)=pred(m)
+          pcptail(ibin)%head%predp(m)=pred(m)
         end do
-        pcptail%obs=log(one+satpcp)
-        pcptail%ges=pcpbc
-        if(l_foto)then
-          pcptail%time = obstime*r3600    
-        else
-          pcptail%time = zero    
-        end if
+        pcptail(ibin)%head%obs=log(one+satpcp)
+        pcptail(ibin)%head%ges=pcpbc
+        pcptail(ibin)%head%time=dtime
         do m=1,nsig
-          pcptail%dpcp_dvar(m)=t0_ad(m)
-          pcptail%dpcp_dvar(m+nsig)=q0_ad(m)
-          pcptail%dpcp_dvar(m+nsig2)=u0_ad(m)
-          pcptail%dpcp_dvar(m+nsig3)=v0_ad(m)
-          pcptail%dpcp_dvar(m+nsig4)=cwm0_ad(m)
-!         pcptail%dpcp_dvar(m+nsig5)=div0_ad(m)  !need to increase size
+          pcptail(ibin)%head%dpcp_dvar(m)=t0_ad(m)
+          pcptail(ibin)%head%dpcp_dvar(m+nsig)=q0_ad(m)
+          pcptail(ibin)%head%dpcp_dvar(m+nsig2)=u0_ad(m)
+          pcptail(ibin)%head%dpcp_dvar(m+nsig3)=v0_ad(m)
+          pcptail(ibin)%head%dpcp_dvar(m+nsig4)=cwm0_ad(m)
+!         pcptail(ibin)%head%dpcp_dvar(m+nsig5)=div0_ad(m)  !need to increase size
         end do
-        pcptail%icxp=kx
-        pcptail%luse=luse(n)
+        pcptail(ibin)%head%icxp=kx
+        pcptail(ibin)%head%luse=luse(n)
+        pcptail(ibin)%head%diags => obsdiags(i_pcp_ob_type,ibin)%tail
 
      end if
 
@@ -921,7 +979,7 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
 
          diagbuf(1)  = cenlat
          diagbuf(2)  = cenlon
-         diagbuf(3)  = obstime/three
+         diagbuf(3)  = dtime-time_offset
          diagbuf(4)  = pcpnum
          diagbuf(5)  = satpcp
          diagbuf(6)  = pcpsdv
@@ -941,6 +999,30 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
          diagbuf(20) = varinv
          diagbuf(21) = errf
          diagbuf(22) = xkt2
+
+         if (lobsdiagsave) then
+          ioff=22
+          do jj=1,miter
+            ioff=ioff+1
+            if (obsdiags(i_pcp_ob_type,ibin)%tail%muse(jj)) then
+              diagbuf(ioff) = one
+            else
+              diagbuf(ioff) = -one
+            endif
+          enddo
+          do jj=1,miter+1
+            ioff=ioff+1
+            diagbuf(ioff) = obsdiags(i_pcp_ob_type,ibin)%tail%nldepart(jj)
+          enddo
+          do jj=1,miter
+            ioff=ioff+1
+            diagbuf(ioff) = obsdiags(i_pcp_ob_type,ibin)%tail%tldepart(jj)
+          enddo
+          do jj=1,miter
+            ioff=ioff+1
+            diagbuf(ioff) = obsdiags(i_pcp_ob_type,ibin)%tail%obssen(jj)
+          enddo
+        endif
 
 !        Write diagnostics to output file.
          write(4) mype,(idiagbuf(m),m=1,iint),(diagbuf(m),m=1,ireal)
@@ -997,7 +1079,10 @@ subroutine setuppcp(lunin,mype,aivals,nele,nobs,&
 !
   deallocate(data_p)
   deallocate(luse)
-  if (pcp_diagsave) close(4)
+  if (pcp_diagsave) then
+      close(4)
+      deallocate(diagbuf)
+  endif
 
 
 ! End of routine

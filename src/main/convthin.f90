@@ -1,4 +1,25 @@
 module convthin
+!$$$   module documentation block
+!                .      .    .                                   .
+! module:  convthin
+!
+! abstract:
+!
+! program history log:
+!   2008-06-04  safford - add module doc block
+!
+! subroutines included:
+!   make3grids
+!   map3grids
+!   del3grids
+!
+! variable definitions:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
   use kinds, only: r_kind,i_kind
   implicit none
@@ -28,6 +49,7 @@ contains
 !   2004-12-09  treadon - allocate thinning grids consistent with analysis domain
 !   2006-01-27  kistler - added vertical dimension
 !   2007-11-03       su - added vertical p level array 
+!   2008-06-04  safford - rm unused vars and uses
 !
 !   input argument list:
 !     rmesh - mesh size (km) of thinning grid.  If (rmesh <= one), 
@@ -36,15 +58,13 @@ contains
 !     pmesh - vertical mesh size (mb) 
 !     nlevp -  vertical levels
 !
-!
 ! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp
 !
 !$$$
-    use constants, only: rearth_equator,two,deg2rad,zero,half,one,quarter,pi,three
-	use satthin, only:dlat_grid,dlon_grid,rlat_min,rlon_min
-    use gridmod, only : nsig
+    use constants, only: rearth_equator,two,deg2rad,zero,half,one,pi
+    use satthin, only:dlat_grid,dlon_grid,rlat_min,rlon_min
 
     implicit none
 
@@ -53,14 +73,12 @@ contains
     real(r_kind),intent(in):: rmesh,pmesh
     integer(i_kind),intent(in):: nlevp
 
-    logical odd
-    integer(i_kind) i,j,k
+    integer(i_kind) i,j
     integer(i_kind) mlonx,mlonj,itxmax
-    integer(i_kind):: ier0,ier1,ier2,ier3,ier4
 
     real(r_kind) delonx,delat,dgv,halfpi,dx,dy
     real(r_kind) twopi
-    real(r_kind) factor,factors,delon
+    real(r_kind) factor,delon
     real(r_kind) rkm2dg,glatm
 
 !   If there is to be no thinning, simply return to calling routine
@@ -153,6 +171,7 @@ contains
 !   2004-12-08  li, xu - fix bug --> set iuse=.true. when use_all=.true.
 !   2005-10-14  treadon - variable name change (dlat0,dlon0) --> d*_earth
 !   2006-01-25  kistler - extend 2d to 3d 
+!   2008-06-04  safford - rm unused vars
 !
 !   input argument list:
 !     pflag - type of pressure-type levels; 0 : sigma level, 1 : determined by convinfo file
@@ -190,7 +209,7 @@ contains
     real(r_kind),dimension(nlevp),intent(in):: pcoord
     
     integer(i_kind):: ip,itt,itx
-    integer(i_kind) kk,ix,iy
+    integer(i_kind) ix,iy
     integer(i_kind),dimension(0:51):: istart_val
 
     real(r_kind) dlat1,dlon1,pob1

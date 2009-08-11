@@ -22,6 +22,7 @@ subroutine precpd_ad( im, ix, km, dt, del, sl, ps, rhc, q_in, &
 !   2004-06-14  treadon - reformat documenation
 !   2004-08-04  treadon - add only on use declarations; add intent in/out
 !   2006-04-12  treadon - change del and sl from 1d to 2d arrays
+!   2008-04-24  safford - rm unused vars
 !
 !   input argument list:
 !       im        - inner dimension over which calculation is made
@@ -200,7 +201,6 @@ subroutine precpd_ad( im, ix, km, dt, del, sl, ps, rhc, q_in, &
   integer(i_kind) iwl
   integer(i_kind) iwl1,iwl1k(km+1,ix)
   integer(i_kind) k
-  integer(i_kind) k2
   real(r_kind) ppr0
   real(r_kind) ppr1
   real(r_kind) ppr2

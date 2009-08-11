@@ -28,6 +28,7 @@ subroutine prewgt_reg(mype)
 !   2006-04-17  treadon - use rlsig from call rdgstat_reg; replace sigl
 !                         with ges_prslavg/ges_psfcavg
 !   2007-05-30  h.liu - remove ozmz
+!   2008-04-23  safford - rm unused uses and vars
 !
 !   input argument list:
 !     mype     - pe number
@@ -36,7 +37,6 @@ subroutine prewgt_reg(mype)
 !
 !   other important variables
 !     nsig     - number of sigma levels
-!     nsig1o   - number of sigma levels distributed in each processor
 !     nx       - number of gaussian lats in one hemisphere
 !     ny       - number of longitudes
 !     dx       - cos of grid latitudes (radians)
@@ -51,14 +51,14 @@ subroutine prewgt_reg(mype)
   use kinds, only: r_kind,i_kind
   use balmod, only: rllat,llmin,llmax
   use berror, only: as,dssvp,dssvt,&
-       bw,nta,ny,nx,dssv,vs,be,ndeg,&
-       init_rftable,hzscl,tsfc_sdv
-  use mpimod, only: nvar_id,levs_id,npe
+       bw,ny,nx,dssv,vs,be,ndeg,&
+       init_rftable,hzscl,tsfc_sdv,slw
+  use mpimod, only: nvar_id,levs_id
   use jfunc, only: qoption,varq          
-  use gridmod, only: ltosi_s,displs_s,ltosj_s,lat2,lon2,nsig,nsig1o,&
-       itotsub,region_lat,ijn_s,region_lon,region_dx,region_dy
-  use constants, only: izero,zero,half,one,two,four,rearth,tiny_r_kind
-  use guess_grids, only: ntguessfc,isli,ges_prslavg,ges_psfcavg
+  use gridmod, only: lon2,nsig,nnnn1o,&
+       region_dx,region_dy
+  use constants, only: izero,zero,half,one,two,four
+  use guess_grids, only: ges_prslavg,ges_psfcavg
 
   implicit none
 
@@ -67,34 +67,34 @@ subroutine prewgt_reg(mype)
 
 ! Declare local parameters
   real(r_kind),parameter:: zero_3       = 0.3_r_kind
-  real(r_kind),parameter:: six          = 6.0_r_kind
-  real(r_kind),parameter:: eight        = 8.0_r_kind
+! real(r_kind),parameter:: six          = 6.0_r_kind
+! real(r_kind),parameter:: eight        = 8.0_r_kind
   real(r_kind),parameter:: r400000      = 400000.0_r_kind
   real(r_kind),parameter:: r800000      = 800000.0_r_kind
-  real(r_kind),parameter:: r1000        = 1000.0_r_kind
+! real(r_kind),parameter:: r1000        = 1000.0_r_kind
   real(r_kind),parameter:: r25          = 1.0_r_kind/25.0_r_kind
   real(r_kind),parameter:: r015         = 0.15_r_kind
 
 
 ! Declare local variables
-  integer(i_kind) k,i,ic,kk
-  integer(i_kind) n,m,ni1,ni2
+  integer(i_kind) k,i
+  integer(i_kind) n
   integer(i_kind) j,k1
   integer(i_kind) inerr,l,lp
   integer(i_kind) msig,mlat              ! stats dimensions
-  integer(i_kind),dimension(nsig1o):: ks
+  integer(i_kind),dimension(nnnn1o):: ks
 
-  real(r_kind) tin,samp2,dl1,dl2
+  real(r_kind) samp2,dl1,dl2
   real(r_kind) samp,hwl
   real(r_kind),dimension(nsig):: rate,dlsig,rlsig
   real(r_kind),dimension(nsig,nsig):: turn, vv
   real(r_kind),dimension(ny,nx)::sl
-  real(r_kind),dimension(ny,nx,3,nsig1o)::sli
   real(r_kind) fact,factoz,psfc015
 
   real(r_kind),allocatable,dimension(:):: corp, hwllp
   real(r_kind),allocatable,dimension(:,:):: wgvi ,bvi
   real(r_kind),allocatable,dimension(:,:,:):: corz, hwll, agvi ,vz
+  real(r_kind),allocatable,dimension(:,:,:,:)::sli
 
 ! Initialize local variables
 !  do j=1,nx
@@ -182,7 +182,7 @@ subroutine prewgt_reg(mype)
   if(qoption==2)then
      do k=1,nsig
         do j=1,mlat
-           varq(j,k)=min(max(corz(j,k,4),0.015_r_kind),one)
+           varq(j,k)=min(max(corz(j,k,4),0.0015_r_kind),one)
         enddo
      enddo
      do k=1,nsig
@@ -229,7 +229,7 @@ subroutine prewgt_reg(mype)
 ! loop l for diff variable of each PE.
 
   psfc015=r015*ges_psfcavg
-  do l=1,nsig1o
+  do l=1,nnnn1o
     ks(l)=nsig+1
     if(nvar_id(l)<3)then
       k_loop: do k=1,nsig
@@ -241,34 +241,27 @@ subroutine prewgt_reg(mype)
     endif
   end do
 
+  allocate(sli(ny,nx,2,nnnn1o))
 
 ! sli in scale  unit (can add in sea-land mask)
   samp2=samp*samp
   do i=1,nx
      do j=1,ny
         fact=one/(one+(one-sl(j,i))*bw)
-        sli(j,i,1,1)=region_dx(j,i)*region_dy(j,i)*fact**2*samp2
-        sli(j,i,2,1)=region_dy(j,i)*fact
-        sli(j,i,3,1)=region_dx(j,i)*fact
+        slw((i-1)*ny+j,1)=region_dx(j,i)*region_dy(j,i)*fact**2*samp2
+        sli(j,i,1,1)=region_dy(j,i)*fact
+        sli(j,i,2,1)=region_dx(j,i)*fact
      enddo
   enddo
 
 
 ! Set up scales
 
-! This first loop for nsig1o will be if we aren't dealing with
+
+! This first loop for nnnn1o will be if we aren't dealing with
 ! surface pressure, skin temperature, or ozone
-  do k=nsig1o,1,-1
+  do k=nnnn1o,1,-1
     k1=levs_id(k)
-    if (k1==izero) then
-      do l=1,3
-        do i=1,nx
-          do j=1,ny
-            sli(j,i,l,k)=zero
-          end do
-        end do
-      end do
-    else ! load sli arrays based variable/level
      if (nvar_id(k)==1) then
 ! streamfunction
         if(k1 >= ks(k))then
@@ -276,9 +269,9 @@ subroutine prewgt_reg(mype)
            fact=one/hwll(l,k1,1)
            do i=1,nx
               do j=1,ny
-                 sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+                 slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+                 sli(j,i,1,k)=sli(j,i,1,1)*fact
                  sli(j,i,2,k)=sli(j,i,2,1)*fact
-                 sli(j,i,3,k)=sli(j,i,3,1)*fact
               enddo
            enddo
 
@@ -290,9 +283,9 @@ subroutine prewgt_reg(mype)
                dl2=rllat(j,i)-float(l)
                dl1=one-dl2
                fact=one/(dl1*hwll(l,k1,1)+dl2*hwll(lp,k1,1))
-               sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+               slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+               sli(j,i,1,k)=sli(j,i,1,1)*fact
                sli(j,i,2,k)=sli(j,i,2,1)*fact
-               sli(j,i,3,k)=sli(j,i,3,1)*fact
              enddo
            enddo
         endif
@@ -303,9 +296,9 @@ subroutine prewgt_reg(mype)
            fact=one/hwll(l,k1,2)
            do i=1,nx
               do j=1,ny
-                 sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+                 slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+                 sli(j,i,1,k)=sli(j,i,1,1)*fact
                  sli(j,i,2,k)=sli(j,i,2,1)*fact
-                 sli(j,i,3,k)=sli(j,i,3,1)*fact
               enddo
            enddo
 
@@ -317,9 +310,9 @@ subroutine prewgt_reg(mype)
                dl2=rllat(j,i)-float(l)
                dl1=one-dl2
                fact=one/(dl1*hwll(l,k1,2)+dl2*hwll(lp,k1,2))
-               sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+               slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+               sli(j,i,1,k)=sli(j,i,1,1)*fact
                sli(j,i,2,k)=sli(j,i,2,1)*fact
-               sli(j,i,3,k)=sli(j,i,3,1)*fact
              enddo
            enddo
         endif
@@ -332,9 +325,9 @@ subroutine prewgt_reg(mype)
              dl2=rllat(j,i)-float(l)
              dl1=one-dl2
              fact=one/(dl1*hwllp(l)+dl2*hwllp(lp))
-             sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+             slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+             sli(j,i,1,k)=sli(j,i,1,1)*fact
              sli(j,i,2,k)=sli(j,i,2,1)*fact
-             sli(j,i,3,k)=sli(j,i,3,1)*fact
          enddo
        enddo
 
@@ -345,9 +338,9 @@ subroutine prewgt_reg(mype)
            fact=one/hwll(l,k1,3)
            do i=1,nx
               do j=1,ny
-                 sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+                 slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+                 sli(j,i,1,k)=sli(j,i,1,1)*fact
                  sli(j,i,2,k)=sli(j,i,2,1)*fact
-                 sli(j,i,3,k)=sli(j,i,3,1)*fact
               enddo
            enddo
 
@@ -359,9 +352,9 @@ subroutine prewgt_reg(mype)
                dl2=rllat(j,i)-float(l)
                dl1=one-dl2
                fact=one/(dl1*hwll(l,k1,3)+dl2*hwll(lp,k1,3))
-               sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+               slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+               sli(j,i,1,k)=sli(j,i,1,1)*fact
                sli(j,i,2,k)=sli(j,i,2,1)*fact
-               sli(j,i,3,k)=sli(j,i,3,1)*fact
              enddo
            enddo
         endif
@@ -372,9 +365,9 @@ subroutine prewgt_reg(mype)
            fact=one/hwll(l,k1,4)
            do i=1,nx
               do j=1,ny
-                 sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+                 slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+                 sli(j,i,1,k)=sli(j,i,1,1)*fact
                  sli(j,i,2,k)=sli(j,i,2,1)*fact
-                 sli(j,i,3,k)=sli(j,i,3,1)*fact
               enddo
            enddo
 
@@ -386,9 +379,9 @@ subroutine prewgt_reg(mype)
                dl2=rllat(j,i)-float(l)
                dl1=one-dl2
                fact=one/(dl1*hwll(l,k1,4)+dl2*hwll(lp,k1,4))
-               sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+               slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+               sli(j,i,1,k)=sli(j,i,1,1)*fact
                sli(j,i,2,k)=sli(j,i,2,1)*fact
-               sli(j,i,3,k)=sli(j,i,3,1)*fact
              enddo
            enddo
         endif
@@ -402,9 +395,9 @@ subroutine prewgt_reg(mype)
         fact=one/hwl
         do i=1,nx
            do j=1,ny
-              sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+              slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+              sli(j,i,1,k)=sli(j,i,1,1)*fact
               sli(j,i,2,k)=sli(j,i,2,1)*fact
-              sli(j,i,3,k)=sli(j,i,3,1)*fact
            enddo
         enddo
 
@@ -418,9 +411,9 @@ subroutine prewgt_reg(mype)
              dl2=rllat(j,i)-float(l)
              dl1=one-dl2
                fact=two/( dl1*hwll(l,1,1)+dl2*hwll(lp,1,1))
-             sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+             slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+             sli(j,i,1,k)=sli(j,i,1,1)*fact
              sli(j,i,2,k)=sli(j,i,2,1)*fact
-             sli(j,i,3,k)=sli(j,i,3,1)*fact
           enddo
         enddo
 
@@ -431,9 +424,9 @@ subroutine prewgt_reg(mype)
            fact=one/hwll(l,k1,4)
            do i=1,nx
               do j=1,ny
-                 sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+                 slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+                 sli(j,i,1,k)=sli(j,i,1,1)*fact
                  sli(j,i,2,k)=sli(j,i,2,1)*fact
-                 sli(j,i,3,k)=sli(j,i,3,1)*fact
               enddo
            enddo
 
@@ -445,9 +438,9 @@ subroutine prewgt_reg(mype)
                dl2=rllat(j,i)-float(l)
                dl1=one-dl2
                fact=one/(dl1*hwll(l,k1,4)+dl2*hwll(lp,k1,4))
-               sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+               slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+               sli(j,i,1,k)=sli(j,i,1,1)*fact
                sli(j,i,2,k)=sli(j,i,2,1)*fact
-               sli(j,i,3,k)=sli(j,i,3,1)*fact
              enddo
            enddo
         endif
@@ -461,9 +454,9 @@ subroutine prewgt_reg(mype)
              dl2=rllat(j,i)-float(l)
              dl1=one-dl2
                fact=four/( dl1*hwll(l,1,1)+dl2*hwll(lp,1,1))
-             sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+             slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+             sli(j,i,1,k)=sli(j,i,1,1)*fact
              sli(j,i,2,k)=sli(j,i,2,1)*fact
-             sli(j,i,3,k)=sli(j,i,3,1)*fact
           enddo
         enddo
 
@@ -476,20 +469,21 @@ subroutine prewgt_reg(mype)
              dl2=rllat(j,i)-float(l)
              dl1=one-dl2
                fact=four/( dl1*hwll(l,1,1)+dl2*hwll(lp,1,1))
-             sli(j,i,1,k)=sli(j,i,1,1)*fact**2
+             slw((i-1)*ny+j,k)=slw((i-1)*ny+j,1)*fact**2
+             sli(j,i,1,k)=sli(j,i,1,1)*fact
              sli(j,i,2,k)=sli(j,i,2,1)*fact
-             sli(j,i,3,k)=sli(j,i,3,1)*fact
           enddo
         enddo
 
      endif
-   endif
  end do
  deallocate( corz,corp,hwll,hwllp,vz,agvi,bvi,wgvi)
 
 
 ! Load tables used in recursive filters
-  call init_rftable(mype,rate,sli)
+  call init_rftable(mype,rate,nnnn1o,sli)
+
+  deallocate( sli) 
 
   return
 end subroutine prewgt_reg

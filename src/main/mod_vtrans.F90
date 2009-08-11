@@ -67,7 +67,7 @@ contains
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
     implicit none
 
     nvmodes_keep=0
@@ -137,6 +137,8 @@ contains
 !
 ! program history log:
 !   2006-06-26  parrish
+!   2007-02-26  yang    - replace IBM subroutine of dgeev by GSI dgeev
+
 !
 !
 ! usage:
@@ -147,7 +149,11 @@ contains
 !
 !   output argument list:
 !
-!$$$
+! attributes:
+!   language: f90
+!   machine:  ibm RS/6000 SP
+!
+!$$$ end documentation block
     use kinds,only: r_kind,i_kind
     use constants,only: zero,half,one,two,three,four,rd,rd_over_cp
     use gridmod,only: lat2,lon2,nsig,tref5,idvc5,&
@@ -156,6 +162,7 @@ contains
     use mpimod,only: npe,mpi_rtype,mpi_comm_world,ierror,strip,npe
     use guess_grids, only: ges_tv,ges_ps,ntguessig
     use module_pmat1, only: invh
+    use m_dgeevx,only : dgeevx
     implicit none
 
 !   Declare passed variables
@@ -168,19 +175,13 @@ contains
     real(r_kind) psbar
     real(r_kind),dimension(nsig+1)::pbar
     real(r_kind),dimension(nsig)::tbar
-    real(r_kind),dimension(nsig,0:npe-1)::tbar0
-    real(r_kind),dimension(0:npe-1)::psbar0,count0
     real(r_kind),dimension(nsig+1)::ahat,bhat,chat
     real(r_kind),dimension(nsig)::hmat,smat
     real(r_kind),dimension(nsig,nsig)::amat,bmat,qmat,qmatinv
-    real(8) aaa(nsig,nsig),www(2,nsig),zzz(2,nsig,nsig)
+    real(8) www(2,nsig),zzz(2,nsig,nsig)
     real(8) wwwd(2,nsig),zzzd(2,nsig,nsig)
-    logical select(nsig)
-    integer(i_kind) naux,iopt
-    real(r_kind) aux,rdcpr
+    integer(i_kind) info
     real(r_kind) factord,sum,errormax
-    real(8) vmat(nsig+1,nsig+1),umat_transpose(nsig+1,nsig),sigma(nsig+1)
-    real(8) umat(nsig,nsig),savemat(nsig,nsig+1)
     real(r_kind) bqmatinv(nsig,nsig),sqmatinv(nsig)
     real(r_kind),dimension(lat1*lon1):: zsm
     real(r_kind),dimension(iglobal):: work1
@@ -191,7 +192,7 @@ contains
     real(r_kind),parameter:: p25=.25_r_kind,p1=.1_r_kind
     real(r_kind),parameter:: ten=10._r_kind
 
-          allocate(hmatsave(nsig),smatsave(nsig),amatsave(nsig,nsig),bmatsave(nsig,nsig))
+    allocate(hmatsave(nsig),smatsave(nsig),amatsave(nsig,nsig),bmatsave(nsig,nsig))
 
 !    allocate variables used in vertical mode transformations:
 
@@ -199,9 +200,6 @@ contains
     allocate(vmodes(nsig,nvmodes_keep),dualmodes(nsig,nvmodes_keep))
     allocate(phihat2t(nsig,nvmodes_keep),phihat2p(nvmodes_keep))
     allocate(p2phihat(nvmodes_keep),t2phihat(nsig,nvmodes_keep))
-
-! RECIP
-    rdcpr=one/rd_over_cp
 
 !    obtain vertical coordinate constants ahat,bhat,chat
     call getabc(ahat,bhat,chat)
@@ -301,38 +299,12 @@ contains
 
 !     next get eigenvalues, eigenvectors and compare to singular values, vectors.
 
-!      use essl routine dgeev
+    call dgeevx(nsig,qmat,size(qmat,1),www,wwwd,zzz,size(zzz,2),zzzd,size(zzzd,2),info,mype)
 
-    iopt=1      !  eigenvalues and eigenvectors are computed
-    do j=1,nsig
-      do i=1,nsig
-        aaa(i,j)=qmat(i,j)
-      end do
-    end do
-    naux=0
-    call dgeev(iopt,aaa,nsig,www,zzz,nsig,select,nsig,aux,naux)
-!   sort from largest to smallest eigenvalue
-    do j=1,nsig-1
-      do i=j+1,nsig
-        if(www(1,i).gt.www(1,j)) then
-          factor=www(1,j)
-          www(1,j)=www(1,i)
-          www(1,i)=factor
-          factor=www(2,j)
-          www(2,j)=www(2,i)
-          www(2,i)=factor
-          do k=1,nsig
-            factor=zzz(1,k,j)
-            zzz(1,k,j)=zzz(1,k,i)
-            zzz(1,k,i)=factor
-            factor=zzz(2,k,j)
-            zzz(2,k,j)=zzz(2,k,i)
-            zzz(2,k,i)=factor
-          end do
-        end if
-      end do
-    end do
+    if (mype ==0) write (6,*) ' AFTER CALL DGEEV', 'status: info =  ', info
 
+! checks and print out eigenvalues
+!
     do k=1,nsig
       if(mype.eq.0) write(6,*)' c,eigenvalue(',k,') = ',(www(1,k)**2+www(2,k)**2)**p25,www(1,k),www(2,k)
     end do
@@ -341,35 +313,6 @@ contains
       if(mype.eq.0) write(6,'(" p, eigvectors 1-4 = ",f10.2,4f12.3)')half*(pbar(k)+pbar(k+1)),zzz(1,k,1:4)
     end do
 
-    iopt=1      !  eigenvalues and dual eigenvectors are computed next
-    do j=1,nsig
-      do i=1,nsig
-        aaa(i,j)=qmat(j,i)         !  to get dual vectors, use transpose of qmat
-      end do
-    end do
-    naux=0
-    call dgeev(iopt,aaa,nsig,wwwd,zzzd,nsig,select,nsig,aux,naux)
-!   sort from largest to smallest eigenvalue
-    do j=1,nsig-1
-      do i=j+1,nsig
-        if(wwwd(1,i).gt.wwwd(1,j)) then
-          factor=wwwd(1,j)
-          wwwd(1,j)=wwwd(1,i)
-          wwwd(1,i)=factor
-          factor=wwwd(2,j)
-          wwwd(2,j)=wwwd(2,i)
-          wwwd(2,i)=factor
-          do k=1,nsig
-            factor=zzzd(1,k,j)
-            zzzd(1,k,j)=zzzd(1,k,i)
-            zzzd(1,k,i)=factor
-            factor=zzzd(2,k,j)
-            zzzd(2,k,j)=zzzd(2,k,i)
-            zzzd(2,k,i)=factor
-          end do
-        end if
-      end do
-    end do
     do k=1,nsig
       if(k.le.nvmodes_keep) then
         depths(k)=(wwwd(1,k)**2+wwwd(2,k)**2)**half
@@ -380,15 +323,6 @@ contains
 
     do k=1,nsig
       if(mype.eq.0) write(6,'(" p, dualvectors 1-4 = ",f10.2,4f12.3)')half*(pbar(k)+pbar(k+1)),zzzd(1,k,1:4)
-    end do
-
-    do j=1,nsig
-      do i=1,nsig
-        sum=zero
-        do k=1,nsig
-          sum=sum+zzz(1,k,i)*zzzd(1,k,j)
-        end do
-      end do
     end do
 
 !  normalize and check for biorthogonality
@@ -412,6 +346,9 @@ contains
         dualmodes(i,j)=zzzd(1,i,j)
       end do
     end do
+
+
+! check orthogonality
 
     errormax=zero
     do j=1,nsig
@@ -527,7 +464,11 @@ contains
 !
 !   output argument list:
 !
-!$$$
+! attributes:
+!   language: f90
+!   machine:  ibm RS/6000 SP
+!
+!$$$ end documentation block
     implicit none
 
 !    deallocate variables used in vertical mode transformations:
@@ -538,7 +479,10 @@ contains
   end subroutine destroy_vtrans
 
   subroutine getabc(ahat,bhat,chat)
+!$$$  subprogram documentation block
+!
 ! subprogram:    getprs       get pressure constants
+!
 !   prgmmr: parrish          org: np22                date: 2006-05-04
 !
 ! abstract: return constants used to get 3d pressure field at interfaces based on
@@ -555,11 +499,11 @@ contains
 !     bhat       -
 !     chat       -
 !
-!$$$
+!$$$ end documentation block
     use kinds,only: r_kind,i_kind
     use constants,only: zero,one_tenth
     use gridmod,only: nsig,ak5,bk5,ck5,tref5
-    use gridmod,only: wrf_nmm_regional,eta1_ll,eta2_ll,pdtop_ll,pt_ll
+    use gridmod,only: wrf_nmm_regional,nems_nmmb_regional,eta1_ll,eta2_ll,pdtop_ll,pt_ll
     implicit none
 
 !   Declare passed variables
@@ -568,7 +512,7 @@ contains
 !   Declare local variables
     integer(i_kind) k
 
-    if(wrf_nmm_regional) then
+    if(wrf_nmm_regional.or.nems_nmmb_regional) then
       do k=1,nsig+1
         ahat(k)=eta1_ll(k)*pdtop_ll-eta2_ll(k)*(pdtop_ll+pt_ll)+pt_ll
         bhat(k)=eta2_ll(k)
@@ -586,6 +530,29 @@ contains
   end subroutine getabc
 
   subroutine vtrans_inv(uhat,vhat,phihat,u,v,t,p)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    vtrans_inv
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-05-29  safford -- add subprogram doc block
+!
+!   input argument list:
+!     uhat,vhat,phihat
+!
+!   output argument list:
+!     u,v,t
+!     p
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
     use gridmod,only: lat2,lon2,nsig
     use constants,only: zero
@@ -618,7 +585,30 @@ contains
   end subroutine vtrans_inv
 
   subroutine vtrans_inv_ad(uhat,vhat,phihat,u,v,t,p)
-
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    vtrans_inv_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-05-29  safford -- add subprogram doc block
+!
+!   input argument list:
+!     uhat,vhat,phihat
+!     u,v,t
+!     p
+!
+!   output argument list:
+!     uhat,vhat,phihat
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
     use gridmod,only: lat2,lon2,nsig
     use constants,only: zero
 
@@ -648,6 +638,29 @@ contains
   end subroutine vtrans_inv_ad
 
   subroutine vtrans(u,v,t,p,uhat,vhat,phihat)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    vtrans
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-05-29  safford -- add subprogram doc block
+!
+!   input argument list:
+!     u,v,t
+!     p
+!
+!   output argument list:
+!     uhat,vhat,phihat
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
     use gridmod,only: lat2,lon2,nsig
     use constants,only: zero
@@ -658,7 +671,9 @@ contains
 
     integer(i_kind) i,j,k,n
     integer(i_kind) :: jstart,jstop
+#ifdef ibm_sp
     integer(i_kind) :: nth,tid,omp_get_num_threads,omp_get_thread_num
+#endif
 
     jstart=1
     jstop=lon2
@@ -698,6 +713,31 @@ contains
   end subroutine vtrans
 
   subroutine vtrans_ad(u,v,t,p,uhat,vhat,phihat)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    vtrans_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-05-29  safford -- add subprogram doc block
+!
+!   input argument list:
+!     u,v,t
+!     p
+!     uhat,vhat,phihat
+!
+!   output argument list:
+!     u,v,t
+!     p
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
     use gridmod,only: lat2,lon2,nsig
     use constants,only: zero
@@ -728,6 +768,28 @@ contains
   end subroutine vtrans_ad
 
   subroutine vtrans2(xin,yin,xhat,yhat)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    vtrans2
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-05-29  safford -- add subprogram doc block
+!
+!   input argument list:
+!     xin,yin
+!
+!   output argument list:
+!     xhat,yhat
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
     use gridmod,only: lat2,lon2,nsig
     use constants,only: zero
@@ -754,6 +816,28 @@ contains
   end subroutine vtrans2
 
   subroutine vtrans2_inv(xhat,yhat,xout,yout)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    vtrans2_inv
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-05-29  safford -- add subprogram doc block
+!
+!   input argument list:
+!     xhat,yhat
+!
+!   output argument list:
+!     xout,yout
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
     use gridmod,only: lat2,lon2,nsig
     use constants,only: zero
@@ -780,6 +864,29 @@ contains
   end subroutine vtrans2_inv
 
   subroutine vtrans2_ad(x,y,xhat,yhat)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    vtrans2_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-05-29  safford -- add subprogram doc block
+!
+!   input argument list:
+!      x,y
+!      xhat,yhat
+!
+!   output argument list:
+!      x,y
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
     use gridmod,only: lat2,lon2,nsig
     use constants,only: zero
@@ -804,6 +911,29 @@ contains
   end subroutine vtrans2_ad
 
   subroutine vtrans2_inv_ad(xhat,yhat,xin,yin)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    vtrans2_inv_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-05-29  safford -- add subprogram doc block
+!
+!   input argument list:
+!     xhat,yhat
+!     xin,yin
+!
+!   output argument list:
+!     xhat,yhat
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
     use gridmod,only: lat2,lon2,nsig
     use constants,only: zero

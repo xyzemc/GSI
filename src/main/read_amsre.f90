@@ -39,6 +39,10 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
 !   2006-09-20  treadon - remove good fov selection for amsre low channel
 !                         data in order to add mpi_io for data read
 !   2006-10-22  kazumori - bug fix for the type of zensun subroutine argument
+!   2007-03-01  tremolet - measure time from beginning of assimilation window
+!   2008-05-28  safford - rm unused vars
+!   2009-04-18  woollen - improve mpi_io interface with bufrlib routines
+!   2009-04-21  derber  - add ithin to call to makegrids
 !
 ! input argument list:
 !     mype     - mpi task id
@@ -69,34 +73,32 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
 !$$$
   use kinds, only: r_kind,r_double,i_kind
   use satthin, only: super_val,itxmax,makegrids,map2tgrid,destroygrids, &
-              checkob,finalcheck
+              checkob,finalcheck,score_crit
   use radinfo, only: iuse_rad,cbias,nusis,jpch_rad
   use gridmod, only: diagnostic_reg,regional,nlat,nlon,rlats,rlons,&
        tll2xy,txy2ll
-  use constants, only: deg2rad,rad2deg,zero,one,two,three,izero
-  use obsmod, only: iadate
-  use mpi_bufr_mod, only: mpi_openbf,mpi_closbf,nblocks,mpi_nextblock,mpi_readmg,&
-       mpi_ireadsb,mpi_ufbint,mpi_ufbrep
+  use constants, only: deg2rad,rad2deg,zero,one,two,three,izero,r60inv
+  use gsi_4dvar, only: l4dvar, idmodel, iwinbgn, winlen
   implicit none
 
 ! Number of channels for sensors in BUFR
   integer(i_kind),parameter :: N_AMSRCH  =  12
-  integer(i_kind),parameter :: N_MAXCH   =  20 
+! integer(i_kind),parameter :: N_MAXCH   =  20 
   integer(i_kind) :: said, AQUA_SAID  = 784  !WMO satellite identifier 
   integer(i_kind) :: siid, AMSRE_SIID = 345  !WMO instrument identifier 
   integer(i_kind),parameter :: maxinfo    =  34
 
 ! Input variables
-  character(len=10),intent(in) :: infile
-  character(len=10),intent(in) :: obstype
+  character(len=*) ,intent(in) :: infile
+  character(len=*) ,intent(in) :: obstype
   integer(i_kind)  ,intent(in) :: mype
   integer(i_kind)  ,intent(in) :: ithin
-  character(len=10),intent(in) :: jsatid
+  character(len=*) ,intent(in) :: jsatid
   integer(i_kind)  ,intent(in) :: lunout
   real(r_kind)     ,intent(inout) :: val_amsre
   real(r_kind)     ,intent(in) :: gstime,twind
   real(r_kind)     ,intent(in) :: rmesh
-  character(len=20),intent(in) :: sis
+  character(len=*) ,intent(in) :: sis
   integer(i_kind)  ,intent(in) :: mype_root
   integer(i_kind)  ,intent(in) :: mype_sub
   integer(i_kind)  ,intent(in) :: npe_sub
@@ -121,27 +123,22 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
   integer(i_kind)   :: idate5(5)
   integer(i_kind)   :: nmind
   integer(i_kind)   :: iy, im, idd, ihh
-  real(r_kind)     :: sstime, tdiff
+  real(r_kind)     :: sstime, tdiff, t4dv
 
 ! Other work variables
   logical           :: outside,iuse,assim
-  integer(i_kind)   :: nreal, ichsst, ichansst,kidsat
-  integer(i_kind)   :: lndsea, itx, k, nele, itt, iobsout
-  integer(i_kind)   :: klat1, klon1, klatp1, klonp1
-  integer(i_kind)   :: ifov, ioff, ilat, ilon
+  integer(i_kind)   :: nreal, kidsat
+  integer(i_kind)   :: itx, k, nele, itt, iobsout
+  integer(i_kind)   :: ifov, ilat, ilon
   integer(i_kind)   :: i, l, n
+  integer(i_kind)   :: file_handle,ierror,nblocks
   integer(i_kind),dimension(n_amsrch) :: kchamsre
-  real(r_kind)     :: chsstf,chsst,sfcr
-  real(r_kind)     :: w00, w10, w01, w11
-  real(r_kind)     :: dx, dy, dx1, dy1, dlon, dlat
-  real(r_kind)     :: rlon_earth,rlat_earth
+  real(r_kind)     :: sfcr
+  real(r_kind)     :: dlon, dlat
   real(r_kind)     :: dlon_earth,dlat_earth
   real(r_kind)     :: timedif, pred, crit1, dist1
   real(r_kind),allocatable,dimension(:,:):: data_all
-  real(r_kind),allocatable,dimension(:):: data_crit
-  integer(i_kind),allocatable,dimension(:):: idata_itx
-  integer(i_kind):: isubset,mmblocks
-  real(r_kind),dimension(4)::a0,a1
+  integer(i_kind):: isubset,irec,isub,next
   real(r_kind),dimension(0:3):: sfcpct
   real(r_kind),dimension(0:4):: rlndsea
   real(r_kind),dimension(0:3):: ts
@@ -157,25 +154,23 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
   integer(i_kind) ntest
   integer(i_kind) :: nscan,iskip,kskip,kch,kchanl
   real(r_kind),parameter :: POINT001 =   0.001_r_kind
-  real(r_kind),parameter :: POINT01  =   0.01_r_kind
-  real(r_kind),parameter :: TEN      =  10._r_kind
-  real(r_kind),parameter :: R45      =  45._r_kind
-  real(r_kind),parameter :: R60      =  60._r_kind
+! real(r_kind),parameter :: POINT01  =   0.01_r_kind
+! real(r_kind),parameter :: TEN      =  10._r_kind
+! real(r_kind),parameter :: R45      =  45._r_kind
   real(r_kind),parameter :: R90      =  90._r_kind
-  real(r_kind),parameter :: R180     = 180._r_kind
+! real(r_kind),parameter :: R180     = 180._r_kind
   real(r_kind),parameter :: R360     = 360._r_kind
   real(r_kind),parameter :: tbmin    = 70._r_kind
   real(r_kind),parameter :: tbmax    = 330._r_kind       !tbmax is larger than same as ssmiqc
   real(r_kind),parameter :: tbbad    = -9.99e11_r_kind                                        
-  real(r_kind) disterr,disterrmax,rlon00,rlat00
+  real(r_kind) disterrmax
   real(r_kind),dimension(N_AMSRCH) :: tbob_org
-  real(r_kind) :: tb19v, tb22v, tb85v, si85
-  real(r_kind) :: clath, clonh, fovn, saza, soza,orbn
+  real(r_kind) :: clath, clonh, fovn, saza, soza
   real(r_kind) :: flgch  !used for thinning priority  range:1-36
 
 ! AMSR-E-bufr
 ! BUFR format for AQUASPOT
-  integer(i_kind),parameter :: N_AQUASPOT_LIST = 25
+! integer(i_kind),parameter :: N_AQUASPOT_LIST = 25
   type aquaspot_list
      sequence
      real(r_kind) :: said
@@ -217,7 +212,7 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
   end type amsrchan_list
 
 ! BUFR format for AMSRDICE
-  integer(i_kind),parameter :: N_AMSRDICE_LIST = 21
+! integer(i_kind),parameter :: N_AMSRDICE_LIST = 21
   type amsrdice_list
      sequence
      real(r_kind) :: siid
@@ -264,11 +259,10 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
   data  mlen/31,28,31,30,31,30,31,31,30,31,30,31/ 
 
 ! Orbit
-  logical :: remove_ovlporbit = .true. !looks like AMSRE overlap problem is not as bad as SSM/I 10/14/04  kozo
+! logical :: remove_ovlporbit = .true. !looks like AMSRE overlap problem is not as bad as SSM/I 10/14/04  kozo
   logical :: first_scen
-  integer(i_kind) :: orbit, old_orbit, iorbit,ireadsb,ireadmg
+  integer(i_kind) :: orbit, old_orbit, iorbit, ireadsb, ireadmg
   integer(i_kind) :: nscen0_reject(20) 
-  real(r_kind) :: old_sstime
   real(r_kind) :: saz
 
 ! data selection
@@ -346,7 +340,7 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
 
 
 ! Make thinning grids
-  call makegrids(rmesh)
+  call makegrids(rmesh,ithin)
 
 
 ! Open BUFR file
@@ -354,49 +348,19 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
   call openbf(lnbufr,'IN',lnbufr)
   call datelen(10)
 
-! Read headder
-  call readmg(lnbufr,subset,idate,iret)
-  call closbf(lnbufr)
-  if( subset /= subfgn) then
-     write(6,*) 'READ_AMSRE:  *** WARNING: ',&
-          'THE FILE TITLE NOT MATCH DATA SUBSET'
-     write(6,*) '  infile=', lnbufr, infile,' subset=',&
-          subset, ' subfgn=',subfgn
-     write(6,*) 'SKIP PROCESSING OF THIS BUFR FILE'
-     go to 900
-  end if
-
-  iy = 0; im = 0;  idd = 0; ihh = 0
-  if( iret /= 0 ) goto 900     ! no data?
-
-  write(date,'( i10)') idate
-  read(date,'(i4,3i2)') iy,im,idd,ihh
-  if (mype_sub==mype_root) &
-       write(6,*) 'READ_AMSRE:     bufr file date is ',iy,im,idd,ihh
-
 ! Allocate local array to contain observation information
   nele=nreal+nchanl
-  allocate(data_all(nele,itxmax),data_crit(itxmax),idata_itx(itxmax))
-
-
-! Open up bufr file for mpi-io access
-  call mpi_openbf(infile,npe_sub,mype_sub,mpi_comm_sub)
+  allocate(data_all(nele,itxmax))
 
 ! Big loop to read data file
-  mpi_loop: do mmblocks=0,nblocks-1,npe_sub
-     if(mmblocks+mype_sub.gt.nblocks-1) then
-        exit
-     endif
-     call mpi_nextblock(mmblocks+mype_sub)
-     block_loop: do
-        call mpi_readmg(lnbufr,subset,idate,iret)
-        if (iret /=0) exit
-        read(subset,'(2x,i6)')isubset
-        read_loop: do while (mpi_ireadsb(lnbufr)==0)
-
+  next=mype_sub+1
+  do while(ireadmg(lnbufr,subset,idate)>=0)
+  call ufbcnt(lnbufr,irec,isub)
+  if(irec/=next)cycle; next=next+npe_sub
+  read_loop: do while (ireadsb(lnbufr)==0)
 
 !    Retrieve bufr 1/4 :get aquaspot (said,orbn,soza)
-       call mpi_ufbint(lnbufr,aquaspot_d,3,1,iret,'SAID ORBN SOZA')
+       call ufbint(lnbufr,aquaspot_d,3,1,iret,'SAID ORBN SOZA')
        aquaspot%said=aquaspot_d(1)
        aquaspot%orbn=aquaspot_d(2)
        aquaspot%soza=aquaspot_d(3)
@@ -405,7 +369,7 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
         if(said /= AQUA_SAID)  cycle read_loop
 
 !    Retrieve bufr 2/4 :get amsrspot (siid,ymdhs,lat,lon)
-     call mpi_ufbrep(lnbufr,amsrspot_d,N_AMSRSPOT_LIST,1,iret, &
+     call ufbrep(lnbufr,amsrspot_d,N_AMSRSPOT_LIST,1,iret, &
          'SIID YEAR MNTH DAYS HOUR MINU SECO CLATH CLONH SAZA BEARAZ FOVN')
      amsrspot%siid  = amsrspot_d(01)
      amsrspot%year  = amsrspot_d(02)
@@ -424,7 +388,7 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
         if(siid /= AMSRE_SIID)  cycle read_loop
 
 !    Retrieve bufr 3/4 : get amsrchan (chnm,tbb)
-     call mpi_ufbrep(lnbufr,amsrchan_d,N_AMSRCHAN_LIST,12,iret,'CHNM LOGRCW ACQF TMBR')
+     call ufbrep(lnbufr,amsrchan_d,N_AMSRCHAN_LIST,12,iret,'CHNM LOGRCW ACQF TMBR')
      do i=1,12
         amsrchan(i)%chnm  =amsrchan_d(1,i)
         amsrchan(i)%logrcw=amsrchan_d(2,i)
@@ -433,8 +397,8 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
      end do
 
 !    Retrieve bufr 4/4 : get amsrfovn (fovn)
-     call mpi_ufbrep(lnbufr,amsrdice_latlon,2, 5,iret,'CLATH CLONH')
-     call mpi_ufbrep(lnbufr,amsrdice_tmbr,  1,20,iret,'TMBR')
+     call ufbrep(lnbufr,amsrdice_latlon,2, 5,iret,'CLATH CLONH')
+     call ufbrep(lnbufr,amsrdice_tmbr,  1,20,iret,'TMBR')
 
      amsrdice(3)%d1_tmbr = amsrdice_tmbr(17)
      amsrdice(3)%d2_tmbr = amsrdice_tmbr(18)
@@ -482,9 +446,14 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
              cycle read_loop
            endif
            call w3fs21(idate5,nmind)
-           sstime = float(nmind) + idate5(5)/R60 ! add in seconds
-           tdiff  = (sstime - gstime)/R60
-           if (abs(tdiff)>twind) cycle read_loop
+           t4dv = (real((nmind-iwinbgn),r_kind) + real(idate5(5),r_kind)*r60inv)*r60inv ! add in seconds
+           if (l4dvar) then
+             if (t4dv<zero .OR. t4dv>winlen) exit
+           else
+             sstime = real(nmind,r_kind) + real(idate5(5),r_kind)*r60inv ! add in seconds
+             tdiff  = (sstime - gstime)*r60inv
+             if (abs(tdiff)>twind) exit
+           endif
 
            ipass(1) = ipass(1)+1
 
@@ -596,10 +565,14 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
              endif
            end do
            if(kskip == kchanl .or. iskip == nchanl) cycle read_loop
-           timedif = 6.0_r_kind*abs(tdiff) ! range:  0 to 18
+           if (l4dvar) then
+             timedif = 0.0
+           else
+             timedif = 6.0_r_kind*abs(tdiff) ! range:  0 to 18
+           endif
            flgch=iskip*3.0  !used for thin, range 0 to 36
            crit1 = 0.01_r_kind+timedif + flgch
-           call map2tgrid(dlat_earth,dlon_earth,dist1,crit1,itx,ithin,itt,iuse)
+           call map2tgrid(dlat_earth,dlon_earth,dist1,crit1,itx,ithin,itt,iuse,sis)
            if (.not.iuse) cycle read_loop
 
            ipass(6) = ipass(6)+1
@@ -615,14 +588,9 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
 !                2 sea ice
 !                3 snow
 !                4 mixed                       
-!      sfcpct(0:3)- percentage of 4 surface types
-!                 (0) - sea percentage
-!                 (1) - land percentage
-!                 (2) - sea ice percentage
-!                 (3) - snow percentage
 
-           call deter_sfc(dlat,dlon,dlat_earth,dlon_earth,tdiff,isflg,idomsfc,sfcpct, &
-                  ts,tsavg,vty,vfr,sty,stp,sm,sn,zz,ff10,sfcr,mype)
+           call deter_sfc_type(dlat_earth,dlon_earth,t4dv,isflg,tsavg)
+
            if (amsre_low) then
              call deter_sfc_amsre_low(dlat_earth,dlon_earth,isflg,sfcpct)
            endif
@@ -638,7 +606,7 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
 
 !    Map obs to grids
            crit1 = crit1+pred
-           call finalcheck(dist1,crit1,ndata,itx,iobsout,iuse,sis)
+           call finalcheck(dist1,crit1,itx,iuse)
            if(.not. iuse)cycle read_loop
      
              if(amsre_low .or. amsre_mid) then
@@ -650,66 +618,43 @@ subroutine read_amsre(mype,val_amsre,ithin,rmesh,jsatid,gstime,&
 !               ==> not use this value but fixed values(55.0 deg)   10/12/04
 !               because BUFR saza value looks strange (raging -3 to 25),
 
-             data_all(1,iobsout) = 49                      ! satellite ID
-             data_all(2,iobsout) = tdiff                   ! time diff (obs - anal) (hours)
-             data_all(3,iobsout) = dlon                    ! grid relative longitude
-             data_all(4,iobsout) = dlat                    ! grid relative latitude
-             data_all(5,iobsout) = saz                     ! satellite zenith angle (rad)
-             data_all(6,iobsout) = amsrspot%bearaz         ! satellite azimuth angle
-             data_all(7,iobsout) = zero                    ! look angle (rad)
-!            data_all(8,iobsout) = ifov                    ! fov number    1-196
-             data_all(8,iobsout) = ifov/3                  ! fov number/3  1-65 !kozo
-             data_all(9,iobsout) = sun_zenith              ! solar zenith angle (deg)
-             data_all(10,iobsout)= sun_azimuth             ! solar azimuth angle (deg)
-             data_all(11,iobsout)= sfcpct(0)               ! ocean percentage
-             data_all(12,iobsout)= sfcpct(1)               ! land percentage
-             data_all(13,iobsout)= sfcpct(2)               ! ice percentage
-             data_all(14,iobsout)= sfcpct(3)               ! snow percentage
-             data_all(15,iobsout)= ts(0)                   ! ocean skin temperature
-             data_all(16,iobsout)= ts(1)                   ! land skin temperature
-             data_all(17,iobsout)= ts(2)                   ! ice skin temperature
-             data_all(18,iobsout)= ts(3)                   ! snow skin temperature
-             data_all(19,iobsout)= tsavg                   ! average skin temperature
-             data_all(20,iobsout)= vty                     ! vegetation type
-             data_all(21,iobsout)= vfr                     ! vegetation fraction
-             data_all(22,iobsout)= sty                     ! soil type
-             data_all(23,iobsout)= stp                     ! soil temperature
-             data_all(24,iobsout)= sm                      ! soil moisture
-             data_all(25,iobsout)= sn                      ! snow depth
-             data_all(26,iobsout)= zz                      ! surface height
-             data_all(27,iobsout)= idomsfc + 0.001         ! dominate surface type
-             data_all(28,iobsout)= sfcr                    ! surface roughness
-             data_all(29,iobsout)= ff10                    ! ten meter wind factor
-             data_all(30,iobsout)= dlon_earth*rad2deg      ! earth relative longitude (degrees)
-             data_all(31,iobsout)= dlat_earth*rad2deg      ! earth relative latitude (degrees)
-             data_all(32,iobsout)= sun_gangle              ! sun glint angle
+             data_all(1,itx) = 49                      ! satellite ID
+             data_all(2,itx) = t4dv                    ! time diff (obs - anal) (hours)
+             data_all(3,itx) = dlon                    ! grid relative longitude
+             data_all(4,itx) = dlat                    ! grid relative latitude
+             data_all(5,itx) = saz                     ! satellite zenith angle (rad)
+             data_all(6,itx) = amsrspot%bearaz         ! satellite azimuth angle
+             data_all(7,itx) = zero                    ! look angle (rad)
+!            data_all(8,itx) = ifov                    ! fov number    1-196
+             data_all(8,itx) = ifov/3 + 1              ! fov number/3  1-65 !kozo
+             data_all(9,itx) = sun_zenith              ! solar zenith angle (deg)
+             data_all(10,itx)= sun_azimuth             ! solar azimuth angle (deg)
+             data_all(30,itx)= dlon_earth              ! earth relative longitude (rad)
+             data_all(31,itx)= dlat_earth              ! earth relative latitude (rad)
+             data_all(32,itx)= sun_gangle              ! sun glint angle
 
-             data_all(33,iobsout)= val_amsre
-             data_all(34,iobsout)= itt
+             data_all(33,itx)= val_amsre
+             data_all(34,itx)= itt
 
              do l=1,nchanl
-               data_all(l+nreal,iobsout) = tbob_org(l)
+               data_all(l+nreal,itx) = tbob_org(l)
              end do
 
-             idata_itx(iobsout) = itx                  ! thinning grid location
-             data_crit(iobsout) = crit1*dist1          ! observation "score"
 
   enddo read_loop
-end do block_loop
-end do mpi_loop
-  
+  enddo
+  call closbf(lnbufr)
+
 ! If multiple tasks read input bufr file, allow each tasks to write out
 ! information it retained and then let single task merge files together
 
-  if (npe_sub>1) then
-     call combine_radobs(mype,mype_sub,mype_root,npe_sub,mpi_comm_sub,&
-          nele,itxmax,nread,ndata,data_all,data_crit,idata_itx)
-  endif
+  call combine_radobs(mype,mype_sub,mype_root,npe_sub,mpi_comm_sub,&
+          nele,itxmax,nread,ndata,data_all,score_crit)
 
 
 ! Allow single task to check for bad obs, update superobs sum,
 ! and write out data to scratch file for further processing.
-  if (mype_sub==mype_root) then
+  if (mype_sub==mype_root.and.ndata>0) then
 
 !    Identify "bad" observation (unreasonable brightness temperatures).
 !    Update superobs sum according to observation location
@@ -721,6 +666,39 @@ end do mpi_loop
         end do
         itt=nint(data_all(nreal,n))
         super_val(itt)=super_val(itt)+val_amsre
+        tdiff = data_all(2,n)                ! time (hours)
+        dlon=data_all(3,n)                   ! grid relative longitude
+        dlat=data_all(4,n)                   ! grid relative latitude
+        dlon_earth = data_all(30,n)  ! earth relative longitude (degrees)
+        dlat_earth = data_all(31,n)  ! earth relative latitude (degrees)
+
+        call deter_sfc(dlat,dlon,dlat_earth,dlon_earth,tdiff,isflg,idomsfc,sfcpct, &
+            ts,tsavg,vty,vfr,sty,stp,sm,sn,zz,ff10,sfcr)
+        if (amsre_low) then
+          call deter_sfc_amsre_low(dlat_earth,dlon_earth,isflg,sfcpct)
+        endif
+        data_all(11,n) = sfcpct(0)           ! sea percentage of
+        data_all(12,n) = sfcpct(1)           ! land percentage
+        data_all(13,n) = sfcpct(2)           ! sea ice percentage
+        data_all(14,n) = sfcpct(3)           ! snow percentage
+        data_all(15,n)= ts(0)                ! ocean skin temperature
+        data_all(16,n)= ts(1)                ! land skin temperature
+        data_all(17,n)= ts(2)                ! ice skin temperature
+        data_all(18,n)= ts(3)                ! snow skin temperature
+        data_all(19,n)= tsavg                ! average skin temperature
+        data_all(20,n)= vty                  ! vegetation type
+        data_all(21,n)= vfr                  ! vegetation fraction
+        data_all(22,n)= sty                  ! soil type
+        data_all(23,n)= stp                  ! soil temperature
+        data_all(24,n)= sm                   ! soil moisture
+        data_all(25,n)= sn                   ! snow depth
+        data_all(26,n)= zz                   ! surface height
+        data_all(27,n)= idomsfc + 0.001      ! dominate surface type
+        data_all(28,n)= sfcr                 ! surface roughness
+        data_all(29,n)= ff10                 ! ten meter wind factor
+        data_all(30,n)= data_all(30,n)*rad2deg  ! earth relative longitude (degrees)
+        data_all(31,n)= data_all(31,n)*rad2deg  ! earth relative latitude (degrees)
+
      end do
 
 !    Write final set of "best" observations to output file
@@ -729,20 +707,13 @@ end do mpi_loop
   
   endif
 
-! Close bufr file
-  call mpi_closbf
-  call closbf(lnbufr)
-
-! Deallocate data arrays
-  deallocate(data_all,data_crit,idata_itx)
-
-! Deallocate satthin arrays
-900 continue
-  call destroygrids
+  deallocate(data_all) ! Deallocate data arrays
+  call destroygrids    ! Deallocate satthin arrays
 
   if(diagnostic_reg.and.ntest.gt.0 .and. mype_sub==mype_root) &
        write(6,*)'READ_AMSRE:  ',&
        'mype,ntest,disterrmax=',mype,ntest,disterrmax
+
   return
 end subroutine read_amsre
 
@@ -826,7 +797,7 @@ subroutine zensun(day,time,lat,lon,sun_zenith,sun_azimuth)
   implicit none
 
   integer(i_kind)   di,day
-  real(r_kind)      time,lat,lon,z,gaz
+  real(r_kind)      time,lat,lon
   real(r_kind)      ut,noon
   real(r_kind)      y(5),y2(5),x(2,5),Tx(5,2),xTx(2,2),aTx(5,2),det
   real(r_kind)      tt,eqtime,decang,latsun,lonsun
@@ -997,6 +968,7 @@ subroutine deter_sfc_amsre_low(dlat_earth,dlon_earth,isflg,sfcpct)
 ! program history log:
 !   2005-10-20 kazumori - refered from ( subroutine deter_sfc )
 !   2006-02-01 parrish  - change names of sno,isli,sst
+!   2008-05-28 safford  - rm unused vars
 !
 !   input argument list:
 !     dlat_earth   - latitude
@@ -1033,10 +1005,9 @@ subroutine deter_sfc_amsre_low(dlat_earth,dlon_earth,isflg,sfcpct)
 
    integer(i_kind) jsli,it
 
-   integer(i_kind):: iavgsli
    integer(i_kind):: klat1,klon1,klatp1,klonp1
    real(r_kind):: dx,dy,dx1,dy1,w00,w10,w01,w11
-   logical :: sea,land,ice,snow,outside
+   logical :: outside
    integer(i_kind):: klat2,klon2,klatp2,klonp2
 
 !

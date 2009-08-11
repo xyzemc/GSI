@@ -43,6 +43,7 @@ subroutine read_wrf_mass_binary_guess(mype)
 !   2007-03-13  derber - remove unused qsinv2 from jfunc use list
 !   2007-04-12  parrish - add modifications to allow any combination of ikj or ijk
 !                          grid ordering for input 3D fields
+!   2008-04-16  safford - rm unused uses
 !
 !   input argument list:
 !     mype     - pe number
@@ -64,15 +65,15 @@ subroutine read_wrf_mass_binary_guess(mype)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$  end documentation block
   use kinds, only: r_kind,r_single,i_long,i_llong,i_kind
-  use mpimod, only: mpi_sum,mpi_integer,mpi_comm_world,npe,ierror,mpi_rtype, &
-       mpi_offset_kind,mpi_info_null,mpi_mode_rdonly,mpi_status_size,levs_id
+  use mpimod, only: mpi_sum,mpi_integer,mpi_comm_world,npe,ierror, &
+       mpi_offset_kind,mpi_info_null,mpi_mode_rdonly,mpi_status_size
   use guess_grids, only: ges_z,ges_ps,ges_tv,ges_q,ges_u,ges_v,&
-       fact10,soil_type,veg_frac,veg_type,sfct,sno,soil_temp,soil_moi,&
-       isli,ntguessig,nfldsig,ifilesig,ges_tsen
+       fact10,soil_type,veg_frac,veg_type,sfc_rough,sfct,sno,soil_temp,soil_moi,&
+       isli,nfldsig,ifilesig,ges_tsen
   use gridmod, only: lat2,lon2,nlat_regional,nlon_regional,&
-       nsig,eta1_ll,pt_ll,itotsub,nsig1o,aeta1_ll,pt_ll
+       nsig,eta1_ll,pt_ll,itotsub,aeta1_ll
   use constants, only: zero,one,grav,fv,zero_single,rd_over_cp_mass
   use gsi_io, only: lendian_in
   implicit none
@@ -90,7 +91,7 @@ subroutine read_wrf_mass_binary_guess(mype)
 
 
 ! Declare local variables
-  integer(i_kind) kt,kq,ku,kv,nnn
+  integer(i_kind) kt,kq,ku,kv
 
 ! MASS variable names stuck in here
   logical run
@@ -123,7 +124,7 @@ subroutine read_wrf_mass_binary_guess(mype)
   integer(i_llong) n_position
   integer(i_kind) iskip,ksize,jextra,nextra
   integer(i_kind) status(mpi_status_size)
-  integer(i_kind) jbegin(0:npe),jend(0:npe-1)
+  integer(i_kind) jbegin(0:npe),jend(0:npe-1),jend2(0:npe-1)
   integer(i_kind) kbegin(0:npe),kend(0:npe-1)
   integer(i_long),allocatable:: ibuf(:,:)
   integer(i_long),allocatable:: jbuf(:,:,:)
@@ -141,7 +142,6 @@ subroutine read_wrf_mass_binary_guess(mype)
 !          jm -- number of y-points on C-grid
 !          lm -- number of vertical levels ( = nsig for now)
 
-
      num_doubtful_sfct=0
 
 
@@ -149,10 +149,16 @@ subroutine read_wrf_mass_binary_guess(mype)
      im=nlon_regional
      jm=nlat_regional
      lm=nsig
+     if(jm.le.npe)then
+       write(6,*)' in read_wrf_mass_binary_guess, jm <= npe, ',&
+                  'so program will end.'
+       call stop2(1)
+     endif
+
      if(mype.eq.0) write(6,*)' in read_wrf_mass_binary_guess, im,jm,lm=',im,jm,lm
 
 !    Following is for convenient WRF MASS input
-     num_mass_fields=21+5*lm
+     num_mass_fields=21+5*lm+2
      num_loc_groups=num_mass_fields/npe
      if(mype==0) write(6,'(" at 1 in read_wrf_mass_guess, lm            =",i6)')lm
      if(mype==0) write(6,'(" at 1 in read_wrf_mass_guess, num_mass_fields=",i6)')num_mass_fields
@@ -163,6 +169,7 @@ subroutine read_wrf_mass_binary_guess(mype)
      allocate(offset(num_mass_fields))
      allocate(igtype(num_mass_fields),kdim(num_mass_fields),kord(num_mass_fields))
      allocate(length(num_mass_fields))
+
      
 !    igtype is a flag indicating whether each input MASS field is h-, u-, or v-grid
 !    and whether integer or real
@@ -176,17 +183,20 @@ subroutine read_wrf_mass_binary_guess(mype)
 !    offset is the byte count preceding each record to be read from the wrf binary file.
 !       used as individual file pointers by mpi_file_read_at
 
-
      do it=1,nfldsig
         write(filename,'("sigf",i2.2)')ifilesig(it)
         open(lendian_in,file=filename,form='unformatted') ; rewind lendian_in
+        write(6,*)'READ_WRF_MASS_BINARY_GUESS:  open lendian_in=',lendian_in,&
+             ' to filename=',filename,' on it=',it
         if(mype == 0) write(6,*)'READ_WRF_MASS_OFFSET_FILE:  open lendian_in=',lendian_in,' to file=',filename
         read(lendian_in) dummy9,pt_regional_single
+        write(6,*)'READ_WRF_MASS_BINARY_GUESS:  dummy9=',dummy9
         do iskip=2,5
            read(lendian_in)
         end do
         read(lendian_in) wrfges
         read(lendian_in) ! n_position          !  offset for START_DATE record
+        write(6,*)'READ_WRF_MASS_BINARY_GUESS:  read wrfges,n_position= ',wrfges,' ',n_position
         
         i=0
         i=i+1 ; i_mub=i                                                ! mub
@@ -355,6 +365,7 @@ subroutine read_wrf_mass_binary_guess(mype)
         else
           kord(i)=1
         end if
+
         offset(i)=n_position ; length(i)=im*jm ; igtype(i)=1 ; kdim(i)=ksize
         if(mype == 0) write(6,*)' tslb i,igtype(i),offset(i),kord(i) = ', &
                                                              i,igtype(i),offset(i),kord(i)
@@ -367,15 +378,17 @@ subroutine read_wrf_mass_binary_guess(mype)
              iadd=(k-1)*im*jm*4
              kord(i)=1
            end if
+
            offset(i)=n_position+iadd ; length(i)=im*jm ; igtype(i)=1 ; kdim(i)=ksize
            if(mype == 0) write(6,*)' i,igtype(i),offset(i) = ',i,igtype(i),offset(i)
         end do
-        
+
         i=i+1 ; i_tsk=i                                               ! tsk
+
         read(lendian_in) n_position
         offset(i)=n_position ; length(i)=im*jm ; igtype(i)=1 ; kdim(i)=1
         if(mype == 0) write(6,*)' tsk i,igtype(i),offset(i) = ',i,igtype(i),offset(i)
-        
+
         close(lendian_in)
         
 !    End of stuff from MASS restart file
@@ -401,8 +414,8 @@ subroutine read_wrf_mass_binary_guess(mype)
            write(6,*)' kbegin=',kbegin
            write(6,*)' kend= ',kend
         end if
-        num_j_groups=(jm+1)/npe
-        jextra=(jm+1)-num_j_groups*npe
+        num_j_groups=jm/npe
+        jextra=jm-num_j_groups*npe
         jbegin(0)=1
         if(jextra > 0) then
            do j=1,jextra
@@ -413,7 +426,7 @@ subroutine read_wrf_mass_binary_guess(mype)
            jbegin(j)=jbegin(j-1)+num_j_groups
         end do
         do j=0,npe-1
-           jend(j)=jbegin(j+1)-1
+           jend(j)=min(jbegin(j+1)-1,jm)
         end do
         if(mype == 0) then
            write(6,*)' jbegin=',jbegin
@@ -421,15 +434,13 @@ subroutine read_wrf_mass_binary_guess(mype)
         end if
         
         allocate(ibuf((im+1)*(jm+1),kbegin(mype):kend(mype)))
-        
         call mpi_file_open(mpi_comm_world,trim(wrfges),mpi_mode_rdonly,mpi_info_null,mfcst,ierror)
         
 !                                    read geopotential
         if(kord(i_fis).ne.1) then
-          allocate(jbuf(im,lm+1,jbegin(mype):min(jend(mype),jm)))
+          allocate(jbuf(im,lm+1,jbegin(mype):jend(mype)))
           this_offset=offset(i_fis)+(jbegin(mype)-1)*4*im*(lm+1)
           this_length=(jend(mype)-jbegin(mype)+1)*im*(lm+1)
-          if(mype.eq.npe-1) this_length=this_length-im*(lm+1)
           call mpi_file_read_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length, &
                                 mpi_integer,status,ierror)
           call transfer_jbuf2ibuf(jbuf,jbegin(mype),jend(mype),ibuf,kbegin(mype),kend(mype), &
@@ -439,10 +450,9 @@ subroutine read_wrf_mass_binary_guess(mype)
         
 !                                    read temps
         if(kord(i_t).ne.1) then
-          allocate(jbuf(im,lm,jbegin(mype):min(jend(mype),jm)))
+          allocate(jbuf(im,lm,jbegin(mype):jend(mype)))
           this_offset=offset(i_t)+(jbegin(mype)-1)*4*im*lm
           this_length=(jend(mype)-jbegin(mype)+1)*im*lm
-          if(mype.eq.npe-1) this_length=this_length-im*lm
           call mpi_file_read_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length, &
                                 mpi_integer,status,ierror)
           call transfer_jbuf2ibuf(jbuf,jbegin(mype),jend(mype),ibuf,kbegin(mype),kend(mype), &
@@ -452,10 +462,9 @@ subroutine read_wrf_mass_binary_guess(mype)
 
 !                                    read q
         if(kord(i_q).ne.1) then
-          allocate(jbuf(im,lm,jbegin(mype):min(jend(mype),jm)))
+          allocate(jbuf(im,lm,jbegin(mype):jend(mype)))
           this_offset=offset(i_q)+(jbegin(mype)-1)*4*im*lm
           this_length=(jend(mype)-jbegin(mype)+1)*im*lm
-          if(mype.eq.npe-1) this_length=this_length-im*lm
           call mpi_file_read_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length, &
                                 mpi_integer,status,ierror)
           call transfer_jbuf2ibuf(jbuf,jbegin(mype),jend(mype),ibuf,kbegin(mype),kend(mype), &
@@ -465,10 +474,9 @@ subroutine read_wrf_mass_binary_guess(mype)
         
 !                                    read u
         if(kord(i_u).ne.1) then
-          allocate(jbuf(im+1,lm,jbegin(mype):min(jend(mype),jm)))
+          allocate(jbuf(im+1,lm,jbegin(mype):jend(mype)))
           this_offset=offset(i_u)+(jbegin(mype)-1)*4*(im+1)*lm
           this_length=(jend(mype)-jbegin(mype)+1)*(im+1)*lm
-          if(mype.eq.npe-1) this_length=this_length-(im+1)*lm
           call mpi_file_read_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length, &
                                 mpi_integer,status,ierror)
           call transfer_jbuf2ibuf(jbuf,jbegin(mype),jend(mype),ibuf,kbegin(mype),kend(mype), &
@@ -478,22 +486,24 @@ subroutine read_wrf_mass_binary_guess(mype)
         
 !                                    read v
         if(kord(i_v).ne.1) then
-          allocate(jbuf(im,lm,jbegin(mype):jend(mype)))
+          jend2=jend
+!  Account for extra lat for v
+          jend2(npe-1)=jend2(npe-1)+1
+          allocate(jbuf(im,lm,jbegin(mype):jend2(mype)))
           this_offset=offset(i_v)+(jbegin(mype)-1)*4*im*lm
-          this_length=(jend(mype)-jbegin(mype)+1)*im*lm
+          this_length=(jend2(mype)-jbegin(mype)+1)*im*lm
           call mpi_file_read_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length, &
                                 mpi_integer,status,ierror)
-          call transfer_jbuf2ibuf(jbuf,jbegin(mype),jend(mype),ibuf,kbegin(mype),kend(mype), &
-               jbegin,jend,kbegin,kend,mype,npe,im,jm+1,lm,im+1,jm+1,i_v,i_v+lm-1)
+          call transfer_jbuf2ibuf(jbuf,jbegin(mype),jend2(mype),ibuf,kbegin(mype),kend(mype), &
+               jbegin,jend2,kbegin,kend,mype,npe,im,jm+1,lm,im+1,jm+1,i_v,i_v+lm-1)
           deallocate(jbuf)
         end if
         
 !                                    read smois
         if(kord(i_smois).ne.1) then
-          allocate(jbuf(im,ksize,jbegin(mype):min(jend(mype),jm)))
+          allocate(jbuf(im,ksize,jbegin(mype):jend(mype)))
           this_offset=offset(i_smois)+(jbegin(mype)-1)*4*im*ksize
           this_length=(jend(mype)-jbegin(mype)+1)*im*ksize
-          if(mype.eq.npe-1) this_length=this_length-im*ksize
           call mpi_file_read_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length, &
                                 mpi_integer,status,ierror)
           call transfer_jbuf2ibuf(jbuf,jbegin(mype),jend(mype),ibuf,kbegin(mype),kend(mype), &
@@ -503,10 +513,9 @@ subroutine read_wrf_mass_binary_guess(mype)
 
 !                                    read tslb
         if(kord(i_tslb).ne.1) then
-          allocate(jbuf(im,ksize,jbegin(mype):min(jend(mype),jm)))
+          allocate(jbuf(im,ksize,jbegin(mype):jend(mype)))
           this_offset=offset(i_tslb)+(jbegin(mype)-1)*4*im*ksize
           this_length=(jend(mype)-jbegin(mype)+1)*im*ksize
-          if(mype.eq.npe-1) this_length=this_length-im*ksize
           call mpi_file_read_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length, &
                                 mpi_integer,status,ierror)
           call transfer_jbuf2ibuf(jbuf,jbegin(mype),jend(mype),ibuf,kbegin(mype),kend(mype), &
@@ -616,7 +625,6 @@ subroutine read_wrf_mass_binary_guess(mype)
         end do
 
 
-     
 !    Transfer surface fields
         do i=1,lon2
            do j=1,lat2
@@ -650,6 +658,7 @@ subroutine read_wrf_mass_binary_guess(mype)
            end do
         end do
      end do
+
      
      call mpi_reduce(num_doubtful_sfct,num_doubtful_sfct_all,1,mpi_integer,mpi_sum,&
           0,mpi_comm_world,ierror)
@@ -701,6 +710,7 @@ subroutine read_wrf_mass_netcdf_guess(mype)
 !   2006-07-28  derber  - include sensible temperatures
 !   2006-07-31  kleist - change to use ges_ps instead of lnps
 !   2007-03-13  derber - remove unused qsinv2 from jfunc use list
+!   2008-04-16  safford - rm unused uses
 !
 !   input argument list:
 !     mype     - pe number
@@ -724,13 +734,12 @@ subroutine read_wrf_mass_netcdf_guess(mype)
 !
 !$$$
   use kinds, only: r_kind,r_single,i_kind
-  use mpimod, only: mpi_sum,mpi_integer,mpi_real4,mpi_comm_world,npe,ierror,&
-       mpi_rtype,levs_id
+  use mpimod, only: mpi_sum,mpi_integer,mpi_real4,mpi_comm_world,npe,ierror
   use guess_grids, only: ges_z,ges_ps,ges_tv,ges_q,ges_u,ges_v,&
-       fact10,soil_type,veg_frac,veg_type,sfct,sno,soil_temp,soil_moi,&
-       isli,ntguessig,nfldsig,ifilesig,ges_tsen
+       fact10,soil_type,veg_frac,veg_type,sfc_rough,sfct,sno,soil_temp,soil_moi,&
+       isli,nfldsig,ifilesig,ges_tsen
   use gridmod, only: lat2,lon2,nlat_regional,nlon_regional,&
-       nsig,ijn_s,displs_s,eta1_ll,pt_ll,itotsub,nsig1o,aeta1_ll,pt_ll
+       nsig,ijn_s,displs_s,eta1_ll,pt_ll,itotsub,aeta1_ll
   use constants, only: zero,one,grav,fv,zero_single,rd_over_cp_mass
   use gsi_io, only: lendian_in
   implicit none
@@ -745,7 +754,7 @@ subroutine read_wrf_mass_netcdf_guess(mype)
   real(r_kind),parameter:: r100=100.0_r_kind
 
 ! Declare local variables
-  integer(i_kind) kt,kq,ku,kv,nnn
+  integer(i_kind) kt,kq,ku,kv
 
 ! MASS variable names stuck in here
   logical run
@@ -1181,6 +1190,33 @@ subroutine generic_grid2sub(tempa,all_loc,kbegin_loc,kend_loc,kbegin,kend,mype,n
 end subroutine generic_grid2sub
 
 subroutine reorder2_s(work,k_in)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    reorder2_s
+!
+!   prgrmmr:  kleist           org: np20                date: 2004-01-25
+!
+! abstract:  adapt reorder2 to single precision
+!
+! program history log:
+!   2004-01-25  kleist
+!   2004-05-14  kleist, documentation
+!   2004-07-15  todling, protex-complaint prologue
+!   2004-11-29  parrish, adapt reorder2 to single precision
+!   2008-04-16  safford -- add subprogram doc block
+!
+!   input argument list:
+!     k_in    ! number of levs in work array
+!     work
+!
+!   output argument list:
+!     work
+!
+! attributes:
+!   language: f90
+!   machine:  ibm rs/6000 sp; sgi origin 2000; compaq/hp
+!
+!$$$
 
 ! !USES:
 
@@ -1199,26 +1235,6 @@ subroutine reorder2_s(work,k_in)
 
   real(r_single),dimension(itotsub,k_in),intent(inout):: work
 
-! !OUTPUT PARAMETERS:
-
-! !DESCRIPTION: adapt reorder2 to single precision
-!
-! !REVISION HISTORY:
-!
-!   2004-01-25  kleist
-!   2004-05-14  kleist, documentation
-!   2004-07-15  todling, protex-complaint prologue
-!   2004-11-29  parrish, adapt reorder2 to single precision
-!
-! !REMARKS:
-!   language: f90
-!   machine:  ibm rs/6000 sp; sgi origin 2000; compaq/hp
-!
-! !AUTHOR:
-!    kleist           org: np20                date: 2004-01-25
-!
-!EOP
-!-------------------------------------------------------------------------
 
   integer(i_kind) iloc,iskip,i,k,n
   real(r_single),dimension(itotsub*k_in):: temp
@@ -1375,7 +1391,7 @@ subroutine transfer_jbuf2ibuf(jbuf,jbegin_loc,jend_loc,ibuf,kbegin_loc,kend_loc,
   integer(i_kind) jbegin(0:npe),jend(0:npe-1)
   integer(i_kind) kbegin(0:npe),kend(0:npe-1)
   
-  integer(i_long) sendbuf(im_jbuf*lm_jbuf*(min(jend_loc,jm_jbuf)-jbegin_loc+1))
+  integer(i_long) sendbuf(im_jbuf*lm_jbuf*(jend_loc-jbegin_loc+2))
   integer(i_long) recvbuf(im_jbuf*jm_jbuf*(kend_loc-kbegin_loc+1))
   integer(i_long) recvcounts(0:npe-1),displs(0:npe)
   integer(i_kind) i,ipe,j,ierror,k,n,ii,k_t_start,k_t_end,sendcount
@@ -1387,7 +1403,7 @@ subroutine transfer_jbuf2ibuf(jbuf,jbegin_loc,jend_loc,ibuf,kbegin_loc,kend_loc,
      
      displs(0)=0
      do i=0,npe-1
-        recvcounts(i)=im_jbuf*(k_t_end-k_t_start+1)*(min(jend(i),jm_jbuf)-jbegin(i)+1)
+        recvcounts(i)=im_jbuf*(k_t_end-k_t_start+1)*(jend(i)-jbegin(i)+1)
         displs(i+1)=displs(i)+recvcounts(i)
      end do
      
@@ -1395,7 +1411,7 @@ subroutine transfer_jbuf2ibuf(jbuf,jbegin_loc,jend_loc,ibuf,kbegin_loc,kend_loc,
      
      ii=0
      do k=k_t_start,k_t_end
-        do j=jbegin_loc,min(jend_loc,jm_jbuf)
+        do j=jbegin_loc,jend_loc
            do i=1,im_jbuf
               ii=ii+1
               sendbuf(ii)=jbuf(i,k-k_start+1,j)
@@ -1409,7 +1425,7 @@ subroutine transfer_jbuf2ibuf(jbuf,jbegin_loc,jend_loc,ibuf,kbegin_loc,kend_loc,
         ii=0
         do n=0,npe-1
            do k=k_t_start,k_t_end
-              do j=jbegin(n),min(jend(n),jm_jbuf)
+              do j=jbegin(n),jend(n)
                  do i=1,im_jbuf
                     ii=ii+1
                     ibuf(i,j,k)=recvbuf(ii)
@@ -1423,7 +1439,7 @@ subroutine transfer_jbuf2ibuf(jbuf,jbegin_loc,jend_loc,ibuf,kbegin_loc,kend_loc,
   
 end subroutine transfer_jbuf2ibuf
 
-subroutine move_ibuf_hg(buf,temp1,im_buf,jm_buf,im_out,jm_out)
+subroutine move_ibuf_hg(ibuf,temp1,im_buf,jm_buf,im_out,jm_out)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    move_ibuf_hg  copy from one array to another
@@ -1435,7 +1451,7 @@ subroutine move_ibuf_hg(buf,temp1,im_buf,jm_buf,im_out,jm_out)
 !   2004-11-29  parrish
 !
 !   input argument list:
-!     buf      - input grid values
+!     ibuf     - input grid values
 !     im_buf   - first index of input array buf
 !     jm_buf   - second index of input array buf
 !     im_out   - first index of output array temp1
@@ -1452,18 +1468,19 @@ subroutine move_ibuf_hg(buf,temp1,im_buf,jm_buf,im_out,jm_out)
 
 !        cp buf to temp1
 
-  use kinds, only: r_single,i_kind
+  use kinds, only: r_single,i_kind,i_long
+  use constants, only: zero_single
   implicit none
   
   integer(i_kind),intent(in)::im_buf,jm_buf,im_out,jm_out
-  real(r_single),intent(in)::buf(im_buf,jm_buf)
+  integer(i_long),intent(in)::ibuf(im_buf,jm_buf)
   real(r_single),intent(out)::temp1(im_out,jm_out)
-  
+
   integer(i_kind) i,j
-  
+
   do j=1,jm_out
      do i=1,im_out
-        temp1(i,j)=buf(i,j)
+        temp1(i,j)=transfer(ibuf(i,j),zero_single)
      end do
   end do
   
@@ -1494,7 +1511,7 @@ subroutine move_ibuf_ihg(ibuf,temp1,im_buf,jm_buf,im_out,jm_out)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
 
 !        cp buf to temp1
 

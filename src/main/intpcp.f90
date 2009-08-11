@@ -1,5 +1,29 @@
-subroutine intpcp(rt,rq,ru,rv,rcwm,st,sq,su,sv,scwm,rpredp,spredp,&
-                  drt,drq,dru,drv,drcwm,dst,dsq,dsu,dsv,dscwm)
+module intpcpmod
+
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    intpcpmod    module for intpcp and its tangent linear intpcp_tl
+!
+! abstract: module for intpcp and its tangent linear intpcp_tl
+!
+! program history log:
+!   2005-05-16  Yanqiu zhu - wrap intpcp and its tangent linear intpcp_tl into one module
+!   2005-11-16  Derber - remove interfaces
+!   2008-11-26  Todling - remove intpcp_tl
+!
+
+implicit none
+
+PRIVATE
+PUBLIC intpcp
+
+interface intpcp; module procedure &
+          intpcp_
+end interface
+
+contains
+
+subroutine intpcp_(pcphead,rt,rq,ru,rv,rcwm,st,sq,su,sv,scwm,rpredp,spredp)
 
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -21,33 +45,35 @@ subroutine intpcp(rt,rq,ru,rv,rcwm,st,sq,su,sv,scwm,rpredp,spredp,&
 !                       - unify NL qc
 !   2007-01-19  derber  - limit pcp_ges* > zero
 !   2007-02-15  rancic  - add foto
+!   2007-03-19  tremolet - binning of observations
 !   2007-06-04  derber  - use quad precision to get reproducability over number of processors
+!   2007-06-05  tremolet - use observation diagnostics structure
+!   2007-07-09  tremolet - observation sensitivity
+!   2008-06-02  safford - rm unused vars
+!   2008-01-04  tremolet - Don't apply H^T if l_do_adjoint is false
+!   2008-11-28  todling  - adapt Tremolet linearization of inner loop to May-2008 version
+!                        - remove quad precision; mpi_allgather is reproducible
+!                        - turn FOTO optional; changed ptr%time handle
+!                        - internal copy of pred's to avoid reshape in calling program
+!   2009-01-26 todling   - bug fix in linearlization 
 !
 !   input argument list:
+!     pcphead  - obs type pointer to obs structure
 !     st       - input temperature correction field
 !     sq       - input q correction field
 !     su       - input zonal wind correction field
 !     sv       - input meridional wind correction field
 !     scwm     - input cloud condensate mixing ratio correction field
 !     spredp   - input bias correction predictor values
-!     dst      - input time derivative of temperature correction field
-!     dsq      - input time derivative of q correction field
-!     dsu      - input time derivative of zonal wind correction field
-!     dsv      - input time derivative of meridional wind correction field
-!     dscwm    - input time derivative of cloud condensate mixing ratio correction field
 !
 !   output argument list:
+!     pcphead  - obs type pointer to obs structure
 !     rt       - output t vector after inclusion of pcp. info.
 !     rq       - output q vector after inclusion of pcp. info.
 !     ru       - output u vector after inclusion of pcp. info.
 !     rv       - output v vector after inclusion of pcp. info.
 !     rcwm     - output cwm vector after inclusion of pcp. info.
 !     rpredp   - output bias correction predictor vector after inclusion of pcp. info.
-!     drt      - output time derivative of t vector after inclusion of pcp. info.
-!     drq      - output time derivative of q vector after inclusion of pcp. info.
-!     dru      - output time derivative of u vector after inclusion of pcp. info.
-!     drv      - output time derivative of v vector after inclusion of pcp. info.
-!     drcwm    - output time derivative of cwm vector after inclusion of pcp. info.
 !
 ! attributes:
 !   language: f90
@@ -55,27 +81,29 @@ subroutine intpcp(rt,rq,ru,rv,rcwm,st,sq,su,sv,scwm,rpredp,spredp,&
 !
 !$$$
   use kinds, only: r_kind,i_kind,r_quad
-  use obsmod, only: pcpptr,pcphead
-  use qcmod, only: nlnqc_iter
-  use pcpinfo, only: npcptype,npredp,b_pcp,pg_pcp
-  use constants, only: zero,one,half,two,tiny_r_kind,cg_term
+  use obsmod, only: pcp_ob_type,lsaveobsens,l_do_adjoint
+  use qcmod, only: nlnqc_iter,varqc_iter
+  use pcpinfo, only: npcptype,npredp,b_pcp,pg_pcp,tinym1_obs
+  use constants, only: zero,one,half,tiny_r_kind,cg_term,r3600
   use gridmod, only: nsig,latlon11,latlon1n,nsig5
+  use gsi_4dvar, only: ltlint
+  use jfunc, only: jiter,l_foto,xhat_dt,dhat_dt
   implicit none
 
 ! Declare passed variables
+  type(pcp_ob_type),pointer,intent(in):: pcphead
   real(r_kind),dimension(latlon1n),intent(in):: st,sq,su,sv,scwm
-  real(r_kind),dimension(latlon1n),intent(in):: dst,dsq,dsu,dsv,dscwm
-  real(r_kind),dimension(npcptype,npredp),intent(in):: spredp
+  real(r_kind),dimension(npcptype*npredp),intent(in):: spredp
   real(r_kind),dimension(latlon1n),intent(inout):: rt,rq,ru,rv,rcwm
-  real(r_kind),dimension(latlon1n),intent(inout):: drt,drq,dru,drv,drcwm
-  real(r_quad),dimension(npcptype,npredp),intent(inout):: rpredp
+  real(r_quad),dimension(npcptype*npredp),intent(inout):: rpredp
   
 ! Declare local variables
-  integer(i_kind) i,j1,j2,j3,j4,nq,nu,nv,ncwm,n,nt,kx
+  integer(i_kind) j,j1,j2,j3,j4,nq,nu,nv,ncwm,n,nt,kx,jn
   real(r_kind) dt,dq,du,dv,dcwm,dcwm_ad,termges_ad,w1,w2,w3,w4
   real(r_kind) pcp_ges_ad,dq_ad,dt_ad,dv_ad,du_ad,pcp_ges
-  real(r_kind) obsges,termges,time_pcp
+  real(r_kind) obsges,termges,time_pcp,termges_tl,pcp_ges_tl,pcp_cur,termcur
   real(r_kind) cg_pcp,p0,wnotgross,wgross
+  type(pcp_ob_type), pointer :: pcpptr
 
   pcpptr => pcphead
   do while(associated(pcpptr))
@@ -88,30 +116,43 @@ subroutine intpcp(rt,rq,ru,rv,rcwm,st,sq,su,sv,scwm,rpredp,spredp,&
      w3=pcpptr%wij(3)
      w4=pcpptr%wij(4)
      pcp_ges = pcpptr%ges 
+     pcp_ges_tl = zero
 
-     time_pcp=pcpptr%time
 
+     if(l_foto) time_pcp=pcpptr%time*r3600
 !    Compute updated simulated rain rate based on changes in t,q,u,v,cwm
      do n = 1,nsig
-        dt = w1* st(j1)+w2* st(j2)+ w3* st(j3)+w4* st(j4) + &
-            (w1*dst(j1)+w2*dst(j2)+ w3*dst(j3)+w4*dst(j4))*time_pcp
-        dq = w1* sq(j1)+w2* sq(j2)+ w3* sq(j3)+w4* sq(j4) + &
-            (w1*dsq(j1)+w2*dsq(j2)+ w3*dsq(j3)+w4*dsq(j4))*time_pcp
-        du = w1* su(j1)+w2* su(j2)+ w3* su(j3)+w4* su(j4) + &
-            (w1*dsu(j1)+w2*dsu(j2)+ w3*dsu(j3)+w4*dsu(j4))*time_pcp
-        dv = w1* sv(j1)+w2* sv(j2)+ w3* sv(j3)+w4* sv(j4) + &
-            (w1*dsv(j1)+w2*dsv(j2)+ w3*dsv(j3)+w4*dsv(j4))*time_pcp
+        dt = w1* st(j1)+w2* st(j2)+ w3* st(j3)+w4* st(j4)
+        dq = w1* sq(j1)+w2* sq(j2)+ w3* sq(j3)+w4* sq(j4)
+        du = w1* su(j1)+w2* su(j2)+ w3* su(j3)+w4* su(j4)
+        dv = w1* sv(j1)+w2* sv(j2)+ w3* sv(j3)+w4* sv(j4)
         dcwm=w1* scwm(j1)+w2* scwm(j2)+  &
-             w3* scwm(j3)+w4* scwm(j4)+  &
-            (w1*dscwm(j1)+w2*dscwm(j2)+  &
-             w3*dscwm(j3)+w4*dscwm(j4))*time_pcp
+             w3* scwm(j3)+w4* scwm(j4)
+        if (l_foto) then
+          dt = dt+&
+              (w1*xhat_dt%t(j1)+w2*xhat_dt%t(j2)+ &
+               w3*xhat_dt%t(j3)+w4*xhat_dt%t(j4))*time_pcp
+          dq = dq+&
+              (w1*xhat_dt%q(j1)+w2*xhat_dt%q(j2)+ &
+               w3*xhat_dt%q(j3)+w4*xhat_dt%q(j4))*time_pcp
+          du = du+&
+              (w1*xhat_dt%u(j1)+w2*xhat_dt%u(j2)+ &
+               w3*xhat_dt%u(j3)+w4*xhat_dt%u(j4))*time_pcp
+          dv = dv+&
+              (w1*xhat_dt%v(j1)+w2*xhat_dt%v(j2)+ &
+               w3*xhat_dt%v(j3)+w4*xhat_dt%v(j4))*time_pcp
+          dcwm=dcwm+&
+              (w1*xhat_dt%cw(j1)+w2*xhat_dt%cw(j2)+  &
+               w3*xhat_dt%cw(j3)+w4*xhat_dt%cw(j4))*time_pcp
+        endif
         
         nt=n; nq=nt+nsig; nu=nq+nsig; nv=nu+nsig; ncwm=nv+nsig
-        pcp_ges = pcp_ges + pcpptr%dpcp_dvar(nt)*dt + &
-                            pcpptr%dpcp_dvar(nq)*dq + &
-                            pcpptr%dpcp_dvar(nu)*du + &
-                            pcpptr%dpcp_dvar(nv)*dv + &
-                            pcpptr%dpcp_dvar(ncwm)*dcwm
+        pcp_ges_tl = pcp_ges_tl +&
+                     pcpptr%dpcp_dvar(nt)*dt + &
+                     pcpptr%dpcp_dvar(nq)*dq + &
+                     pcpptr%dpcp_dvar(nu)*du + &
+                     pcpptr%dpcp_dvar(nv)*dv + &
+                     pcpptr%dpcp_dvar(ncwm)*dcwm
         
         j1=j1+latlon11
         j2=j2+latlon11
@@ -119,33 +160,62 @@ subroutine intpcp(rt,rq,ru,rv,rcwm,st,sq,su,sv,scwm,rpredp,spredp,&
         j4=j4+latlon11
         
      end do
+     pcp_cur = pcp_ges + pcp_ges_tl
 
+!    Ensure rain rate is greater than a small zero
+     pcp_ges = max(pcp_ges,zero)
+     termges = log(one+pcp_ges)
 
-!   Logrithmic obs - ges.  plus 1 added for zero rain rate.
+!    Compute o-g 
+     if (ltlint) then
+       if ( pcp_ges > tinym1_obs ) then
+         termges_tl = pcp_ges_tl/(one+pcp_ges)
+       else
+         termges_tl = zero
+       endif
+       obsges = termges + termges_tl - pcpptr%obs 
+     else
+       pcp_cur = max(pcp_cur,zero)
+       termcur = log(one+pcp_cur)
+       termges_tl = termcur - termges
+       obsges = termcur - pcpptr%obs 
+     endif
 
-!   Ensure rain rate is greater than a small zero
-    pcp_ges = max(pcp_ges,zero)
-    termges = log(one+pcp_ges)
+     if (lsaveobsens) then
+       pcpptr%diags%obssen(jiter) = termges_tl*pcpptr%err2*pcpptr%raterr2
+     else
+       if (pcpptr%luse) pcpptr%diags%tldepart(jiter)=termges_tl
+     endif
 
-!   Compute o-g 
-    obsges = termges - pcpptr%obs
+   if (l_do_adjoint) then
+    if (lsaveobsens) then
+      termges_ad  = pcpptr%diags%obssen(jiter)
+    
+    else
+!     Adjoint model
+      kx=pcpptr%icxp
+      if (nlnqc_iter .and. pg_pcp(kx) > tiny_r_kind .and.  &
+                           b_pcp(kx)  > tiny_r_kind) then
+         cg_pcp=cg_term/b_pcp(kx)
+         wnotgross= one-pg_pcp(kx)*varqc_iter
+         wgross = varqc_iter*pg_pcp(kx)*cg_pcp/wnotgross
+         p0   = wgross/(wgross+exp(-half*pcpptr%err2*obsges**2))
+         obsges = obsges*(one-p0)
+      endif
 
-
-!   Adjoint model
-    kx=pcpptr%icxp
-    if (nlnqc_iter .and. pg_pcp(kx) > tiny_r_kind .and.  &
-                         b_pcp(kx)  > tiny_r_kind) then
-       cg_pcp=cg_term/b_pcp(kx)
-       wnotgross= one-pg_pcp(kx)
-       wgross = pg_pcp(kx)*cg_pcp/wnotgross
-       p0   = wgross/(wgross+exp(-half*pcpptr%err2*obsges**2))
-       obsges = obsges*(one-p0)
+      termges_ad  = obsges*pcpptr%err2*pcpptr%raterr2
     endif
 
-    termges_ad  = obsges*pcpptr%err2*pcpptr%raterr2
-
 !   Adjoint for logrithmic forumulation
-    pcp_ges_ad = termges_ad/(one+pcp_ges)
+    if (ltlint) then
+      if ( pcp_ges > tinym1_obs ) then
+        pcp_ges_ad = termges_ad/(one+pcp_ges)
+      else
+        pcp_ges_ad = zero
+      endif
+    else
+      pcp_ges_ad = termges_ad/(one+pcp_cur)
+    endif
 
 !   Adjoint of pcp_ges update
 
@@ -187,36 +257,38 @@ subroutine intpcp(rt,rq,ru,rv,rcwm,st,sq,su,sv,scwm,rpredp,spredp,&
        rt(j2) = rt(j2) + w2*dt_ad
        rt(j1) = rt(j1) + w1*dt_ad
 
-       dcwm_ad = time_pcp*dcwm_ad
-       dv_ad   = time_pcp*dv_ad
-       du_ad   = time_pcp*du_ad
-       dq_ad   = time_pcp*dq_ad
-       dt_ad   = time_pcp*dt_ad
+       if (l_foto) then
+         dcwm_ad = time_pcp*dcwm_ad
+         dv_ad   = time_pcp*dv_ad
+         du_ad   = time_pcp*du_ad
+         dq_ad   = time_pcp*dq_ad
+         dt_ad   = time_pcp*dt_ad
 
-       drcwm(j4) = drcwm(j4) + w4*dcwm_ad
-       drcwm(j3) = drcwm(j3) + w3*dcwm_ad
-       drcwm(j2) = drcwm(j2) + w2*dcwm_ad
-       drcwm(j1) = drcwm(j1) + w1*dcwm_ad
+         dhat_dt%cw(j4) = dhat_dt%cw(j4) + w4*dcwm_ad
+         dhat_dt%cw(j3) = dhat_dt%cw(j3) + w3*dcwm_ad
+         dhat_dt%cw(j2) = dhat_dt%cw(j2) + w2*dcwm_ad
+         dhat_dt%cw(j1) = dhat_dt%cw(j1) + w1*dcwm_ad
 
-       drv(j4) = drv(j4) + w4*dv_ad
-       drv(j3) = drv(j3) + w3*dv_ad
-       drv(j2) = drv(j2) + w2*dv_ad
-       drv(j1) = drv(j1) + w1*dv_ad
+         dhat_dt%v(j4) = dhat_dt%v(j4) + w4*dv_ad
+         dhat_dt%v(j3) = dhat_dt%v(j3) + w3*dv_ad
+         dhat_dt%v(j2) = dhat_dt%v(j2) + w2*dv_ad
+         dhat_dt%v(j1) = dhat_dt%v(j1) + w1*dv_ad
 
-       dru(j4) = dru(j4) + w4*du_ad
-       dru(j3) = dru(j3) + w3*du_ad
-       dru(j2) = dru(j2) + w2*du_ad
-       dru(j1) = dru(j1) + w1*du_ad
+         dhat_dt%u(j4) = dhat_dt%u(j4) + w4*du_ad
+         dhat_dt%u(j3) = dhat_dt%u(j3) + w3*du_ad
+         dhat_dt%u(j2) = dhat_dt%u(j2) + w2*du_ad
+         dhat_dt%u(j1) = dhat_dt%u(j1) + w1*du_ad
 
-       drq(j4) = drq(j4) + w4*dq_ad
-       drq(j3) = drq(j3) + w3*dq_ad
-       drq(j2) = drq(j2) + w2*dq_ad
-       drq(j1) = drq(j1) + w1*dq_ad
+         dhat_dt%q(j4) = dhat_dt%q(j4) + w4*dq_ad
+         dhat_dt%q(j3) = dhat_dt%q(j3) + w3*dq_ad
+         dhat_dt%q(j2) = dhat_dt%q(j2) + w2*dq_ad
+         dhat_dt%q(j1) = dhat_dt%q(j1) + w1*dq_ad
 
-       drt(j4) = drt(j4) + w4*dt_ad
-       drt(j3) = drt(j3) + w3*dt_ad
-       drt(j2) = drt(j2) + w2*dt_ad
-       drt(j1) = drt(j1) + w1*dt_ad
+         dhat_dt%t(j4) = dhat_dt%t(j4) + w4*dt_ad
+         dhat_dt%t(j3) = dhat_dt%t(j3) + w3*dt_ad
+         dhat_dt%t(j2) = dhat_dt%t(j2) + w2*dt_ad
+         dhat_dt%t(j1) = dhat_dt%t(j1) + w1*dt_ad
+       endif
 
        j1=j1+latlon11
        j2=j2+latlon11
@@ -224,9 +296,12 @@ subroutine intpcp(rt,rq,ru,rv,rcwm,st,sq,su,sv,scwm,rpredp,spredp,&
        j4=j4+latlon11
             
     end do
-
+   endif
     pcpptr => pcpptr%llpoint 
- end do
+  end do
 
- return
-end subroutine intpcp
+  return
+end subroutine intpcp_
+
+
+end module intpcpmod

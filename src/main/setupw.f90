@@ -13,18 +13,21 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 ! !USES:
 
   use kinds, only: r_kind,r_single,r_double,i_kind
-  use obsmod, only: wtail,whead,rmiss_single,perturb_obs,oberror_tune
+  use obsmod, only: wtail,whead,rmiss_single,perturb_obs,oberror_tune,&
+       i_w_ob_type,obsdiags,obsptr,lobsdiagsave,nobskeep,lobsdiag_allocated,&
+       time_offset
+  use gsi_4dvar, only: nobs_bins,hr_obsbin
   use qcmod, only: npres_print,ptop,pbot,dfact,dfact1
   use oneobmod, only: oneobtest,oneob_type,magoberr,maginnov 
-  use gridmod, only: get_ijk,nsig,lat2,lon2,twodvar_regional
+  use gridmod, only: get_ijk,nsig,lat2,lon2,twodvar_regional,regional
   use guess_grids, only: nfldsig,hrdifsig,geop_hgtl,sfcmod_gfs
   use guess_grids, only: ges_u,ges_v,tropprs,ges_ps,ges_z,sfcmod_mm5
-  use guess_grids, only: ges_tv,ges_lnprsl,comp_fact10
-  use constants, only: zero,half,one,tiny_r_kind,two,one_tenth,cg_term,r3600, &
+  use guess_grids, only: ges_tv,ges_lnprsl,comp_fact10,pt_ll
+  use constants, only: zero,half,one,tiny_r_kind,two,one_tenth,cg_term, &
            rad2deg,three,rd,grav,four,huge_single,r1000,wgtlim,huge_r_kind,izero
   use constants, only: grav_ratio,flattening,grav,zero,deg2rad, &
        grav_equator,somigliana,semi_major_axis,eccentricity
-  use jfunc, only: jiter,first,last,jiterstart,l_foto
+  use jfunc, only: jiter,first,last,jiterstart,miter
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype
   use convinfo, only: icsubtype
   use converr, only: ptabl
@@ -91,13 +94,18 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 !                       - modify handling of multiple data at same location
 !   2006-07-31  kleist - use ges_ps instead of ln(ps)
 !   2006-08-28      su - fix a bug in variational qc
-!   2006-11-30  jung   - add type 259 for modis winds
+!   2006-11-30  jung/sienkiewicz - add type 259 for modis winds
 !   2006-10-28      su - turn off rawinsonde Vqc at south hemisphere
 !   2007-03-09  su     - modify observation pertabation for adjusting obs error
+!   2007-03-19  tremolet - binning of observations
 !   2007-03-27  li.bi - add qc for type 289 windsat winds
+!   2007-06-05  tremolet - add observation diagnostics structure
 !   2007-08-28  su     - modify observation gross check error 
 !   2008-03-24  wu     - oberror tuning and perturb obs
 !   2008-03-31  li.bi - add qc for type 290 ascat winds
+!   2008-05-20  safford - rm unused vars
+!   2008-09-08  lueken  - merged ed's changes into q1fy09 code
+!   2008-12-03  todling - changed handle of tail%time
 !
 ! REMARKS:
 !   language: f90
@@ -118,7 +126,6 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
   real(r_kind),parameter:: r50=50.0_r_kind
   real(r_kind),parameter:: r200=200.0_r_kind
   real(r_kind),parameter:: r400=400.0_r_kind
-  real(r_kind),parameter:: r2000=2000.0_r_kind
   real(r_kind),parameter:: r1e10=1.e10_r_kind
 
 
@@ -126,25 +133,25 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 
   real(r_double) rstation_id
   real(r_kind) qcu,qcv,qc_spd,qc_prs,trop5,tfact,fact
-  real(r_kind) dx,dy,ds,dx1,dy1,ds1,scale,ratio,obserror,obserrlm
-  real(r_kind) residual,ressw,ress,val,val2,valqc2,dudiff,dvdiff,perturbu,perturbv
+  real(r_kind) scale,ratio,obserror,obserrlm
+  real(r_kind) residual,ressw,ress,val,val2,valqc2,dudiff,dvdiff
   real(r_kind) valqc,valu,valv,dx10,rlow,rhgh,drpx,prsfc
   real(r_kind) cg_w,wgross,wnotgross,wgt,arg,exp_arg,term,rat_err2
   real(r_kind) presw,factw,dpres,ugesin,vgesin,rwgt,dpressave
-  real(r_kind) sfcchk,prsln2,error,dtime,dlon,dlat,r0_001,rsig,thirty
+  real(r_kind) sfcchk,prsln2,error,dtime,dlon,dlat,r0_001,rsig,thirty,rsigp
   real(r_kind) ratio_errors,goverrd,spdges,spdob,ten,psges,zsges
-  real(r_kind) slat,sin2,termg,termr,termrg,dlnp,pobl,uob,vob
-  real(r_kind) dz,zob,pob,z1,z2,p1,p2,dz21,dlnp21,spdb,dstn
-  real(r_kind) errinv_input,errinv_adjst,errinv_final,rand
+  real(r_kind) slat,sin2,termg,termr,termrg,pobl,uob,vob
+  real(r_kind) dz,zob,z1,z2,p1,p2,dz21,dlnp21,spdb,dstn
+  real(r_kind) errinv_input,errinv_adjst,errinv_final
   real(r_kind) err_input,err_adjst,err_final,skint,sfcr
   real(r_kind),dimension(nele,nobs):: data
   real(r_kind),dimension(nobs):: dup
   real(r_kind),dimension(nsig)::prsltmp,tges,zges
   real(r_single),allocatable,dimension(:,:)::rdiagbuf
 
-  integer(i_kind) i,nchar,nreal,k,j,n,l,it,ii,itype,itype1,itype2
-  integer(i_kind) jlat,jlon,jsig,mm1,iptrbu,iptrbv
-  integer(i_kind) k1,k2,ikxx,nn,isli
+  integer(i_kind) i,nchar,nreal,k,j,l,ii,itype
+  integer(i_kind) jsig,mm1,iptrbu,iptrbv,jj
+  integer(i_kind) k1,k2,ikxx,nn,isli,ibin,ioff
   integer(i_kind) ier,ilon,ilat,ipres,iuob,ivob,id,itime,ikx,ielev,iqc
   integer(i_kind) ihgt,ier2,iuse,ilate,ilone,istat
   integer(i_kind) idomsfc,isfcr,iskint,iff10
@@ -152,7 +159,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
   character(8) station_id
   character(8),allocatable,dimension(:):: cdiagbuf
 
-  logical pibal_height,sfc_data,z_height
+  logical z_height,sfc_data
   logical,dimension(nobs):: luse,muse
 
   equivalence(rstation_id,station_id)
@@ -192,6 +199,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
   thirty = 30.0_r_kind
   ten = 10.0_r_kind
   r0_001=0.001_r_kind
+  rsigp=rsig+one
   goverrd=grav/rd
 
 ! If requested, save select data for output to diagnostic file
@@ -199,6 +207,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
      ii=0
      nchar=1
      nreal=23
+     if (lobsdiagsave) nreal=nreal+7*miter+2
      allocate(cdiagbuf(nobs),rdiagbuf(nreal,nobs))
   end if
 
@@ -230,6 +239,58 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
     error=data(ier2,i)
     ikx=nint(data(ikxx,i))
     isli = data(idomsfc,i)
+
+!    Link observation to appropriate observation bin
+     if (nobs_bins>1) then
+       ibin = NINT( dtime/hr_obsbin ) + 1
+     else
+       ibin = 1
+     endif
+     IF (ibin<1.OR.ibin>nobs_bins) write(6,*)mype,'Error nobs_bins,ibin= ',nobs_bins,ibin
+
+!    Link obs to diagnostics structure
+     do jj=1,2
+       if (.not.lobsdiag_allocated) then
+         if (.not.associated(obsdiags(i_w_ob_type,ibin)%head)) then
+           allocate(obsdiags(i_w_ob_type,ibin)%head,stat=istat)
+           if (istat/=0) then
+             write(6,*)'setupw: failure to allocate obsdiags',istat
+             call stop2(304)
+           end if
+           obsdiags(i_w_ob_type,ibin)%tail => obsdiags(i_w_ob_type,ibin)%head
+         else
+           allocate(obsdiags(i_w_ob_type,ibin)%tail%next,stat=istat)
+           if (istat/=0) then
+             write(6,*)'setupw: failure to allocate obsdiags',istat
+             call stop2(305)
+           end if
+           obsdiags(i_w_ob_type,ibin)%tail => obsdiags(i_w_ob_type,ibin)%tail%next
+         end if
+         allocate(obsdiags(i_w_ob_type,ibin)%tail%muse(miter+1))
+         allocate(obsdiags(i_w_ob_type,ibin)%tail%nldepart(miter+1))
+         allocate(obsdiags(i_w_ob_type,ibin)%tail%tldepart(miter))
+         allocate(obsdiags(i_w_ob_type,ibin)%tail%obssen(miter))
+         obsdiags(i_w_ob_type,ibin)%tail%indxglb=i
+         obsdiags(i_w_ob_type,ibin)%tail%nchnperobs=-99999
+         obsdiags(i_w_ob_type,ibin)%tail%luse=.false.
+         obsdiags(i_w_ob_type,ibin)%tail%muse(:)=.false.
+         obsdiags(i_w_ob_type,ibin)%tail%nldepart(:)=-huge(zero)
+         obsdiags(i_w_ob_type,ibin)%tail%tldepart(:)=zero
+         obsdiags(i_w_ob_type,ibin)%tail%wgtjo=-huge(zero)
+         obsdiags(i_w_ob_type,ibin)%tail%obssen(:)=zero
+       else
+         if (.not.associated(obsdiags(i_w_ob_type,ibin)%tail)) then
+           obsdiags(i_w_ob_type,ibin)%tail => obsdiags(i_w_ob_type,ibin)%head
+         else
+           obsdiags(i_w_ob_type,ibin)%tail => obsdiags(i_w_ob_type,ibin)%tail%next
+         end if
+         if (obsdiags(i_w_ob_type,ibin)%tail%indxglb/=i) then
+           write(6,*)'setupw: index error'
+           call stop2(306)
+         end if
+       endif
+       if (jj==1) obsptr => obsdiags(i_w_ob_type,ibin)%tail
+     enddo
 
 !   Load observation error and values into local variables
     obserror = max(cermin(ikx),min(cermax(ikx),data(ier,i)))
@@ -403,11 +464,12 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
        dpres = dpres-log(psges)
        drpx=zero
        
-       prsln2=log(exp(prsltmp(1))/psges)
+       prsfc=psges
+       prsln2=log(exp(prsltmp(1))/prsfc)
        dpressave=dpres
 
 !      Put obs pressure in correct units to get grid coord. number
-       dpres=log(exp(dpres)*psges)
+       dpres=log(exp(dpres)*prsfc)
        call grdcrd(dpres,1,prsltmp(1),nsig,-1)
 
 !      Interpolate guess u and v to observation location and time.
@@ -448,7 +510,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 
 !   Checks based on observation location relative to model surface and top
     rlow=max(sfcchk-dpres,zero)
-    rhgh=max(dpres-r0_001-rsig,zero)
+    rhgh=max(dpres-r0_001-rsigp,zero)
     if(luse(i))then
        awork(1) = awork(1) + one
        if(rlow/=zero) awork(2) = awork(2) + one
@@ -461,7 +523,14 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 
 !   Check to see if observation below model surface or above model top.
 !   If so, don't use observation
-    if (dpres>rsig) ratio_errors=zero
+    if (dpres > rsig )then
+      if( regional .and. presw > pt_ll )then
+        dpres=rsig
+      else
+        ratio_errors=zero
+      endif
+    endif
+
     if ( (itype>=221 .and. itype<=229).and. (dpres<zero) ) ratio_errors=zero
 
 
@@ -476,7 +545,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 !       Get guess values of tropopause pressure and sea/land/ice
 !       mask at observation location
         call intrp2a(tropprs,trop5,dlat,dlon,1,1,mype)
-        prsfc = r10*psges       ! surface pressure in hPa
+        prsfc = r10*prsfc       ! surface pressure in hPa
 
 !       Compute observed and guess wind speeds (m/s).  
         spdges = sqrt(ugesin* ugesin +vgesin* vgesin )
@@ -552,6 +621,8 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 
      if (ratio_errors*error <=tiny_r_kind) muse(i)=.false.
 
+     if (nobskeep>0) muse(i)=obsdiags(i_w_ob_type,ibin)%tail%muse(nobskeep)
+
 !   Oberror Tuning and Perturb Obs
      if(muse(i)) then
        if(oberror_tune )then
@@ -622,57 +693,68 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
        end do
      end if
 
+!    Fill obs to diagnostics structure
+!    U
+     obsptr%luse=luse(i)
+     obsptr%muse(jiter)=muse(i)
+     obsptr%nldepart(jiter)=dudiff
+     obsptr%wgtjo= (error*ratio_errors)**2
+!    V
+     obsdiags(i_w_ob_type,ibin)%tail%luse=luse(i)
+     obsdiags(i_w_ob_type,ibin)%tail%muse(jiter)=muse(i)
+     obsdiags(i_w_ob_type,ibin)%tail%nldepart(jiter)=dvdiff
+     obsdiags(i_w_ob_type,ibin)%tail%wgtjo= (error*ratio_errors)**2
+
 !    If obs is "acceptable", load array with obs info for use
 !    in inner loop minimization (int* and stp* routines)
 
      if (.not. last .and. muse(i)) then
 
-        if(.not. associated(whead))then
-            allocate(whead,stat=istat)
+        if(.not. associated(whead(ibin)%head))then
+            allocate(whead(ibin)%head,stat=istat)
             if(istat /= 0)write(6,*)' failure to write whead '
-            wtail => whead
+            wtail(ibin)%head => whead(ibin)%head
         else
-            allocate(wtail%llpoint,stat=istat)
-            wtail => wtail%llpoint
+            allocate(wtail(ibin)%head%llpoint,stat=istat)
             if(istat /= 0)write(6,*)' failure to write wtail%llpoint '
+            wtail(ibin)%head => wtail(ibin)%head%llpoint
         end if
 
-        call get_ijk(mm1,dlat,dlon,dpres,wtail%ij(1),wtail%wij(1))
+        call get_ijk(mm1,dlat,dlon,dpres,wtail(ibin)%head%ij(1),wtail(ibin)%head%wij(1))
 
         do j=1,8
-          wtail%wij(j)=factw*wtail%wij(j)              
+          wtail(ibin)%head%wij(j)=factw*wtail(ibin)%head%wij(j)
         end do
 
-        wtail%ures=dudiff
-        wtail%vres=dvdiff
-        wtail%err2=error**2
-        wtail%raterr2=ratio_errors **2  
-        if(l_foto)then
-          wtail%time = dtime*r3600
-        else
-          wtail%time = zero
-        end if
-        wtail%b=cvar_b(ikx)
-        wtail%pg=cvar_pg(ikx)
-        wtail%luse=luse(i)
+        wtail(ibin)%head%ures=dudiff
+        wtail(ibin)%head%vres=dvdiff
+        wtail(ibin)%head%err2=error**2
+        wtail(ibin)%head%raterr2=ratio_errors **2  
+        wtail(ibin)%head%time = dtime
+        wtail(ibin)%head%b=cvar_b(ikx)
+        wtail(ibin)%head%pg=cvar_pg(ikx)
+        wtail(ibin)%head%luse=luse(i)
+        wtail(ibin)%head%diagu => obsptr
 
         if(oberror_tune) then
-           wtail%upertb=data(iptrbu,i)/error/ratio_errors
-           wtail%vpertb=data(iptrbv,i)/error/ratio_errors
-           wtail%kx=ikx
+           wtail(ibin)%head%upertb=data(iptrbu,i)/error/ratio_errors
+           wtail(ibin)%head%vpertb=data(iptrbv,i)/error/ratio_errors
+           wtail(ibin)%head%kx=ikx
            if(presw > ptabl(2))then
-              wtail%k1=1
+              wtail(ibin)%head%k1=1
            else if( presw <= ptabl(33)) then
-              wtail%k1=33
+              wtail(ibin)%head%k1=33
            else
               k_loop: do k=2,32
                 if(presw > ptabl(k+1) .and. presw <= ptabl(k)) then
-                   wtail%k1=k
+                   wtail(ibin)%head%k1=k
                    exit k_loop
                 endif
              enddo k_loop
            endif
         endif
+
+        wtail(ibin)%head%diagv => obsdiags(i_w_ob_type,ibin)%tail
 
      end if
 
@@ -690,7 +772,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
         rdiagbuf(5,ii)  = data(ielev,i)      ! station elevation (meters)
         rdiagbuf(6,ii)  = presw              ! observation pressure (hPa)
         rdiagbuf(7,ii)  = data(ihgt,i)       ! observation height (meters)
-        rdiagbuf(8,ii)  = dtime              ! obs time (hours relative to analysis time)
+        rdiagbuf(8,ii)  = dtime-time_offset  ! obs time (hours relative to analysis time)
 
         rdiagbuf(9,ii)  = data(iqc,i)        ! input prepbufr qc or event mark
         rdiagbuf(10,ii) = rmiss_single       ! setup qc or event mark
@@ -723,13 +805,43 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 
         rdiagbuf(17,ii) = data(iuob,i)       ! u wind component observation (m/s)
         rdiagbuf(18,ii) = dudiff             ! u obs-ges used in analysis (m/s)
-        rdiagbuf(19,ii) = uob-ugesin          ! u obs-ges w/o bias correction (m/s) (future slot)
+        rdiagbuf(19,ii) = uob-ugesin         ! u obs-ges w/o bias correction (m/s) (future slot)
 
         rdiagbuf(20,ii) = data(ivob,i)       ! v wind component observation (m/s)
         rdiagbuf(21,ii) = dvdiff             ! v obs-ges used in analysis (m/s)
         rdiagbuf(22,ii) = vob-vgesin         ! v obs-ges w/o bias correction (m/s) (future slot)
 
         rdiagbuf(23,ii) = factw              ! 10m wind reduction factor
+
+        if (lobsdiagsave) then
+          ioff=23
+          do jj=1,miter
+            ioff=ioff+1
+            if (obsdiags(i_w_ob_type,ibin)%tail%muse(jj)) then
+              rdiagbuf(ioff,ii) = one
+            else
+              rdiagbuf(ioff,ii) = -one
+            endif
+          enddo
+          do jj=1,miter+1
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsptr%nldepart(jj)
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsdiags(i_w_ob_type,ibin)%tail%nldepart(jj)
+          enddo
+          do jj=1,miter
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsptr%tldepart(jj)
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsdiags(i_w_ob_type,ibin)%tail%tldepart(jj)
+          enddo
+          do jj=1,miter
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsptr%obssen(jj)
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsdiags(i_w_ob_type,ibin)%tail%obssen(jj)
+          enddo
+        endif
 
      endif
 ! End of loop over observations

@@ -23,6 +23,7 @@ subroutine tpause(mype,method)
 !   2006-07-28 derber  - use r1000 from constants
 !                      - use sensible temperature rather than virtual
 !   2006-07-31  kleist - change to ges_ps from ln(ps)
+!   2008-04-03  safford - rm unused vars and uses
 !
 !   input argument list:
 !     mype   - mpi task id
@@ -36,9 +37,9 @@ subroutine tpause(mype,method)
 !
 !$$$
   use kinds, only: r_kind,i_kind
-  use constants, only: rd_over_cp,grav,fv,rad2deg,one,r1000
+  use constants, only: rd_over_cp,grav,rad2deg,one,r1000
   use guess_grids, only: ges_ps,tropprs,ges_oz,ges_vor,geop_hgtl,&
-       ntguessig,ges_prsl,ges_q,ges_tv,ges_tsen
+       ntguessig,ges_prsl,ges_tv,ges_tsen
   use gridmod, only: istart,nlat,rlats,nsig,lat2,lon2
   implicit none
 
@@ -64,14 +65,14 @@ subroutine tpause(mype,method)
   integer(i_kind) ifound_pv,ifound_oz,itrp_pv,itrp_oz,itrop_k
 
   real(r_kind) pm1,pp1
-  real(r_kind) thetam1,thetap1,pv,wgt1,wgt2,ptrop
+  real(r_kind) thetam1,thetap1,pv,wgt1,ptrop
   real(r_kind),dimension(nsig):: prs,tdry,hgt,pvort
 
   real(r_kind),dimension(lat2):: slatd
   real(r_kind),dimension(lat2,lon2):: trop_t,trop_pv,trop_oz
   real(r_kind),dimension(lat2,lon2):: trop_pvoz
 
-  real(r_kind) prsfc,psi
+  real(r_kind) psi
 
 !================================================================================
 ! Set local constants

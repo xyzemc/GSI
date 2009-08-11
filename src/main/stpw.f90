@@ -1,4 +1,25 @@
-subroutine stpw(ru,rv,su,sv,out,sges,dru,drv,dsu,dsv)
+module stpwmod
+
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    stpwmod    module for stpw and its tangent linear stpw_tl
+!
+! abstract: module for stpw and its tangent linear stpw_tl
+!
+! program history log:
+!   2005-05-20  Yanqiu zhu - wrap stpw and its tangent linear stpw_tl into one module
+!   2005-11-16  Derber - remove interfaces
+!   2008-12-01  Todling - remove stpw_tl; add interface back
+!
+
+implicit none
+
+PRIVATE
+PUBLIC stpw
+
+contains
+
+subroutine stpw(whead,ru,rv,su,sv,out,sges)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    stpw        calculate penalty and contribution to stepsize
@@ -20,9 +41,12 @@ subroutine stpw(ru,rv,su,sv,out,sges,dru,drv,dsu,dsv)
 !   2005-10-21  su      - modify for variational qc
 !   2006-07-28  derber  - modify to use new inner loop obs data structure
 !                       - unify NL qc
+!   2007-03-19  tremolet - binning of observations
 !   2006-07-28  derber  - modify output for b1 and b3
 !   2007-02-15  rancic  - add foto
 !   2007-06-04  derber  - use quad precision to get reproducability over number of processors
+!   2008-06-02  safford - rm unused var and uses
+!   2008-12-03  todling - changed handling of ptr%time
 !
 !   input argument list:
 !     ru       - search direction for u
@@ -30,10 +54,6 @@ subroutine stpw(ru,rv,su,sv,out,sges,dru,drv,dsu,dsv)
 !     su       - analysis increment for u
 !     sv       - analysis increment for v
 !     sges     - step size estimates  (4)
-!     dru      - search direction for time derivative of u
-!     drv      - search direction for time derivative of v
-!     dsu      - analysis increment for time derivative of u
-!     dsv      - analysis increment for time derivative of v
 !
 !   output argument list  
 !     out(1)   - current penalty using sges(1)
@@ -49,30 +69,32 @@ subroutine stpw(ru,rv,su,sv,out,sges,dru,drv,dsu,dsv)
 !
 !$$$
   use kinds, only: r_kind,i_kind,r_quad
-  use obsmod, only: whead,wptr
-  use qcmod, only: nlnqc_iter,c_varqc
-  use constants, only: zero,one,half,two,tiny_r_kind,cg_term,zero_quad
+  use obsmod, only: w_ob_type
+  use qcmod, only: nlnqc_iter,varqc_iter
+  use constants, only: zero,one,half,two,tiny_r_kind,cg_term,zero_quad,r3600
   use gridmod, only: latlon1n
-  use jfunc, only: iter,jiter,niter_no_qc,jiterstart
+  use jfunc, only: iter,jiter,niter_no_qc,jiterstart,l_foto,xhat_dt,dhat_dt
   implicit none
 
 ! Declare passed variables
-  real(r_quad),dimension(6),intent(out):: out
-  real(r_kind),dimension(latlon1n),intent(in):: ru,rv,su,sv,dru,drv,dsu,dsv
+  type(w_ob_type),pointer,intent(in):: whead
+  real(r_quad),dimension(6),intent(inout):: out
+  real(r_kind),dimension(latlon1n),intent(in):: ru,rv,su,sv
   real(r_kind),dimension(4),intent(in):: sges
 
 ! Declare local variables
-  integer(i_kind) i,j1,j2,j3,j4,j5,j6,j7,j8
+  integer(i_kind) j1,j2,j3,j4,j5,j6,j7,j8
   real(r_kind) valu,facu,valv,facv,w1,w2,w3,w4,w5,w6,w7,w8,time_w
-  real(r_kind) cg_w,pen1,pen2,pen3,pencur,u1,u2,u3,v1,v2,v3,wgross,wnotgross,w_pg,varqc_iter
+  real(r_kind) cg_w,pen1,pen2,pen3,pencur,u1,u2,u3,v1,v2,v3,wgross,wnotgross,w_pg
   real(r_kind) alpha,ccoef,bcoef1,bcoef2,cc,u0,v0
+  type(w_ob_type), pointer :: wptr
 
   out=zero_quad
   alpha=one/(sges(3)-sges(2))
   ccoef=half*alpha*alpha
   bcoef1=half*half*alpha
   bcoef2=sges(3)*ccoef
-  
+
   wptr => whead
   do while (associated(wptr))
     if(wptr%luse)then
@@ -92,27 +114,37 @@ subroutine stpw(ru,rv,su,sv,out,sges,dru,drv,dsu,dsv)
      w6=wptr%wij(6)
      w7=wptr%wij(7)
      w8=wptr%wij(8)
-     time_w=wptr%time
 
      valu=w1* ru(j1)+w2* ru(j2)+w3* ru(j3)+w4* ru(j4) &
-         +w5* ru(j5)+w6* ru(j6)+w7* ru(j7)+w8* ru(j8) &
-        +(w1*dru(j1)+w2*dru(j2)+w3*dru(j3)+w4*dru(j4) &
-         +w5*dru(j5)+w6*dru(j6)+w7*dru(j7)+w8*dru(j8))*time_w
+         +w5* ru(j5)+w6* ru(j6)+w7* ru(j7)+w8* ru(j8)  
 
      facu=w1* su(j1)+w2* su(j2)+w3* su(j3)+w4* su(j4) &
-         +w5* su(j5)+w6* su(j6)+w7* su(j7)+w8* su(j8) &
-        +(w1*dsu(j1)+w2*dsu(j2)+w3*dsu(j3)+w4*dsu(j4) &
-         +w5*dsu(j5)+w6*dsu(j6)+w7*dsu(j7)+w8*dsu(j8))*time_w - wptr%ures
+         +w5* su(j5)+w6* su(j6)+w7* su(j7)+w8* su(j8) - wptr%ures
 
      valv=w1* rv(j1)+w2* rv(j2)+w3* rv(j3)+w4* rv(j4) &
-         +w5* rv(j5)+w6* rv(j6)+w7* rv(j7)+w8* rv(j8) &
-        +(w1*drv(j1)+w2*drv(j2)+w3*drv(j3)+w4*drv(j4) &
-         +w5*drv(j5)+w6*drv(j6)+w7*drv(j7)+w8*drv(j8))*time_w
+         +w5* rv(j5)+w6* rv(j6)+w7* rv(j7)+w8* rv(j8)  
 
      facv=w1* sv(j1)+w2* sv(j2)+w3* sv(j3)+w4* sv(j4) &
-         +w5* sv(j5)+w6* sv(j6)+w7* sv(j7)+w8* sv(j8) &
-        +(w1*dsv(j1)+w2*dsv(j2)+w3*dsv(j3)+w4*dsv(j4) &
-         +w5*dsv(j5)+w6*dsv(j6)+w7*dsv(j7)+w8*dsv(j8))*time_w - wptr%vres
+         +w5* sv(j5)+w6* sv(j6)+w7* sv(j7)+w8* sv(j8) - wptr%vres
+     if(l_foto) then
+       time_w=wptr%time*r3600
+       valu=valu+(w1*dhat_dt%u(j1)+w2*dhat_dt%u(j2)+ &
+                  w3*dhat_dt%u(j3)+w4*dhat_dt%u(j4)+ &
+                  w5*dhat_dt%u(j5)+w6*dhat_dt%u(j6)+ &
+                  w7*dhat_dt%u(j7)+w8*dhat_dt%u(j8))*time_w
+       facu=facu+(w1*xhat_dt%u(j1)+w2*xhat_dt%u(j2)+ &
+                  w3*xhat_dt%u(j3)+w4*xhat_dt%u(j4)+ &
+                  w5*xhat_dt%u(j5)+w6*xhat_dt%u(j6)+ &
+                  w7*xhat_dt%u(j7)+w8*xhat_dt%u(j8))*time_w 
+       valv=valv+(w1*dhat_dt%v(j1)+w2*dhat_dt%v(j2)+ &
+                  w3*dhat_dt%v(j3)+w4*dhat_dt%v(j4)+ &
+                  w5*dhat_dt%v(j5)+w6*dhat_dt%v(j6)+ &
+                  w7*dhat_dt%v(j7)+w8*dhat_dt%v(j8))*time_w
+       facv=facv+(w1*xhat_dt%v(j1)+w2*xhat_dt%v(j2)+ &
+                  w3*xhat_dt%v(j3)+w4*xhat_dt%v(j4)+ &
+                  w5*xhat_dt%v(j5)+w6*xhat_dt%v(j6)+ &
+                  w7*xhat_dt%v(j7)+w8*xhat_dt%v(j8))*time_w 
+     end if
      
      u0=facu+sges(1)*valu
      u1=facu+sges(2)*valu
@@ -129,17 +161,10 @@ subroutine stpw(ru,rv,su,sv,out,sges,dru,drv,dsu,dsv)
      pen3   = (u3*u3+v3*v3)*wptr%err2
 
 !  Modify penalty term if nonlinear QC
-!    Variational qc is gradually increased to avoid possible convergence problems
-     if(jiter == jiterstart .and. nlnqc_iter .and. wptr%pg > tiny_r_kind) then
-        varqc_iter=c_varqc*(iter-niter_no_qc(1)+one)
-        if(varqc_iter >=one) varqc_iter= one
-        w_pg=wptr%pg*varqc_iter
-     else
-        w_pg=wptr%pg
-     endif
 
      if (nlnqc_iter .and. wptr%pg > tiny_r_kind .and.  &
                           wptr%b  > tiny_r_kind) then
+        w_pg=wptr%pg*varqc_iter
         cg_w=cg_term/wptr%b
         wnotgross= one-w_pg
         wgross =w_pg*cg_w/wnotgross
@@ -163,3 +188,5 @@ subroutine stpw(ru,rv,su,sv,out,sges,dru,drv,dsu,dsv)
   end do
   return
 end subroutine stpw
+
+end module stpwmod

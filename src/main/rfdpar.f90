@@ -40,7 +40,8 @@ subroutine rfdpar1(be,rate,m)
 !   language: f90
 !   machine:  ibm rs/6000 sp
 !
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind,i_kind
   use constants, only: zero,half,one
   implicit none

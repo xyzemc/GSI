@@ -52,8 +52,10 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
 !   2006-10-20 cucurull - update QC statistical checks and representativeness error with the use of 
 !                         COSMIC data
 !                       - add information to diagnostic file
-!   2007-03-01 derber - add toss_gps_sub; simplify profile qc loop
-!   2007-04-13 treadon - tighten data cutoff in tropics
+!   2007-03-01 derber   - add toss_gps_sub; simplify profile qc loop
+!   2007-03-19 tremolet - binning of observations
+!   2007-04-13 treadon  - tighten data cutoff in tropics
+!   2007-06-05 tremolet - add observation diagnostics structure
 !   2007-06-22 cucurull - generalize qc structure to enable regional GSI;
 !                         reduce gpswork2; remove conv_diagsave from argument list; 
 !                         consistent data counts for qc checks; 
@@ -67,6 +69,11 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
 !  2007-12-23  cucurull - correct the interpolation weights assigned to levels surrounding obs
 !  2008-02-27  cucurull - modify diagnostics output file
 !  2008-04-12  treadon  - remove super_gps (moved to genstats_gps)
+!  2008-05-23  safford - rm unused vars and uses
+!  2008-12-03  todling  - revisited Tremolet modifications in light of newer GSI
+!                       - changed handle of tail%time
+!  2009-02-05  cucurull - update qc, obs error and refractivity operator
+!  2009-04-27  cucurull - update qc to enable GRAS and GRACE assimilation
 !
 !   input argument list:
 !     lunin    - unit from which to read observations
@@ -82,39 +89,42 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
 !   machine:  ibm RS/6000 SP
 !
 !$$$
-  use kinds, only: r_kind,i_kind,r_single,r_double
-  use obsmod, only: nprof_gps,gpshead,gpstail,gps_allhead,gps_alltail
+  use kinds, only: r_kind,i_kind,r_single
+  use obsmod, only: nprof_gps,gpshead,gpstail,gps_allhead,gps_alltail,&
+       i_gps_ob_type,obsdiags,lobsdiagsave,nobskeep,lobsdiag_allocated,&
+       time_offset
+  use gsi_4dvar, only: nobs_bins,hr_obsbin
   use guess_grids, only: ges_lnprsi,hrdifsig,geop_hgti,geop_hgtl,nfldsig,&
-       ntguessig,ges_z,ges_tv,ges_q
-  use gridmod, only: lat2,lon2,nsig,bk5
-  use gridmod, only: get_ijk,latlon11,get_ij
-  use constants, only: fv,n_a,n_b,deg2rad,tiny_r_kind
+       ges_z,ges_tv,ges_q
+  use gridmod, only: lat2,lon2,nsig
+  use gridmod, only: latlon11,get_ij
+  use constants, only: fv,n_a,n_b,n_c,deg2rad,tiny_r_kind
   use constants, only: zero,one,two,eccentricity,semi_major_axis,&
        grav_equator,somigliana,flattening,grav_ratio,grav,rd,eps,&
-       three,four,five,one_tenth,half,r3600
+       three,four,five,half
   use qcmod, only: repe_gps
-  use jfunc, only: jiter,last
-  use jfunc, only: l_foto
-  use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype,icsubtype
+  use jfunc, only: jiter,last,miter
+  use convinfo, only: cermin,cermax,cgross,cvar_b,cvar_pg,ictype,icsubtype
   implicit none
 
 ! Declare local parameters
   real(r_kind),parameter:: r0_01 = 0.01_r_kind
   real(r_kind),parameter:: r0_1 = 0.1_r_kind
-  real(r_kind),parameter:: r0_2 = 0.2_r_kind
   real(r_kind),parameter:: r0_25 = 0.25_r_kind
-  real(r_kind),parameter:: r0_3 = 0.3_r_kind
-  real(r_kind),parameter:: r0_4 = 0.4_r_kind
-  real(r_kind),parameter:: r0_7 = 0.7_r_kind
+  real(r_kind),parameter:: r0_455 = 0.455_r_kind
   real(r_kind),parameter:: r2_5 = 2.5_r_kind
-  real(r_kind),parameter:: r3_5 = 3.5_r_kind
   real(r_kind),parameter:: ten = 10.0_r_kind
-  real(r_kind),parameter:: r25 = 25.0_r_kind
+  real(r_kind),parameter:: r20 = 20.0_r_kind
   real(r_kind),parameter:: r30 = 30.0_r_kind
-  real(r_kind),parameter:: r40 = 40.0_r_kind
+  real(r_kind),parameter:: r52_075 = 52.075_r_kind
+  real(r_kind),parameter:: r240 = 240.0_r_kind
   real(r_kind),parameter:: r1em3 = 1.0e-3_r_kind
-  real(r_kind),parameter:: r1e2 = 1.0e+2_r_kind
   real(r_kind),parameter:: eight = 8.0_r_kind
+  real(r_kind),parameter:: six = 6.0_r_kind
+  real(r_kind),parameter:: nine = 9.0_r_kind
+  real(r_kind),parameter:: eleven = 11.0_r_kind
+  real(r_kind),parameter:: fifteen = 15.0_r_kind
+
 
 ! Declare passed variables
   integer(i_kind),intent(in):: lunin,mype,nele,nobs
@@ -123,32 +133,30 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
 
 ! Declare local variables
 
+  real(r_kind) cutoff,cutoff1,cutoff2,cutoff3,cutoff12,cutoff23
   real(r_kind) rsig,dtime,dlat,dlon,tmean,mult_p
   real(r_kind) errinv_input,errinv_adjst,errinv_final,err_final
-  real(r_kind) dlnp,hgeso,trefges,pobl
+  real(r_kind) hgeso,trefges,pobl
   real(r_kind) sin2,termg,termr,termrg,hob,hobl,qrefges,zsges
-  real(r_kind) fact,pw,nrefges1,nrefges2,nrefges,dpres,elev
+  real(r_kind) fact,pw,nrefges1,nrefges2,nrefges3,nrefges,dpres,elev,k4,alt
   real(r_kind) ratio,residual,obserror,obserrlm,delz
   real(r_kind),dimension(nobs):: termq,termpk,termt,termtk
   real(r_kind),dimension(nobs):: pressure,error,error_adjst
-  real(r_kind),dimension(3,nobs):: gps2work
   real(r_kind),dimension(nele,nobs):: data
-  real(r_kind),dimension(nobs):: ratio_errors,cutoff,dpresl
-  real(r_kind),dimension(nsig):: tges,hges,hgesl
-  real(r_kind),dimension(nsig+1) :: prsltmp
+  real(r_kind),dimension(nobs):: ratio_errors,dpresl
+  real(r_kind),dimension(nsig):: tges,hgesl
+  real(r_kind),dimension(nsig+1) :: prsltmp,hges
   real(r_kind),dimension(nsig,nobs):: termtl,termpl1,termpl2
-  real(r_kind),dimension(lat2,lon2,nsig,nfldsig)::geop_height,geop_heightl
   real(r_kind),allocatable,dimension(:,:)::rdiagbuf
   real(r_single),dimension(nobs):: qcfail_loc,qcfail_high,qcfail_gross
   real(r_single),dimension(nobs):: qcfail_stats_1,qcfail_stats_2
   
   integer(i_kind):: ier,ilon,ilat,ihgt,igps,itime,ikx,iuse,ikxx
   integer(i_kind):: iprof,ipctc,iroc,isatid,iptid
-  integer(i_kind):: ilate,ilone,mm1
-  integer(i_kind) i,j,k,k1,k2,n,it,nreal,jj,ip1
+  integer(i_kind):: ilate,ilone,mm1,ibin,ioff,idia
+  integer(i_kind) i,j,k,k1,k2,n,nreal,mreal,jj
   integer(i_kind) :: kl,k1l,k2l
   integer(i_kind) kprof,istat,jprof
-  integer(i_kind),dimension(8):: jgrd
   integer(i_kind),dimension(4):: gps_ij
   integer(i_kind):: satellite_id,transmitter_id
 
@@ -189,20 +197,10 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
   qcfail_high=zero 
   toss_gps_sub=zero
 
-! Convert model geopotential heights to msl units - only nsig levels
-  do jj=1,nfldsig
-     do j=1,lon2
-        do i=1,lat2
-           do k=1,nsig
-              geop_height(i,j,k,jj) = geop_hgti(i,j,k,jj)
-              geop_heightl(i,j,k,jj) = geop_hgtl(i,j,k,jj)
-           end do
-        end do
-     end do
-  end do
-
 ! Allocate arrays for output to diagnostic file
-  nreal=19
+  mreal=19
+  nreal=mreal
+  if (lobsdiagsave) nreal=nreal+4*miter+1
   allocate(cdiagbuf(nobs),rdiagbuf(nreal,nobs))
 
 ! Initialize arrays
@@ -211,8 +209,6 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
 
 ! Save height,lat, and lon of the observations for later
   do i=1,nobs
-     gps2work(1,i)=r1em3*data(ihgt,i)   !height in km
-     gps2work(2,i)=data(ilate,i)        !lat in degree
      muse(i)=nint(data(iuse,i)) <= jiter
      sin2  = sin(data(ilate,i)*deg2rad)**2
      dlon=data(ilon,i)
@@ -222,14 +218,14 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
      dtime=data(itime,i)
      ikx=nint(data(ikxx,i))
 
-!    Interpolate log(pres), terrain, temp profile and geop heights to obs location
+!    Interpolate log(pres), terrain, and geop heights to obs location
      call tintrp2a(ges_lnprsi,prsltmp,dlat,dlon,dtime,hrdifsig,&
           1,nsig+1,mype,nfldsig)
      call tintrp2a(ges_tv,tges,dlat,dlon,dtime,hrdifsig,&
           1,nsig,mype,nfldsig)
-     call tintrp2a(geop_height,hges,dlat,dlon,dtime,hrdifsig,&
-          1,nsig,mype,nfldsig)
-     call tintrp2a(geop_heightl,hgesl,dlat,dlon,dtime,hrdifsig,&
+     call tintrp2a(geop_hgti,hges,dlat,dlon,dtime,hrdifsig,&
+          1,nsig+1,mype,nfldsig)
+     call tintrp2a(geop_hgtl,hgesl,dlat,dlon,dtime,hrdifsig,&
           1,nsig,mype,nfldsig)
      call tintrp2a(ges_z,zsges,dlat,dlon,dtime,hrdifsig,&
           1,1,mype,nfldsig)
@@ -287,21 +283,24 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
 !    Preliminary values
 
      repe_gps=one
-     if(gps2work(1,i) > r30)then
-!     repe_gps=0.5_r_kind
+     alt=r1em3*elev
+
+     if((data(ilate,i)>= r20).or.(data(ilate,i)<= -r20)) then
+        repe_gps=-1.321_r_kind+0.341_r_kind*alt-0.005_r_kind*alt**2
+
      else
-       if(gps2work(1,i) < eight)then
-         repe_gps=1.5_r_kind
-       else
-          repe_gps=0.5_r_kind
-       end if
-     end if
-
-     if (gps2work(1,i) >= 25_r_kind) then
-          repe_gps = (0.6_r_kind*gps2work(1,i)-14_r_kind)*repe_gps
+        if(alt > ten) then
+           repe_gps=2.013_r_kind-0.060_r_kind*alt+0.0045_r_kind*alt**2
+        else
+           repe_gps=-1.18_r_kind+0.058_r_kind*alt+0.025_r_kind*alt**2
+        endif
      endif
+     repe_gps=exp(repe_gps)
+     repe_gps=one/abs(repe_gps) ! representativeness error
 
-     ratio_errors(i) = data(ier,i)/abs(data(ier,i)*repe_gps)
+!    ratio_errors(i) = data(ier,i)/abs(data(ier,i)*repe_gps)
+     ratio_errors(i) = data(ier,i)/abs(repe_gps)
+
      error(i)=one/data(ier,i) ! one/original error
      data(ier,i)=one/data(ier,i)
      error_adjst(i)= ratio_errors(i)* data(ier,i) !one/adjusted error
@@ -330,7 +329,7 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
 !    occultation identification
      satellite_id         = data(isatid,i) ! receiver occ id 
      transmitter_id       = data(iptid,i)  ! transmitter occ id 
-     write(cdiagbuf(i),'(2(i4))') satellite_id,transmitter_id
+     write(cdiagbuf(i),'(2(i4.4))') satellite_id,transmitter_id
 
      rdiagbuf(:,i)         = zero
 
@@ -342,11 +341,11 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
      rdiagbuf(4,i)         = data(ilone,i)  ! lon in degrees
      rdiagbuf(6,i)         = pressure(i)    ! guess observation pressure (hPa)
      rdiagbuf(7,i)         = elev           ! height in meters
-     rdiagbuf(8,i)         = dtime          ! obs time (hours relative to analysis time)
+     rdiagbuf(8,i)         = dtime-time_offset ! obs time (hours relative to analysis time)
 !    rdiagbuf(9,i)         = data(ipctc,i)  ! input bufr qc - index of per cent confidence    
      rdiagbuf(9,i)         = elev-zsges     ! height above model terrain (m)      
      rdiagbuf(11,i)        = data(iuse,i)   ! data usage flag
-     rdiagbuf (19,i)       = hobl           ! model vertical grid
+     rdiagbuf(19,i)        = hobl           ! model vertical grid  (midpoint)
  
      if (ratio_errors(i) > tiny_r_kind) then  ! obs inside vertical grid
 
@@ -359,19 +358,21 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
 !      Compute guess local refractivity
        fact=(one+fv*qrefges)
        pw=eps+qrefges*(one-eps)
+       k4=n_c-n_a
        nrefges1=n_a*(pressure(i)/trefges)*fact
        nrefges2=n_b*qrefges*pressure(i)*fact**2/(trefges**2*pw)
-       nrefges=nrefges1+nrefges2
+       nrefges3=k4*fact*qrefges*pressure(i)/(trefges*pw)
+       nrefges=nrefges1+nrefges2+nrefges3 !total refractivity
 
 !      Accumulate diagnostic information        
-       gps2work(3,i)=(data(igps,i)-nrefges)/((data(igps,i)+nrefges)/two)
-       rdiagbuf(5,i)    = (data(igps,i)-nrefges)/data(igps,i) ! incremental refractivity (x100 %)
+       rdiagbuf(5,i)   = (data(igps,i)-nrefges)/data(igps,i) ! incremental refractivity (x100 %)
+
        rdiagbuf(17,i)  = data(igps,i)  ! refractivity observation (units of N)
-       rdiagbuf(18,i)  = data(igps,i)-nrefges ! obs-ges used in analysis (units of N) 
+       rdiagbuf(18,i)  = trefges       ! temperature at obs location in Kelvin
      
        data(igps,i)=data(igps,i)-nrefges  ! innovation vector
 
-       if(gps2work(1,i) <= r40) then ! go into qc checks
+       if(alt <= r30) then ! go into qc checks
 
 !      Gross error check 
        obserror = one/max(ratio_errors(i)*data(ier,i),tiny_r_kind)
@@ -389,80 +390,47 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
            muse(i)=.false.
        else 
 !          Statistics QC check if obs passed gross error check 
-!          QC checks based on latitude and height
-           if(gps2work(2,i) < -r30) then                !SH
-              if(gps2work(1,i) >= r30)then
-                 cutoff(i)=r0_2*gps2work(1,i)-five
-              else
-                if(gps2work(1,i) > r25)then
-                   cutoff(i)=one
-                else
-                  if(gps2work(1,i) <= eight)then
-                    cutoff(i)=-r0_2*gps2work(1,i)+two
-                  else
-                    cutoff(i)=half
-                  end if
-                endif
-              end if
-           else if(gps2work(2,i) > r30) then            !NH
-              if(gps2work(1,i) >= r30)then
-                 cutoff(i)=r0_1*gps2work(1,i)-two
-              else
-                if(gps2work(1,i) > r25)then
-                   cutoff(i)=one
-                else
-                  if(gps2work(1,i) <= eight)then
-                    cutoff(i)=-r0_25*gps2work(1,i)+r2_5
-                  else
-                    cutoff(i)=half
-                  end if
-                endif
-              end if
-           else                                         !TR
-              if(gps2work(1,i) >= r30)then
-                 cutoff(i)=r0_1*gps2work(1,i)-two
-              else
-                if(gps2work(1,i) > r25)then
-                   cutoff(i)=one
-                else
-                  if(gps2work(1,i) <= ten)then
-                    cutoff(i)=-r0_3*gps2work(1,i)+r3_5
-                  else
-                    cutoff(i)=r0_7
-                  end if
-                endif
-              end if
-           end if
+           cutoff=zero
+           cutoff1=r0_25+half*cos(data(ilate,i)*deg2rad)
+           if(trefges<=r240) then
+             cutoff2=half
 
-           if(gps2work(1,i) >= r30)then
-              cutoff(i)=two*cutoff(i)*r0_01
+
            else
-             if(gps2work(1,i) > r25)then
-                cutoff(i)=three*cutoff(i)*r0_01
-             else
-               if(gps2work(1,i) <= eight)then
-                  cutoff(i)=three*cutoff(i)*r0_01
-               else
-                  cutoff(i)=four*cutoff(i)*r0_01
-               end if
-             end if
-           end if
-
-!          Tighten qc limits in tropics
-           if (abs(gps2work(2,i)) <= r30) then
-              cutoff(i)=r0_4*cutoff(i)
+             cutoff2=r1em3*trefges**2-r0_455*trefges+r52_075
            endif
-      
-           if(abs(gps2work(3,i))> cutoff(i)) then
+           if((ictype(ikx)==41).or.(ictype(ikx)==722).or.(ictype(ikx)==723).or.&
+               ictype(ikx)==4) then !CL
+             cutoff3=(half+two*cos(data(ilate,i)*deg2rad))/three
+           else
+             cutoff3=(one+r2_5*cos(data(ilate,i)*deg2rad))/three
+           endif
+           cutoff12=((eleven-alt)/two)*cutoff2+&
+                    ((alt-nine)/two)*cutoff1
+           cutoff23=((six-alt)/two)*cutoff3+&
+                    ((alt-four)/two)*cutoff2
+
+           if(alt>eleven) cutoff=cutoff1
+           if((alt<=eleven).and.(alt>nine)) cutoff=cutoff12
+           if((alt<=nine).and.(alt>six)) cutoff=cutoff2
+           if((alt<=six).and.(alt>four)) cutoff=cutoff23
+           if(alt<=four) cutoff=cutoff3
+
+           cutoff=three*cutoff*r0_01
+
+           if(abs(rdiagbuf(5,i)) > cutoff) then
               qcfail(i)=.true.
               qcfail_stats_1(i)=one
+              data(ier,i) = zero
+              ratio_errors(i) = zero
+              muse(i) = .false.
            end if
        end if ! gross qc check 
 
-       end if ! qc checks (only below 40km)
+       end if ! qc checks (only below 30km)
 
 !      Remove obs above 30 km in order to avoid increments at top model
-       if(gps2work(1,i) > r30) then
+       if(alt > r30) then
           data(ier,i) = zero
           ratio_errors(i) = zero
           qcfail_high(i)=one 
@@ -479,13 +447,16 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
        endif
 
        mult_p=pressure(i)*((n_a/trefges)*fact+&
-              (n_b/(trefges**2*pw))*qrefges*fact**2)
+              (n_b/(trefges**2*pw))*qrefges*fact**2+&
+              (k4/(trefges*pw))*qrefges*fact)
 
 !      term for q_TL
        termq(i)   = n_a*(pressure(i)/trefges)*fv+&
             (n_b/(trefges**2*pw))*pressure(i)*fact**2+&
             (n_b/(trefges**2*pw))*pressure(i)*qrefges*two*fv*fact-&
-            (n_b/(trefges**2*pw**2))*pressure(i)*qrefges*fact**2*(one-eps)
+            (n_b/(trefges**2*pw**2))*pressure(i)*qrefges*fact**2*(one-eps)+&
+            (k4*pressure(i)/(trefges*pw))*(fv*qrefges+fact)-&
+            (k4/(trefges*pw**2))*fact*qrefges*pressure(i)*(one-eps)
 
 !      term for pk_TL
        termpk(i) = mult_p/exp(prsltmp(k1))
@@ -503,7 +474,8 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
 !      term for t_TL
        termt(i) = mult_p*(prsltmp(k1)-pobl)/(trefges+tmean)-&
            n_a*fact*(pressure(i)/trefges**2)-n_b*qrefges*fact**2*two*&
-           (pressure(i)/(trefges**3*pw))
+           (pressure(i)/(trefges**3*pw))-&
+           (k4/(trefges**2*pw))*fact*qrefges*pressure(i)
 
 !      term for tk_TL and tk-1_TL
        termtk(i) =mult_p*(prsltmp(k1)-pobl)/(two*(trefges+tmean))
@@ -523,22 +495,25 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
 ! Loop over observation profiles. Compute penalty
 ! terms, and accumulate statistics.
   do i=1,nobs
-     kprof = data(iprof,i)
      
      if(qcfail(i)) then
+        kprof = data(iprof,i)
         do j=1,nobs
            jprof = data(iprof,j)
            if( kprof == jprof .and. .not. qcfail(j))then
            
 !          Remove data below
-             if(gps2work(1,j) < gps2work(1,i))then
-               if(gps2work(1,i) < r30) then
-                 qcfail(j) = .true. 
-                 qcfail_stats_2(j)=one
+             if(r1em3*rdiagbuf(7,j) < r1em3*rdiagbuf(7,i))then
+               if((rdiagbuf(1,i)==41).or.(rdiagbuf(1,i)==722).or.(rdiagbuf(1,i)==723).or.&
+                 (rdiagbuf(1,i)==4)) then
+                    if(r1em3*rdiagbuf(7,i)<= ten) then
+                      qcfail(j) = .true.
+                      qcfail_stats_2(j)=one
+                    endif
                else
-                 if(abs(gps2work(3,i))> two*cutoff(i)) then
-                   qcfail(j) = .true. 
-                   qcfail_stats_2(j)=one
+                 if(r1em3*rdiagbuf(7,i)< five) then
+                     qcfail(j) = .true. 
+                     qcfail_stats_2(j)=one
                  endif
                endif
              endif
@@ -548,27 +523,33 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
   end do
 
   do i=1,nobs
-     kprof = data(iprof,i)
      
+     alt=r1em3*rdiagbuf(7,i) ! altitude in km
      if(qcfail(i)) then
+        kprof = data(iprof,i)
         data(ier,i) = zero
         ratio_errors(i) = zero
         muse(i) = .false.
-        if(gps2work(1,i) < r30) then
+        if ( (rdiagbuf(1,i)==41).or.(rdiagbuf(1,i)==722).or.(rdiagbuf(1,i)==723).or.&
+             (rdiagbuf(1,i)==4) ) then
+          if(alt<=ten) then
            toss_gps_sub(kprof) = max(toss_gps_sub(kprof),data(ihgt,i))
-        else
-          if(abs(gps2work(3,i))> two*cutoff(i)) then
-             toss_gps_sub(kprof) = max(toss_gps_sub(kprof),data(ihgt,i))
           endif
-        endif
+        else
+          if (alt < five) then
+           toss_gps_sub(kprof) = max(toss_gps_sub(kprof),data(ihgt,i))
+          end if
+        end if
+
+
 
 !    Counting obs tossed due to the stats qc check 
 !    This calculation will be updated in genstats_gps due to toss_gps_sub
 
         if (luse(i)) then
-            if(gps2work(2,i)> r30) then
+            if(data(ilate,i)> r20) then
                awork(22) = awork(22)+one                !NH
-            else if(gps2work(2,i)< -r30)then
+            else if(data(ilate,i)< -r20)then
                awork(23) = awork(23)+one                !SH
             else
                awork(24) = awork(24)+one                !TR
@@ -579,9 +560,11 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
 
 
 ! Loop to load arrays used in statistics output
+  idia=0
   do i=1,nobs
      if (ratio_errors(i)*data(ier,i) <= tiny_r_kind) muse(i) = .false.
      ikx=nint(data(ikxx,i))
+     dtime=data(itime,i)
 
      ! flags for observations that failed qc checks
      ! zero = observation is good
@@ -621,85 +604,140 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
                                    ! superob factor (N**-1)
                                    ! modified in genstats_gps
 
+!    Link observation to appropriate observation bin
+     if (nobs_bins>1) then
+       ibin = NINT( dtime/hr_obsbin ) + 1
+     else
+       ibin = 1
+     endif
+     IF (ibin<1.OR.ibin>nobs_bins) write(6,*)mype,'Error nobs_bins,ibin= ',nobs_bins,ibin
+
+!    Link obs to diagnostics structure
+     if (.not.lobsdiag_allocated) then
+       if (.not.associated(obsdiags(i_gps_ob_type,ibin)%head)) then
+         allocate(obsdiags(i_gps_ob_type,ibin)%head,stat=istat)
+         if (istat/=0) then
+           write(6,*)'setupref: failure to allocate obsdiags',istat
+           call stop2(282)
+         end if
+         obsdiags(i_gps_ob_type,ibin)%tail => obsdiags(i_gps_ob_type,ibin)%head
+       else
+         allocate(obsdiags(i_gps_ob_type,ibin)%tail%next,stat=istat)
+         if (istat/=0) then
+           write(6,*)'setupref: failure to allocate obsdiags',istat
+           call stop2(283)
+         end if
+         obsdiags(i_gps_ob_type,ibin)%tail => obsdiags(i_gps_ob_type,ibin)%tail%next
+       end if
+       allocate(obsdiags(i_gps_ob_type,ibin)%tail%muse(miter+1))
+       allocate(obsdiags(i_gps_ob_type,ibin)%tail%nldepart(miter+1))
+       allocate(obsdiags(i_gps_ob_type,ibin)%tail%tldepart(miter))
+       allocate(obsdiags(i_gps_ob_type,ibin)%tail%obssen(miter))
+       obsdiags(i_gps_ob_type,ibin)%tail%indxglb=i
+       obsdiags(i_gps_ob_type,ibin)%tail%nchnperobs=-99999
+       obsdiags(i_gps_ob_type,ibin)%tail%luse=.false.
+       obsdiags(i_gps_ob_type,ibin)%tail%muse(:)=.false.
+       obsdiags(i_gps_ob_type,ibin)%tail%nldepart(:)=-huge(zero)
+       obsdiags(i_gps_ob_type,ibin)%tail%tldepart(:)=zero
+       obsdiags(i_gps_ob_type,ibin)%tail%wgtjo=-huge(zero)
+       obsdiags(i_gps_ob_type,ibin)%tail%obssen(:)=zero
+     else 
+       if (.not.associated(obsdiags(i_gps_ob_type,ibin)%tail)) then
+         obsdiags(i_gps_ob_type,ibin)%tail => obsdiags(i_gps_ob_type,ibin)%head
+       else
+         obsdiags(i_gps_ob_type,ibin)%tail => obsdiags(i_gps_ob_type,ibin)%tail%next
+       end if
+       if (obsdiags(i_gps_ob_type,ibin)%tail%indxglb/=i) then
+          write(6,*)'setupref: index error'
+          call stop2(284)
+       end if
+     endif
+
+     if (nobskeep>0) muse(i)=obsdiags(i_gps_ob_type,ibin)%tail%muse(nobskeep)
 
 !    Save values needed for generation of statistics for all observations
-     if(.not. associated(gps_allhead))then
-         allocate(gps_allhead,stat=istat)
+     if(.not. associated(gps_allhead(ibin)%head))then
+         allocate(gps_allhead(ibin)%head,stat=istat)
          if(istat /= 0)write(6,*)' failure to write gps_allhead '
-         gps_alltail => gps_allhead
+         gps_alltail(ibin)%head => gps_allhead(ibin)%head
      else
-         allocate(gps_alltail%llpoint,stat=istat)
-         gps_alltail => gps_alltail%llpoint
+         allocate(gps_alltail(ibin)%head%llpoint,stat=istat)
          if(istat /= 0)write(6,*)' failure to write gps_alltail%llpoint '
+         gps_alltail(ibin)%head => gps_alltail(ibin)%head%llpoint
      end if
-     allocate(gps_alltail%rdiag(nreal),stat=istat)
+     allocate(gps_alltail(ibin)%head%rdiag(nreal),stat=istat)
      if (istat/=0) write(6,*)'SETUPREF:  allocate error for gps_point, istat=',istat
 
-     gps_alltail%ratio_err= ratio_errors(i)
-     gps_alltail%obserr   = data(ier,i)
-     gps_alltail%dataerr  = data(ier,i)*data(igps,i)
-     gps_alltail%pg       = cvar_pg(ikx)
-     gps_alltail%b        = cvar_b(ikx)
-     gps_alltail%loc      = data(ihgt,i)
-     gps_alltail%kprof    = data(iprof,i)
-     gps_alltail%type     = data(ikxx,i)
-     gps_alltail%luse     = luse(i) ! logical
-     gps_alltail%muse     = muse(i) ! logical
-     gps_alltail%cdiag    = cdiagbuf(i)
+     gps_alltail(ibin)%head%ratio_err= ratio_errors(i)
+     gps_alltail(ibin)%head%obserr   = data(ier,i)
+     gps_alltail(ibin)%head%dataerr  = data(ier,i)*data(igps,i)
+     gps_alltail(ibin)%head%pg       = cvar_pg(ikx)
+     gps_alltail(ibin)%head%b        = cvar_b(ikx)
+     gps_alltail(ibin)%head%loc      = data(ihgt,i)
+     gps_alltail(ibin)%head%kprof    = data(iprof,i)
+     gps_alltail(ibin)%head%type     = data(ikxx,i)
+     gps_alltail(ibin)%head%luse     = luse(i) ! logical
+     gps_alltail(ibin)%head%muse     = muse(i) ! logical
+     gps_alltail(ibin)%head%cdiag    = cdiagbuf(i)
      do j=1,nreal
-        gps_alltail%rdiag(j)= rdiagbuf(j,i)
+        gps_alltail(ibin)%head%rdiag(j)= rdiagbuf(j,i)
      end do
+
+     obsdiags(i_gps_ob_type,ibin)%tail%luse=luse(i)
+     obsdiags(i_gps_ob_type,ibin)%tail%muse(jiter)=muse(i)
+     obsdiags(i_gps_ob_type,ibin)%tail%nldepart(jiter)=data(igps,i)
+     obsdiags(i_gps_ob_type,ibin)%tail%wgtjo=(data(ier,i)*ratio_errors(i))**2
 
 !    If obs is "acceptable", load array with obs info for use
 !    in inner loop minimization (int* and stp* routines)
 
      if (.not. last .and. muse(i) ) then
 
-        if(.not. associated(gpshead))then
-            allocate(gpshead,stat=istat)
+        if(.not. associated(gpshead(ibin)%head))then
+            allocate(gpshead(ibin)%head,stat=istat)
             if(istat /= 0)write(6,*)' failure to write gpshead '
-            gpstail => gpshead
+            gpstail(ibin)%head => gpshead(ibin)%head
         else
-            allocate(gpstail%llpoint,stat=istat)
-            gpstail => gpstail%llpoint
+            allocate(gpstail(ibin)%head%llpoint,stat=istat)
             if(istat /= 0)write(6,*)' failure to write gpstail%llpoint '
+            gpstail(ibin)%head => gpstail(ibin)%head%llpoint
         end if
-        allocate(gpstail%jac_t(nsig),gpstail%jac_q(nsig), &
-                 gpstail%jac_p(nsig+1),gpstail%ij(4,nsig),stat=istat)
+        allocate(gpstail(ibin)%head%jac_t(nsig),gpstail(ibin)%head%jac_q(nsig), &
+                 gpstail(ibin)%head%jac_p(nsig+1),gpstail(ibin)%head%ij(4,nsig),stat=istat)
         if (istat/=0) write(6,*)'SETUPREF:  allocate error for gps_point, istat=',istat
 
 
-        gps_alltail%mmpoint => gpstail
+        gps_alltail(ibin)%head%mmpoint => gpstail(ibin)%head
 
 !       Set (i,j,k) indices of guess gridpoint that bound obs location
-        call get_ij(mm1,data(ilat,i),data(ilon,i),gps_ij,gpstail%wij(1))
+        call get_ij(mm1,data(ilat,i),data(ilon,i),gps_ij,gpstail(ibin)%head%wij(1))
 
         do j=1,nsig
-          gpstail%ij(1,j)=gps_ij(1)+(j-1)*latlon11
-          gpstail%ij(2,j)=gps_ij(2)+(j-1)*latlon11
-          gpstail%ij(3,j)=gps_ij(3)+(j-1)*latlon11
-          gpstail%ij(4,j)=gps_ij(4)+(j-1)*latlon11
+          gpstail(ibin)%head%ij(1,j)=gps_ij(1)+(j-1)*latlon11
+          gpstail(ibin)%head%ij(2,j)=gps_ij(2)+(j-1)*latlon11
+          gpstail(ibin)%head%ij(3,j)=gps_ij(3)+(j-1)*latlon11
+          gpstail(ibin)%head%ij(4,j)=gps_ij(4)+(j-1)*latlon11
         enddo
         do j=1,nsig
-           gpstail%jac_q(j)=zero
-           gpstail%jac_t(j)=zero
-           gpstail%jac_p(j)=zero
+           gpstail(ibin)%head%jac_q(j)=zero
+           gpstail(ibin)%head%jac_t(j)=zero
+           gpstail(ibin)%head%jac_p(j)=zero
         enddo
-        gpstail%jac_p(nsig+1)=zero
+        gpstail(ibin)%head%jac_p(nsig+1)=zero
         dpres=data(ihgt,i)
         k=dpres
         k1=min(max(1,k),nsig)
         k2=max(1,min(k+1,nsig))
-        gpstail%jac_t(k1)=gpstail%jac_t(k1)+termtk(i)
-        gpstail%jac_p(k1)=gpstail%jac_p(k1)+termpk(i)
+        gpstail(ibin)%head%jac_t(k1)=gpstail(ibin)%head%jac_t(k1)+termtk(i)
+        gpstail(ibin)%head%jac_p(k1)=gpstail(ibin)%head%jac_p(k1)+termpk(i)
         if(k1 == 1)then
-          gpstail%jac_t(k1)=gpstail%jac_t(k1)+termtk(i)
+          gpstail(ibin)%head%jac_t(k1)=gpstail(ibin)%head%jac_t(k1)+termtk(i)
         else
-          gpstail%jac_t(k1-1)=gpstail%jac_t(k1-1)+termtk(i)
+          gpstail(ibin)%head%jac_t(k1-1)=gpstail(ibin)%head%jac_t(k1-1)+termtk(i)
           do j=2,k1
-            gpstail%jac_t(j-1)=gpstail%jac_t(j-1)+termtl(j,i)
-            gpstail%jac_p(j-1)=gpstail%jac_p(j-1)+termpl1(j,i)
-            gpstail%jac_p(j)=gpstail%jac_p(j)-termpl2(j,i)
+            gpstail(ibin)%head%jac_t(j-1)=gpstail(ibin)%head%jac_t(j-1)+termtl(j,i)
+            gpstail(ibin)%head%jac_p(j-1)=gpstail(ibin)%head%jac_p(j-1)+termpl1(j,i)
+            gpstail(ibin)%head%jac_p(j)=gpstail(ibin)%head%jac_p(j)-termpl2(j,i)
           end do
         end if
 !       delz=dpres-float(k1)
@@ -708,23 +746,51 @@ subroutine setupref(lunin,mype,awork,nele,nobs,toss_gps_sub)
         k2l=max(1,min(kl+1,nsig))
         delz=dpresl(i)-float(k1l)
         delz=max(zero,min(delz,one))
-        gpstail%jac_t(k1l)=gpstail%jac_t(k1l)+termt(i)*(one-delz)
-        gpstail%jac_t(k2l)=gpstail%jac_t(k2l)+termt(i)*delz
-        gpstail%jac_q(k1l)=gpstail%jac_q(k1l)+termq(i)*(one-delz)
-        gpstail%jac_q(k2l)=gpstail%jac_q(k2l)+termq(i)*delz
-        gpstail%res     = data(igps,i)
-        gpstail%err2    = data(ier,i)**2
-        gpstail%raterr2 = ratio_errors(i)**2    
-        if(l_foto)then
-          gpstail%time  = data(itime,i)*r3600
-        else
-          gpstail%time  = zero
-        end if
-        gpstail%b       = cvar_b(ikx)
-        gpstail%pg      = cvar_pg(ikx)
-        gpstail%luse    = luse(i)
+        gpstail(ibin)%head%jac_t(k1l)=gpstail(ibin)%head%jac_t(k1l)+termt(i)*(one-delz)
+        gpstail(ibin)%head%jac_t(k2l)=gpstail(ibin)%head%jac_t(k2l)+termt(i)*delz
+        gpstail(ibin)%head%jac_q(k1l)=gpstail(ibin)%head%jac_q(k1l)+termq(i)*(one-delz)
+        gpstail(ibin)%head%jac_q(k2l)=gpstail(ibin)%head%jac_q(k2l)+termq(i)*delz
+        gpstail(ibin)%head%res     = data(igps,i)
+        gpstail(ibin)%head%err2    = data(ier,i)**2
+        gpstail(ibin)%head%raterr2 = ratio_errors(i)**2    
+        gpstail(ibin)%head%time    = data(itime,i)
+        gpstail(ibin)%head%b       = cvar_b(ikx)
+        gpstail(ibin)%head%pg      = cvar_pg(ikx)
+        gpstail(ibin)%head%luse    = luse(i)
+        gpstail(ibin)%head%diags   => obsdiags(i_gps_ob_type,ibin)%tail
         
      endif
+
+     if (lobsdiagsave.and.luse(i)) then
+       idia=idia+1
+       do j=1,mreal
+         rdiagbuf(j,idia)=rdiagbuf(j,i)
+       end do
+       if (lobsdiagsave) then
+         ioff=mreal
+         do jj=1,miter
+           ioff=ioff+1
+           if (obsdiags(i_gps_ob_type,ibin)%tail%muse(jj)) then
+             rdiagbuf(ioff,idia) = one
+           else
+             rdiagbuf(ioff,idia) = -one
+           endif
+         enddo
+         do jj=1,miter+1
+           ioff=ioff+1
+           rdiagbuf(ioff,idia) = obsdiags(i_gps_ob_type,ibin)%tail%nldepart(jj)
+         enddo
+         do jj=1,miter
+           ioff=ioff+1
+           rdiagbuf(ioff,idia) = obsdiags(i_gps_ob_type,ibin)%tail%tldepart(jj)
+         enddo
+         do jj=1,miter
+           ioff=ioff+1
+           rdiagbuf(ioff,idia) = obsdiags(i_gps_ob_type,ibin)%tail%obssen(jj)
+         enddo
+       endif
+     endif
+
   end do
 
   deallocate(cdiagbuf,rdiagbuf)

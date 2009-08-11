@@ -16,7 +16,6 @@ subroutine convert_netcdf_mass
 !   2005-07-06  parrish - add read of pint byte address
 !   2005-12-09  middlecoff - initialize character variable staggering
 !   2006-09-15  treadon - use nhr_assimilation to build local guess filename
-!   2008-06-27  Hu  - bug fix: replace XICE with SEAICE
 !
 !   input argument list:
 !
@@ -31,7 +30,7 @@ subroutine convert_netcdf_mass
 !$$$
 
   use kinds, only: r_single,i_kind
-  use gridmod, only: nhr_assimilation
+  use gsi_4dvar, only: nhr_assimilation
   implicit none
 
 ! Declare local parameters
@@ -501,7 +500,7 @@ subroutine convert_netcdf_mass
        field2(1,nlat_regional),field2(nlon_regional,nlat_regional)
   write(iunit)field2   !LANDMASK   (1=land, 0=water)
   
-  rmse_var='SEAICE'
+  rmse_var='XICE'
   call ext_ncd_get_var_info (dh1,trim(rmse_var),ndim1,ordering,staggering, &
        start_index,end_index, WrfType, ierr    )
   write(6,*)' rmse_var=',trim(rmse_var)
@@ -518,8 +517,8 @@ subroutine convert_netcdf_mass
        start_index,end_index,               & !mem
        start_index,end_index,               & !pat
        ierr                                 )
-  write(6,*)' max,min SEAICE=',maxval(field2),minval(field2)
-  write(iunit)field2   !SEAICE
+  write(6,*)' max,min XICE=',maxval(field2),minval(field2)
+  write(iunit)field2   !XICE
   
   rmse_var='SST'
   call ext_ncd_get_var_info (dh1,trim(rmse_var),ndim1,ordering,staggering, &
@@ -772,7 +771,7 @@ subroutine convert_netcdf_nmm(update_pint,ctph0,stph0,tlm0)
 !  create internal binary file from netcdf format wrf restart file
 
   use kinds, only: r_single,i_kind,r_kind
-  use gridmod, only: nhr_assimilation
+  use gsi_4dvar, only: nhr_assimilation
   use constants, only: rad2deg
 ! use wrf_data
   implicit none
@@ -1429,8 +1428,6 @@ subroutine update_netcdf_mass
 !   2006-04-06  middlecoff - added read of SM and SICE to match the writes in wrwrfmass.F90  
 !                            and read in the rest of the fields to match the writes in wrwrfmass.F90  
 !   2006-06-09  liu - bug fix: replace SM and SICE with SMOIS and XICE
-!   2009-02-25  Hu  - bug fix: replace XICE with SEAICE
-!                     and turn off SMOIS and TKE updating for Rapid Refresh
 
   use kinds, only: r_single,i_kind
   implicit none
@@ -1723,20 +1720,20 @@ subroutine update_netcdf_mass
 ! 2. change the 3rd dimension of start_index and end_index1 to make them equal.
 !                we now pick 2nd one for test
 !
-!  write(*,*) 'Change the 3rd demension of SMOIS form ',end_index1(3),' to 1'
-!  end_index1(3) = 1
-!  write(6,*)' end_index1=',end_index1
-!  call ext_ncd_write_field(dh1,DateStr1,TRIM(rmse_var),              &
-!       field2,WRF_REAL,0,0,0,ordering,           &
-!       staggering, dimnames ,               &
-!       start_index,end_index1,               & !dom
-!       start_index,end_index1,               & !mem
-!       start_index,end_index1,               & !pat
-!       ierr                                 )
-!
-  read(iunit)   field2   !SEAICE
-  write(6,*)'max,min SEAICE=',maxval(field2),minval(field2)
-  rmse_var='SEAICE'
+  write(*,*) 'Change the 3rd demension of SMOIS form ',end_index1(3),' to 1'
+  end_index1(3) = 1
+  write(6,*)' end_index1=',end_index1
+  call ext_ncd_write_field(dh1,DateStr1,TRIM(rmse_var),              &
+       field2,WRF_REAL,0,0,0,ordering,           &
+       staggering, dimnames ,               &
+       start_index,end_index1,               & !dom
+       start_index,end_index1,               & !mem
+       start_index,end_index1,               & !pat
+       ierr                                 )
+
+  read(iunit)   field2   !XICE
+  write(6,*)'max,min XICE=',maxval(field2),minval(field2)
+  rmse_var='XICE'
   call ext_ncd_get_var_info (dh1,trim(rmse_var),ndim1,ordering,staggering, &
        start_index,end_index1, WrfType, ierr    )
   write(6,*)' rmse_var=',trim(rmse_var)
@@ -1794,14 +1791,13 @@ subroutine update_netcdf_mass
   write(6,*)' staggering=',staggering
   write(6,*)' start_index=',start_index
   write(6,*)' end_index1=',end_index1
-! turn off skin temperature for test
-!  call ext_ncd_write_field(dh1,DateStr1,TRIM(rmse_var),              &
-!       field2,WRF_REAL,0,0,0,ordering,           &
-!       staggering, dimnames ,               &
-!       start_index,end_index1,               & !dom
-!       start_index,end_index1,               & !mem
-!       start_index,end_index1,               & !pat
-!       ierr                                 )
+  call ext_ncd_write_field(dh1,DateStr1,TRIM(rmse_var),              &
+       field2,WRF_REAL,0,0,0,ordering,           &
+       staggering, dimnames ,               &
+       start_index,end_index1,               & !dom
+       start_index,end_index1,               & !mem
+       start_index,end_index1,               & !pat
+       ierr                                 )
   
   deallocate(field1,field2,field2b,ifield2,field3,field3u,field3v)
   call ext_ncd_ioclose(dh1, Status)

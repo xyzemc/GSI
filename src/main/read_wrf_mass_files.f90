@@ -23,14 +23,15 @@ subroutine read_wrf_mass_files(mype)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
 
   use kinds, only: r_kind,r_single,i_kind
   use mpimod, only: mpi_comm_world,ierror,mpi_rtype,npe
-  use guess_grids, only: nfldsig,nfldsfc,ntguessfc,ntguessig,&
-       ifilesfc,ifilesig,hrdifsig,hrdifsfc
-  use gridmod, only: regional_time,regional_fhr,nhr_assimilation
-  use constants, only: izero,zero,one,zero_single
+  use guess_grids, only: nfldsig,nfldsfc,ntguessig,ntguessfc,&
+       ifilesig,ifilesfc,hrdifsig,hrdifsfc,create_gesfinfo
+  use gsi_4dvar, only: nhr_assimilation
+  use gridmod, only: regional_time,regional_fhr
+  use constants, only: izero,zero,one,zero_single,r60inv
   use obsmod, only: iadate
   implicit none
 
@@ -39,7 +40,6 @@ subroutine read_wrf_mass_files(mype)
 
 ! Declare local parameters
   real(r_kind),parameter:: r0_001=0.001_r_kind
-  real(r_kind),parameter:: r60=60.0_r_kind
 
 ! Declare local variables
   logical(4) fexist
@@ -59,16 +59,6 @@ subroutine read_wrf_mass_files(mype)
   nhr_half=nhr_assimilation/2
   if(nhr_half*2 < nhr_assimilation) nhr_half=nhr_half+1
   npem1=npe-1
-
-  do i=1,nfldsig
-     ifilesig(i) = -100
-     hrdifsig(i) = zero
-  end do
-
-  do i=1,nfldsfc
-     ifilesfc(i) = -100
-     hrdifsfc(i) = zero
-  end do
 
   do i=1,202
      time_ges(i,1) = 999
@@ -104,7 +94,7 @@ subroutine read_wrf_mass_files(mype)
            ndiff=nming2-nminanl
            if(abs(ndiff) > 60*nhr_half ) go to 110
            iwan=iwan+1
-           time_ges(iwan,1) = (nming2-nminanl)/r60
+           time_ges(iwan,1) = (nming2-nminanl)*r60inv
            time_ges(iwan+100,1)=i+r0_001
         end if
 110     continue
@@ -154,7 +144,7 @@ subroutine read_wrf_mass_files(mype)
            ndiff=nming2-nminanl
            if(abs(ndiff) > 60*nhr_half ) go to 210
            iwan=iwan+1
-           time_ges(iwan,2) = (nming2-nminanl)/r60
+           time_ges(iwan,2) = (nming2-nminanl)*r60inv
            time_ges(iwan+100,2)=i+r0_001
         end if
 210     continue
@@ -183,10 +173,25 @@ subroutine read_wrf_mass_files(mype)
 ! Broadcast guess file information to all tasks
   call mpi_bcast(time_ges,404,mpi_rtype,npem1,mpi_comm_world,ierror)
 
+  nfldsig   = nint(time_ges(201,1))
+!!nfldsfc   = nint(time_ges(201,2))
+  nfldsfc   = 1
+
+! Allocate space for guess information files
+  call create_gesfinfo
+
+  do i=1,nfldsig
+     ifilesig(i) = -100
+     hrdifsig(i) = zero
+  end do
+
+  do i=1,nfldsfc
+     ifilesfc(i) = -100
+     hrdifsfc(i) = zero
+  end do
 
 ! Load time information for sigma guess field sinfo into output arrays
   ntguessig = nint(time_ges(202,1))
-  nfldsig   = nint(time_ges(201,1))
   do i=1,nfldsig
      hrdifsig(i) = time_ges(i,1)
      ifilesig(i) = nint(time_ges(i+100,1))
@@ -197,7 +202,6 @@ subroutine read_wrf_mass_files(mype)
   
 ! Load time information for surface guess field info into output arrays
   ntguessfc = nint(time_ges(202,2))
-  nfldsfc   = nint(time_ges(201,2))
   do i=1,nfldsfc
      hrdifsfc(i) = time_ges(i,2)
      ifilesfc(i) = nint(time_ges(i+100,2))
@@ -212,7 +216,7 @@ subroutine read_wrf_mass_files(mype)
 ! it is, the fix below gets around the above mentioned problem.
 
   ntguessfc = ntguessig
-  nfldsfc   = 1
+!!nfldsfc   = 1
   do i=1,nfldsfc
      hrdifsfc(i) = hrdifsig(ntguessig)
      ifilesfc(i) = ifilesig(ntguessig)

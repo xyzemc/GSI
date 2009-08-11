@@ -10,6 +10,7 @@ subroutine frfhvo(p1,iv)
 !   2004-05-13  derber, document
 !   2005-01-22  parrish - make use of balmod and rename variables
 !   2005-07-14  wu - add max bound to l2
+!   2008-04-11  safford - rm unsed vars
 !
 !   input argument list:
 !     p1       - input field to be smoothed (lat2,lon2,nsig)
@@ -42,8 +43,7 @@ subroutine frfhvo(p1,iv)
 ! nsig  = number of model levels 
 ! ndeg  = degree of smoothing (ndeg=4)
 
-  logical lmod2
-  integer(i_kind) kmod2,j,i,k,kr,ki,i1,n2,iv,l,l2
+  integer(i_kind) kmod2,j,i,k,kr,ki,i1,iv,l,l2
   real(r_kind) dl1,dl2,alvl,alvr,alvi,alvi1,alvr1
   real(r_kind) gaki,gakr,dekr,deki,bekr,beki
   real(r_kind),dimension(lat2,lon2,nsig):: p1,p2

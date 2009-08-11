@@ -31,6 +31,10 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
 !                         superobs, with qc based on vad wind data.
 !   2006-05-23  parrish - interpolate model elevation to vad wind site
 !   2006-07-28  derber  - use r1000 from constants
+!   2007-03-01  tremolet - measure time from beginning of assimilation window
+!   2008-04-17  safford - rm unused vars and uses
+!   2008-09-08  lueken  - merged ed's changes into q1fy09 code
+!   2009-06-08  parrish - remove erroneous call to cosd, sind
 !
 !   input argument list:
 !     infile   - file from which to read BUFR data
@@ -48,21 +52,22 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$  end documentation block
   use kinds, only: r_kind,r_single,r_double,i_kind,i_byte
   use constants, only: izero,zero,half,one,deg2rad,rearth,rad2deg, &
-                       one_tenth,r1000
+                       one_tenth,r1000,r60inv
   use qcmod, only: erradar_inflate,vadfile
   use obsmod, only: iadate,offtime_data
+  use gsi_4dvar, only: l4dvar,idmodel,iadatebgn,iadateend,iwinbgn,winlen,time_4dvar
   use gridmod, only: regional,nlat,nlon,tll2xy,rlats,rlons,rotate_wind_ll2xy
   use gridmod, only: check_rotate_wind
-  use convinfo, only: nconvtype,ctwind,cgross,cermax,cermin,cvar_b,cvar_pg, &
-       ncmiter,ncgroup,ncnumgrp,icuse,ictype,icsubtype,ioctype
+  use convinfo, only: nconvtype,ctwind, &
+       ncmiter,ncgroup,ncnumgrp,icuse,ictype,ioctype
   implicit none 
   
 ! Declare passed variables
-  character(10),intent(in):: obstype,infile
-  character(20),intent(in):: sis
+  character(len=*),intent(in):: obstype,infile
+  character(len=*),intent(in):: sis
   real(r_kind),intent(in):: twind
   integer(i_kind),intent(in):: lunout
   integer(i_kind),intent(inout):: nread,ndata,nodata
@@ -79,7 +84,6 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
   real(r_kind),parameter:: r3_5 = 3.5_r_kind
   real(r_kind),parameter:: r6 = 6.0_r_kind
   real(r_kind),parameter:: r8 = 8.0_r_kind
-  real(r_kind),parameter:: r60 = 60.0_r_kind
   real(r_kind),parameter:: r90 = 90.0_r_kind
   real(r_kind),parameter:: r100 = 100.0_r_kind
   real(r_kind),parameter:: r200 = 200.0_r_kind
@@ -91,23 +95,22 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
   logical good,outside,good0,lexist1,lexist2
   
   character(10) date
-  character(40) filename
   character(50) hdrstr,datstr
   character(8) subset,subset_check(2)
   character(30) outmessage
   
-  integer(i_kind) lnbufr,i,k,levsmin,levsmax,levszero,maxobs
+  integer(i_kind) lnbufr,i,k,maxobs
   integer(i_kind) nmrecs,ibadazm,ibadwnd,ibaddist,ibadheight,ibadvad,kthin
-  integer(i_kind) iyr,imo,idy,ihr,imn,isc,ithin,iin
+  integer(i_kind) iyr,imo,idy,ihr,imn
   integer(i_kind) ibadstaheight,ibaderror,notgood,idate,iheightbelowsta,ibadfit
   integer(i_kind) notgood0
   integer(i_kind) novadmatch,ioutofvadrange
-  integer(i_kind) iy,im,idd,ihh,iy2,iret,levs,mincy,minobs,kx0,kxadd,kx,ireason
+  integer(i_kind) iy,im,idd,ihh,iret,levs,mincy,minobs,kx0,kxadd,kx
   integer(i_kind) nreal,nchanl,ilat,ilon,ikx
   integer(i_kind),dimension(5):: idate5
   integer(i_kind) ivad,ivadz,nvad,idomsfc
   
-  real(r_kind) timeb,rmesh,usage,ff10,sfcr,skint
+  real(r_kind) timeb,usage,ff10,sfcr,skint,t4dv,t4dvo,toff
   real(r_kind) eradkm,dlat_earth,dlon_earth
   real(r_kind) dlat,dlon,staheight,tiltangle,clon,slon,clat,slat
   real(r_kind) timeo,clonh,slonh,clath,slath,cdist,dist
@@ -138,8 +141,6 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
   integer(i_kind) level2(maxvad),level2_5(maxvad),level3(maxvad),level3_tossed_by_2_5(maxvad)
   integer(i_kind) loop,numcut
   integer(i_kind) numhits(0:maxvad)
-  real(r_kind) cutlat(maxlevs),cutlon(maxlevs),cuthgt(maxlevs),cutazm(maxlevs)
-  real(r_kind) cutwspd(maxlevs),cuttime(maxlevs),cuterror(maxlevs),cutreason(maxlevs)
   real(r_kind) timemax,timemin,errmax,errmin
   real(r_kind) dlatmax,dlonmax,dlatmin,dlonmin
   real(r_kind) xscale,xscalei
@@ -159,8 +160,6 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
   real(r_kind) vad_leash
   
   data lnbufr/10/
-  data ithin / -9 /
-  data rmesh / -99.999 /
   data hdrstr / 'CLAT CLON SELV ANEL YEAR MNTH DAYS HOUR MINU MGPT' /
   data datstr / 'STDM SUPLAT SUPLON HEIT RWND RWAZ RSTD' /
   
@@ -221,18 +220,23 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
   call readmg(lnbufr,subset,idate,iret)
   if(iret/=0) go to 20
 
+! Time offset
+  call time_4dvar(idate,toff)
+
   write(date,'( i10)') idate
   read (date,'(i4,3i2)') iy,im,idd,ihh 
   write(6,*)'READ_RADAR:  first read vad winds--use vad quality marks to qc 2.5/3 radar winds'
-  write(6,*)'READ_RADAR:  vad wind bufr file date is ',iy,im,idd,ihh
-  if(iy/=iadate(1).or.im/=iadate(2).or.idd/=iadate(3).or.&
-       ihh/=iadate(4)) then
+  write(6,*)'READ_RADAR: vad wind bufr file date is ',idate
+  IF (idate<iadatebgn.OR.idate>iadateend) THEN
      if(offtime_data) then
-       write(6,*)'***READ_BUFRTOVS analysis and data file date differ, but use anyway'
+        write(6,*)'***READ_RADAR analysis and data file date differ, but use anyway'
      else
-       write(6,*)'***READ_RADAR ERROR*** vad wind incompatable analysis ',&
-          'and observation date/time'
+        write(6,*)'***READ_RADAR ERROR*** vad wind ',&
+              'incompatable analysis and observation date/time'
      end if
+     write(6,*)'Analysis start  :',iadatebgn
+     write(6,*)'Analysis end    :',iadateend
+     write(6,*)'Observation time:',idate
      write(6,*)' year  anal/obs ',iadate(1),iy
      write(6,*)' month anal/obs ',iadate(2),im
      write(6,*)' day   anal/obs ',iadate(3),idd
@@ -265,8 +269,13 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
      if(ikx == 0) go to 10
 
 !    Time check
-     timeb=hdr(4)
-     if(abs(timeb) > ctwind(ikx) .or. abs(timeb) > half) go to 10 ! outside time window 
+     t4dv=toff+hdr(4)
+     if (l4dvar) then
+       if (t4dv<zero .OR. t4dv>winlen) go to 10 ! outside time window
+     else
+       timeb=hdr(4)
+       if(abs(timeb) > ctwind(ikx) .or. abs(timeb) > half) go to 10 ! outside time window 
+     endif
 
 !    Create table of vad lat-lons and quality marks in 500m increments
 !    for cross-referencing bird qc against radar winds
@@ -464,7 +473,7 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
         cdist=sin(vadlat(k))*slat+cos(vadlat(k))*clat* &
              (sin(vadlon(k))*slon+cos(vadlon(k))*clon)
         cdist=max(-one,min(cdist,one))
-        dist=acosd(cdist)
+        dist=rad2deg*acos(cdist)
         
         if(dist < 0.2_r_kind) then
            ivad=k
@@ -495,13 +504,18 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
 
 !    Get model terrain at VAD wind location
      call deter_zsfc_model(dlatvad,dlonvad,zsges)
-     
-     timeo=thistime
-     timemax=max(timemax,timeo)
-     timemin=min(timemin,timeo)
-     
+
+     t4dvo=toff+thistime
+     timemax=max(timemax,t4dvo)
+     timemin=min(timemin,t4dvo)
+
 !    Exclude data if it does not fall within time window
-     if(abs(timeo)>half ) cycle
+     if (l4dvar) then
+       if (t4dvo<zero .OR. t4dvo>winlen) cycle
+     else
+       timeo=thistime
+       if(abs(timeo)>half ) cycle
+     endif
 
 !    Get observation (lon,lat).  Compute distance from radar.
      dlat_earth=thislat
@@ -536,10 +550,10 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
      rwnd  = thisvr
      azm_earth = corrected_azimuth
      if(regional) then
-        cosazm_earth=cosd(azm_earth)
-        sinazm_earth=sind(azm_earth)
+        cosazm_earth=cos(azm_earth*deg2rad)
+        sinazm_earth=sin(azm_earth*deg2rad)
         call rotate_wind_ll2xy(cosazm_earth,sinazm_earth,cosazm,sinazm,dlon_earth,dlat_earth,dlon,dlat)
-        azm=atan2d(sinazm,cosazm)
+        azm=atan2(sinazm,cosazm)*rad2deg
      else
         azm=azm_earth
      end if
@@ -593,7 +607,7 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
            cycle
         end if
         thiswgt=one/max(r4_single,thiserr**2)
-        thisfit2=(vadu(ivad,ivadz)*cosd(azm_earth)+vadv(ivad,ivadz)*sind(azm_earth)-thisvr)**2
+        thisfit2=(vadu(ivad,ivadz)*cos(azm_earth*deg2rad)+vadv(ivad,ivadz)*sin(azm_earth*deg2rad)-thisvr)**2
         thisfit=sqrt(thisfit2)
         thisvadspd=sqrt(vadu(ivad,ivadz)**2+vadv(ivad,ivadz)**2)
         vadfit2(ivad,ivadz)=vadfit2(ivad,ivadz)+thiswgt*thisfit2
@@ -624,7 +638,7 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
            if(mod(ndata,ncnumgrp(ikx))== ncgroup(ikx)-1)usage=ncmiter(ikx)
         end if
 
-        call deter_sfc2(dlat_earth,dlon_earth,timeo,idomsfc,skint,ff10,sfcr)
+        call deter_sfc2(dlat_earth,dlon_earth,t4dv,idomsfc,skint,ff10,sfcr)
 
         cdata(1) = error             ! wind obs error (m/s)
         cdata(2) = dlon              ! grid relative longitude
@@ -632,7 +646,7 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
         cdata(4) = height            ! obs absolute height (m)
         cdata(5) = rwnd              ! wind obs (m/s)
         cdata(6) = azm*deg2rad       ! azimuth angle (radians)
-        cdata(7) = timeo             ! obs time (hour)
+        cdata(7) = t4dv              ! obs time (hour)
         cdata(8) = ikx               ! type               
         cdata(9) = tiltangle         ! tilt angle (radians)
         cdata(10)= staheight         ! station elevation (m)
@@ -663,9 +677,8 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
      
   end do
 
-
+  close(lnbufr)	! A simple unformatted fortran file should not be mixed with a bufr I/O
   write(6,*)'READ_RADAR:  ',trim(outmessage),' reached eof on 2/2.5/3 superob radar file'
-  call closbf(lnbufr)
 
   write(6,*)'READ_RADAR: nsuper2_in,nsuper2_kept=',nsuper2_in,nsuper2_kept
   write(6,*)'READ_RADAR: # no vad match   =',novadmatch
@@ -736,17 +749,23 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
 
      write(date,'( i10)') idate
      read (date,'(i4,3i2)') iy,im,idd,ihh 
-     write(6,*)'READ_RADAR: bufr file date is ',iy,im,idd,ihh
-     if(iy/=iadate(1).or.im/=iadate(2).or.idd/=iadate(3).or.&
-          ihh/=iadate(4)) then
-        write(6,*)'***READ_RADAR ERROR*** incompatable analysis ',&
-             'and observation date/time'
+     write(6,*)'READ_RADAR: bufr file date is ',idate
+     if (idate<iadatebgn.OR.idate>iadateend) THEN
+        if(offtime_data) then
+           write(6,*)'***READ_RADAR analysis and data file date differ, but use anyway'
+        else
+           write(6,*)'***READ_RADAR ERROR*** ',&
+              'incompatable analysis and observation date/time'
+        end if
+        write(6,*)'Analysis start  :',iadatebgn
+        write(6,*)'Analysis end    :',iadateend
+        write(6,*)'Observation time:',idate
         write(6,*)' year  anal/obs ',iadate(1),iy
         write(6,*)' month anal/obs ',iadate(2),im
         write(6,*)' day   anal/obs ',iadate(3),idd
         write(6,*)' hour  anal/obs ',iadate(4),ihh
-        call stop2(92)
-     end if
+        if(.not.offtime_data) call stop2(92)
+     endif
 
      idate5(1) = iy    ! year
      idate5(2) = im    ! month
@@ -813,7 +832,7 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
         cdist=sin(vadlat(k))*slat+cos(vadlat(k))*clat* &
              (sin(vadlon(k))*slon+cos(vadlon(k))*clon)
         cdist=max(-one,min(cdist,one))
-        dist=acosd(cdist)
+        dist=rad2deg*acos(cdist)
         
         if(dist < 0.2_r_kind) then
            ivad=k
@@ -850,7 +869,6 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
      idy = hdr(7)
      ihr = hdr(8)
      imn = hdr(9)
-     isc = izero
 
      idate5(1) = iyr
      idate5(2) = imo
@@ -863,11 +881,16 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
      end do
      if(ikx.eq.0) go to 50
      call w3fs21(idate5,minobs)
-     timeb = (minobs - mincy)/r60
-!    if (abs(timeb)>twind .or. abs(timeb) > ctwind(ikx)) then
-     if (abs(timeb)>half .or. abs(timeb) > ctwind(ikx)) then 
-!       write(6,*)'READ_RADAR:  time outside window ',timeb,' skip this obs'
-        goto 50
+     t4dv=real(minobs-iwinbgn,r_kind)*r60inv
+     if (l4dvar) then
+       if (t4dv<zero .OR. t4dv>winlen) goto 50
+     else
+       timeb = real(minobs-mincy,r_kind)*r60inv
+!      if (abs(timeb)>twind .or. abs(timeb) > ctwind(ikx)) then
+       if (abs(timeb)>half .or. abs(timeb) > ctwind(ikx)) then 
+!         write(6,*)'READ_RADAR:  time outside window ',timeb,' skip this obs'
+          goto 50
+       endif
      endif
 
 !    Go through the data levels
@@ -883,9 +906,9 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
         if(loop.eq.1) nsuper2_5_in=nsuper2_5_in+1
         if(loop.eq.2) nsuper3_in=nsuper3_in+1
         nread=nread+1
-        timeo=(minobs+radar_obs(1,k)-mincy)/60.
-        timemax=max(timemax,timeo)
-        timemin=min(timemin,timeo)
+        t4dvo=real(minobs+radar_obs(1,k)-iwinbgn,r_kind)*r60inv
+        timemax=max(timemax,t4dvo)
+        timemin=min(timemin,t4dvo)
         if(loop==2 .and. ivad> 0 .and. level2_5(ivad)/=0) then
            level3_tossed_by_2_5(ivad)=level3_tossed_by_2_5(ivad)+1
            numcut=numcut+1
@@ -893,10 +916,16 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
         end if
 
 !       Exclude data if it does not fall within time window
-        if(abs(timeo)>twind .or. abs(timeo) > ctwind(ikx)) then
-!          write(6,*)'READ_RADAR:  time outside window ',timeo,&
-!             ' skip obs ',nread,' at lev=',k
-           cycle
+        if (l4dvar) then
+          if (t4dvo<zero .OR. t4dvo>winlen) cycle
+          timeo=t4dv
+        else
+          timeo=(real(minobs-mincy,r_kind)+real(radar_obs(1,k),r_kind))*r60inv
+          if(abs(timeo)>twind .or. abs(timeo) > ctwind(ikx)) then
+!            write(6,*)'READ_RADAR:  time outside window ',timeo,&
+!               ' skip obs ',nread,' at lev=',k
+             cycle
+          end if
         end if
 
 !       Get observation (lon,lat).  Compute distance from radar.
@@ -934,10 +963,10 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
         rwnd  = radar_obs(5,k)
         azm_earth   = r90-radar_obs(6,k)
         if(regional) then
-          cosazm_earth=cosd(azm_earth)
-          sinazm_earth=sind(azm_earth)
+          cosazm_earth=cos(azm_earth*deg2rad)
+          sinazm_earth=sin(azm_earth*deg2rad)
           call rotate_wind_ll2xy(cosazm_earth,sinazm_earth,cosazm,sinazm,dlon_earth,dlat_earth,dlon,dlat)
-          azm=atan2d(sinazm,cosazm)
+          azm=atan2(sinazm,cosazm)*rad2deg
         else
           azm=azm_earth
         end if
@@ -992,7 +1021,7 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
            end if
            thiserr = radar_obs(7,k)
            thiswgt=one/max(r4_single,thiserr**2)
-           thisfit2=(vadu(ivad,ivadz)*cosd(azm_earth)+vadv(ivad,ivadz)*sind(azm_earth)-rwnd)**2
+           thisfit2=(vadu(ivad,ivadz)*cos(azm_earth*deg2rad)+vadv(ivad,ivadz)*sin(azm_earth*deg2rad)-rwnd)**2
            thisfit=sqrt(thisfit2)
            thisvadspd=sqrt(vadu(ivad,ivadz)**2+vadv(ivad,ivadz)**2)
            if(loop.eq.1) then
@@ -1035,7 +1064,7 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
               if(mod(ndata,ncnumgrp(ikx))== ncgroup(ikx)-1)usage=ncmiter(ikx)
            end if
            
-           call deter_sfc2(dlat_earth,dlon_earth,timeo,idomsfc,skint,ff10,sfcr)
+           call deter_sfc2(dlat_earth,dlon_earth,t4dv,idomsfc,skint,ff10,sfcr)
            
            cdata(1) = error           ! wind obs error (m/s)
            cdata(2) = dlon            ! grid relative longitude
@@ -1043,7 +1072,7 @@ subroutine read_radar(nread,ndata,nodata,infile,lunout,obstype,twind,sis)
            cdata(4) = height          ! obs absolute height (m)
            cdata(5) = rwnd            ! wind obs (m/s)
            cdata(6) = azm*deg2rad     ! azimuth angle (radians)
-           cdata(7) = timeo           ! obs time (hour)
+           cdata(7) = t4dvo           ! obs time (hour)
            cdata(8) = ikx             ! type               
            cdata(9) = tiltangle       ! tilt angle (radians)
            cdata(10)= staheight       ! station elevation (m)

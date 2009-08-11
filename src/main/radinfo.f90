@@ -1,24 +1,12 @@
-!-------------------------------------------------------------------------
-!    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
-!-------------------------------------------------------------------------
-!BOP
-!
-! !MODULE:  radinfo --- Provide information on satellite radiance
-!
-! !INTERFACE:
-!
 module radinfo 
-
-! !USES:
-
-  use kinds, only:r_kind,i_kind
-  implicit none
-
-! !DESCRIPTION:  This module contains variables and routines related
-!            to information for the use of satellite radiance 
-!            data.
+!$$$   module documentation block
+!                .      .    .                                       .
+! module:    radinfo   
 !
-! !REVISION HISTORY:
+! abstract:  This module contains variables and routines related
+!            to information for the use of satellite radiance data.
+!
+! program history log:
 !   1995-07-06  derber
 !   2004-05-13  kleist, documentation
 !   2004-06-22  treadon - update documentation
@@ -33,25 +21,31 @@ module radinfo
 !   2005-09-28  derber  - change radinfo input file add ermax_rad,b_rad and pg_rad
 !   2006-02-03  derber  - modify for new obs control and obs count
 !   2006-04-27  derber  - remove jppf
+!   2008-04-23  safford - add standard documentation block
 !
-! !CALLING SEQUENCE:
-!   sub init_rad       - set satellite related variables to defaults
-!   sub init_rad_vars  - initialize satellite related variables
-!   sub radinfo_read   - read in sat info and biases, including read sst_an and avhrr bias correction
-!   sub radinfo_write  - write out satellite biases
+! subroutines included:
+!   init_rad            - set satellite related variables to defaults
+!   init_rad_vars       - initialize satellite related variables
+!   radinfo_read        - read in sat info and biases, including read 
+!                          sst_an and avhrr bias correction
+!   radinfo_write       - write out satellite biases
 !
-! !PUBLIC MEMBER FUNCTIONS:
+! functions included:
 !   newchn
 !
-! !REMARKS:
+! variable definitions:
+!
+! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP; SGI Origin 2000; Compaq/HP
 !
-! !AUTHOR: 
-!   derber           org: np23                date: 1995-07-06
-!
-!EOP
-!-------------------------------------------------------------------------
+!$$$ end documentation block
+
+
+! !USES:
+
+  use kinds, only: r_kind,i_kind
+  implicit none
 
   integer(i_kind),parameter:: numt = 33   ! size of AVHRR bias correction file
 
@@ -62,7 +56,6 @@ module radinfo
   integer(i_kind) npred      ! number of radiance biases predictors
   integer(i_kind) mype_rad   ! task id for writing out radiance diagnostics
   integer(i_kind) npred1     ! number of radiance biases predictors minus one
-  integer(i_kind) n_sensors  ! number of unique satellite/sensor entries in satinfo file
 
   real(r_kind),allocatable,dimension(:):: varch       ! variance for each satellite channel
   real(r_kind),allocatable,dimension(:):: ermax_rad   ! error maximum (qc)
@@ -78,42 +71,38 @@ module radinfo
   integer(i_kind),allocatable,dimension(:):: ifactq    ! scaling parameter for d(Tb)/dq sensitivity
 
   character(len=20),allocatable,dimension(:):: nusis   ! sensor/instrument/satellite indicator
-  character(len=20),allocatable,dimension(:):: sensorlist ! CRTM satellite/sensor list 
+  character(len=256),save:: crtm_coeffs_path = "./" ! path of CRTM_Coeffs files
 
 
 contains
 
 
-!-------------------------------------------------------------------------
-!    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
-!-------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: init_rad --- Initialize parameters for radiance data
-!
-! !INTERFACE:
-!
   subroutine init_rad
-
-! !USES:
-
-! !DESCRIPTION:  This routine sets default values for variables used in
-!            the radiance processing routines
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    int_rad
 !
-! !REVISION HISTORY:
+!   prgrmmr:     derber      org: np23                date: 1995-07-06
+!
+! abstract:  This routine sets default values for variables used in
+!            the radiance processing routines.
+!
+! program history log:
 !   1995-07-06  derber
 !   2004-06-22  treadon - update documentation
 !   2004-07-15  todling - protex-compliant prologue
+!   2008-04-23  safford -- add standard subprogram doc block
 !
-! !REMARKS:
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp; SGI Origin 2000; Compaq/HP
 !
-! !AUTHOR:    
-!   derber      org: np23                date: 1995-07-06
-!
-!EOP
-!-------------------------------------------------------------------------
+!$$$ end documentation block
+
     implicit none
 
     jpch_rad = 0         ! total number of channels over all instruments & satellites
@@ -121,73 +110,52 @@ contains
     diag_rad = .true.    ! .true.=generate radiance diagnostic file
     mype_rad = 0         ! mpi task to collect and print radiance use information on/from
     npred=5              ! number of bias correction predictors
-    n_sensors = 0        ! number of unique satellite/sensors in satinfo file
   end subroutine init_rad
 
 
-!-------------------------------------------------------------------------
-!    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
-!-------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: init_rad_vars --- Set radiance parameters
-!
-! !INTERFACE:
-!
   subroutine init_rad_vars
-
-! !USES:
-
-    implicit none
-
-! !DESCRIPTION:  This routine sets parameters used in the radiance 
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    init_rad_vars
+!
+!   prgrmmr:     derber      org: np23                date: 1995-07-06
+!
+! abstract:  This routine sets parameters used in the radiance 
 !            assimilation.  The parameters below depend on values
 !            which may be altered by the SETUP namelist.
 !
-! !REVISION HISTORY:
+! program history log:
 !   1995-07-06  derber
 !   2004-06-22  treadon - update documentation
 !   2004-07-15  todling - protex-compliant prologue
+!   2008-04-23  safford -- add standard subprogram doc block
 !
-! !REMARKS:
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp; SGI Origin 2000; Compaq/HP
 !
-! !AUTHOR:    
-!   derber      org: np23                date: 1995-07-06
-!
-!EOP
-!-------------------------------------------------------------------------
-    
+!$$$ end documentation block
+
+    implicit none
+
     npred1=npred-1
     
     return
   end subroutine init_rad_vars
 
 
-!-------------------------------------------------------------------------
-!    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
-!-------------------------------------------------------------------------
-!BOP
+  subroutine radinfo_read
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    radinfo_read
 !
-! !IROUTINE: radinfo_read --- Read satinfo,satang,satbias
+!   prgrmmr:     yang        org: np20                date: 1998-05-15
 !
-! !INTERFACE:
-!
-  subroutine radinfo_read(mype)
-
-! !USES:
-
-    use kinds, only: r_kind,i_kind
-    use obsmod, only: iout_rad
-    use constants, only: zero
-    implicit none
-
-! !INPUT PARAMETERS:
-
-    integer(i_kind), intent(in)::  mype   ! mpi task id
-
-! !DESCRIPTION:  This routine reads the satinfo, satbias\_angle, and
+! abstract:  This routine reads the satinfo, satbias\_angle, and
 !            satbias files.  
 !
 !            The satinfo file contains information about the channels,
@@ -207,7 +175,7 @@ contains
 !            predictive part of the bias correction.
 !
 !
-! !REVISION HISTORY:
+! program history log:
 !   1998-05-15  yang, weiyu
 !   1999-08-24  derber, j., treadon, r., yang, w., first frozen mpp version
 !   2004-06-22  treadon - update documentation
@@ -219,19 +187,30 @@ contains
 !   2005-11-30  li - fix a bug in the format to read avhrr SST dependent BC
 !   2007-03-13  derber  - modify to allow input bias correction files of different lengths and orders
 !   2007-06-29  treadon - determine/build n_sensors and sensorlist from satinfo file
+!   2008-04-23  safford - add standard doc block, rm unused vars and uses
 !
-! !REMARKS:
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp; SGI Origin 2000; Compaq/HP
 !
-! !AUTHOR:    
-!   yang        org: np20                date: 1998-05-15
-!
-!EOP
-!-------------------------------------------------------------------------
-    
+!$$$ end documentation block
+
+! !USES:
+
+    use obsmod, only: iout_rad
+    use constants, only: zero
+    use mpimod, only: mype
+    implicit none
+
+! !INPUT PARAMETERS:
+
+
     integer(i_kind) i,j,k,ich,lunin,nlines
-    integer(i_kind) jch,ip,chan,istat,n,ichan
+    integer(i_kind) ip,istat,n,ichan
     real(r_kind),dimension(npred):: predr
     real(r_kind) tlapm
     real(r_kind),dimension(90)::cbiasx
@@ -308,37 +287,6 @@ contains
             ' b_rad= ',F7.2,' pg_rad=',F7.2)
 
 
-!   Build sensor list based on entries in satinfo file
-    n_sensors=1
-    satsenlist(n_sensors)=nusis(1)
-    do j=2,jpch_rad
-       cfound=.false.
-       search: do i=1,n_sensors
-          if (nusis(j)==satsenlist(i)) then
-             cfound=.true.
-             exit search
-          endif
-       end do search
-       if (.not.cfound) then
-          n_sensors=n_sensors+1
-          satsenlist(n_sensors)=nusis(j)
-       endif
-    end do
-
-    allocate(sensorlist(n_sensors))
-    do j=1,n_sensors
-       sensorlist(j)=satsenlist(j)
-    end do
-
-    if (mype==mype_rad) then
-       write(iout_rad,*)'RADINFO_READ:  n_sensors=',n_sensors
-       do j=1,n_sensors
-          write(iout_rad,120) j,sensorlist(j)
-       end do
-120    format(3x,'j,sensorlist=',i4,2x,a20)
-    endif
-
-
 !   Allocate arrays to receive angle dependent bias information.
 !   Open file to bias file (satang=satbias_angle).  Read data.
 
@@ -386,9 +334,9 @@ contains
 
 !   Allocate array to hold coefficients for predictive (air mass) part of 
 !   bias correction.  Open unit to input file.  Read data.
-    allocate(predx(jpch_rad,npred))
-    do j=1,npred
-       do i=1,jpch_rad
+    allocate(predx(npred,jpch_rad))
+    do j=1,jpch_rad
+       do i=1,npred
           predx(i,j)=zero
        end do
     end do
@@ -405,7 +353,7 @@ contains
              cfound = .true.
              nfound(j) = .true.
              do i=1,npred
-                predx(j,i)=predr(i)
+                predx(i,j)=predr(i)
              end do
           end if
        end do
@@ -424,7 +372,7 @@ contains
        write(iout_rad,*)'RADINFO_READ:  guess air mass bias correction coefficients below'
        do j=1,jpch_rad
           if (nfound(j)) then
-             write(iout_rad,140) j,trim(nusis(j)),(predx(j,n),n=1,npred)
+             write(iout_rad,140) j,trim(nusis(j)),(predx(n,j),n=1,npred)
           else
              write(iout_rad,*) '***WARNING instrument/channel ',&
              nusis(j),nuchan(j),' not found in satbias_in file - set to zero '
@@ -474,40 +422,36 @@ contains
   end subroutine radinfo_read
 
 
-!-------------------------------------------------------------------------
-!    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
-!-------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: radinfo_write --- Write satbias_out file
-!
-! !INTERFACE:
-!
   subroutine radinfo_write
-
-! !USES:
-
-    use obsmod, only: iout_rad
-    implicit none
-
-! !DESCRIPTION:  This routine writes an updated version of the predictive
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    radinfo_write
+!
+!   prgrmmr:     yang        org: np20                date: 1998-05-15
+!
+! abstract:  This routine writes an updated version of the predictive
 !            part of the bias correction.
 !
-! !REVISION HISTORY:
+! program history log:
 !   1998-05-15  yang, weiyu
 !   1999-08-24  derber, j., treadon, r., yang, w., first frozen mpp version
 !   2004-06-22  treadon - update documentation
 !   2004-07-15  todling - protex-compliant prologue
+!   2008-04-23  safford - add standard subprogram doc block
 !
-! !REMARKS:
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp; SGI Origin 2000; Compaq/HP
 !
-! !AUTHOR:    
-!   yang        org: np20                date: 1998-05-15
-!
-!EOP
-!-------------------------------------------------------------------------
+!$$$ end documentation block
+
+! !USES:
+
+    implicit none
 
     integer(i_kind) lunout,jch,ip
     data lunout / 51 /
@@ -518,32 +462,53 @@ contains
     rewind lunout
     do jch=1,jpch_rad
        write(lunout,'(I5,1x,a20,1x,i5,10f12.6)') jch,nusis(jch),nuchan(jch),&
-            (predx(jch,ip),ip=1,npred)
+            (predx(ip,jch),ip=1,npred)
     end do
     close(lunout)
 
 !   Deallocate data arrays for bias correction and those which hold
 !   information from satinfo file.
     deallocate (predx,cbias,tlapmean,nuchan,nusis,iuse_rad, &
-         ifactq,varch,sensorlist)
+         ifactq,varch)
     return
   end subroutine radinfo_write
 
-!-------------------------------------------------------------------------
-!    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
-!-------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: newchn --- Locate channel/satellite
-!
-! !INTERFACE:
-!
+
+
   integer(i_kind) function newchn(sis,ichan)   ! "satinfo-relative" index of 
                                                ! (sis,ichan) combination
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    function newchn
+!
+!   prgrmmr:     derber      org: np23                date: 1997-08-13
+!
+! abstract:  For a given satellite and channel produce a combined 
+!            channel number based on input from the satinfo file.
+!            If the requested channel/satellite combination is
+!            not found, the function returns a zero value.
+!
+! program history log:
+!   1997-08-13  derber
+!   2004-06-22  treadon - update documentation
+!   2004-07-15  todling - protex-compliant prologue
+!   2008-04-23  safford - add standard subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     sis     - satellite to search for
+!     ichan   - channel number to search for
+!
+!   return:
+!             - combined channel number
+!
+! attributes:
+!   language: f90
+!   machine:  ibm rs/6000 sp; SGI Origin 2000; Compaq/HP
+!
+!$$$ end documentation block
 
 ! !USES:
  
-    use kinds, only: r_kind,i_kind
     implicit none
 
 ! !INPUT PARAMETERS:
@@ -551,25 +516,6 @@ contains
     character(len=20), intent(in)::  sis   ! satellite to search for
     integer(i_kind), intent(in)::  ichan   ! channel number to search for
 
-! !DESCRIPTION:  For a given satellite and channel produce a combined 
-!            channel number based on input from the satinfo file.
-!            If the requested channel/satellite combination is
-!            not found, the function returns a zero value.
-!    
-! !REVISION HISTORY:
-!   1997-08-13  derber
-!   2004-06-22  treadon - update documentation
-!   2004-07-15  todling - protex-compliant prologue
-!
-! !REMARKS:
-!   language: f90
-!   machine:  ibm rs/6000 sp; SGI Origin 2000; Compaq/HP
-!
-! !AUTHOR:    
-!   derber      org: np23                date: 1997-08-13
-!
-!EOP
-!-------------------------------------------------------------------------
 
     integer(i_kind) j
     do j=1,jpch_rad

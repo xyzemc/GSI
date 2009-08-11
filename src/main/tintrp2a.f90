@@ -17,6 +17,8 @@ subroutine tintrp2a(f,g,dx,dy,obstime,gridtime, &
 !   2004-05-18  kleist, documentation
 !   2005-02-02  treadon - use ione from constants
 !   2006-04-03  derber  - optimize
+!   2008-04-03  safford - rm unused vars
+!   2009-01-23  todling - dim on gridtime is nflds
 ! 
 !   input argument list:
 !     f        - input interpolator
@@ -46,13 +48,13 @@ subroutine tintrp2a(f,g,dx,dy,obstime,gridtime, &
   integer(i_kind),intent(in):: n,nlevs,mype,nflds
   real(r_kind),dimension(lat2,lon2,nlevs,nflds),intent(in):: f
   real(r_kind),dimension(n),intent(in):: dx,dy,obstime
-  real(r_kind),dimension(100),intent(in):: gridtime
+  real(r_kind),dimension(nflds),intent(in):: gridtime
   real(r_kind),dimension(nlevs,n),intent(out):: g
 
 ! Declare local variables  
   integer(i_kind) m1,i,ix1,iy1,ix,ixp,iyp
   integer(i_kind) iy,itime,itimep,j,k
-  real(r_kind) delx,rdelt,delyp,delxp
+  real(r_kind) delx,delyp,delxp
   real(r_kind) dely,delt,deltp
 
   m1=mype+ione

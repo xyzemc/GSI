@@ -14,12 +14,17 @@ subroutine genstats_gps(bwork,awork,toss_gps_sub,conv_diagsave,mype)
 !   2006-07-28  derber  - modify to use new inner loop obs data structure
 !   2006-09-20  cucurull - replace superobs factor for obs in a top (non-full) layer 
 !   2007-03-01  treadon - add array toss_gps
+!   2007-03-19  tremolet - binning of observations
 !   2007-06-21 cucurull - add conv_diagsave and mype in argument list; 
 !                         modify qc and output for diagnostic file based on toss_gps
 !                         print out diagnostic files if requested
 !                         add wgtlim and huge_single in constants module
 !   2008-02-27 cucurull - modify diagnostics output file
 !   2008-04-14 treadon  - compute super_gps within this routine
+!   2008-06-04 safford  - rm unused vars and uses
+!   2008-09-05 lueken   - merged ed's changes into q1fy09 code
+!   2008-25-08 todling  - adapt obs-binning change to GSI-May2008
+!   2009-02-05 cucurull - modify latitude range four statistics output
 !
 !   input argument list:
 !     toss_gps      - array of qc'd profile heights
@@ -37,14 +42,14 @@ subroutine genstats_gps(bwork,awork,toss_gps_sub,conv_diagsave,mype)
 !$$$
   use kinds, only: r_kind,i_kind,r_single
   use obsmod, only: gps_allhead,gps_allptr,nprof_gps,&
-       destroy_genstats_gps,gpsptr
+       destroy_genstats_gps,gpsptr,obs_diag
   use gridmod, only: nsig
-  use constants, only: tiny_r_kind,half,izero,ione,wgtlim,one,two,zero,five,&
-                       huge_single,r1000
+  use constants, only: tiny_r_kind,half,izero,ione,wgtlim,one,two,zero,five
   use qcmod, only: npres_print,ptop,pbot
   use mpimod, only: ierror,mpi_comm_world,mpi_rtype,mpi_sum,mpi_max
-  use jfunc, only: last
-  use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype
+  use jfunc, only: jiter,last
+  use gsi_4dvar, only: nobs_bins
+  use convinfo, only: nconvtype
   implicit none
 
 ! Declare local parameters
@@ -58,22 +63,29 @@ subroutine genstats_gps(bwork,awork,toss_gps_sub,conv_diagsave,mype)
 
 ! Declare local variables
   logical:: luse,muse
-  integer(i_kind):: k,itype,jsig,i,khgt,kprof,ikx,nn,j,nchar,nreal,ii
+  integer(i_kind):: k,jsig,icnt,khgt,kprof,ikx,nn,j,nchar,nreal,ii,iii
   real(r_kind):: pressure,arg,wgross,wgt,term,cg_gps,valqc,ressw2
-  real(r_kind):: scale,ress,val,ratio_errors,val2
+  real(r_kind):: ress,val,ratio_errors,val2
   real(r_kind):: exp_arg,data_ikx,data_rinc,cg_term,rat_err2,elat
   real(r_kind):: wnotgross,data_ipg,data_ier,data_ib,factor,super_gps_up,rhgt
-  real(r_kind),dimension(nsig,max(1,nprof_gps)):: super_gps_sub,super_gps
+  real(r_kind),dimension(nsig,max(1,nprof_gps),nobs_bins):: super_gps_sub,super_gps
   real(r_kind),dimension(max(1,nprof_gps)):: toss_gps
   real(r_kind),allocatable,dimension(:,:)::rdiag
   real(r_single),allocatable,dimension(:,:)::sdiag
   character(8),allocatable,dimension(:):: cdiag
   
-  real(r_kind),parameter:: r30 = 30.0_r_kind
-  real(r_kind),parameter:: seven = 7.0_r_kind
-  real(r_kind),parameter:: eight = 8.0_r_kind
+  real(r_kind),parameter:: r20 = 20.0_r_kind
+  real(r_kind),parameter:: scale = 100.0_r_kind
+  type(obs_diag), pointer :: obsptr => NULL()
+  
 
 !*******************************************************************************
+! Check to see if there are any profiles to process.  If none, return.
+  if (nprof_gps==0) then
+     if (mype==0) write(6,*)'GENSTATS_GPS:  no profiles to process (nprof_gfs=',nprof_gps,'), EXIT routine'
+     return
+  endif
+
 
 ! Reduce sub-domain specific QC'd profile height cutoff values to
 ! maximum global value for each profile
@@ -84,8 +96,9 @@ subroutine genstats_gps(bwork,awork,toss_gps_sub,conv_diagsave,mype)
 
 ! Compute superobs factor on sub-domains using global QC'd profile height
   super_gps_sub=zero
-  gps_allptr => gps_allhead
-  do while (associated(gps_allptr))
+  DO ii=1,nobs_bins
+   gps_allptr => gps_allhead(ii)%head
+   do while (associated(gps_allptr))
 
 !    Load local work variables
      ratio_errors = gps_allptr%ratio_err
@@ -94,49 +107,52 @@ subroutine genstats_gps(bwork,awork,toss_gps_sub,conv_diagsave,mype)
      khgt         = gps_allptr%loc
      rhgt         = gps_allptr%loc
      kprof        = gps_allptr%kprof
-     gpsptr       => gps_allptr%mmpoint
 
 !    Accumulate superobs factors
-     if (rhgt >=toss_gps(kprof)) then
+     if (rhgt >toss_gps(kprof)) then
         if(ratio_errors*data_ier>tiny_r_kind .and. luse) then
            k=min(max(1,khgt),nsig)
-           super_gps_sub(k,kprof)=super_gps_sub(k,kprof)+one
+           super_gps_sub(k,kprof,ii)=super_gps_sub(k,kprof,ii)+one
         endif
      endif
 
      gps_allptr => gps_allptr%llpoint
 
 ! End loop over observations
-  end do
+   end do
 
 
 ! Reduce sub-domain specifc superobs factors to global values for each profile
-  super_gps=zero
-  call mpi_allreduce(super_gps_sub,super_gps,nsig*nprof_gps,mpi_rtype,mpi_sum,&
+  super_gps(:,:,ii)=zero
+  call mpi_allreduce(super_gps_sub(:,:,ii),super_gps(:,:,ii),nsig*nprof_gps,mpi_rtype,mpi_sum,&
        mpi_comm_world,ierror)
 
+  END DO
 
 
 ! If generating diagnostic output, need to determine dimension of output arrays.
   if (conv_diagsave) then
-     i = zero
-     gps_allptr => gps_allhead
-     do while (associated(gps_allptr))
-        i=i+1
-        gps_allptr => gps_allptr%llpoint
-     end do
+     icnt = zero
+     DO ii=1,nobs_bins
+       gps_allptr => gps_allhead(ii)%head
+       do while (associated(gps_allptr))
+         icnt=icnt+1
+         gps_allptr => gps_allptr%llpoint
+       end do
+     END DO
      nreal =19
      nchar = 1
-     allocate(cdiag(i),rdiag(nreal,i),sdiag(nreal,i))
+     allocate(cdiag(icnt),rdiag(nreal,icnt),sdiag(nreal,icnt))
   endif
 
 
 
 ! Loop over data to apply final qc, superobs factors, accumulate
 ! statistics and (optionally) load diagnostic output arrays
-  i=izero
-  gps_allptr => gps_allhead
-  do while (associated(gps_allptr))
+  icnt=izero
+  DO ii=1,nobs_bins
+   gps_allptr => gps_allhead(ii)%head
+   do while (associated(gps_allptr))
 
 !    Load local work variables
      ratio_errors = gps_allptr%ratio_err
@@ -154,14 +170,17 @@ subroutine genstats_gps(bwork,awork,toss_gps_sub,conv_diagsave,mype)
      elat         = gps_allptr%rdiag(3)
      ikx          = nint(data_ikx)
      gpsptr       => gps_allptr%mmpoint
+     if(muse .and. associated(gpsptr))then
+        obsptr       => gpsptr%diags
+     endif
 
 
 !    Transfer diagnostic information to output arrays
      if(conv_diagsave) then
-        i=i+1
-        cdiag(i) = gps_allptr%cdiag
+        icnt=icnt+1
+        cdiag(icnt) = gps_allptr%cdiag
         do j=1,nreal
-           rdiag(j,i)= gps_allptr%rdiag(j)
+           rdiag(j,icnt)= gps_allptr%rdiag(j)
         enddo
      endif
 
@@ -172,24 +191,27 @@ subroutine genstats_gps(bwork,awork,toss_gps_sub,conv_diagsave,mype)
 !    term used in minimization
      super_gps_up=zero
 
-     if (super_gps(k,kprof)>tiny_r_kind) then
+     if (super_gps(k,kprof,ii)>tiny_r_kind) then
         do j=min(k+1,nsig),nsig
-          super_gps_up = max(super_gps_up,super_gps(j,kprof))
+          super_gps_up = max(super_gps_up,super_gps(j,kprof,ii))
         enddo
 
         if (super_gps_up >tiny_r_kind) then
-            factor = one / sqrt(super_gps(k,kprof))
+            factor = one / sqrt(super_gps(k,kprof,ii))
         else
-            factor = one / sqrt(max(super_gps(k-1,kprof),super_gps(k,kprof)))
+            factor = one / sqrt(max(super_gps(k-1,kprof,ii),super_gps(k,kprof,ii)))
         endif
         ratio_errors = ratio_errors * factor
         if(conv_diagsave) then
-           if(rdiag(16,i) >tiny_r_kind) rdiag(16,i)=ratio_errors*data_ier
+           if(rdiag(16,icnt) >tiny_r_kind) rdiag(16,icnt)=ratio_errors*data_ier
         endif
 
 !       Adjust error ratio for observations used in inner loop
         if (associated(gpsptr)) then
            gpsptr%raterr2 = ratio_errors **2
+           if(associated(obsptr))then
+             obsptr%wgtjo=(ratio_errors*data_ier)**2
+           end if
         endif
      endif
 
@@ -199,16 +221,16 @@ subroutine genstats_gps(bwork,awork,toss_gps_sub,conv_diagsave,mype)
 !    zero (effectively tossing the obs).
 
      rhgt = gps_allptr%loc
-     if (rhgt<toss_gps(kprof)) then
+     if (rhgt<=toss_gps(kprof)) then
         if(ratio_errors*data_ier > tiny_r_kind) then ! obs was good
             if(conv_diagsave) then
-               rdiag(10,i) = five
-               rdiag(12,i) = -one
+               rdiag(10,icnt) = five
+               rdiag(12,icnt) = -one
             endif
             if (luse) then
-               if(elat > r30) then
+               if(elat > r20) then
                   awork(22) = awork(22)+one
-               else if(elat< -r30)then
+               else if(elat< -r20)then
                   awork(23) = awork(23)+one
                else
                   awork(24) = awork(24)+one
@@ -218,6 +240,10 @@ subroutine genstats_gps(bwork,awork,toss_gps_sub,conv_diagsave,mype)
         ratio_errors = zero
         if (associated(gpsptr)) then
            gpsptr%raterr2 = ratio_errors **2
+           if(associated(obsptr))then
+              obsptr%wgtjo=zero
+              obsptr%muse(jiter)=.false.
+           end if
         endif
      endif
 
@@ -239,7 +265,7 @@ subroutine genstats_gps(bwork,awork,toss_gps_sub,conv_diagsave,mype)
            term = exp_arg
            wgt  = one
         endif
-        if(conv_diagsave) rdiag(13,i) = wgt/wgtlim
+        if(conv_diagsave) rdiag(13,icnt) = wgt/wgtlim
         valqc = -two*rat_err2*term
         
 
@@ -281,27 +307,30 @@ subroutine genstats_gps(bwork,awork,toss_gps_sub,conv_diagsave,mype)
 
 ! End loop over observations
 
-  end do
+   end do
+  END DO
 
 ! If requested, write information to diagnostic file
   if(conv_diagsave)then
-     i  = izero
-     ii = izero
-     gps_allptr => gps_allhead
-     do while (associated(gps_allptr))
-       i=i+1
+     icnt  = izero
+     iii   = izero
+     DO ii=1,nobs_bins
+      gps_allptr => gps_allhead(ii)%head
+      do while (associated(gps_allptr))
+       icnt=icnt+1
        luse = gps_allptr%luse
        if(luse)then
-          ii=ii+1
-          cdiag(ii)=cdiag(i)
+          iii=iii+1
+          cdiag(iii)=cdiag(icnt)
           do j=1,nreal
-            sdiag(j,ii)=rdiag(j,i)
+            sdiag(j,iii)=rdiag(j,icnt)
           end do
        end if
        gps_allptr => gps_allptr%llpoint
-     end do
-     write(7)'gps',nchar,nreal,ii,mype
-     write(7)cdiag(1:ii),sdiag(:,1:ii)
+      end do
+     END DO
+     write(7)'gps',nchar,nreal,iii,mype
+     write(7)cdiag(1:iii),sdiag(:,1:iii)
      deallocate(cdiag,rdiag,sdiag)
   endif
 

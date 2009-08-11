@@ -13,6 +13,7 @@ module balmod
 !   2005-01-22  parrish
 !   2005-05-24  pondeca - accommodate 2dvar only surface analysis option
 !   2005-07-15  wu - include fstat, f1 and fix l2
+!   2008-10-08  derber include routines strong_bk and strong_bk_ad
 !
 ! subroutines included:
 !   sub create_balance_vars      - create arrays for balance vars
@@ -23,7 +24,9 @@ module balmod
 !   sub prebal_reg               - load regional balance vars
 !   sub balance                  - balance routine
 !   sub tbalance                 - adjoint of balance
-!   sub locatelat_reg            - get interp vars for lat var --> regional grid 
+!   sub locatelat_reg            - get interp vars for lat var --> regional grid
+!   sub strong_bk                - apply strong balance constraint in background error matrix
+!   sub strong_bk_ad             - apply adjoint of strong balance constraint in background error matrix
 !
 ! Variable Definitions:
 !   def agvz      - projection of streamfunction onto balanced temperature
@@ -55,7 +58,6 @@ module balmod
   integer(i_kind) ke_vp
   integer(i_kind) llmin,llmax
   logical fstat
-
 
 contains
   subroutine create_balance_vars
@@ -176,7 +178,7 @@ contains
     return
   end subroutine destroy_balance_vars_reg
 
-  subroutine prebal(mype)
+  subroutine prebal(mlat)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    prebal
@@ -203,11 +205,13 @@ contains
 !   2005-04-22  treadon - change berror file to 4-byte reals
 !   2006-04-17  treadon - remove calculation of ke_vp
 !   2007-05-30  h.liu   - add coroz
+!   2008-07-10  jguo    - place read of bkgerr fields in m_berror_stats
+!   2008-12-29  todling - get mlat from dims in m_berror_stats; mype from mpimod
 !
 !   input argument list:
-!     mype     - mpi task id
 !
 !   output argument list:
+!     mlat     - number of latitudes in stats
 !
 !
 ! attributes:
@@ -216,64 +220,33 @@ contains
 !
 !$$$
     use kinds, only: r_kind,i_kind,r_single
+    use mpimod, only: mype
     use gridmod, only: istart,lat2,nlat,nlon,nsig
     use constants, only: zero
+    use m_berror_stats,only: berror_get_dims,berror_read_bal
     implicit none
     
 !   Declare passed variables
-    integer(i_kind),intent(in):: mype
+    integer(i_kind),intent(out):: mlat
 
 !   Declare local variables
-    integer(i_kind) i,j,k
+    integer(i_kind) i,j,k,msig
     integer(i_kind) mm1
-    integer(i_kind) jx,nsigstat,mlat,inerr
+    integer(i_kind) jx
     
-    real(r_single),dimension(nlat,nsig):: corz,cord,corh,corq,corq2,corc,coroz
-    real(r_single),dimension(nlat):: corp
-    real(r_single),dimension(nlat,nlon):: corsst
-    
-    real(r_single),dimension(nlat,nsig*6+1):: hwllin
-    real(r_single),dimension(nlat,nlon):: hsst
-    real(r_single),dimension(nlat,nsig*6):: vscalesin
     real(r_single),dimension(nlat,nsig,nsig):: agvin
     real(r_single),dimension(nlat,nsig) :: wgvin,bvin
     
-    real(r_kind),parameter:: eight_tenths = 0.8_r_kind
-
-    data inerr / 22 /
-
 !   Initialize local variables
     mm1=mype+1
 
-!   Open background error statistics file
-    open(inerr,file='berror_stats',form='unformatted')
-  
-!   Read header.  Ensure that vertical resolution is consistent
-!   with that specified via the user namelist
+    call berror_read_bal(agvin,bvin,wgvin,mype)
+    call berror_get_dims(msig,mlat)
+    if(msig/=nsig) then
+      write(6,*) 'prebal: levs in file inconsistent with GSI',msig,nsig
+      call stop2(101)
+    end if
 
-    read(inerr)nsigstat,mlat
-    if(mype==0) then
-       write(6,*)'PREBAL:  read error amplitudes.  mype,nsigstat,mlat =',&
-            mype,nsigstat,mlat
-    end if
-    
-    if (nsig/=nsigstat .or. nlat/=mlat) then
-       write(6,*)'PREBAL:  ***ERROR*** resolution of berror_stats ',&
-            'incompatiable with guess'
-       write(6,*)'PREBAL:  berror nsigstat,mlat=',nsigstat,mlat,&
-            ' -vs- guess nsig,nlat=',nsig,nlat
-       call stop2(73)
-    end if
-    
-!   Read background error file to get balance variables
-    rewind inerr
-    read(inerr)nsigstat,mlat,&
-         corz,cord,corh,corq,corq2,coroz,corc,corp,&
-         hwllin,vscalesin,&
-         agvin,bvin,wgvin,&
-         corsst,hsst
-    close(inerr)
-    
 !   Set ke_vp=nsig (note:  not used in global)
     ke_vp=nsig
     
@@ -302,7 +275,7 @@ contains
     return
   end subroutine prebal
   
-  subroutine prebal_reg(mype)
+  subroutine prebal_reg(mlat)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    prebal_reg  setup balance vars
@@ -325,13 +298,12 @@ contains
 !   2006-04-17  treadon - replace sigl with ges_prslavg/ges_psfcavg 
 !
 !   input argument list:
-!     mype     - pe number
 !
 !   output argument list:
+!     mlat     - number of latitude grid points
 !
 !   other important variables
 !     nsig     - number of sigma levels
-!     nsig1o   - number of sigma levels distributed in each processor
 !   agv,wgv,bv - balance correlation matrix for t,p,div
 
 ! attributes:
@@ -345,7 +317,7 @@ contains
     implicit none
 
 !   Declare passed variables
-    integer(i_kind),intent(in):: mype
+    integer(i_kind),intent(out):: mlat
 
 !   Declare local parameters
     real(r_kind),parameter:: r08 = 0.8_r_kind
@@ -355,7 +327,7 @@ contains
 !   integer(i_kind) n,m
     integer(i_kind) j
     integer(i_kind) ke,inerr
-    integer(i_kind) msig,mlat              ! stats dimensions
+    integer(i_kind) msig                   ! stats dimensions
 
     real(r_kind):: psfc08
     real(r_kind),dimension(nsig):: rlsig
@@ -435,7 +407,7 @@ contains
     return
   end subroutine prebal_reg
   
-  subroutine balance(t,p,q,st,vp)
+  subroutine balance(t,p,st,vp,fpsproj)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    balance     apply balance equation
@@ -464,6 +436,10 @@ contains
 !   2005-07-14  wu - add max bound to l2
 !   2005-11-21  derber modify to make qoption =1 work same as =2
 !   2006-01-11  kleist - add full nsig projection for surface pressure
+!   2006-10-15  gu - add back vp projection onto surface pressure
+!   2006-11-30  todling - add fpsproj to control diff projection contributions to ps  
+!   2008-06-05  safford - rm unused vars
+!   2008-12-29  todling - remove q from arg list
 !
 !   input argument list:
 !     t        - t grid values 
@@ -485,16 +461,14 @@ contains
 !
 !$$$
     use kinds, only: r_kind,i_kind
-    use constants, only: zero,one,half
-    use gridmod, only: regional,lat2,nsig,iglobal,lon1,itotsub,lon2,lat1
-    use mpimod, only: iscuv_s,ierror,mpi_comm_world,irduv_s,ircuv_s,&
-         isduv_s,isduv_g,iscuv_g,nuvlevs,irduv_g,ircuv_g,mpi_rtype
+    use constants, only: one,half
+    use gridmod, only: regional,lat2,nsig,iglobal,itotsub,lon2
     implicit none
     
 !   Declare passed variables
-    real(r_kind),dimension(lat2,lon2,nsig),intent(in):: st
     real(r_kind),dimension(lat2,lon2),intent(inout):: p
-    real(r_kind),dimension(lat2,lon2,nsig),intent(inout):: t,q,vp
+    real(r_kind),dimension(lat2,lon2,nsig),intent(inout):: t,vp,st
+    logical, intent(in) :: fpsproj
 
 !   Declare local variables
     integer(i_kind) i,j,k,l,m,l2,isize,lm
@@ -571,13 +545,24 @@ contains
 
 !      Add contribution from streamfunction and unbalanced vp
 !      to surface pressure.
-       do k=1,nsig
-          do j=1,lon2
-             do i=1,lat2
-                p(i,j)=p(i,j)+wgvz(i,k)*st(i,j,k)
+       if ( fpsproj ) then
+          do k=1,nsig
+             do j=1,lon2
+                do i=1,lat2
+                   p(i,j)=p(i,j)+wgvz(i,k)*st(i,j,k)
+                end do
              end do
           end do
-       end do
+       else
+          do j=1,lon2
+             do i=1,lat2
+                do k=1,nsig-1
+                   p(i,j)=p(i,j)+wgvz(i,k)*st(i,j,k)
+                end do
+                p(i,j)=p(i,j)+wgvz(i,nsig)*vp(i,j,1)
+             end do
+          end do
+       endif
 
 !      Add contribution from streamfunction to veloc. potential
        do k=1,nsig
@@ -602,10 +587,14 @@ contains
 !   End of REGIONAL/GLOBAL if-then block
     endif
 
+!   Strong balance constraint
+    call strong_bk(st,vp,p,t)
+
+
     return
   end subroutine balance
   
-  subroutine tbalance(t,p,q,st,vp)
+  subroutine tbalance(t,p,st,vp,fpsproj)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    tbalance    adjoint of balance
@@ -630,11 +619,14 @@ contains
 !   2005-07-15  wu - use f1 in adjoint of balance projection (st->t) when fstat=.true. Add max bound to l2
 !   2005-11-21  derber modify to make qoption =1 work same as =2
 !   2006-01-11  kleist - add full nsig projection for surface pressure
+!   2006-10-15  gu - add back vp projection onto surface pressure
+!   2006-11-30  todling - add fpsproj to control diff projection contributions to ps  
+!   2008-06-05  safford - rm unused vars
+!   2008-12-29  todling - remove q from arg list
 !
 !   input argument list:
 !     t        - t grid values from int routines 
 !     p        - p surface grid values from int routines 
-!     q        - q grid values from int routines 
 !     st       - streamfunction grid values from int routines 
 !     vp       - velocity potential grid values from int routines
 !
@@ -649,22 +641,24 @@ contains
 !
 !$$$
     use kinds,       only: r_kind,i_kind
-    use constants,   only: zero,one,half
-    use gridmod,     only: itotsub,lon1,lat1,regional,iglobal,lon2,lat2,nsig
-    use mpimod,      only: iscuv_s,ierror,mpi_comm_world,irduv_s,ircuv_s,&
-         isduv_s,isduv_g,iscuv_g,nuvlevs,irduv_g,ircuv_g,mpi_rtype
+    use constants,   only: one,half
+    use gridmod,     only: itotsub,regional,iglobal,lon2,lat2,nsig
     implicit none
 
 !   Declare passed variables
     real(r_kind),dimension(lat2,lon2),intent(inout):: p
     real(r_kind),dimension(lat2,lon2,nsig),intent(inout):: t
-    real(r_kind),dimension(lat2,lon2,nsig),intent(inout):: q,st,vp
+    real(r_kind),dimension(lat2,lon2,nsig),intent(inout):: st,vp
+    logical, intent(in) :: fpsproj
 
 !   Declare local variables
     integer(i_kind) l,m,l2,i,j,k,igrid,isize,lm
 
     real(r_kind) dl1,dl2
   
+!  Adjoint of strong balance constraint
+    call strong_bk_ad(st,vp,p,t)
+
 !   Initialize variables
     igrid=lat2*lon2
     isize=max(iglobal,itotsub)
@@ -756,13 +750,24 @@ contains
 
 !      Adjoint of streamfunction and unbalanced velocity potential
 !      contribution to surface pressure.
-       do k=1,nsig
-          do j=1,lon2
-             do i=1,lat2
-                st(i,j,k)=st(i,j,k)+wgvz(i,k)*p(i,j)
+       if ( fpsproj ) then
+          do k=1,nsig
+             do j=1,lon2
+                do i=1,lat2
+                   st(i,j,k)=st(i,j,k)+wgvz(i,k)*p(i,j)
+                end do
              end do
           end do
-       end do
+       else
+          do j=1,lon2
+             do i=1,lat2
+                do k=1,nsig-1
+                   st(i,j,k)=st(i,j,k)+wgvz(i,k)*p(i,j)
+                end do
+                vp(i,j,1)=vp(i,j,1)+wgvz(i,nsig)*p(i,j)
+             end do
+          end do
+       endif
 !   End of REGIONAL/GLOBAL if-then block
     endif
 
@@ -894,4 +899,147 @@ contains
     return
   end subroutine locatelat_reg
   
+subroutine strong_bk(st,vp,p,t)
+
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    strong_bk   apply strong balance constraint
+!   prgmmr: derber           org: np23                date: 2003-12-18
+!
+! abstract: apply strong balance constraint
+!
+!
+! program history log:
+!   2008-09-19  derber,j.
+!   2008-12-29  todling   - redefine interface
+!   2009-04-21  derber - modify interface with calctends_no
+!
+!   input argument list:
+!     st       - input control vector, stream function
+!     vp       - input control vector, velocity potential
+!     p        - input control vector, surface pressure
+!     t        - input control vector, temperature
+!
+!   output argument list:
+!     st       - output control vector, stream function
+!     vp       - output control vector, velocity potential
+!     p        - output control vector, surface pressure
+!     t        - output control vector, temperature
+!
+!
+! attributes:
+!   language: f90
+!   machine:  ibm RS/6000 SP
+!
+!$$$
+  use kinds, only: r_kind,i_kind
+  use mpimod, only: mype
+  use constants, only:  zero
+  use gridmod, only: latlon1n,latlon11,nnnn1o
+  use mod_vtrans,only: nvmodes_keep
+  use mod_strong,only: nstrong
+  implicit none
+
+! Declare passed variables
+  real(r_kind),dimension(latlon1n),intent(inout):: st,vp
+  real(r_kind),dimension(latlon11),intent(inout):: p
+  real(r_kind),dimension(latlon1n),intent(inout):: t
+
+  logical:: fullfield
+  integer(i_kind) istrong
+  real(r_kind),dimension(latlon1n)::u_t,v_t,t_t
+  real(r_kind),dimension(latlon11):: ps_t
+
+!******************************************************************************  
+  if(nvmodes_keep <= 0 .or. nstrong <= 0) return
+
+! compute derivatives
+
+  fullfield=.false.
+  do istrong=1,nstrong
+ 
+     call calctends_no_tl(st,vp,t,p,mype,u_t,v_t,t_t,ps_t)
+
+     call strong_bal_correction(u_t,v_t,t_t, &
+          ps_t,mype,st,vp,t,p,.false.,fullfield,.true.)
+
+   end do
+
+  return
+end subroutine strong_bk
+
+subroutine strong_bk_ad(st,vp,p,t)
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    strong_bk_ad   apply adjoint of strong balance constraint
+!   prgmmr: derber           org: np23                date: 2003-12-18
+!
+! abstract: apply adjoint of strong balance constraint
+!
+!
+! program history log:
+!   2008-09-19  derber,j.
+!   2008-12-29  todling   - redefine interface
+!   2009-04-21  derber - modify interface with calctends_no
+!
+!   input argument list:
+!     st       - input control vector, stream function
+!     vp       - input control vector, velocity potential
+!     p        - input control vector, surface pressure
+!     t        - input control vector, temperature
+!
+!   output argument list:
+!     st       - output control vector, stream function
+!     vp       - output control vector, velocity potential
+!     p        - output control vector, surface pressure
+!     t        - output control vector, temperature
+!
+!
+! attributes:
+!   language: f90
+!   machine:  ibm RS/6000 SP
+!
+!$$$
+  use kinds, only: r_kind,i_kind
+  use mpimod, only: mype
+  use constants, only: zero
+  use gridmod, only: latlon1n,latlon11,nnnn1o,latlon1n1
+  use mod_vtrans,only: nvmodes_keep
+  use mod_strong,only: nstrong
+  implicit none
+  
+! Declare passed variables  
+  real(r_kind),dimension(latlon1n),intent(inout):: st,vp
+  real(r_kind),dimension(latlon11),intent(inout):: p
+  real(r_kind),dimension(latlon1n),intent(inout):: t
+
+! Declare local variables  	
+  integer(i_kind) i,k
+  real(r_kind),dimension(latlon1n):: u_t,v_t,t_t
+  real(r_kind),dimension(latlon11):: ps_t
+  integer(i_kind) istrong
+
+!******************************************************************************
+
+  if(nvmodes_keep <= 0 .or. nstrong <= 0) return
+     
+  do istrong=1,nstrong
+! Zero gradient arrays
+    do i=1,latlon1n
+       u_t(i)=zero
+       v_t(i)=zero
+       t_t(i)=zero
+    end do
+    do i=1,latlon11
+       ps_t(i)=zero
+    end do
+
+    call strong_bal_correction_ad(u_t,v_t,t_t,ps_t,mype,st,vp,t,p)
+
+    call calctends_no_ad(st,vp,t,p,mype,u_t,v_t,t_t,ps_t)  
+!
+  end do
+
+  return
+  end subroutine strong_bk_ad
 end module balmod

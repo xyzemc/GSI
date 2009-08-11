@@ -1,4 +1,29 @@
-subroutine intsrw(ru,rv,su,sv,dru,drv,dsu,dsv)
+module intsrwmod
+
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    intsrwmod    module for intsrw and its tangent linear intsrw_tl
+!
+! abstract: module for intsrw and its tangent linear intsrw_tl
+!
+! program history log:
+!   2005-05-12  Yanqiu zhu - wrap intsrw and its tangent linear intsrw_tl into one module
+!   2005-11-16  Derber - remove interfaces
+!   2008-11-26  Todling - remove intsrw_tl; add interface back
+!
+
+implicit none
+
+PRIVATE
+PUBLIC intsrw
+
+interface intsrw; module procedure &
+          intsrw_
+end interface
+
+contains
+
+subroutine intsrw_(srwhead,ru,rv,su,sv)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    intsrw      apply nonlin qc operator for radar superob winds
@@ -17,18 +42,19 @@ subroutine intsrw(ru,rv,su,sv,dru,drv,dsu,dsv)
 !   2006-07-28  derber  - modify to use new inner loop obs data structure
 !                       - unify NL qc
 !   2007-02-15  rancic  - add foto
+!   2007-03-19  tremolet - binning of observations
+!   2007-06-05  tremolet - use observation diagnostics structure
+!   2007-07-09  tremolet - observation sensitivity
+!   2008-01-04  tremolet - Don't apply H^T if l_do_adjoint is false
+!   2008-11-28  todling  - turn FOTO optional; changed ptr%time handle
 !
 !   input argument list:
 !     su       - u increment in grid space
 !     sv       - v increment in grid space
-!     dsu      - time derivative of u increment in grid space
-!     dsv      - time derivative of v increment in grid space
 !
 !   output argument list:
 !     ru       - u results from observation operator 
 !     rv       - v results from observation operator 
-!     dru      - time derivative of u results from observation operator 
-!     drv      - time derivative of v results from observation operator 
 !
 ! attributes:
 !   language: f90
@@ -36,22 +62,26 @@ subroutine intsrw(ru,rv,su,sv,dru,drv,dsu,dsv)
 !
 !$$$
   use kinds, only: r_kind,i_kind
-  use constants, only: half,one,two,zero,tiny_r_kind,cg_term
-  use obsmod, only: srwhead,srwptr
-  use qcmod, only: nlnqc_iter
+  use constants, only: half,one,two,zero,tiny_r_kind,cg_term,r3600
+  use obsmod, only: srw_ob_type,lsaveobsens,l_do_adjoint
+  use qcmod, only: nlnqc_iter,varqc_iter
   use gridmod, only: latlon1n
+  use jfunc, only: jiter,l_foto,xhat_dt,dhat_dt
   implicit none
 
 ! Declare passed variables
-  real(r_kind),dimension(latlon1n),intent(in):: su,sv,dsu,dsv
-  real(r_kind),dimension(latlon1n),intent(inout):: ru,rv,dru,drv
+  type(srw_ob_type),pointer,intent(in):: srwhead
+  real(r_kind),dimension(latlon1n),intent(in):: su,sv
+  real(r_kind),dimension(latlon1n),intent(inout):: ru,rv
 
 ! Declare local variables  
-  integer(i_kind) i,i1,i2,i3,i4,i5,i6,i7,i8
+  integer(i_kind) i1,i2,i3,i4,i5,i6,i7,i8
 ! real(r_kind) penalty
   real(r_kind) valu,valv,w1,w2,w3,w4,w5,w6,w7,w8,valsrw1,valsrw2
   real(r_kind) bigu11,bigu21,bigu12,bigu22,time_srw
-  real(r_kind) cg_srw,p0,gradsrw1,gradsrw2,wnotgross,wgross,term
+  real(r_kind) cg_srw,p0,gradsrw1,gradsrw2,wnotgross,wgross,term,pg_srw
+  type(srw_ob_type), pointer :: srwptr
+
 
   srwptr => srwhead
   do while (associated(srwptr))
@@ -77,32 +107,62 @@ subroutine intsrw(ru,rv,su,sv,dru,drv,dsu,dsv)
      bigu21=srwptr%rsrw(2)
      bigu12=srwptr%rsrw(3)
      bigu22=srwptr%rsrw(4)
-     time_srw=srwptr%time
      valu=w1* su(i1)+w2* su(i2)+w3* su(i3)+w4* su(i4)+&
-          w5* su(i5)+w6* su(i6)+w7* su(i7)+w8* su(i8)+&
-         (w1*dsu(i1)+w2*dsu(i2)+w3*dsu(i3)+w4*dsu(i4)+&
-          w5*dsu(i5)+w6*dsu(i6)+w7*dsu(i7)+w8*dsu(i8))*time_srw
+          w5* su(i5)+w6* su(i6)+w7* su(i7)+w8* su(i8)
      valv=w1* sv(i1)+w2* sv(i2)+w3* sv(i3)+w4* sv(i4)+&
-          w5* sv(i5)+w6* sv(i6)+w7* sv(i7)+w8* sv(i8)+&
-         (w1*dsv(i1)+w2*dsv(i2)+w3*dsv(i3)+w4*dsv(i4)+&
-          w5*dsv(i5)+w6*dsv(i6)+w7*dsv(i7)+w8*dsv(i8))*time_srw
-     valsrw1=bigu11*valu+bigu12*valv-srwptr%res1
-     valsrw2=bigu21*valu+bigu22*valv-srwptr%res2
-
-!    gradient of nonlinear operator
-     if (nlnqc_iter .and. srwptr%pg > tiny_r_kind .and.  &
-                          srwptr%b  > tiny_r_kind) then
-        cg_srw=cg_term/srwptr%b
-        wnotgross= one-srwptr%pg
-        wgross = srwptr%pg*cg_srw/wnotgross
-        p0   = wgross/(wgross+exp(-half*srwptr%err2*(valsrw1**2+valsrw2**2)))
-        term = (one-p0)
-        valsrw1=valsrw1*term
-        valsrw2=valsrw2*term
+          w5* sv(i5)+w6* sv(i6)+w7* sv(i7)+w8* sv(i8)
+     if ( l_foto ) then
+       time_srw=srwptr%time*r3600
+       valu=valu+&
+         (w1*xhat_dt%u(i1)+w2*xhat_dt%u(i2)+ &
+          w3*xhat_dt%u(i3)+w4*xhat_dt%u(i4)+ &
+          w5*xhat_dt%u(i5)+w6*xhat_dt%u(i6)+ &
+          w7*xhat_dt%u(i7)+w8*xhat_dt%u(i8))*time_srw
+       valv=valv+&
+         (w1*xhat_dt%v(i1)+w2*xhat_dt%v(i2)+ &
+          w3*xhat_dt%v(i3)+w4*xhat_dt%v(i4)+ &
+          w5*xhat_dt%v(i5)+w6*xhat_dt%v(i6)+ &
+          w7*xhat_dt%v(i7)+w8*xhat_dt%v(i8))*time_srw
      endif
 
-     gradsrw1 = valsrw1*srwptr%raterr2*srwptr%err2
-     gradsrw2 = valsrw2*srwptr%raterr2*srwptr%err2
+     valsrw1=bigu11*valu+bigu12*valv
+     valsrw2=bigu21*valu+bigu22*valv
+
+     if (lsaveobsens) then
+       srwptr%diagu%obssen(jiter) = valsrw1*srwptr%raterr2*srwptr%err2
+       srwptr%diagv%obssen(jiter) = valsrw2*srwptr%raterr2*srwptr%err2
+     else
+       if (srwptr%luse) then
+         srwptr%diagu%tldepart(jiter)=valsrw1
+         srwptr%diagv%tldepart(jiter)=valsrw2
+       endif
+     endif
+
+    if (l_do_adjoint) then
+     if (lsaveobsens) then
+       gradsrw1 = srwptr%diagu%obssen(jiter)
+       gradsrw2 = srwptr%diagv%obssen(jiter)
+
+     else
+       valsrw1=valsrw1-srwptr%res1
+       valsrw2=valsrw2-srwptr%res2
+
+!      gradient of nonlinear operator
+       if (nlnqc_iter .and. srwptr%pg > tiny_r_kind .and.  &
+                            srwptr%b  > tiny_r_kind) then
+          pg_srw=srwptr%pg*varqc_iter
+          cg_srw=cg_term/srwptr%b
+          wnotgross= one-pg_srw
+          wgross = pg_srw*cg_srw/wnotgross
+          p0   = wgross/(wgross+exp(-half*srwptr%err2*(valsrw1**2+valsrw2**2)))
+          term = (one-p0)
+          valsrw1=valsrw1*term
+          valsrw2=valsrw2*term
+       endif
+
+       gradsrw1 = valsrw1*srwptr%raterr2*srwptr%err2
+       gradsrw2 = valsrw2*srwptr%raterr2*srwptr%err2
+     endif
 
      valu=bigu11*gradsrw1+bigu21*gradsrw2
      valv=bigu12*gradsrw1+bigu22*gradsrw2
@@ -127,25 +187,30 @@ subroutine intsrw(ru,rv,su,sv,dru,drv,dsu,dsv)
 
      valu=valu*time_srw
      valv=valv*time_srw
-     dru(i1)=dru(i1)+w1*valu
-     dru(i2)=dru(i2)+w2*valu
-     dru(i3)=dru(i3)+w3*valu
-     dru(i4)=dru(i4)+w4*valu
-     dru(i5)=dru(i5)+w5*valu
-     dru(i6)=dru(i6)+w6*valu
-     dru(i7)=dru(i7)+w7*valu
-     dru(i8)=dru(i8)+w8*valu
-     drv(i1)=drv(i1)+w1*valv
-     drv(i2)=drv(i2)+w2*valv
-     drv(i3)=drv(i3)+w3*valv
-     drv(i4)=drv(i4)+w4*valv
-     drv(i5)=drv(i5)+w5*valv
-     drv(i6)=drv(i6)+w6*valv
-     drv(i7)=drv(i7)+w7*valv
-     drv(i8)=drv(i8)+w8*valv
+     if ( l_foto ) then
+       dhat_dt%u(i1)=dhat_dt%u(i1)+w1*valu
+       dhat_dt%u(i2)=dhat_dt%u(i2)+w2*valu
+       dhat_dt%u(i3)=dhat_dt%u(i3)+w3*valu
+       dhat_dt%u(i4)=dhat_dt%u(i4)+w4*valu
+       dhat_dt%u(i5)=dhat_dt%u(i5)+w5*valu
+       dhat_dt%u(i6)=dhat_dt%u(i6)+w6*valu
+       dhat_dt%u(i7)=dhat_dt%u(i7)+w7*valu
+       dhat_dt%u(i8)=dhat_dt%u(i8)+w8*valu
+       dhat_dt%v(i1)=dhat_dt%v(i1)+w1*valv
+       dhat_dt%v(i2)=dhat_dt%v(i2)+w2*valv
+       dhat_dt%v(i3)=dhat_dt%v(i3)+w3*valv
+       dhat_dt%v(i4)=dhat_dt%v(i4)+w4*valv
+       dhat_dt%v(i5)=dhat_dt%v(i5)+w5*valv
+       dhat_dt%v(i6)=dhat_dt%v(i6)+w6*valv
+       dhat_dt%v(i7)=dhat_dt%v(i7)+w7*valv
+       dhat_dt%v(i8)=dhat_dt%v(i8)+w8*valv
+     endif
+    endif
 
      srwptr => srwptr%llpoint
 
   end do
   return
-end subroutine intsrw
+end subroutine intsrw_
+
+end module intsrwmod

@@ -29,7 +29,8 @@
 ! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind,i_kind
   implicit none
 
@@ -92,7 +93,8 @@
 ! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind,i_kind
   implicit none
 
@@ -122,6 +124,7 @@
 
   end subroutine mp_tydsphdp
 
+
   subroutine mp_ymulbv(a,v1,v2, n1y,n2y,nbh1,nbh2,na)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -133,6 +136,7 @@
 ! program history log:
 !   1994-05-12  parrish,d. elimanate memory bank conflicts
 !   2004-07-27  treadon - add only on use declarations; add intent in/out
+!   2008-05-01  safford - rm unused vars
 !
 !   input argument list:
 !     a      - matrix
@@ -152,7 +156,7 @@
 ! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp
-!$$$
+!$$$ end documentation block
 
   use kinds, only: r_kind,i_kind
   use constants, only: zero
@@ -165,8 +169,7 @@
   real(r_kind),dimension(n1y),intent(out):: v2
 
 ! Declare local variables
-  integer(i_kind) iy,jy,jiy
-  real(r_kind) aij
+  integer(i_kind) iy,jiy
 
      do iy=1,n1y
         v2(iy)=zero
@@ -178,6 +181,7 @@
      end do
 
   end subroutine mp_ymulbv
+
 
   subroutine mp_ybacbv(a,v,ny,nbh1,nbh2,na)
 !$$$  subprogram documentation block
@@ -191,6 +195,7 @@
 ! program history log:
 !   1994-05-12  parrish,d. elimanate memory bank conflicts
 !   2004-07-27  treadon - add intent in/out
+!   2008-05-01  safford - rm unused vars
 !
 !   input argument list:
 !     v      - right-hand-side vectors
@@ -210,7 +215,7 @@
 ! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp
-!$$$
+!$$$ end documentation block
 
   use kinds, only: r_kind,i_kind
   implicit none
@@ -222,7 +227,6 @@
 
 ! Declare local variables
   integer(i_kind) jy,iy
-  real(r_kind) aij
 
      do jy=1,ny
         do iy=jy+1,min(ny,jy+nbh1)
@@ -238,6 +242,7 @@
      
   end subroutine mp_ybacbv
 
+
   subroutine mp_ybacvb(v,a,ny,nbh1,nbh2,na)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -250,6 +255,7 @@
 ! program history log:
 !   1994-05-12  parrish,d. elimanate memory bank conflicts
 !   2004-07-27  treadon - add intent in/out
+!   2008-05-01  safford - rm unused vars
 !
 !   input argument list:
 !     v      - right-hand-side vectors
@@ -267,7 +273,7 @@
 ! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp
-!$$$
+!$$$ end documentation block
 
   use kinds, only: r_kind,i_kind
   implicit none
@@ -279,7 +285,6 @@
 
 ! Declare local variables  
   integer(i_kind) iy,jy
-  real(r_kind) aij
 
      do iy=1,ny
         do jy=iy+1,min(ny,iy+nbh2)
@@ -295,6 +300,7 @@
      enddo
 
   end subroutine mp_ybacvb
+
 
   subroutine mp_ymulvb(v1,a,v2,n1y,n2y,nbh1,nbh2,na)
 !$$$  subprogram documentation block
@@ -323,7 +329,7 @@
 ! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp
-!$$$
+!$$$ end documentation block
 
   use kinds, only: r_kind,i_kind
   use constants, only: zero
@@ -352,6 +358,7 @@
      enddo
 
   end subroutine mp_ymulvb
+
 
   subroutine mp_xdcirdp(p,q,aco1,bco1,aco2,bco2,nx,noq,nxh)
 !$$$  subprogram documentation block
@@ -386,7 +393,8 @@
 ! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind,i_kind
   implicit none
 
@@ -425,6 +433,7 @@
   return
   end subroutine mp_xdcirdp
 
+
   subroutine mp_xmulbv(a,v1,v2,n1x,n2x,nbh1,nbh2,na,nv1,nv2)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -455,7 +464,8 @@
 ! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind,i_kind
   use constants, only: zero
   implicit none
@@ -481,6 +491,7 @@
   return
   end subroutine mp_xmulbv
 
+
   subroutine mp_xbacbv(a,v,nx,nbh1,nbh2,na,nv)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -493,6 +504,7 @@
 ! program history log:
 !   1994-05-12  parrish,d. elimanate memory bank conflicts
 !   2004-07-27  treadon - add intent in/out
+!   2008-05-01  safford - rm unused vars
 !
 !   input argument list:
 !     a      - encodes the (l)*(d**-1)*(u) factorization of the linear-system
@@ -511,7 +523,8 @@
 ! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp
-!$$$
+!$$$ end documentation block
+
   use kinds, only: r_kind,i_kind
   implicit none
 
@@ -522,7 +535,6 @@
 
 ! Declare local variables
   integer(i_kind) jx,ix,ix1
-  real(r_kind) aij
 
   do jx=1,nx
      do ix=jx+1,min(nx,jx+nbh1)

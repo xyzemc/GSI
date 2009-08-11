@@ -13,11 +13,13 @@ module converr
 !                                     processor can have the new error information 
 !
 ! Subroutines Included:
-!   sub converr_read   - allocate arrays for and read in conventional error table 
-!   sub converr_destroy - destroy conventional error arrays
+!   sub converr_read      - allocate arrays for and read in conventional error table 
+!   sub converr_destroy   - destroy conventional error arrays
+!
 ! Variable Definitions:
-! def etabl             -  the array to hold the error table
-! def ptabl             -  the array to have vertical pressure values
+!   def etabl             -  the array to hold the error table
+!   def ptabl             -  the array to have vertical pressure values
+!
 ! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP
@@ -34,16 +36,28 @@ use obsmod, only : oberrflg
 
 contains
 
+
   subroutine converr_read(mype)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    convinfo_err      read conventional information file
+!
 !     prgmmr:    su    org: np2                date: 2007-03-15
 !
 ! abstract:  This routine reads the conventional error table file
-
-
-  
+!
+! program history log:
+!   2008-06-04  safford -- add subprogram doc block
+!
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
      allocate(etabl(300,33,6))
 
@@ -84,6 +98,8 @@ contains
 
      return
   end subroutine converr_read
+
+
 subroutine converr_destroy
 !$$$  subprogram documentation block
 !                .      .    .                                       .

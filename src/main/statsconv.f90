@@ -1,5 +1,5 @@
 subroutine statsconv(mype,&
-     i_ps,i_uv,i_srw,i_t,i_q,i_pw,i_rw,i_dw,i_gps,i_sst, &
+     i_ps,i_uv,i_srw,i_t,i_q,i_pw,i_rw,i_dw,i_gps,i_sst,i_tcp,i_lag, &
      bwork,awork,ndata)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -30,6 +30,9 @@ subroutine statsconv(mype,&
 !   2006-02-03  derber  - modify for new obs control and to clean up output
 !   2006-02-24  derber  - modify to take advantage of convinfo module
 !   2006-04-02  derber  - modify to eliminate dvast and move ob type printing to dtast
+!   2008-04-11  safford - rm unused uses
+!   2009-02-02  kleist  - add synthetic tc-mslp
+!   2009-03-05  meunier - add lagrangean data
 !
 !   input argument list:
 !     mype     - mpi task number
@@ -43,6 +46,8 @@ subroutine statsconv(mype,&
 !     i_dw     - index in awork array holding doppler lidar winds info
 !     i_gps    - index in awork array holding gps info
 !     i_sst    - index in awork array holding sst info
+!     i_tcp    - index in awork array holding tcps info
+!     i_lag    - index in awork array holding lag info
 !     bwork    - array containing information for statistics
 !     awork    - array containing information for data counts and gross checks
 !     ndata(*,1)- number of profiles retained for further processing
@@ -59,9 +64,9 @@ subroutine statsconv(mype,&
   use kinds, only: r_kind,i_kind
   use constants, only: zero,three,five,izero
   use obsmod, only: iout_sst,iout_pw,iout_t,iout_rw,iout_dw,&
-       iout_srw,iout_uv,iout_gps,iout_ps,iout_q,&
+       iout_srw,iout_uv,iout_gps,iout_ps,iout_q,iout_tcp,iout_lag,&
        mype_dw,mype_rw,mype_srw,mype_sst,mype_gps,mype_uv,mype_ps,&
-       mype_t,mype_pw,mype_q,ndat,dtype,ditype
+       mype_t,mype_pw,mype_q,mype_tcp,ndat,dtype,mype_lag
   use qcmod, only: npres_print,ptop,pbot,ptopq,pbotq
   use jfunc, only: first,jiter
   use gridmod, only: nsig
@@ -70,8 +75,8 @@ subroutine statsconv(mype,&
 
 ! Declare passed variables
   integer(i_kind),intent(in):: mype,i_ps,i_uv,&
-       i_srw,i_t,i_q,i_pw,i_rw,i_dw,i_gps,i_sst
-  real(r_kind),dimension(7*nsig+100,10),intent(in)::awork
+       i_srw,i_t,i_q,i_pw,i_rw,i_dw,i_gps,i_sst,i_tcp,i_lag
+  real(r_kind),dimension(7*nsig+100,13),intent(in)::awork
   real(r_kind),dimension(npres_print,nconvtype,5,3),intent(in):: bwork
   integer(i_kind),dimension(ndat,3),intent(in):: ndata
 
@@ -96,7 +101,7 @@ subroutine statsconv(mype,&
 !*********************************************************************************
 ! Initialize constants and variables.
 
-  ptopall(1)=zero; pbotall(1)=2000.0
+  ptopall(1)=zero; pbotall(1)=2000.0_r_kind
   
 
 ! Generate summary statistics as a function of observation type.  
@@ -677,6 +682,100 @@ subroutine statsconv(mype,&
      
      close(iout_rw)
   end if
+
+  if(mype==mype_tcp) then
+     if(first)then
+        open(iout_tcp)
+     else
+        open(iout_tcp,position='append')
+     end if
+
+     nump=nint(awork(5,i_tcp))
+     pw=zero ; pw3=zero
+     nread=0
+     nkeep=0
+     do i=1,ndat
+       if(dtype(i)== 'tcp')then
+         nread=nread+ndata(i,2)
+         nkeep=nkeep+ndata(i,3)
+       end if
+     end do
+     if(nkeep > izero)then
+      mesage='current fit of surface pressure data, ranges in mb$'
+      do j=1,nconvtype
+        pflag(j)=trim(ioctype(j)) == 'tcp'
+      end do
+      call dtast(bwork,1,pbotall,ptopall,mesage,jiter,iout_tcp,pflag)
+
+      numgross=nint(awork(6,i_tcp))
+      numfailqc=nint(awork(21,i_tcp))
+      write(iout_tcp,925) 'psfc',numgross,numfailqc
+
+      if(nump > izero)then
+       pw=awork(4,i_tcp)/float(nump)
+       pw3=awork(22,i_tcp)/float(nump)
+      end if
+     end if
+
+     write(iout_tcp,950) 'psfc',jiter,nread,nkeep,nump
+     write(iout_tcp,951) 'psfc',awork(4,i_tcp),awork(22,i_tcp),pw,pw3
+
+     close(iout_tcp)
+  end if
+
+ ! Summary report for lagrangian
+  if (mype==mype_lag)then
+     if(first)then
+        open(iout_lag)
+     else
+        open(iout_lag,position='append')
+     end if
+
+     tmplty=zero; tqcplty=zero ; ntot=0
+     tt=zero ; qctt=zero
+     nread=0
+     nkeep=0
+     do i=1,ndat
+       if(dtype(i)== 'lag')then
+         nread=nread+ndata(i,2)
+         nkeep=nkeep+ndata(i,3)
+       end if
+     end do
+     if(nkeep > izero)then
+      mesage='current fit of lagangian data, ranges in m $'
+      do j=1,nconvtype
+        pflag(j)=trim(ioctype(j)) == 'lag'
+      end do
+      call dtast(bwork,npres_print,pbot,ptop,mesage,jiter,iout_lag,pflag)
+      do k=1,nsig
+        num(k)=nint(awork(6*nsig+k+100,i_lag))
+        rat=zero ; rat3=zero
+        if(num(k) > 0) then
+            rat=awork(4*nsig+k+100,i_lag)/float(num(k))
+            rat3=awork(3*nsig+k+100,i_lag)/float(num(k))
+        end if
+        ntot=ntot+num(k); tmplty=tmplty+awork(4*nsig+k+100,i_lag)
+        tqcplty=tqcplty+awork(3*nsig+k+100,i_lag)
+        write(iout_lag,240) 'lag',num(k),k,awork(4*nsig+k+100,i_lag), &
+                                       awork(3*nsig+k+100,i_lag),rat,rat3
+      end do
+      numgross=nint(awork(4,i_lag))
+      numfailqc=nint(awork(21,i_lag))
+      write(iout_lag,925) 'lag',numgross,numfailqc
+      ! numlow      = nint(awork(2,i_t))
+      ! numhgh      = nint(awork(3,i_t))
+      ! write(iout_lag,900) 't',numhgh,numlow
+      tt=tmplty/ntot
+      qctt=tqcplty/ntot
+     end if
+
+     write(iout_lag,950) 'lag',jiter,nread,nkeep,ntot
+     write(iout_lag,951) 'lag',tmplty,tqcplty,tt,qctt
+
+     close(iout_lag)
+  endif
+
+ 
 
 
 ! Format statements used above

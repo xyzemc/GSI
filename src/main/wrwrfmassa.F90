@@ -25,6 +25,8 @@ subroutine wrwrfmassa_binary(mype)
 !   2007-03-13  derber - remove unused qsinv2 from jfunc use list
 !   2007-04-12  parrish - add modifications to allow any combination of ikj or ijk
 !                          grid ordering for input 3D fields
+!   2008-03-31  safford - rm unused uses
+!   2008-12-05  todling - adjustment for dsfct time dimension addition
 !
 !   input argument list:
 !     mype     - pe number
@@ -38,17 +40,15 @@ subroutine wrwrfmassa_binary(mype)
 !
 !$$$
   use kinds, only: r_kind,r_single,i_long,i_llong,i_kind
-  use mpimod, only: mpi_byte,mpi_integer,mpi_integer4,mpi_real4,mpi_comm_world,npe,ierror, &
-       mpi_offset_kind,mpi_seek_set,mpi_info_null,mpi_mode_rdwr,mpi_status_size
-  use jfunc, only: qsatg,jiter,jiterstart,qgues
-  use guess_grids, only: ges_z,ges_ps,ges_tv,ges_q,ges_cwmr,&
-       ges_u,ges_v,&
-       fact10,soil_type,veg_frac,veg_type,dsfct,sno,soil_temp,soil_moi,&
-       isli,ntguessfc,ntguessig,nfldsig,ifilesig,nfldsig,ges_tsen
+  use mpimod, only: mpi_byte,mpi_integer4,mpi_real4,mpi_comm_world,npe,ierror, &
+       mpi_offset_kind,mpi_info_null,mpi_mode_rdwr,mpi_status_size
+  use guess_grids, only: ges_ps,ges_q, ges_u,ges_v,&
+       sfct,sno,dsfct,&
+       isli,ntguessfc,ntguessig,ifilesig,ges_tsen
   use gridmod, only: lon1,lat1,nlat_regional,nlon_regional,&
        nsig,eta1_ll,pt_ll,itotsub,iglobal,update_regsfc,lat2,lon2,&
        aeta1_ll
-  use constants, only: zero,one,grav,fv,zero_single,rd_over_cp_mass
+  use constants, only: one,zero_single,rd_over_cp_mass
   use gsi_io, only: lendian_in
 
   implicit none
@@ -90,7 +90,7 @@ subroutine wrwrfmassa_binary(mype)
   integer(i_kind) iskip,ksize,jextra,nextra
   integer(i_kind) status(mpi_status_size)
   integer(i_kind) request
-  integer(i_kind) jbegin(0:npe),jend(0:npe-1)
+  integer(i_kind) jbegin(0:npe),jend(0:npe-1),jend2(0:npe-1)
   integer(i_kind) kbegin(0:npe),kend(0:npe-1)
   integer(i_long),allocatable:: ibuf(:,:)
   integer(i_long),allocatable:: jbuf(:,:,:)
@@ -284,8 +284,8 @@ subroutine wrwrfmassa_binary(mype)
        write(6,*)' kbegin=',kbegin
        write(6,*)' kend= ',kend
   end if
-  num_j_groups=(jm+1)/npe
-  jextra=(jm+1)-num_j_groups*npe
+  num_j_groups=jm/npe
+  jextra=jm-num_j_groups*npe
   jbegin(0)=1
   if(jextra > 0) then
      do j=1,jextra
@@ -296,7 +296,7 @@ subroutine wrwrfmassa_binary(mype)
      jbegin(j)=jbegin(j-1)+num_j_groups
   end do
   do j=0,npe-1
-   jend(j)=jbegin(j+1)-1
+   jend(j)=min(jbegin(j+1)-1,jm)
   end do
   if(mype == 0) then
        write(6,*)' jbegin=',jbegin
@@ -339,10 +339,9 @@ subroutine wrwrfmassa_binary(mype)
 
 
 !          Convert specific humidity to mixing ratio
-           ges_q(jp1,ip1,k,it) = ges_q(jp1,ip1,k,it)/(one-ges_q(jp1,ip1,k,it))
-           all_loc(j,i,kq)=ges_q(jp1,ip1,k,it)
+           all_loc(j,i,kq)= ges_q(jp1,ip1,k,it)/(one-ges_q(jp1,ip1,k,it))
 
-           q_integral(jp1,ip1)=q_integral(jp1,ip1)+deltasigma*ges_q(jp1,ip1,k,it)
+           q_integral(jp1,ip1)=q_integral(jp1,ip1)+deltasigma*ges_q(jp1,ip1,k,it)/(one-ges_q(jp1,ip1,k,it))
 
         end do
      end do
@@ -364,8 +363,8 @@ subroutine wrwrfmassa_binary(mype)
         ip1=i+1
         do j=1,lat1
            jp1=j+1
-           all_loc(j,i,i_sst)=dsfct(jp1,ip1)
-           all_loc(j,i,i_tsk)=dsfct(jp1,ip1)
+           all_loc(j,i,i_sst)=dsfct(jp1,ip1,ntguessfc)
+           all_loc(j,i,i_tsk)=dsfct(jp1,ip1,ntguessfc)
         end do
      end do
   end if
@@ -387,7 +386,6 @@ subroutine wrwrfmassa_binary(mype)
     allocate(jbuf(im,lm,jbegin(mype):min(jend(mype),jm)))
     this_offset=offset(i_t)+(jbegin(mype)-1)*4*im*lm
     this_length=(jend(mype)-jbegin(mype)+1)*im*lm
-    if(mype.eq.npe-1) this_length=this_length-im*lm
     call mpi_file_read_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length,mpi_integer4,status,ierror)
     call transfer_jbuf2ibuf(jbuf,jbegin(mype),jend(mype),ibuf,kbegin(mype),kend(mype), &
                        jbegin,jend,kbegin,kend,mype,npe,im,jm,lm,im+1,jm+1,i_t,i_t+lm-1)
@@ -399,7 +397,6 @@ subroutine wrwrfmassa_binary(mype)
     allocate(jbuf(im,lm,jbegin(mype):min(jend(mype),jm)))
     this_offset=offset(i_q)+(jbegin(mype)-1)*4*im*lm
     this_length=(jend(mype)-jbegin(mype)+1)*im*lm
-    if(mype.eq.npe-1) this_length=this_length-im*lm
     call mpi_file_read_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length,mpi_integer4,status,ierror)
     call transfer_jbuf2ibuf(jbuf,jbegin(mype),jend(mype),ibuf,kbegin(mype),kend(mype), &
                        jbegin,jend,kbegin,kend,mype,npe,im,jm,lm,im+1,jm+1,i_q,i_q+lm-1)
@@ -411,7 +408,6 @@ subroutine wrwrfmassa_binary(mype)
     allocate(jbuf(im+1,lm,jbegin(mype):min(jend(mype),jm)))
     this_offset=offset(i_u)+(jbegin(mype)-1)*4*(im+1)*lm
     this_length=(jend(mype)-jbegin(mype)+1)*(im+1)*lm
-    if(mype.eq.npe-1) this_length=this_length-(im+1)*lm
     call mpi_file_read_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length,mpi_integer4,status,ierror)
     call transfer_jbuf2ibuf(jbuf,jbegin(mype),jend(mype),ibuf,kbegin(mype),kend(mype), &
                        jbegin,jend,kbegin,kend,mype,npe,im+1,jm,lm,im+1,jm+1,i_u,i_u+lm-1)
@@ -421,12 +417,14 @@ subroutine wrwrfmassa_binary(mype)
 
 !                                    read v
   if(kord(i_v).ne.1) then
-    allocate(jbuf(im,lm,jbegin(mype):jend(mype)))
+    jend2=jend
+    jend2(npe-1)=jend2(npe-1)+1
+    allocate(jbuf(im,lm,jbegin(mype):jend2(mype)))
     this_offset=offset(i_v)+(jbegin(mype)-1)*4*im*lm
-    this_length=(jend(mype)-jbegin(mype)+1)*im*lm
+    this_length=(jend2(mype)-jbegin(mype)+1)*im*lm
     call mpi_file_read_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length,mpi_integer4,status,ierror)
-    call transfer_jbuf2ibuf(jbuf,jbegin(mype),jend(mype),ibuf,kbegin(mype),kend(mype), &
-                       jbegin,jend,kbegin,kend,mype,npe,im,jm+1,lm,im+1,jm+1,i_v,i_v+lm-1)
+    call transfer_jbuf2ibuf(jbuf,jbegin(mype),jend2(mype),ibuf,kbegin(mype),kend(mype), &
+                       jbegin,jend2,kbegin,kend,mype,npe,im,jm+1,lm,im+1,jm+1,i_v,i_v+lm-1)
     deallocate(jbuf)
   end if
 
@@ -495,7 +493,6 @@ subroutine wrwrfmassa_binary(mype)
                        jbegin,jend,kbegin,kend,mype,npe,im,jm,lm,im+1,jm+1,i_t,i_t+lm-1)
     this_offset=offset(i_t)+(jbegin(mype)-1)*4*im*lm
     this_length=(jend(mype)-jbegin(mype)+1)*im*lm
-    if(mype.eq.npe-1) this_length=this_length-im*lm
     call mpi_file_write_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length,mpi_integer4,status,ierror)
     deallocate(jbuf)
   end if
@@ -507,7 +504,6 @@ subroutine wrwrfmassa_binary(mype)
                        jbegin,jend,kbegin,kend,mype,npe,im,jm,lm,im+1,jm+1,i_q,i_q+lm-1)
     this_offset=offset(i_q)+(jbegin(mype)-1)*4*im*lm
     this_length=(jend(mype)-jbegin(mype)+1)*im*lm
-    if(mype.eq.npe-1) this_length=this_length-im*lm
     call mpi_file_write_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length,mpi_integer4,status,ierror)
     deallocate(jbuf)
   end if
@@ -519,16 +515,17 @@ subroutine wrwrfmassa_binary(mype)
                        jbegin,jend,kbegin,kend,mype,npe,im+1,jm,lm,im+1,jm+1,i_u,i_u+lm-1)
     this_offset=offset(i_u)+(jbegin(mype)-1)*4*(im+1)*lm
     this_length=(jend(mype)-jbegin(mype)+1)*(im+1)*lm
-    if(mype.eq.npe-1) this_length=this_length-(im+1)*lm
     call mpi_file_write_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length,mpi_integer4,status,ierror)
     deallocate(jbuf)
   end if
 
 !                                    write v
   if(kord(i_v).ne.1) then
-    allocate(jbuf(im,lm,jbegin(mype):jend(mype)))
-    call transfer_ibuf2jbuf(jbuf,jbegin(mype),jend(mype),ibuf,kbegin(mype),kend(mype), &
-                       jbegin,jend,kbegin,kend,mype,npe,im,jm+1,lm,im+1,jm+1,i_v,i_v+lm-1)
+    jend2=jend
+    jend2(npe-1)=jend2(npe-1)+1
+    allocate(jbuf(im,lm,jbegin(mype):jend2(mype)))
+    call transfer_ibuf2jbuf(jbuf,jbegin(mype),jend2(mype),ibuf,kbegin(mype),kend(mype), &
+                       jbegin,jend2,kbegin,kend,mype,npe,im,jm+1,lm,im+1,jm+1,i_v,i_v+lm-1)
     this_offset=offset(i_v)+(jbegin(mype)-1)*4*im*lm
     this_length=(jend(mype)-jbegin(mype)+1)*im*lm
     call mpi_file_write_at(mfcst,this_offset,jbuf(1,1,jbegin(mype)),this_length,mpi_integer4,status,ierror)
@@ -546,6 +543,18 @@ subroutine wrwrfmassa_binary(mype)
   end do
 
   deallocate(ibuf)
+  deallocate(offset)
+  deallocate(igtype)
+  deallocate(kdim)
+  deallocate(kord)
+  deallocate(length)
+  deallocate(mub)
+  deallocate(tempa)
+  deallocate(tempb)
+  deallocate(temp1)
+  deallocate(itemp1)
+  deallocate(temp1u)
+  deallocate(temp1v)
   call mpi_file_close(mfcst,ierror)
 
 end subroutine wrwrfmassa_binary
@@ -651,8 +660,32 @@ subroutine generic_sub2grid(all_loc,tempa,kbegin_loc,kend_loc,kbegin,kend,mype,n
 end subroutine generic_sub2grid
 
   subroutine reorder_s(work,k_in)
-
-! !USES:
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    reorder_s 
+!   prgmmr: parrish          org: np22                date: 2004-11-29
+!
+! abstract:  adapt reorder to work with single precision
+!
+! program history log:
+!   2004-01-25  kleist
+!   2004-05-14  kleist, documentation
+!   2004-07-15  todling, protex-complaint prologue
+!   2004-11-29  adapt reorder to work with single precision
+!   2008-03-27  safford - add standard doc block, rm unused vars
+!
+!   input argument list:
+!     k_in     - number of levs in work array
+!     work     - array to reorder
+!
+!   output argument list:
+!     work     - array to reorder
+!
+! attributes:
+!   language: f90
+!   machine:  ibm rs/6000 sp; sgi origin 2000; compaq/hp
+!
+!$$$
 
     use mpimod, only: npe
     use kinds, only: r_single,i_kind
@@ -660,37 +693,12 @@ end subroutine generic_sub2grid
     use gridmod, only: ijn,itotsub
     implicit none
 
-! !INPUT PARAMETERS:
-
-   integer(i_kind), intent(in) ::  k_in    ! number of levs in work array
-
-! !INPUT/OUTPUT PARAMETERS:
+    integer(i_kind), intent(in) ::  k_in    ! number of levs in work array
 
     real(r_single),dimension(itotsub*k_in),intent(inout):: work ! array to reorder
 
-! !OUTPUT PARAMETERS:
 
-! !DESCRIPTION: adapt reorder to work with single precision
-!
-! !REVISION HISTORY:
-!
-!   2004-01-25  kleist
-!   2004-05-14  kleist, documentation
-!   2004-07-15  todling, protex-complaint prologue
-!   2004-11-29  adapt reorder to work with single precision
-!
-! !REMAKRS:
-!
-!   language: f90
-!   machine:  ibm rs/6000 sp; sgi origin 2000; compaq/hp
-!
-! !AUTHOR:
-!    kleist           org: np20                date: 2004-01-25
-!
-!EOP
-!-------------------------------------------------------------------------
-
-    integer(i_kind) iloc,iskip,i,j,k,n
+    integer(i_kind) iloc,iskip,i,k,n
     real(r_single),dimension(itotsub,k_in):: temp
 
 ! Zero out temp array
@@ -860,7 +868,7 @@ subroutine transfer_ibuf2jbuf(jbuf,jbegin_loc,jend_loc,ibuf,kbegin_loc,kend_loc,
 
     displs(0)=0
     do i=0,npe-1
-       recvcounts(i)=im_jbuf*(k_t_end-k_t_start+1)*(min(jend(i),jm_jbuf)-jbegin(i)+1)
+       recvcounts(i)=im_jbuf*(k_t_end-k_t_start+1)*(jend(i)-jbegin(i)+1)
        displs(i+1)=displs(i)+recvcounts(i)
     end do
 
@@ -868,7 +876,7 @@ subroutine transfer_ibuf2jbuf(jbuf,jbegin_loc,jend_loc,ibuf,kbegin_loc,kend_loc,
        ii=0
        do n=0,npe-1
           do k=k_t_start,k_t_end
-             do j=jbegin(n),min(jend(n),jm_jbuf)
+             do j=jbegin(n),jend(n)
                 do i=1,im_jbuf
                    ii=ii+1
                    recvbuf(ii)=ibuf(i,j,k)
@@ -879,7 +887,7 @@ subroutine transfer_ibuf2jbuf(jbuf,jbegin_loc,jend_loc,ibuf,kbegin_loc,kend_loc,
     end if
     ii=0
     do k=k_t_start,k_t_end
-       do j=jbegin_loc,min(jend_loc,jm_jbuf)
+       do j=jbegin_loc,jend_loc
           do i=1,im_jbuf
              ii=ii+1
           end do
@@ -890,7 +898,7 @@ subroutine transfer_ibuf2jbuf(jbuf,jbegin_loc,jend_loc,ibuf,kbegin_loc,kend_loc,
                       sendbuf,sendcount,mpi_integer4,ipe,mpi_comm_world,ierror)
     ii=0
     do k=k_t_start,k_t_end
-       do j=jbegin_loc,min(jend_loc,jm_jbuf)
+       do j=jbegin_loc,jend_loc
           do i=1,im_jbuf
              ii=ii+1
              jbuf(i,k-k_start+1,j)=sendbuf(ii)
@@ -903,7 +911,7 @@ subroutine transfer_ibuf2jbuf(jbuf,jbegin_loc,jend_loc,ibuf,kbegin_loc,kend_loc,
 
 end subroutine transfer_ibuf2jbuf
 
-subroutine move_hg_ibuf(temp1,buf,im_buf,jm_buf,im_out,jm_out)
+subroutine move_hg_ibuf(temp1,ibuf,im_buf,jm_buf,im_out,jm_out)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    move_hg_ibuf  copy from one array to another
@@ -922,7 +930,7 @@ subroutine move_hg_ibuf(temp1,buf,im_buf,jm_buf,im_out,jm_out)
 !     jm_out   - second index of output array temp1
 !
 !   output argument list:
-!     buf      - output grid values
+!     ibuf      - output grid values
 !
 ! attributes:
 !   language: f90
@@ -930,22 +938,22 @@ subroutine move_hg_ibuf(temp1,buf,im_buf,jm_buf,im_out,jm_out)
 !
 !$$$
 
-!        cp temp1 to buf
+!        cp temp1 to ibuf
 
-  use kinds, only: r_single,i_kind
-  use constants, only: zero_single
+  use kinds, only: r_single,i_kind,i_long
+  use constants, only: zero_ilong
   implicit none
 
   integer(i_kind),intent(in)::im_buf,jm_buf,im_out,jm_out
   real(r_single),intent(in)::temp1(im_out,jm_out)
-  real(r_single),intent(out)::buf(im_buf,jm_buf)
+  integer(i_long),intent(out)::ibuf(im_buf,jm_buf)
 
   integer(i_kind) i,j
 
-  buf=zero_single
+  ibuf=zero_ilong
   do j=1,jm_out
      do i=1,im_out
-        buf(i,j)=temp1(i,j)
+        ibuf(i,j)=transfer(temp1(i,j),zero_ilong)
      end do
   end do
 
@@ -970,6 +978,8 @@ subroutine wrwrfmassa_netcdf(mype)
 !                            changed ioan from 51 to lendian_out
 !   2006-07-28  derber  - include sensible temperature
 !   2006-07-31  kleist - change to use ges_ps instead of lnps
+!   2008-03-27  safford - rm unused vars and uses
+!   2008-12-05  todling - adjustment for dsfct time dimension addition
 !
 !   input argument list:
 !     mype     - pe number
@@ -989,7 +999,7 @@ subroutine wrwrfmassa_netcdf(mype)
   use gridmod, only: pt_ll,eta1_ll,lat2,iglobal,itotsub,update_regsfc,&
        lon2,nsig,lon1,lat1,nlon_regional,nlat_regional,ijn,displs_g,&
        aeta1_ll
-  use constants, only: one,fv,zero_single,rd_over_cp_mass
+  use constants, only: one,zero_single,rd_over_cp_mass
   use gsi_io, only: lendian_in, lendian_out
   implicit none
 
@@ -1003,16 +1013,12 @@ subroutine wrwrfmassa_netcdf(mype)
   real(r_kind),parameter:: r225=225.0_r_kind
 
 ! Declare local variables
-  logical run,first
-  integer(i_long) idat(3),ihrst,ntsd,iout,nshde
-  character(32) label 
-
-  integer(i_kind) im,jm,lb,lm,len_short,len_long
+  integer(i_kind) im,jm,lm
   real(r_single),allocatable::temp1(:),temp1u(:),temp1v(:),tempa(:),tempb(:)
   real(r_single),allocatable::all_loc(:,:,:)
   real(r_single),allocatable::strp(:)
   character(6) filename
-  integer(i_kind) i,j,k,kt,kq,ku,kv,it,i_psfc,i_fis,i_t,i_q,i_u,i_v
+  integer(i_kind) i,j,k,kt,kq,ku,kv,it,i_psfc,i_t,i_q,i_u,i_v
   integer(i_kind) i_sst,i_skt
   integer(i_kind) num_mass_fields,num_all_fields,num_all_pad
   integer(i_kind) regional_time0(6),nlon_regional0,nlat_regional0,nsig0
@@ -1082,10 +1088,10 @@ subroutine wrwrfmassa_netcdf(mype)
            all_loc(j,i,kt) = ges_tsen(j,i,k,it)/work_prslk
 
 !          Convert specific humidity to mixing ratio
-           ges_q(j,i,k,it) = ges_q(j,i,k,it)/(one-ges_q(j,i,k,it))
-           all_loc(j,i,kq)=ges_q(j,i,k,it)
+           all_loc(j,i,kq)= ges_q(j,i,k,it)/(one-ges_q(j,i,k,it))
            	
-           q_integral(j,i)=q_integral(j,i)+deltasigma*ges_q(j,i,k,it)
+           q_integral(j,i)=q_integral(j,i)+deltasigma* &
+                ges_q(j,i,k,it)/(one-ges_q(j,i,k,it))
         end do
      end do
   end do
@@ -1209,8 +1215,8 @@ subroutine wrwrfmassa_netcdf(mype)
   if (update_regsfc) then
      do i=1,lon2
         do j=1,lat2
-           all_loc(j,i,i_sst)=dsfct(j,i)
-           all_loc(j,i,i_skt)=dsfct(j,i)
+           all_loc(j,i,i_sst)=dsfct(j,i,ntguessfc)
+           all_loc(j,i,i_skt)=dsfct(j,i,ntguessfc)
         end do
      end do
   end if
@@ -1293,6 +1299,12 @@ subroutine wrwrfmassa_netcdf(mype)
   endif
 
   deallocate(all_loc)
+  deallocate(strp)
+  deallocate(temp1)
+  deallocate(temp1u)
+  deallocate(temp1v)
+  deallocate(tempa)
+  deallocate(tempb)
   
 end subroutine wrwrfmassa_netcdf
 

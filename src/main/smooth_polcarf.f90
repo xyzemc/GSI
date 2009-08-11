@@ -102,17 +102,26 @@ contains
 !
 ! abstract: create various information needed for using smooth_polcas.
 !
+! program history log:
+!   2008-04-11  safford - complete subroutine documentation block, rm unused vars
+!
+!   input argument list:
+!
+!   output argument list:
+! 
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
   use gridmod, only: nlon,nlat,rlats
   use constants, only: zero,half,one,two,pi
   use berror, only: nf,nr
 
-  integer(i_kind) i,j,jj,ir,iy,nlon4,ix,ilon,iord,k,nin,nxgrid,nygrid
-  real(r_kind) dlon,df,dr,pi2
-  real(r_kind) xgrid(-nf:nf),ygrid(-nf:nf),rgrid(-nf:nf),rs(0:nr)
-  real(r_kind) xlon,ylon
-  integer(i_kind) nbord
-  real(r_kind) arg,angle0
+  integer(i_kind) i,j,jj,nxgrid,nygrid
+  real(r_kind) dlon,df,pi2
+  real(r_kind) xgrid(-nf:nf),ygrid(-nf:nf),rs(0:nr)
   integer(i_kind) nor1,iwgt1(0:norsp),nor2,iwgt2(0:norsp)
   real(r_kind) wgt1(0:norsp),wgt2(0:norsp)
   integer(i_kind) ieven1,ieven2,iodd1,iodd2,nord_evenmax1,nord_oddmax1
@@ -237,7 +246,8 @@ contains
 !
 ! program history log:
 !   2005-05-14  parrish
-!
+!   2008-04-11  safford - rm unused uses
+! 
 !   input argument list:
 !     fxy    - input data on cartesian grid, dimensions [-nf:nf,-nf:nf].
 !
@@ -247,9 +257,8 @@ contains
 ! attributes:
 !   language: f90
 !   machine:  ibm rs/6000 sp
-!$$$
+!$$$ end documentation block
 
-  use kinds, only: r_kind,i_kind
   use constants, only: zero
   use berror, only: nf,nr
   use gridmod, only: nlon
@@ -291,6 +300,7 @@ contains
 !
 ! program history log:
 !   2005-05-14  parrish
+!   2008-04-12  safford - rm unused uses
 !
 !   input argument list:
 !     fxy    - input data on cartesian grid, dimensions [-nf:nf,-nf:nf].
@@ -303,7 +313,6 @@ contains
 !   machine:  ibm rs/6000 sp
 !$$$
 
-  use kinds, only: r_kind,i_kind
   use constants, only: zero
   use berror, only: nf,nr
   use gridmod, only: nlon
@@ -334,6 +343,27 @@ contains
   end subroutine smooth_polcasa
 
 subroutine bspline(tin,k,wout)
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    bspline 
+!   prgmmr: 
+!
+! abstract: 
+!
+! program history log:
+!   2008-04-12  safford - add documentation block
+!
+!   input argument list:
+!     tin   -
+!     k     -
+!   output argument list:
+!     wout  - 
+!
+! attributes:
+!   language: f90
+!   machine:  ibm rs/6000 sp
+!
+!$$$ end documentation block
 
 !    compute weights for a bspline of order k (degree k-1, continuous k-2)
 !        k >= 1

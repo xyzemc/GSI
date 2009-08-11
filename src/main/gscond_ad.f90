@@ -14,6 +14,7 @@ subroutine gscond_ad( im, ix, km, dt, sl, ps, rhc, advt, advq, &
 !   2003-12-18  treadon - initial routine
 !   2004-06-14  treadon - reformat documenation
 !   2006-04-12  treadon - change sl from 1d to 2d array
+!   2008-06-02  safford - rm unused var
 !
 !   input argument list:
 !     im       - actual number of profiles to be processed
@@ -193,7 +194,6 @@ subroutine gscond_ad( im, ix, km, dt, sl, ps, rhc, advt, advq, &
   integer(i_kind) iw0,iw0k(km,ix)
   integer(i_kind) iw1,iw1k(km,ix)
   integer(i_kind) k
-  integer(i_kind) k2
   real(r_kind) pres
   real(r_kind) prsk
   real(r_kind) qik

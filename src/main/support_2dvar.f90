@@ -14,6 +14,7 @@ subroutine convert_binary_2d
 !                            and out_unit 55 to lendian_out
 !   2006-09-15  treadon - use nhr_assimilation to build local guess filename
 !   2007-03-13  derber - remove unused qsinv2 from jfunc use list
+!   2008-04-03  safford - remove unused vars
 !
 ! input argument list:
 !
@@ -24,7 +25,7 @@ subroutine convert_binary_2d
 !$$$
 
   use kinds, only: r_single,i_kind
-  use gridmod, only: nhr_assimilation
+  use gsi_4dvar, only: nhr_assimilation
   use gsi_io, only: lendian_out
   implicit none
 
@@ -35,16 +36,15 @@ subroutine convert_binary_2d
   character(6) filename
   character(9) wrfges
   
-  integer(i_kind) in_unit,status,status_hdr
+  integer(i_kind) in_unit,status_hdr
   integer(i_kind) hdrbuf(512)
 
   integer(i_kind) iyear,imonth,iday,ihour,iminute,isecond
   integer(i_kind) nlon_regional,nlat_regional,nsig_regional
   real(r_single),allocatable::field2(:,:),field2b(:,:)
-  real(r_single),allocatable::field2u(:,:),field2v(:,:),field2c(:,:)
+  real(r_single),allocatable::field2c(:,:)
   integer(i_kind),allocatable::ifield2(:,:)
   real(r_single) rad2deg_single
-  real(r_single)rdx,rdy
   
   data in_unit / 11 /
 
@@ -247,6 +247,9 @@ subroutine convert_binary_2d
 
   close(in_unit)
   close(lendian_out)
+
+  deallocate(field2,field2b,field2c)
+  deallocate(ifield2)
 end subroutine convert_binary_2d
 
 !----------------------------------------------------------------------------------
@@ -263,6 +266,7 @@ subroutine read_2d_files(mype)
 ! program history log:
 !   2004-12-27  pondeca
 !   2006-04-06  middlecoff - remove mpi_request_null since not used
+!   2008-04-03  safford    - remove uses mpi_status_size, zero_single (not used)
 !
 !   input argument list:
 !     mype     - pe number
@@ -276,11 +280,12 @@ subroutine read_2d_files(mype)
 !$$$
 
   use kinds, only: r_kind,i_kind,r_single
-  use mpimod, only: mpi_comm_world,ierror,mpi_rtype,mpi_status_size,npe
+  use mpimod, only: mpi_comm_world,ierror,mpi_rtype,npe
   use guess_grids, only: nfldsig,nfldsfc,ntguessig,ntguessfc,&
-       ifilesfc,ifilesig,hrdifsig,hrdifsfc
-  use gridmod, only: regional_time,regional_fhr,nhr_assimilation
-  use constants, only: izero,zero,one,zero_single
+       ifilesig,ifilesfc,hrdifsig,hrdifsfc,create_gesfinfo
+  use gsi_4dvar, only: nhr_assimilation
+  use gridmod, only: regional_time,regional_fhr
+  use constants, only: izero,zero,one,r60inv
   use obsmod, only: iadate
   implicit none
 
@@ -289,7 +294,6 @@ subroutine read_2d_files(mype)
 
 ! Declare local parameters
   real(r_kind),parameter:: r0_001=0.001_r_kind
-  real(r_kind),parameter:: r60=60.0_r_kind
   
 ! Declare local variables
   logical(4) fexist
@@ -309,17 +313,7 @@ subroutine read_2d_files(mype)
   nhr_half=nhr_assimilation/2
   if(nhr_half*2.lt.nhr_assimilation) nhr_half=nhr_half+1
   npem1=npe-1
-  
-  do i=1,nfldsig
-     ifilesig(i) = -100
-     hrdifsig(i) = zero
-  end do
-  
-  do i=1,nfldsfc
-     ifilesfc(i) = -100
-     hrdifsfc(i) = zero
-  end do
-  
+
   do i=1,202
      time_ges(i) = 999
   end do
@@ -352,7 +346,7 @@ subroutine read_2d_files(mype)
            ndiff=nming2-nminanl
            if(abs(ndiff) > 60*nhr_half ) go to 110
            iwan=iwan+1
-           time_ges(iwan) = (nming2-nminanl)/r60
+           time_ges(iwan) = (nming2-nminanl)*r60inv
            time_ges(iwan+100)=i+r0_001
         end if
 110     continue
@@ -380,9 +374,24 @@ subroutine read_2d_files(mype)
 ! Broadcast guess file information to all tasks
   call mpi_bcast(time_ges,202,mpi_rtype,npem1,mpi_comm_world,ierror)
 
+  nfldsig   = nint(time_ges(201))
+  nfldsfc   = nfldsig
+
+! Allocate space for guess information files
+  call create_gesfinfo
+
+  do i=1,nfldsig
+     ifilesig(i) = -100
+     hrdifsig(i) = zero
+  end do
+
+  do i=1,nfldsfc
+     ifilesfc(i) = -100
+     hrdifsfc(i) = zero
+  end do
+
 ! Load time information for sigma guess field sinfo into output arrays
   ntguessig = nint(time_ges(202))
-  nfldsig   = nint(time_ges(201))
   do i=1,nfldsig
      hrdifsig(i) = time_ges(i)
      ifilesig(i) = nint(time_ges(i+100))
@@ -393,9 +402,11 @@ subroutine read_2d_files(mype)
   
 ! Think of guess sfcf files as coinciding with guess sigf files
   ntguessfc = ntguessig
-  nfldsfc   = nfldsig
-  hrdifsfc = hrdifsig
-  ifilesfc = ifilesig
+  do i=1,nfldsig
+     ntguessfc = ntguessig
+     hrdifsfc(i) = hrdifsig(i)
+     ifilesfc(i) = ifilesig(i)
+  end do
   if(mype == 0) write(6,*)' READ_2d_FILES:  surface fcst files used in analysis:  ',&
        (ifilesfc(i),i=1,nfldsfc),(hrdifsfc(i),i=1,nfldsfc),ntguessfc
   
@@ -426,6 +437,7 @@ subroutine read_2d_guess(mype)
 !   2006-04-06  middlecoff - changed nfcst from 11 to 15 so nfcst could be used as little endian
 !   2006-07-30  kleist - make change to ges_ps from ln(ps)
 !   2006-07-28  derber  - include sensible temperature
+!   2008-04-02  safford - rm unused vars and uses     
 !
 !   input argument list:
 !     mype     - pe number
@@ -453,34 +465,29 @@ subroutine read_2d_guess(mype)
 ! Declare local parameters
   real(r_kind),parameter:: r0_01=0.01_r_kind
   real(r_kind),parameter:: r0_1=0.1_r_kind
-  real(r_kind),parameter:: r100=100.0_r_kind
 
 ! Declare local variables
   integer(i_kind) kt,kq,ku,kv
 
 ! 2D variable names stuck in here
-  logical run
-  integer(i_kind) idat(3),ihrst,ntsd,nfcst
+  integer(i_kind) nfcst
 
 ! other internal variables
-  logical ice
   real(r_single) tempa(itotsub)
   real(r_single),allocatable::temp1(:,:),temp1u(:,:),temp1v(:,:)
   real(r_single),allocatable::all_loc(:,:,:)
-  real(r_kind),allocatable,dimension(:,:,:):: dlnesdtv ! 13April2005 / M.Pondeca
   integer(i_kind),allocatable::itemp1(:,:)
   integer(i_kind),allocatable::igtype(:),jsig_skip(:)
   character(60),allocatable::identity(:)
   character(6) filename 
-  integer(i_kind) irc_s_reg(npe),ird_s_reg(npe),npts
+  integer(i_kind) irc_s_reg(npe),ird_s_reg(npe)
   integer(i_kind) ifld,im,jm,lm,num_2d_fields
   integer(i_kind) num_all_fields,num_loc_groups,num_all_pad
-  integer(i_kind) i,icount,icount_prev,it,j,k,k1,levtempmax
+  integer(i_kind) i,icount,icount_prev,it,j,k
   integer(i_kind) i_0,i_psfc,i_fis,i_t,i_q,i_u,i_v,i_sno,i_u10,i_v10,i_smois,i_tslb
   integer(i_kind) i_sm,i_xice,i_sst,i_tsk,i_ivgtyp,i_isltyp,i_vegfrac
   integer(i_kind) isli_this
   real(r_kind) psfc_this,sm_this,xice_this
-  real(r_kind),dimension(lat1+2,lon1+2,nsig):: rdivs1
   integer(i_kind) num_doubtful_sfct,num_doubtful_sfct_all
 
 
@@ -809,6 +816,7 @@ subroutine wr2d_binary(mype)
 !                          Changed ioan from 51 to 66 so ioan could be little endian
 !   2006-07-28 derber - include sensible temperature
 !   2006-07-31  kleist - make change to ges_ps instead of ln(ps)
+!   2008-04-03  safford - rm unused vars and uses
 !
 !   input argument list:
 !     mype     - pe number
@@ -840,21 +848,16 @@ subroutine wr2d_binary(mype)
   real(r_kind),parameter:: r225=225.0_r_kind
 
 ! Declare local variables
-  logical(4) run,first
-  character(32) label 
-
-  integer(i_kind) im,jm,lb,lm,len_short,len_long
+  integer(i_kind) im,jm,lm
   real(r_single),allocatable::temp1(:),temp1u(:),temp1v(:),tempa(:),tempb(:)
   real(r_single),allocatable::all_loc(:,:,:)
   real(r_single),allocatable::strp(:)
   character(6) filename
-  integer(i_kind) iog,ioan,i,j,k,kt,kq,ku,kv,it,i_psfc,i_fis,i_t,i_q,i_u,i_v
+  integer(i_kind) iog,ioan,i,j,k,kt,kq,ku,kv,it,i_psfc,i_t,i_q,i_u,i_v
   integer(i_kind) i_sst,i_skt
   integer(i_kind) num_2d_fields,num_all_fields,num_all_pad
   integer(i_kind) regional_time0(6),nlon_regional0,nlat_regional0,nsig0
-  real(r_kind) psfc_this,psfc_this_dry
-  real(r_single) pt0
-  real(r_single) aeta10(nsig),eta10(nsig+1)
+  real(r_kind) psfc_this
   real(r_single) glon0(nlon_regional,nlat_regional),glat0(nlon_regional,nlat_regional)
   real(r_single) dx_mc0(nlon_regional,nlat_regional),dy_mc0(nlon_regional,nlat_regional)
   real(r_single),allocatable::all_loc_ps(:,:),temp1_ps(:)
@@ -1180,7 +1183,15 @@ subroutine wr2d_binary(mype)
   deallocate(all_loc)
   deallocate(all_loc_ps)
   deallocate(temp1_ps)
+  deallocate(temp1)
+  deallocate(tempa)
+  deallocate(tempb)
+  deallocate(temp1u)
+  deallocate(temp1v)
+  deallocate(temp1_prh)
   deallocate(all_loc_qsatg)
+  deallocate(all_loc_prh)
+  deallocate(strp)
   
 end subroutine wr2d_binary
 !----------------------------------------------------------------------------------

@@ -15,6 +15,7 @@ subroutine dtast(work1,nlev,pbot,ptop,mesage,jiter,iout,pflag)
 !   2005-07-27  derber  - add print of monitoring and reject data
 !   2006-02-24  derber  - modify to take advantage of convinfo module
 !   2006-04-03  derber  - modify to print individual ob types
+!   2008-06-04  safford - rm unused var
 !
 !   input argument list:
 !     work1    - array containing innovation (o-g) sums
@@ -32,7 +33,7 @@ subroutine dtast(work1,nlev,pbot,ptop,mesage,jiter,iout,pflag)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
   use kinds, only: r_kind,i_kind
   use constants, only: zero,izero
   use convinfo, only: nconvtype,ictype,icsubtype,ioctype
@@ -49,7 +50,7 @@ subroutine dtast(work1,nlev,pbot,ptop,mesage,jiter,iout,pflag)
   character(8) obstyp
   character(4),dimension(3):: typx
   character(14):: label
-  integer(i_kind) i,ilin,j,imsg,k,nn,ntyp2
+  integer(i_kind) i,ilin,j,imsg,k,nn
   integer(i_kind),dimension(nlev):: countall
   integer(i_kind),dimension(nlev,nconvtype,3):: count
   real(r_kind),dimension(nlev):: rmsall,biasall,ratall,qcratall

@@ -15,6 +15,7 @@ module zrnmi_mod
 !
 ! program history log:
 !   2006-11-03  parrish
+!   2008-03-26  safford -- rm unused vars, add subroutine doc blocks
 !
 ! subroutines included:
 !   sub zrnmi_sd2x0            --- setup to convert from subdomains to x direction
@@ -48,7 +49,7 @@ module zrnmi_mod
 !                                    (*) :  except corner points are treated differently.
 !
 ! Variable Definitions:
-!   def
+!      
 ! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP
@@ -56,6 +57,7 @@ module zrnmi_mod
 !$$$ end documentation block
 
   use kinds, only: r_kind,i_kind,r_double
+  use constants, only: pi
   implicit none
 
   integer(i_kind) nx,ny
@@ -108,9 +110,29 @@ module zrnmi_mod
 
 contains
 
-  subroutine zrnmi_initialize(mype)
 
-    use constants, only: zero
+  subroutine zrnmi_initialize(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_initialize
+!
+!   prgrmmr: 
+!
+! abstract:
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
     use mod_strong, only: period_max,period_width
     use mod_vtrans, only: nvmodes_keep
 
@@ -134,6 +156,27 @@ contains
   end subroutine zrnmi_initialize
 
   subroutine zrnmi_sd2x0(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_sd2x0
+!
+!   prgrmmr: 
+!
+! abstract:
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  create x (y strips) subdivision for use with sine transform in x direction
 
@@ -208,11 +251,32 @@ contains
   end subroutine zrnmi_sd2x0
 
   subroutine zrnmi_sd2x1(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_sd2x1
+!
+!   prgrmmr: 
+!
+! abstract:
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  continue with setup for subdomain to lat strip interchanges
 
     use gridmod, only: lon2,lat2,jstart,istart
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_integer4,mpi_rtype
+    use mpimod, only: npe,mpi_comm_world,ierror,mpi_integer4
     implicit none
 
     integer(i_kind),intent(in)::mype
@@ -290,17 +354,38 @@ contains
   end subroutine zrnmi_sd2x1
 
   subroutine zrnmi_x2sd1(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_x2sd1
+!
+!   prgrmmr: 
+!
+! abstract:
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_x (y strips) to u_sd (subdomains)
 
     use kinds, only: r_kind,i_kind
-    use gridmod, only: lon2,lat2,jstart,istart,ilat1,jlon1
+    use gridmod, only: jstart,istart,ilat1,jlon1
     use mpimod, only: npe,mpi_comm_world,ierror,mpi_integer4
     implicit none
 
 
     integer(i_kind),intent(in)::mype
-    integer(i_kind) i,iy,ivert,j,k,mm1,ipe,iym,ix,mpi_string1,nn,ixloc
+    integer(i_kind) i,iy,ivert,j,k,mm1,ipe,ix,mpi_string1,nn
 
     allocate(nsend_x2sd(npe),nrecv_x2sd(npe),ndsend_x2sd(npe+1),ndrecv_x2sd(npe+1))
     mm1=mype+1
@@ -365,12 +450,33 @@ contains
   end subroutine zrnmi_x2sd1
 
   subroutine zrnmi_sd2x(u_sd,u_x,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_sd2x
+!
+!   prgrmmr: 
+!
+! abstract:
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_sd (subdomains) to u_x (y strips)
 
     use kinds, only: r_kind,i_kind
     use gridmod, only: lon2,lat2,jstart,istart
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_rtype
+    use mpimod, only: mpi_comm_world,ierror,mpi_rtype
     implicit none
 
     integer(i_kind),intent(in)::mype
@@ -378,7 +484,7 @@ contains
     real(r_kind),dimension(lat2,lon2,nvert),intent(in)::u_sd
     real(r_kind),dimension(nx,ny_0:ny_1),intent(out)::u_x
 
-    integer(i_kind) iy,iym,ix,ivert,j,mm1,mpi_string1
+    integer(i_kind) iy,iym,ix,ivert,j,mm1
     real(r_kind),allocatable::sendbuf(:),recvbuf(:)
 
     mm1=mype+1
@@ -406,12 +512,33 @@ contains
   end subroutine zrnmi_sd2x
 
   subroutine zrnmi_sd2x2(u1_sd,u2_sd,u1_x,u2_x,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_sd2x2
+!
+!   prgrmmr: 
+!
+! abstract:
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_sd (subdomains) to u_x (y strips)
 
     use kinds, only: r_kind,i_kind
     use gridmod, only: lon2,lat2,jstart,istart
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_rtype
+    use mpimod, only: mpi_comm_world,ierror,mpi_rtype
     implicit none
 
     integer(i_kind),intent(in)::mype
@@ -452,12 +579,33 @@ contains
   end subroutine zrnmi_sd2x2
 
   subroutine zrnmi_sd2x3(u1_sd,u2_sd,u3_sd,u1_x,u2_x,u3_x,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_sd2x3
+!
+!   prgrmmr: 
+!
+! abstract:
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_sd (subdomains) to u_x (y strips)
 
     use kinds, only: r_kind,i_kind
     use gridmod, only: lon2,lat2,jstart,istart
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_rtype
+    use mpimod, only: mpi_comm_world,ierror,mpi_rtype
     implicit none
 
     integer(i_kind),intent(in)::mype
@@ -500,12 +648,35 @@ contains
   end subroutine zrnmi_sd2x3
 
   subroutine zrnmi_x2sd(u_sd,u_x,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_x2sd
+!
+!   prgrmmr: 
+!
+! abstract:      move u_x (lat strips) to u_sd (subdomains)
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u_x      - lat strips
+!
+!   output argument list:
+!     u_sd     - subdomains
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_ew (lat strips) to u_sd (subdomains)
 
     use kinds, only: r_kind,i_kind
-    use gridmod, only: lon2,lat2,jstart,istart,ilat1,jlon1
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_integer4,mpi_rtype
+    use gridmod, only: lon2,lat2,istart
+    use mpimod, only: mpi_comm_world,ierror,mpi_rtype
     use constants, only: zero
     implicit none
 
@@ -515,7 +686,7 @@ contains
     real(r_kind),dimension(nx,ny_0:ny_1),intent(in)::u_x
 
     real(r_kind),allocatable::sendbuf(:),recvbuf(:)
-    integer(i_kind) i,iy,ivert,j,k,mm1,ipe,iym,ix,nn,ixloc
+    integer(i_kind) iy,ivert,j,mm1,iym,ix,ixloc
 
     mm1=mype+1
 
@@ -542,12 +713,37 @@ contains
   end subroutine zrnmi_x2sd
 
   subroutine zrnmi_x2sd2(u1_sd,u2_sd,u1_x,u2_x,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_x2sd2
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u1_x     - 
+!     u2_x     - 
+!
+!   output argument list:
+!     u1_sd    - 
+!     u2_sd    - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_ew (lat strips) to u_sd (subdomains)
 
     use kinds, only: r_kind,i_kind
-    use gridmod, only: lon2,lat2,jstart,istart,ilat1,jlon1
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_rtype
+    use gridmod, only: lon2,lat2,istart
+    use mpimod, only: mpi_comm_world,ierror,mpi_rtype
     use constants, only: zero
     implicit none
 
@@ -557,7 +753,7 @@ contains
     real(r_kind),dimension(nx,ny_0:ny_1),intent(in)::u1_x,u2_x
 
     real(r_kind),allocatable::sendbuf(:,:),recvbuf(:,:)
-    integer(i_kind) i,iy,ivert,j,k,mm1,ipe,iym,ix,nn,ixloc,mpi_string1
+    integer(i_kind) iy,ivert,j,mm1,iym,ix,ixloc,mpi_string1
 
     mm1=mype+1
 
@@ -590,11 +786,38 @@ contains
   end subroutine zrnmi_x2sd2
 
   subroutine zrnmi_x2sd3(u1_sd,u2_sd,u3_sd,u1_x,u2_x,u3_x,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_x2sd3
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u1_x     - 
+!     u2_x     - 
+!     u3_x     - 
+!
+!   output argument list:
+!     u1_sd    - 
+!     u2_sd    - 
+!     u3_sd    - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_ew (lat strips) to u_sd (subdomains)
 
     use kinds, only: r_kind,i_kind
-    use gridmod, only: lon2,lat2,jstart,istart,ilat1,jlon1
+    use gridmod, only: lon2,lat2,istart
     use mpimod, only: npe,mpi_comm_world,ierror,mpi_rtype
     use constants, only: zero
     implicit none
@@ -605,7 +828,7 @@ contains
     real(r_kind),dimension(nx,ny_0:ny_1),intent(in)::u1_x,u2_x,u3_x
 
     real(r_kind),allocatable::sendbuf(:,:),recvbuf(:,:)
-    integer(i_kind) i,iy,ivert,j,k,mm1,ipe,iym,ix,nn,ixloc,mpi_string1
+    integer(i_kind) iy,ivert,j,mm1,iym,ix,ixloc, mpi_string1
 
     mm1=mype+1
 
@@ -641,6 +864,27 @@ contains
   end subroutine zrnmi_x2sd3
 
   subroutine zrnmi_sd2y0(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_sd2y0
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  create y (x strips) subdivision for use with derivatives in the y direction
 
@@ -710,11 +954,32 @@ contains
   end subroutine zrnmi_sd2y0
 
   subroutine zrnmi_sd2y1(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_sd2y1
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  continue with setup for subdomain to x strip interchanges
 
     use gridmod, only: lon2,lat2,jstart,istart
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_integer4,mpi_rtype
+    use mpimod, only: npe,mpi_comm_world,ierror,mpi_integer4
     implicit none
 
     integer(i_kind),intent(in)::mype
@@ -801,17 +1066,38 @@ contains
   end subroutine zrnmi_sd2y1
 
   subroutine zrnmi_y2sd1(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_y2sd1
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_y (x strips) to u_sd (subdomains)
 
     use kinds, only: r_kind,i_kind
-    use gridmod, only: lon2,lat2,jstart,istart,ilat1,jlon1
+    use gridmod, only: jstart,istart,ilat1,jlon1
     use mpimod, only: npe,mpi_comm_world,ierror,mpi_integer4
     implicit none
 
 
     integer(i_kind),intent(in)::mype
-    integer(i_kind) i,ix,ivert,j,k,mm1,ipe,ixm,iy,mpi_string1,nn,iyloc
+    integer(i_kind) i,ix,ivert,j,k,mm1,mpi_string1,ipe,iy,nn
 
     allocate(nsend_y2sd(npe),nrecv_y2sd(npe),ndsend_y2sd(npe+1),ndrecv_y2sd(npe+1))
     mm1=mype+1
@@ -876,12 +1162,35 @@ contains
   end subroutine zrnmi_y2sd1
 
   subroutine zrnmi_sd2y(u_sd,u_y,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_sd2y
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u_sd     -
+!
+!   output argument list:
+!     u_y      -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_sd (subdomains) to u_y (x strips)
 
     use kinds, only: r_kind,i_kind
     use gridmod, only: lon2,lat2,jstart,istart
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_rtype
+    use mpimod, only: mpi_comm_world,ierror,mpi_rtype
     implicit none
 
     integer(i_kind),intent(in)::mype
@@ -889,7 +1198,7 @@ contains
     real(r_kind),dimension(lat2,lon2,nvert),intent(in)::u_sd
     real(r_kind),dimension(ny,nx_0:nx_1),intent(out)::u_y
 
-    integer(i_kind) ix,ixm,iy,ivert,j,mm1,mpi_string1
+    integer(i_kind) ix,ixm,iy,ivert,j,mm1
     real(r_kind),allocatable::sendbuf(:),recvbuf(:)
 
     mm1=mype+1
@@ -917,12 +1226,37 @@ contains
   end subroutine zrnmi_sd2y
 
   subroutine zrnmi_sd2y2(u1_sd,u2_sd,u1_y,u2_y,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_sd2y2
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u1_sd    -
+!     u2_sd    -
+!
+!   output argument list:
+!     u1_y     -
+!     u2_y     -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_sd (subdomains) to u_y (x strips)
 
     use kinds, only: r_kind,i_kind
     use gridmod, only: lon2,lat2,jstart,istart
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_rtype
+    use mpimod, only: mpi_comm_world,ierror,mpi_rtype
     implicit none
 
     integer(i_kind),intent(in)::mype
@@ -963,12 +1297,39 @@ contains
   end subroutine zrnmi_sd2y2
 
   subroutine zrnmi_sd2y3(u1_sd,u2_sd,u3_sd,u1_y,u2_y,u3_y,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_sd2y3
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u1_sd    -
+!     u2_sd    -
+!     u3_sd    -
+!
+!   output argument list:
+!     u1_y     -
+!     u2_y     -
+!     u3_y     -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_sd (subdomains) to u_y (x strips)
 
     use kinds, only: r_kind,i_kind
     use gridmod, only: lon2,lat2,jstart,istart
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_rtype
+    use mpimod, only: mpi_comm_world,ierror,mpi_rtype
     implicit none
 
     integer(i_kind),intent(in)::mype
@@ -1011,12 +1372,35 @@ contains
   end subroutine zrnmi_sd2y3
 
   subroutine zrnmi_y2sd(u_sd,u_y,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_y2sd
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u_sd     -
+!
+!   output argument list:
+!     u_y      -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_y (x strips) to u_sd (subdomains)
 
     use kinds, only: r_kind,i_kind
-    use gridmod, only: lon2,lat2,jstart,istart,ilat1,jlon1
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_integer4,mpi_rtype
+    use gridmod, only: lon2,lat2,jstart
+    use mpimod, only: mpi_comm_world,ierror,mpi_rtype
     use constants, only: zero
     implicit none
 
@@ -1026,7 +1410,7 @@ contains
     real(r_kind),dimension(ny,nx_0:nx_1),intent(in)::u_y
 
     real(r_kind),allocatable::sendbuf(:),recvbuf(:)
-    integer(i_kind) i,ix,ivert,j,k,mm1,ipe,ixm,iy,nn,iyloc
+    integer(i_kind) ix,ivert,j,mm1,ixm,iy,iyloc
 
     mm1=mype+1
 
@@ -1053,12 +1437,37 @@ contains
   end subroutine zrnmi_y2sd
 
   subroutine zrnmi_y2sd2(u1_sd,u2_sd,u1_y,u2_y,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_y2sd2
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u1_y     -
+!     u2_y     -
+!
+!   output argument list:
+!     u1_sd    -
+!     u2_sd    -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_y (x strips) to u_sd (subdomains)
 
     use kinds, only: r_kind,i_kind
-    use gridmod, only: lon2,lat2,jstart,istart,ilat1,jlon1
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_integer4,mpi_rtype
+    use gridmod, only: lon2,lat2,jstart
+    use mpimod, only: mpi_comm_world,ierror,mpi_rtype
     use constants, only: zero
     implicit none
 
@@ -1068,7 +1477,7 @@ contains
     real(r_kind),dimension(ny,nx_0:nx_1),intent(in)::u1_y,u2_y
 
     real(r_kind),allocatable::sendbuf(:,:),recvbuf(:,:)
-    integer(i_kind) i,ix,ivert,j,k,mm1,ipe,ixm,iy,nn,iyloc,mpi_string1
+    integer(i_kind) ix,ivert,j,mm1,ixm,iy,iyloc,mpi_string1
 
     mm1=mype+1
 
@@ -1101,12 +1510,39 @@ contains
   end subroutine zrnmi_y2sd2
 
   subroutine zrnmi_y2sd3(u1_sd,u2_sd,u3_sd,u1_y,u2_y,u3_y,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_y2sd3
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u1_y     -
+!     u2_y     -
+!     u3_y     -
+!
+!   output argument list:
+!     u1_sd    -
+!     u2_sd    -
+!     u3_sd    -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  use mpi_alltoallv to move u_y (x strips) to u_sd (subdomains)
 
     use kinds, only: r_kind,i_kind
-    use gridmod, only: lon2,lat2,jstart,istart,ilat1,jlon1
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_integer4,mpi_rtype
+    use gridmod, only: lon2,lat2,jstart
+    use mpimod, only: mpi_comm_world,ierror,mpi_rtype
     use constants, only: zero
     implicit none
 
@@ -1116,7 +1552,7 @@ contains
     real(r_kind),dimension(ny,nx_0:nx_1),intent(in)::u1_y,u2_y,u3_y
 
     real(r_kind),allocatable::sendbuf(:,:),recvbuf(:,:)
-    integer(i_kind) i,ix,ivert,j,k,mm1,ipe,ixm,iy,nn,iyloc,mpi_string1
+    integer(i_kind) ix,ivert,j,mm1,ixm,iy,iyloc,mpi_string1
 
     mm1=mype+1
 
@@ -1151,9 +1587,29 @@ contains
   end subroutine zrnmi_y2sd3
 
   subroutine zrnmi_x_strans0(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_x_strans0
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
-    use gridmod, only: nlon
-    use constants, only: one,two
+    use constants, only: one,two,pi
 
     integer(i_kind),intent(in)::mype
 
@@ -1162,13 +1618,35 @@ contains
     allocate(sinx(nx,nx))
     do k=1,nx
       do n=1,nx
-        sinx(n,k)=sqrt(two/(nx+one))*sind(180._r_kind*k*n/(nx+one))
+        sinx(n,k)=sqrt(two/(nx+one))*sin(pi*k*n/(nx+one))
       end do
     end do
 
   end subroutine zrnmi_x_strans0
 
   subroutine zrnmi_x_strans(g_x,gt_x)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_x_strans
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     g_x      - 
+!
+!   output argument list:
+!     gt_x     - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
     use constants, only: zero,half,one
 
@@ -1213,8 +1691,34 @@ contains
   end subroutine zrnmi_x_strans
  
   subroutine zrnmi_uvm2dzmhat(u,v,m,dhat,zhat,mhat,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_uvm2dzmhat
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u        - 
+!     v        - 
+!     m        - 
+!
+!   output argument list:
+!     dhat     - 
+!     zhat     - 
+!     mhat     - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
-    use constants, only: zero
     use gridmod, only: lon2,lat2
 
     integer(i_kind),intent(in):: mype
@@ -1239,8 +1743,37 @@ contains
   end subroutine zrnmi_uvm2dzmhat
 
   subroutine zrnmi_uvm2dzmhat_ad(u,v,m,dhat,zhat,mhat,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_uvm2dzmhat_ad
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     dhat     - 
+!     zhat     - 
+!     mhat     - 
+!
+!   output argument list:
+!     u        - 
+!     v        - 
+!     m        - 
+!     dhat     - 
+!     zhat     - 
+!     mhat     - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
-    use constants, only: zero
     use gridmod, only: lon2,lat2
 
     integer(i_kind),intent(in):: mype
@@ -1264,16 +1797,44 @@ contains
 
   end subroutine zrnmi_uvm2dzmhat_ad
 
-  subroutine zrnmi_pcmhat2uvm(u,v,m,phat,chat,mhat,mype)
+  subroutine zrnmi_pcmhat2uvm(p,c,m,phat,chat,mhat,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_pcmhat2uvm
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     phat     - 
+!     chat     - 
+!     mhat     - 
+!
+!   output argument list:
+!     p        - 
+!     c        - 
+!     m        - 
+!     phat     - 
+!     chat     - 
+!     mhat     - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
  
-    use constants, only: zero
     use gridmod, only: lon2,lat2
  
     integer(i_kind),intent(in):: mype
-    real(r_kind),dimension(lat2,lon2,nvert),intent(out)::u,v,m
+    real(r_kind),dimension(lat2,lon2,nvert),intent(out)::p,c,m
     real(r_kind),dimension(ny,mx_0:mx_1),intent(inout)::phat,chat,mhat
  
-    real(r_kind),dimension(lat2,lon2,nvert):: p,c
     real(r_kind),dimension(nx,ny_0:ny_1):: p_x,c_x,m_x
     real(r_kind),dimension(nx,ny_0:ny_1):: p4_x,c4_x,m4_x
     real(r_kind),dimension(ny,mx_0:mx_1):: p_y,c_y,m_y
@@ -1286,25 +1847,51 @@ contains
     call zrnmi_x_strans(c4_x,c_x)
     call zrnmi_x_strans(m4_x,m_x)
     call zrnmi_x2sd3(p,c,m,p_x,c_x,m_x,mype)
-    call zrnmi_pc2uv(p,c,u,v,mype)
  
   end subroutine zrnmi_pcmhat2uvm
 
-  subroutine zrnmi_pcmhat2uvm_ad(u,v,m,phat,chat,mhat,mype)
+  subroutine zrnmi_pcmhat2uvm_ad(p,c,m,phat,chat,mhat,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_pcmhat2uvm_ad
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     p        - 
+!     c        - 
+!     m        - 
+!
+!   output argument list:
+!     p        - 
+!     c        - 
+!     m        - 
+!     phat     - 
+!     chat     - 
+!     mhat     - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
  
-    use constants, only: zero
     use gridmod, only: lon2,lat2
  
     integer(i_kind),intent(in):: mype
-    real(r_kind),dimension(lat2,lon2,nvert),intent(inout)::u,v,m
+    real(r_kind),dimension(lat2,lon2,nvert),intent(inout)::p,c,m
     real(r_kind),dimension(ny,mx_0:mx_1),intent(out)::phat,chat,mhat
  
-    real(r_kind),dimension(lat2,lon2,nvert):: p,c
     real(r_kind),dimension(nx,ny_0:ny_1):: p_x,c_x,m_x
     real(r_kind),dimension(nx,ny_0:ny_1):: p4_x,c4_x,m4_x
     real(r_kind),dimension(ny,mx_0:mx_1):: p_y,c_y,m_y
 
-    call zrnmi_pc2uv_ad(p,c,u,v,mype)
     call zrnmi_sd2x3(p,c,m,p_x,c_x,m_x,mype)
     call zrnmi_x_strans(p_x,p4_x)
     call zrnmi_x_strans(c_x,c4_x)
@@ -1317,6 +1904,27 @@ contains
   end subroutine zrnmi_pcmhat2uvm_ad
 
   subroutine zrnmi_x2y0(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_x2y0
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  create y (x strips) subdivision for use with sine transform in y direction
 
@@ -1386,10 +1994,31 @@ contains
   end subroutine zrnmi_x2y0
 
   subroutine zrnmi_x2y1(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_x2y1
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
 !  continue with setup for x strip to y strip communication
 
-    use mpimod, only: npe,mpi_comm_world,ierror,mpi_integer4,mpi_rtype
+    use mpimod, only: npe,mpi_comm_world,ierror,mpi_integer4
     implicit none
 
     integer(i_kind),intent(in)::mype
@@ -1471,6 +2100,29 @@ contains
   end subroutine zrnmi_x2y1
 
   subroutine zrnmi_x2y(u_x,u_y,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_x2y
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u_x      -
+!
+!   output argument list:
+!     u_y      -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
     use mpimod, only: mpi_comm_world,ierror,mpi_rtype
 
@@ -1505,6 +2157,31 @@ contains
   end subroutine zrnmi_x2y
 
   subroutine zrnmi_x2y2(u1_x,u2_x,u1_y,u2_y,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_x2y2
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u1_x     -
+!     u2_x     -
+!
+!   output argument list:
+!     u1_y     -
+!     u2_y     -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
     use mpimod, only: mpi_comm_world,ierror,mpi_rtype
 
@@ -1543,6 +2220,33 @@ contains
   end subroutine zrnmi_x2y2
 
   subroutine zrnmi_x2y3(u1_x,u2_x,u3_x,u1_y,u2_y,u3_y,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_x2y3
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u1_x     -
+!     u2_x     -
+!     u3_x     -
+!
+!   output argument list:
+!     u1_y     -
+!     u2_y     -
+!     u3_y     -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
     use mpimod, only: mpi_comm_world,ierror,mpi_rtype
 
@@ -1583,9 +2287,31 @@ contains
   end subroutine zrnmi_x2y3
 
   subroutine zrnmi_y2x(u_x,u_y,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_y2x
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u_y      -
+!
+!   output argument list:
+!     u_x      -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
     use mpimod, only: mpi_comm_world,ierror,mpi_rtype
-    use constants, only: zero
 
     integer(i_kind),intent(in)::mype
     real(r_kind),dimension(nx,ny_0:ny_1),intent(out)::u_x
@@ -1616,9 +2342,33 @@ contains
   end subroutine zrnmi_y2x
 
   subroutine zrnmi_y2x2(u1_x,u2_x,u1_y,u2_y,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_y2x2
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u1_y     -
+!     u2_y     -
+!
+!   output argument list:
+!     u1_x     -
+!     u2_x     -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
     use mpimod, only: mpi_comm_world,ierror,mpi_rtype
-    use constants, only: zero
 
     integer(i_kind),intent(in)::mype
     real(r_kind),dimension(nx,ny_0:ny_1),intent(out)::u1_x,u2_x
@@ -1654,9 +2404,35 @@ contains
   end subroutine zrnmi_y2x2
 
   subroutine zrnmi_y2x3(u1_x,u2_x,u3_x,u1_y,u2_y,u3_y,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_y2x3
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u1_y     -
+!     u2_y     -
+!     u3_y     -
+!
+!   output argument list:
+!     u1_x     -
+!     u2_x     -
+!     u3_x     -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
     use mpimod, only: mpi_comm_world,ierror,mpi_rtype
-    use constants, only: zero
 
     integer(i_kind),intent(in)::mype
     real(r_kind),dimension(nx,ny_0:ny_1),intent(out)::u1_x,u2_x,u3_x
@@ -1694,9 +2470,29 @@ contains
   end subroutine zrnmi_y2x3
 
   subroutine zrnmi_y_strans0(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_y_strans0
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
-    use gridmod, only: nlon
-    use constants, only: one,two
+    use constants, only: one,two,pi
 
     integer(i_kind),intent(in)::mype
 
@@ -1705,13 +2501,35 @@ contains
     allocate(siny(ny,ny))
     do k=1,ny
       do n=1,ny
-        siny(n,k)=sqrt(two/(ny+one))*sind(180._r_kind*k*n/(ny+one))
+        siny(n,k)=sqrt(two/(ny+one))*sin(pi*k*n/(ny+one))
       end do
     end do
 
   end subroutine zrnmi_y_strans0
 
   subroutine zrnmi_y_strans(g_y,gt_y)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_y_strans
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     g_y      - 
+!
+!   output argument list:
+!     gt_y     -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
     use constants, only: zero,half,one
 
@@ -1756,9 +2574,30 @@ contains
   end subroutine zrnmi_y_strans
 
   subroutine zrnmi_delx(f_x,fx_x)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_delx
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     f_x      -
+!
+!   output argument list:
+!     fx_x     -
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
-    use constants, only: two
-    use gridmod, only: region_dx,coeffx
+    use gridmod, only: coeffx
 
     real(r_kind),intent(in)::  f_x(nx,ny_0:ny_1)
     real(r_double),intent(out):: fx_x(nx,ny_0:ny_1)
@@ -1777,9 +2616,31 @@ contains
   end subroutine zrnmi_delx
 
   subroutine zrnmi_delx_ad(f_x,fx_x)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_delx_ad
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     fx_x     - 
+!
+!   output argument list:
+!     f_x      - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
-    use constants, only: zero,two
-    use gridmod, only: region_dx,coeffx
+    use constants, only: zero
+    use gridmod, only: coeffx
 
     real(r_kind),intent(out)::  f_x(nx,ny_0:ny_1)
     real(r_double),intent(in):: fx_x(nx,ny_0:ny_1)
@@ -1802,9 +2663,30 @@ contains
   end subroutine zrnmi_delx_ad
 
   subroutine zrnmi_dely(f_y,fy_y)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_dely
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     f_y      - 
+!
+!   output argument list:
+!     fy_y     - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
-    use constants, only: two
-    use gridmod, only: region_dy,coeffy
+    use gridmod, only: coeffy
 
     real(r_kind),intent(in)::  f_y(ny,nx_0:nx_1)
     real(r_double),intent(out):: fy_y(ny,nx_0:nx_1)
@@ -1823,9 +2705,31 @@ contains
   end subroutine zrnmi_dely
 
   subroutine zrnmi_dely_ad(f_y,fy_y)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_dely_ad
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     fy_y     - 
+!
+!   output argument list:
+!     f_y      - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
-    use constants, only: zero,two
-    use gridmod, only: region_dy,coeffy
+    use constants, only: zero
+    use gridmod, only: coeffy
 
     real(r_kind),intent(out)::  f_y(ny,nx_0:nx_1)
     real(r_double),intent(in):: fy_y(ny,nx_0:nx_1)
@@ -1848,6 +2752,31 @@ contains
   end subroutine zrnmi_dely_ad
 
   subroutine zrnmi_uv2dz(u,v,div,vort,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_uv2dz
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u        - 
+!     v        - 
+!
+!   output argument list:
+!     div      - 
+!     vort     - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
     use kinds, only: r_kind,i_kind
     use constants, only: zero
@@ -1886,6 +2815,33 @@ contains
   end subroutine zrnmi_uv2dz
 
   subroutine zrnmi_uv2dz_ad(u,v,div,vort,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_uv2dz_ad
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!     div      - 
+!     vort     - 
+!
+!   output argument list:
+!     u        -
+!     v        -
+!     div      - 
+!     vort     - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
     use kinds, only: r_kind,i_kind
     use constants, only: zero
@@ -1926,85 +2882,32 @@ contains
 
   end subroutine zrnmi_uv2dz_ad
 
-  subroutine zrnmi_pc2uv(psi,chi,u,v,mype)
-
-    use kinds, only: r_kind,i_kind
-    use constants, only: zero
-    use gridmod, only: lat2,lon2
-    implicit none
-
-! Declare passed variables
-    integer(i_kind),intent(in):: mype
-    real(r_kind),dimension(lat2,lon2,nvert),intent(in):: psi,chi
-    real(r_kind),dimension(lat2,lon2,nvert),intent(out):: u,v
-
-! Declare local variables
-    real(r_kind),dimension(nx,ny_0:ny_1)::p_x,c_x,px_x,cx_x
-    real(r_kind),dimension(ny,nx_0:nx_1)::p_y,c_y,py_y,cy_y
-    real(r_kind),dimension(lat2,lon2,nvert)::px,cx,py,cy
-
-    p_x=zero ; c_x=zero
-    call zrnmi_sd2x2(psi,chi,p_x,c_x,mype)
-    p_y=zero ; c_y=zero
-    call zrnmi_sd2y2(psi,chi,p_y,c_y,mype)
-    px_x=zero
-    call zrnmi_delx(p_x,px_x)
-    cx_x=zero
-    call zrnmi_delx(c_x,cx_x)
-    py_y=zero
-    call zrnmi_dely(p_y,py_y)
-    cy_y=zero
-    call zrnmi_dely(c_y,cy_y)
-    px=zero ; cx=zero
-    call zrnmi_x2sd2(px,cx,px_x,cx_x,mype)
-    py=zero ; cy=zero
-    call zrnmi_y2sd2(py,cy,py_y,cy_y,mype)
-    u=cx-py
-    v=px+cy
-
-  end subroutine zrnmi_pc2uv
-
-  subroutine zrnmi_pc2uv_ad(psi,chi,u,v,mype)
-
-    use kinds, only: r_kind,i_kind
-    use constants, only: zero
-    use gridmod, only: lat2,lon2
-    implicit none
-
-! Declare passed variables
-    integer(i_kind),intent(in):: mype
-    real(r_kind),dimension(lat2,lon2,nvert),intent(out):: psi,chi
-    real(r_kind),dimension(lat2,lon2,nvert),intent(inout):: u,v
-
-! Declare local variables
-    real(r_kind),dimension(nx,ny_0:ny_1)::p_x,c_x,px_x,cx_x
-    real(r_kind),dimension(ny,nx_0:nx_1)::p_y,c_y,py_y,cy_y
-    real(r_kind),dimension(lat2,lon2,nvert)::px,cx,py,cy
-
-    cx=u ; cy=v ; px=v ; py=-u
-    py_y=zero ; cy_y=zero
-    call zrnmi_sd2y2(py,cy,py_y,cy_y,mype)
-    px_x=zero ; cx_x=zero
-    call zrnmi_sd2x2(px,cx,px_x,cx_x,mype)
-    c_y=zero
-    call zrnmi_dely_ad(c_y,cy_y)
-    p_y=zero
-    call zrnmi_dely_ad(p_y,py_y)
-    c_x=zero
-    call zrnmi_delx_ad(c_x,cx_x)
-    p_x=zero
-    call zrnmi_delx_ad(p_x,px_x)
-    py=zero ; cy=zero
-    call zrnmi_y2sd2(py,cy,p_y,c_y,mype)
-    px=zero ; cx=zero
-    call zrnmi_x2sd2(px,cx,p_x,c_x,mype)
-    psi=px+py ; chi=cx+cy
-
-  end subroutine zrnmi_pc2uv_ad
 
   subroutine zrnmi_constants(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_constants
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
-    use constants, only: zero,half,one,two,omega
+
+    use constants, only: zero,half,one,two,omega,pi
     use gridmod, only: region_dx,region_dy
     use mod_vtrans, only: depths,speeds
     use mpimod,only: mpi_rtype,mpi_integer,mpi_max,mpi_min,mpi_sum,mpi_comm_world,ierror
@@ -2058,11 +2961,11 @@ real(r_kind) pmaskmax(nvert),pmaskmin(nvert),pmaskmax0(nvert),pmaskmin0(nvert)
     do j=mx_0,mx_1
       k=list_x2y(1,j)
       bigk=k
-      ak2=( (two/dxbar)*sind(180._r_kind*bigk/(two*(nx+one))) )**2
+      ak2=( (two/dxbar)*sin(pi*bigk/(two*(nx+one))) )**2
       mode=list_x2y(2,j)
       do i=1,ny
         bigl=i
-        a2 = ak2 + ( (two/dybar)*sind(180._r_kind*bigl/(two*(ny+one))) )**2
+        a2 = ak2 + ( (two/dybar)*sin(pi*bigl/(two*(ny+one))) )**2
         s2=depths(mode)*a2+fbar**2
         am2(i,j)=one/a2
         sm2(i,j)=one/s2
@@ -2071,7 +2974,7 @@ real(r_kind) pmaskmax(nvert),pmaskmin(nvert),pmaskmax0(nvert),pmaskmin0(nvert)
         a2_p0_sm2(i,j)=a2*p0_sm2(i,j)
         f_p0_sm2(i,j)=fbar*p0_sm2(i,j)
 
-        thislength=two*3.14159263*sqrt(am2(i,j))
+        thislength=two*pi*sqrt(am2(i,j))
     !   if(thislength.lt.3._r_kind*max(dxbar,dybar)) cycle
         thisperiod=thislength/(speeds(mode)*3600._8)
       ! pmask(i,j)=half*(one-tanh((thisperiod-zrnmi_period_max)/zrnmi_period_width))
@@ -2110,29 +3013,69 @@ real(r_kind) pmaskmax(nvert),pmaskmin(nvert),pmaskmax0(nvert),pmaskmin0(nvert)
  
   end subroutine zrnmi_constants
 
-  subroutine zrnmi_strong_bal_correction(ut,vt,tt,pst,u,v,t,ps,baldiag,fullfield,update,update_tend,mype)
+  subroutine zrnmi_strong_bal_correction(ut,vt,tt,pst,psi,chi,t,ps,baldiag,fullfield,update,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_strong_bal_correction
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     ut       - 
+!     vt       - 
+!     tt       - 
+!     pst      - 
+!     psi      - 
+!     chi      - 
+!     t        - 
+!     ps       - 
+!     baldiag  - 
+!     update   - 
+!     fullfield- 
+!
+!   output argument list:
+!     ut       - 
+!     vt       - 
+!     tt       - 
+!     pst      - 
+!     u        - 
+!     v        - 
+!     t        - 
+!     ps       - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
-    use gridmod, only: lat2,lon2,nsig
     use constants, only: zero
+    use gridmod, only: lat2,lon2,nsig
     use mod_vtrans, only: vtrans,vtrans_inv
     use mod_vtrans, only: depths
-    use mpimod,only: mpi_rtype,mpi_sum,mpi_comm_world,ierror,mpi_max,mpi_min
+    use mpimod,only: mpi_rtype,mpi_sum,mpi_comm_world,ierror
     use jfunc,only: jiter
 
 !   initially just generate projections and make maps
 
     real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::ut,vt,tt
     real(r_kind),dimension(lat2,lon2),intent(inout)::pst
-    real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::u,v,t
+    real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::psi,chi,t
     real(r_kind),dimension(lat2,lon2),intent(inout)::ps
-    logical,intent(in)::baldiag,update,update_tend,fullfield
+    logical,intent(in)::baldiag,update,fullfield
     integer(i_kind),intent(in):: mype
 
     real(r_kind),dimension(ny,mx_0:mx_1,2)::rbalg
     real(r_kind),dimension(lat2,lon2,nvert)::utilde,vtilde,mtilde
     real(r_kind),dimension(ny,mx_0:mx_1)::dhat,zhat,mhat
     real(r_kind),dimension(ny,mx_0:mx_1)::phat2,chat2,mhat2
-    real(r_kind),dimension(lat2,lon2,nsig)::utg,vtg,ttg,du,dv,dt
+    real(r_kind),dimension(lat2,lon2,nsig)::utg,vtg,ttg,dpsi,dchi,dt
     real(r_kind),dimension(lat2,lon2)::pstg,dps
     real(r_kind),dimension(nvert)::baldt(nvert),balagt(nvert)
     real(r_kind),dimension(nvert)::baldt0(nvert),balagt0(nvert)
@@ -2154,17 +3097,6 @@ real(r_kind) pmaskmax(nvert),pmaskmin(nvert),pmaskmax0(nvert),pmaskmin0(nvert)
     mhat=pmask*mhat
 
 
-!      compute gravity projected tendencies
-    if(update_tend) then
-      chat2=-am2*dhat
-      phat2=-fbar*(f_sm2_am2*zhat+sm2*mhat)
-      mhat2=a2_p0_sm2*mhat+f_p0_sm2*zhat
-
-!   transform to grid space
-      call zrnmi_pcmhat2uvm(utilde,vtilde,mtilde,phat2,chat2,mhat2,mype)
-      call vtrans_inv(utilde,vtilde,mtilde,utg,vtg,ttg,pstg)
-      ut=ut-utg ; vt=vt-vtg ; tt=tt-ttg ; pst=pst-pstg
-    end if
 
     if(update) then
 !      compute gravity projected corrections:
@@ -2174,9 +3106,9 @@ real(r_kind) pmaskmax(nvert),pmaskmin(nvert),pmaskmax0(nvert),pmaskmin0(nvert)
 
 !   transform to grid space
       call zrnmi_pcmhat2uvm(utilde,vtilde,mtilde,phat2,chat2,mhat2,mype)
-      call vtrans_inv(utilde,vtilde,mtilde,du,dv,dt,dps)
+      call vtrans_inv(utilde,vtilde,mtilde,dpsi,dchi,dt,dps)
 
-      u=u-du ; v=v-dv ; t=t-dt ; ps=ps-dps
+      psi=psi-dpsi ; chi=chi-dchi ; t=t-dt ; ps=ps-dps
     end if
 
 
@@ -2222,37 +3154,69 @@ real(r_kind) pmaskmax(nvert),pmaskmin(nvert),pmaskmax0(nvert),pmaskmin0(nvert)
 
   end subroutine zrnmi_strong_bal_correction
 
-  subroutine zrnmi_strong_bal_correction_ad(ut,vt,tt,pst,u,v,t,ps,update,update_tend,mype)
+  subroutine zrnmi_strong_bal_correction_ad(ut,vt,tt,pst,psi,chi,t,ps,update,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    zrnmi_strong_bal_correction_ad
+!
+!   prgrmmr: 
+!
+! abstract:      
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     ut       - 
+!     vt       - 
+!     tt       - 
+!     pst      - 
+!     u        - 
+!     v        - 
+!     t        - 
+!     ps       - 
+!     update   - 
+!
+!   output argument list:
+!     ut       - 
+!     vt       - 
+!     tt       - 
+!     pst      - 
+!     ps       - 
+!
+! attributes:
+!   language:  f90
+!   machine:   
+!
+!$$$
 
     use gridmod, only: lat2,lon2,nsig
     use constants, only: zero
     use mod_vtrans, only: vtrans_ad,vtrans_inv_ad
-    use mod_vtrans, only: depths
-    use mpimod,only: mpi_rtype,mpi_comm_world,ierror,mpi_max,mpi_min
 
 !   initially just generate projections and make maps
 
     real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::ut,vt,tt
     real(r_kind),dimension(lat2,lon2),intent(inout)::pst
-    real(r_kind),dimension(lat2,lon2,nsig),intent(in)::u,v,t
+    real(r_kind),dimension(lat2,lon2,nsig),intent(in)::psi,chi,t
     real(r_kind),dimension(lat2,lon2),intent(in)::ps
-    logical,intent(in)::update,update_tend
+    logical,intent(in)::update
     integer(i_kind),intent(in):: mype
 
     real(r_kind),dimension(lat2,lon2,nvert)::utilde,vtilde,mtilde
     real(r_kind),dimension(ny,mx_0:mx_1)::dhat,zhat,mhat
     real(r_kind),dimension(ny,mx_0:mx_1)::phat2,chat2,mhat2
-    real(r_kind),dimension(lat2,lon2,nsig)::utg,vtg,ttg,du,dv,dt
+    real(r_kind),dimension(lat2,lon2,nsig)::utg,vtg,ttg,dpsi,dchi,dt
     real(r_kind),dimension(lat2,lon2)::pstg,dps
-    integer(i_kind) i,j,k,mode
 
     dhat=zero ; zhat=zero ; mhat=zero
-    du=zero ; dv=zero ; dt=zero ; dps=zero
+    dpsi=zero ; dchi=zero ; dt=zero ; dps=zero
     if(update) then
-      du=-u ; dv=-v ; dt=-t ; dps=-ps
+      dpsi=-psi ; dchi=-chi ; dt=-t ; dps=-ps
     
       utilde=zero ; vtilde=zero ; mtilde=zero
-      call vtrans_inv_ad(utilde,vtilde,mtilde,du,dv,dt,dps)
+      call vtrans_inv_ad(utilde,vtilde,mtilde,dpsi,dchi,dt,dps)
       phat2=zero ; chat2=zero ; mhat2=zero
       call zrnmi_pcmhat2uvm_ad(utilde,vtilde,mtilde,phat2,chat2,mhat2,mype)
 
@@ -2260,21 +3224,6 @@ real(r_kind) pmaskmax(nvert),pmaskmin(nvert),pmaskmax0(nvert),pmaskmin0(nvert)
       dhat=p0_sm2*mhat2-f_sm2_am2*phat2
       zhat=f_sm2_am2*chat2
       mhat=sm2*chat2
-    end if
-
-    if(update_tend) then
-      utg=-ut ; vtg=-vt ; ttg=-tt ; pstg=-pst
-!        vertical mode transform
-
-      utilde=zero ; vtilde=zero ; mtilde=zero
-      call vtrans_inv_ad(utilde,vtilde,mtilde,utg,vtg,ttg,pstg)
-      phat2=zero ; chat2=zero ; mhat2=zero
-      call zrnmi_pcmhat2uvm_ad(utilde,vtilde,mtilde,phat2,chat2,mhat2,mype)
-
-!        adjoint of compute gravity projected tendencies
-      dhat=dhat-am2*chat2
-      zhat=zhat-fbar*f_sm2_am2*phat2+f_p0_sm2*mhat2
-      mhat=mhat-fbar*sm2*phat2+a2_p0_sm2*mhat2
     end if
 
 !      adjoint of apply mask to input spectral fields to limit periods considered

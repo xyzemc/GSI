@@ -21,6 +21,10 @@ subroutine read_files(mype)
 !   2005-03-30  treadon - clean up formatting of write statements
 !   2006-01-09  treadon - use sigio to read gfs spectral coefficient file header
 !   2007-05-08  treadon - add gfsio interface
+!   2007-03-01  tremolet - measure time from beginning of assimilation window
+!   2007-04-17  todling  - getting nhr_assimilation from gsi_4dvar
+!   2008-05-27  safford - rm unused vars
+!   2009-01-07  todling - considerable revamp (no pre-assigned dims)
 !
 !   input argument list:
 !     mype     - mpi task id
@@ -35,9 +39,10 @@ subroutine read_files(mype)
   use kinds, only: r_kind,r_single,i_kind
   use mpimod, only: mpi_rtype,mpi_comm_world,ierror,npe,mpi_itype
   use guess_grids, only: nfldsig,nfldsfc,ntguessig,ntguessfc,&
-       ifilesig,ifilesfc,hrdifsig,hrdifsfc
-  use gridmod, only: nhr_assimilation,ncep_sigio,nlat_sfc,nlon_sfc
-  use constants, only: izero,zero,one
+       ifilesig,ifilesfc,hrdifsig,hrdifsfc,create_gesfinfo
+  use gsi_4dvar, only: l4dvar, idmodel, iwinbgn, winlen, nhr_assimilation
+  use gridmod, only: ncep_sigio,nlat_sfc,nlon_sfc,lpl_gfs,dx_gfs
+  use constants, only: izero,zero,one,r60inv
   use obsmod, only: iadate
   use sfcio_module, only: sfcio_head,sfcio_sropen,&
        sfcio_sclose,sfcio_srhead
@@ -54,21 +59,24 @@ subroutine read_files(mype)
 ! Declare local parameters
   integer(i_kind),parameter:: lunsfc=11
   integer(i_kind),parameter:: lunatm=12
+  integer(i_kind),parameter:: num_lpl=2000
   real(r_kind),parameter:: r0_001=0.001_r_kind
-  real(r_kind),parameter:: r60=60.0_r_kind
 
 ! Declare local variables
   logical(4) fexist
   character(6) filename
   integer(i_kind) i,j,iwan,npem1,iret
-  integer(i_kind) nsigg,nhr_half
+  integer(i_kind) nhr_half
+  integer(i_kind) iamana(2)
   integer(i_kind) nminanl,nmings,nming2,ndiff
   integer(i_kind),dimension(4):: idateg
   integer(i_kind),dimension(2):: i_ges
   integer(i_kind),dimension(5):: idate5
+  integer(i_kind),dimension(num_lpl):: lpl_dum
   real(r_single) hourg4
-  real(r_kind) hourg,temp
-  real(r_kind),dimension(202,2):: time_ges
+  real(r_kind) hourg,temp,t4dv
+  real(r_kind),allocatable,dimension(:,:):: time_atm
+  real(r_kind),allocatable,dimension(:,:):: time_sfc
 
   type(sfcio_head):: sfc_head
   type(sigio_head):: sigatm_head
@@ -81,21 +89,25 @@ subroutine read_files(mype)
   if(nhr_half*2 < nhr_assimilation) nhr_half=nhr_half+1
   npem1=npe-1
 
-  do i=1,nfldsig
-     ifilesig(i) = -100
-     hrdifsig(i) = zero
-  end do
-
-  do i=1,nfldsfc
-     ifilesfc(i) = -100
-     hrdifsfc(i) = zero
-  end do
-
-  do i=1,202
-     time_ges(i,1) = 999
-     time_ges(i,2) = 999
-  end do
-
+  fexist=.true.
+  nfldsig=0
+  do i=0,99
+      write(filename,'(a,i2.2)')'sigf',i
+      inquire(file=filename,exist=fexist)
+      if(fexist) nfldsig=nfldsig+1
+      write(filename,'(a,i2.2)')'sfcf',i
+      inquire(file=filename,exist=fexist)
+      if(fexist) nfldsfc=nfldsfc+1
+  enddo
+  if(nfldsig==0) then
+    write(6,*)'0 atm fields; aborting'
+    call stop2(169)
+  end if
+  if(nfldsfc==0) then
+    write(6,*)'0 sfc fields; aborting'
+    call stop2(170)
+  end if
+  allocate(time_atm(nfldsig,2),time_sfc(nfldsfc,2))
 
 ! Let a single task query the guess files.
   if(mype==npem1) then
@@ -131,32 +143,20 @@ subroutine read_files(mype)
            call w3fs21(idate5,nmings)
            nming2=nmings+60*hourg
            write(6,*)'READ_FILES:  atm guess file, nming2 ',hourg,idateg,nming2
-           ndiff=nming2-nminanl
-           if(abs(ndiff) > 60*nhr_half ) go to 110
+           t4dv=real((nming2-iwinbgn),r_kind)*r60inv
+           if (l4dvar) then
+             if (t4dv<zero .OR. t4dv>winlen) go to 110
+           else
+             ndiff=nming2-nminanl
+             if(abs(ndiff) > 60*nhr_half ) go to 110
+           endif
            iwan=iwan+1
-           time_ges(iwan,1) = (nming2-nminanl)/r60
-           time_ges(iwan+100,1)=i+r0_001
+           if(nminanl==nming2) iamana(1)=iwan
+           time_atm(iwan,1) = t4dv
+           time_atm(iwan,2) = i+r0_001
         end if
 110     continue
      end do
-     time_ges(201,1)=one
-     time_ges(202,1)=one
-     if(iwan > 1)then
-        do i=1,iwan
-           do j=i+1,iwan 
-              if(time_ges(j,1) < time_ges(i,1))then
-                 temp=time_ges(i+100,1)
-                 time_ges(i+100,1)=time_ges(j+100,1)
-                 time_ges(j+100,1)=temp
-                 temp=time_ges(i,1)
-                 time_ges(i,1)=time_ges(j,1)
-                 time_ges(j,1)=temp
-              end if
-           end do
-           if(time_ges(i,1) < r0_001)time_ges(202,1) = i
-        end do
-     end if
-     time_ges(201,1) = iwan+r0_001
 
 !    Check for consistency of times from surface guess files.
      iwan=izero
@@ -171,6 +171,12 @@ subroutine read_files(mype)
            idateg=sfc_head%idate
            i_ges(1)=sfc_head%lonb
            i_ges(2)=sfc_head%latb+2
+           if(sfc_head%latb/2>num_lpl)then
+             write(6,*)'READ_FILES: increase dimension of variable lpl_dum'
+             call stop2(80)
+           endif
+           lpl_dum=0
+           lpl_dum(1:sfc_head%latb/2)=sfc_head%lpl
            call sfcio_sclose(lunsfc,iret)
            hourg = hourg4
            idate5(1)=idateg(4); idate5(2)=idateg(2)
@@ -178,62 +184,65 @@ subroutine read_files(mype)
            call w3fs21(idate5,nmings)
            nming2=nmings+60*hourg
            write(6,*)'READ_FILES:  sfc guess file, nming2 ',hourg,idateg,nming2
-           ndiff=nming2-nminanl
-           if(abs(ndiff) > 60*nhr_half ) go to 210
+           t4dv=real((nming2-iwinbgn),r_kind)*r60inv
+           if (l4dvar) then
+             if (t4dv<zero .OR. t4dv>winlen) go to 210
+           else
+             ndiff=nming2-nminanl
+             if(abs(ndiff) > 60*nhr_half ) go to 210
+           endif
            iwan=iwan+1
-           time_ges(iwan,2) = (nming2-nminanl)/r60
-           time_ges(iwan+100,2)=i+r0_001
+           if(nminanl==nming2) iamana(2)=iwan
+           time_sfc(iwan,1) = t4dv
+           time_sfc(iwan,2) = i+r0_001
         end if
 210     continue
      end do
-     time_ges(201,2)=one
-     time_ges(202,2)=one
-     if(iwan > 1)then
-        do i=1,iwan
-           do j=i+1,iwan 
-              if(time_ges(j,2) < time_ges(i,2))then
-                 temp=time_ges(i+100,2)
-                 time_ges(i+100,2)=time_ges(j+100,2)
-                 time_ges(j+100,2)=temp
-                 temp=time_ges(i,2)
-                 time_ges(i,2)=time_ges(j,2)
-                 time_ges(j,2)=temp
-              end if
-           end do
-           if(time_ges(i,2) < r0_001)time_ges(202,2) = i
-        end do
-     end if
-     time_ges(201,2) = iwan+r0_001
+
   end if
 
 
 ! Broadcast guess file information to all tasks
-  call mpi_bcast(time_ges,404,mpi_rtype,npem1,mpi_comm_world,ierror)
+  call mpi_bcast(time_atm,2*nfldsig,mpi_rtype,npem1,mpi_comm_world,ierror)
+  call mpi_bcast(time_sfc,2*nfldsfc,mpi_rtype,npem1,mpi_comm_world,ierror)
+  call mpi_bcast(iamana,2,mpi_rtype,npem1,mpi_comm_world,ierror)
   call mpi_bcast(i_ges,2,mpi_itype,npem1,mpi_comm_world,ierror)
   nlon_sfc=i_ges(1)
   nlat_sfc=i_ges(2)
+  call mpi_bcast(lpl_dum,num_lpl,mpi_itype,npem1,mpi_comm_world,ierror)
+  allocate(lpl_gfs(nlat_sfc/2))
+  allocate(dx_gfs(nlat_sfc/2))
+  lpl_gfs(1)=1  ! singularity at pole
+  dx_gfs(1) = 360._r_kind / lpl_gfs(1)
+  do j=2,nlat_sfc/2
+     lpl_gfs(j)=lpl_dum(j-1)
+     dx_gfs(j) = 360._r_kind / lpl_gfs(j)
+  enddo
+
+
+! Allocate space for guess information files
+  call create_gesfinfo
 
 ! Load time information for atm guess field sinfo into output arrays
-  ntguessig = nint(time_ges(202,1))
-  nfldsig   = nint(time_ges(201,1))
+  ntguessig = iamana(1)
   do i=1,nfldsig
-     hrdifsig(i) = time_ges(i,1)
-     ifilesig(i) = nint(time_ges(i+100,1))
+     hrdifsig(i) = time_atm(i,1)
+     ifilesig(i) = nint(time_atm(i,2))
   end do
   if(mype == 0) write(6,*)'READ_FILES:  atm fcst files used in analysis  :  ',&
        (ifilesig(i),i=1,nfldsig),(hrdifsig(i),i=1,nfldsig),ntguessig
   
 
 ! Load time information for surface guess field info into output arrays
-  ntguessfc = nint(time_ges(202,2))
-  nfldsfc   = nint(time_ges(201,2))
+  ntguessfc = iamana(2)
   do i=1,nfldsfc
-     hrdifsfc(i) = time_ges(i,2)
-     ifilesfc(i) = nint(time_ges(i+100,2))
+     hrdifsfc(i) = time_sfc(i,1)
+     ifilesfc(i) = nint(time_sfc(i,2))
   end do
   if(mype == 0) write(6,*)'READ_FILES:  sfc fcst files used in analysis:  ',&
        (ifilesfc(i),i=1,nfldsfc),(hrdifsfc(i),i=1,nfldsfc),ntguessfc
   
+  deallocate(time_atm,time_sfc)
 
 ! End of routine
   return

@@ -16,6 +16,7 @@ subroutine rdgstat_reg(msig,mlat,inerr,&
 !   2005-04-22  treadon - change berror file to 4-byte reals
 !   2005-04_27  wu - read in stats for both qoption=1 and 2
 !   2006-04-17  treadon - include rlsig as subroutine output
+!   2008-04-21  safford - rm unused vars and uses
 !
 !   input argument list:
 !     msig     - number of sigma levels of stats
@@ -34,7 +35,7 @@ subroutine rdgstat_reg(msig,mlat,inerr,&
 !   machine:  ibm RS/6000 SP
 !$$$
   use kinds, only: r_kind,i_kind,r_single
-  use constants, only: zero,one_tenth,one
+  use constants, only: zero,one
   use gridmod, only: nsig
   use guess_grids, only:  ges_psfcavg,ges_prslavg
   use jfunc, only: qoption
@@ -53,15 +54,14 @@ subroutine rdgstat_reg(msig,mlat,inerr,&
   real(r_kind),dimension(nsig),intent(out):: rlsig
 
 ! Declare local parameters
-  real(r_kind),parameter:: r101_324 = 101.324_r_kind
-  real(r_kind),parameter:: r1013_24 = 1013.24_r_kind
+! real(r_kind),parameter:: r101_324 = 101.324_r_kind
+! real(r_kind),parameter:: r1013_24 = 1013.24_r_kind
   real(r_kind),parameter:: vz_oz    = 0.53333333_r_kind
 
 ! Declare local variables
-  integer(i_kind) k,i,iv,m,n,j,m1,l1,l
+  integer(i_kind) k,i,m,n,j,m1,l1,l
   integer(i_kind) lsig(nsig)
   real(r_kind),dimension(nsig):: coef1,coef2
-  real(r_kind) ps0
   real(r_kind),dimension(:),allocatable::  rlsigo
 
   real(r_single),dimension(:),allocatable::  clat_avn,sigma_avn,corp_avn,hwllp_avn

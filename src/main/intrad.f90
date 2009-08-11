@@ -1,5 +1,29 @@
-subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
-                  drt,drq,droz,dru,drv,dst,dsq,dsoz,dsu,dsv)
+module intradmod
+
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    intradmod    module for intrad and its tangent linear intrad_tl
+!
+! abstract: module for intrad and its tangent linear intrad_tl
+!
+! program history log:
+!   2005-05-16  Yanqiu zhu - wrap intrad and its tangent linear intrad_tl into one module
+!   2005-11-16  Derber - remove interfaces
+!   2008-11-26  TOdling - remove intrad_tl; add interface back
+!
+
+implicit none
+
+PRIVATE
+PUBLIC intrad
+
+interface intrad; module procedure &
+          intrad_
+end interface
+
+contains
+
+subroutine intrad_(radhead,rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    intrad      sat radiance nonlin qc obs operator
@@ -23,9 +47,20 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
 !   2006-04-03  derber  - clean up code
 !   2006-07-28  derber  - modify to use new inner loop obs data structure
 !                       - unify NL qc
+!   2007-03-19  tremolet - binning of observations
 !   2007-06-04  derber  - use quad precision to get reproducability over number of processors
+!   2007-06-05  tremolet - use observation diagnostics structure
+!   2007-07-09  tremolet - observation sensitivity
+!   2008-01-04  tremolet - Don't apply H^T if l_do_adjoint is false
+!   2008-05-31  safford - rm unused vars and uses
+!   2008-09-05  lueken  - merged ed's changes into q1fy09 code
+!   2008-10-10  derber  - flip indices for spred and rpred
+!   2008-11-28  todling  - remove quad precision; mpi_allgather is reproducible
+!                        - turn FOTO optional; changed ptr%time handle
+!                        - internal copy of pred's to avoid reshape in calling program
 !
 !   input argument list:
+!     radhead  - obs type pointer to obs structure
 !     st       - input temperature correction field
 !     sq       - input q correction field
 !     soz      - input ozone correction field
@@ -33,13 +68,9 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
 !     sv       - input v correction field
 !     spred    - input predictor values
 !     sst      - input skin temp. vector
-!     dst      - input time derivative of temperature correction field
-!     dsq      - input time derivative of q correction field
-!     dsoz     - input time derivative of ozone correction field
-!     dsu      - input time derivative of u correction field
-!     dsv      - input time derivative of v correction field
 !
 !   output argument list:
+!     radhead  - obs type pointer to obs structure
 !     rt       - output t vector after inclusion of radiance info.
 !     rq       - output q vector after inclusion of radiance info.
 !     ro       - output ozone vector after inclusion of radiance info.
@@ -47,11 +78,6 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
 !     rv       - output v vector after inclusion of radiance info.
 !     rpred    - output predictor vector after inclusion of radiance info.
 !     rst      - output skin temp. vector after inclusion of radiance info.
-!     drt      - output time derivative of t vector after inclusion of radiance info.
-!     drq      - output time derivative of q vector after inclusion of radiance info.
-!     dro      - output time derivative of ozone vector after inclusion of radiance info.
-!     dru      - output time derivative of u vector after inclusion of radiance info.
-!     drv      - output time derivative of v vector after inclusion of radiance info.
 !
 ! attributes:
 !   language: f90
@@ -60,30 +86,44 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
 !$$$
   use kinds, only: r_kind,i_kind,r_quad
   use radinfo, only: npred,npred1,jpch_rad,pg_rad,b_rad
-  use obsmod, only: radptr,radhead
-  use gridmod, only: latlon11,latlon1n,nsig,nsig2,nsig3,nsig4,&
+  use obsmod, only: rad_ob_type,lsaveobsens,l_do_adjoint
+  use jfunc, only: jiter,l_foto,xhat_dt,dhat_dt
+  use gridmod, only: latlon11,latlon1n,nsig,nsig2,&
        nsig3p1,nsig3p2,nsig3p3
-  use qcmod, only: nlnqc_iter
-  use constants, only: zero,half,one,tiny_r_kind,cg_term
+  use qcmod, only: nlnqc_iter,varqc_iter
+  use constants, only: zero,half,one,tiny_r_kind,cg_term,r3600
   implicit none
 
 ! Declare passed variables
+  type(rad_ob_type),pointer,intent(in):: radhead
   real(r_kind),dimension(latlon1n),intent(in):: st,sq,soz,su,sv
-  real(r_kind),dimension(latlon1n),intent(in):: dst,dsq,dsoz,dsu,dsv
   real(r_kind),dimension(latlon11),intent(in):: sst
-  real(r_kind),dimension(jpch_rad,npred),intent(in):: spred
+  real(r_kind),dimension(npred*jpch_rad),intent(in):: spred
   real(r_kind),dimension(latlon1n),intent(inout):: rt,rq,roz,ru,rv
-  real(r_kind),dimension(latlon1n),intent(inout):: drt,drq,droz,dru,drv
   real(r_kind),dimension(latlon11),intent(inout):: rst
-  real(r_quad),dimension(jpch_rad,npred),intent(inout):: rpred
+  real(r_quad),dimension(npred*jpch_rad),intent(inout):: rpred
 
 ! Declare local variables
-  integer(i_kind) i,j1,j2,j3,j4,i1,i2,i3,i4,n,n_1,n_2,k,ic,nn
-  real(r_kind) valx,tlap,val,tlap2,w1,w2,w3,w4
+  integer(i_kind) j,j1,j2,j3,j4,i1,i2,i3,i4,n,n_1,n_2,k,ic,nn,jn
+  integer(i_kind),dimension(nsig) :: i1n,i2n,i3n,i4n
+  real(r_kind) valx,val
+  real(r_kind) tlap,tlap2,w1,w2,w3,w4
 ! real(r_kind) penalty,p1
   real(r_kind),dimension(nsig3p3):: tval,tdir
-  real(r_kind) cg_rad,p0,wnotgross,wgross,time_rad,y,temp
-  integer(i_kind),dimension(nsig) :: i1n,i2n,i3n,i4n
+  real(r_kind) cg_rad,p0,wnotgross,wgross,time_rad
+  real(r_kind),dimension(npred,jpch_rad):: spred_loc
+  real(r_quad),dimension(npred,jpch_rad):: rpred_loc
+  type(rad_ob_type), pointer :: radptr
+
+! Make local copy of predictors to accmmodate interface change
+  jn=0
+  do j=1,jpch_rad
+    do n=1,npred
+       jn=jn+1
+       spred_loc(n,j) = spred(jn)
+       rpred_loc(n,j) = rpred(jn)
+    end do
+  end do
 
   radptr => radhead
   do while (associated(radptr))
@@ -101,7 +141,6 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
         tval(k)=zero
      end do
 
-     time_rad=radptr%time
 !  Begin Forward model
 !  calculate temperature, q, ozone, sst vector at observation location
      i1n(1) = j1
@@ -115,35 +154,53 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
       i4n(k) = i4n(k-1)+latlon11
      enddo
 !$omp parallel do private(k,i1,i2,i3,i4)
-    do k=1,nsig
+     do k=1,nsig
         i1 = i1n(k)
         i2 = i2n(k)
         i3 = i3n(k)
         i4 = i4n(k)
         tdir(k)=      w1*  st(i1)+w2*  st(i2)+ &
-                      w3*  st(i3)+w4*  st(i4)+ &
-                     (w1* dst(i1)+w2* dst(i2)+ &
-                      w3* dst(i3)+w4* dst(i4))*time_rad
+                      w3*  st(i3)+w4*  st(i4)
         tdir(nsig+k)= w1*  sq(i1)+w2*  sq(i2)+ &
-                      w3*  sq(i3)+w4*  sq(i4)+ &
-                     (w1* dsq(i1)+w2* dsq(i2)+ &
-                      w3* dsq(i3)+w4* dsq(i4))*time_rad
+                      w3*  sq(i3)+w4*  sq(i4)
         tdir(nsig2+k)=w1* soz(i1)+w2* soz(i2)+ &
-                      w3* soz(i3)+w4* soz(i4)+ &
-                     (w1*dsoz(i1)+w2*dsoz(i2)+ &
-                      w3*dsoz(i3)+w4*dsoz(i4))*time_rad
+                      w3* soz(i3)+w4* soz(i4)
      end do
 !$omp end parallel do
      tdir(nsig3p1)=   w1* su(j1) +w2* su(j2)+ &
-                      w3* su(j3) +w4* su(j4)+ &
-                     (w1*dsu(j1) +w2*dsu(j2)+ &
-                      w3*dsu(j3) +w4*dsu(j4))*time_rad
+                      w3* su(j3) +w4* su(j4)
      tdir(nsig3p2)=   w1* sv(j1) +w2* sv(j2)+ &
-                      w3* sv(j3) +w4* sv(j4)+ &
-                     (w1*dsv(j1) +w2*dsv(j2)+ &
-                      w3*dsv(j3) +w4*dsv(j4))*time_rad
+                      w3* sv(j3) +w4* sv(j4)
      tdir(nsig3p3)=   w1*sst(j1) +w2*sst(j2)+ &
                       w3*sst(j3) +w4*sst(j4)
+
+
+     if (l_foto) then
+       time_rad=radptr%time*r3600
+       do k=1,nsig
+          i1 = i1n(k)
+          i2 = i2n(k)
+          i3 = i3n(k)
+          i4 = i4n(k)
+          tdir(k)= tdir(k)+&
+                       (w1* xhat_dt%t(i1)+w2*xhat_dt%t(i2)+ &
+                        w3* xhat_dt%t(i3)+w4*xhat_dt%t(i4))*time_rad
+          tdir(nsig+k)= tdir(nsig+k)+&
+                       (w1* xhat_dt%q(i1)+w2*xhat_dt%q(i2)+ &
+                        w3* xhat_dt%q(i3)+w4*xhat_dt%q(i4))*time_rad
+          tdir(nsig2+k)= tdir(nsig2+k)+&
+                       (w1*xhat_dt%oz(i1)+w2*xhat_dt%oz(i2)+ &
+                        w3*xhat_dt%oz(i3)+w4*xhat_dt%oz(i4))*time_rad
+       end do
+       tdir(nsig3p1)=   tdir(nsig3p1)+&
+                       (w1*xhat_dt%u(j1) +w2*xhat_dt%u(j2)+ &
+                        w3*xhat_dt%u(j3) +w4*xhat_dt%u(j4))*time_rad
+       tdir(nsig3p2)=   tdir(nsig3p2)+&
+                       (w1*xhat_dt%v(j1) +w2*xhat_dt%v(j2)+ &
+                        w3*xhat_dt%v(j3) +w4*xhat_dt%v(j4))*time_rad
+
+     endif
+
 !  begin channel specific calculations
      do nn=1,radptr%nchan
         ic=radptr%icx(nn)
@@ -151,7 +208,7 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
 !       include observation increment and lapse rate contributions to bias correction
         tlap=radptr%pred2(nn)
         tlap2=tlap*tlap
-        valx=-radptr%res(nn)+spred(ic,npred)*tlap+spred(ic,npred1)*tlap2
+        valx=spred_loc(npred,ic)*tlap+spred_loc(npred1,ic)*tlap2
 
 !       Include contributions from atmospheric jacobian
         do k=1,nsig3p3
@@ -160,21 +217,35 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
 
 !       Include contributions from remaining bias correction terms
         do n=1,npred-2
-           valx=valx+spred(ic,n)*radptr%pred1(n)
+           valx=valx+spred_loc(n,ic)*radptr%pred1(n)
         end do
 
-!       Multiply by variance.
-        if (nlnqc_iter .and. pg_rad(ic) > tiny_r_kind .and. &
-                             b_rad(ic)  > tiny_r_kind) then
-           cg_rad=cg_term/b_rad(ic)
-           wnotgross= one-pg_rad(ic)
-           wgross = pg_rad(ic)*cg_rad/wnotgross
-           p0   = wgross/(wgross+exp(-half*radptr%err2(nn)*valx*valx))
-           valx = valx*(one-p0)
+        if (lsaveobsens) then
+          radptr%diags(nn)%ptr%obssen(jiter) = valx*radptr%err2(nn)*radptr%raterr2(nn)
+        else
+          if (radptr%luse) radptr%diags(nn)%ptr%tldepart(jiter) = valx
         endif
 
-        val      = valx*radptr%err2(nn)
-        val      = val*radptr%raterr2(nn)
+       if (l_do_adjoint) then
+        if (lsaveobsens) then
+          val=radptr%diags(nn)%ptr%obssen(jiter)
+
+        else
+          valx=valx-radptr%res(nn)
+
+!         Multiply by variance.
+          if (nlnqc_iter .and. pg_rad(ic) > tiny_r_kind .and. &
+                               b_rad(ic)  > tiny_r_kind) then
+             cg_rad=cg_term/b_rad(ic)
+             wnotgross= one-pg_rad(ic)*varqc_iter
+             wgross = varqc_iter*pg_rad(ic)*cg_rad/wnotgross
+             p0   = wgross/(wgross+exp(-half*radptr%err2(nn)*valx*valx))
+             valx = valx*(one-p0)
+          endif
+
+          val = valx*radptr%err2(nn)
+          val = val*radptr%raterr2(nn)
+        endif
 
 !       Begin adjoint
 
@@ -187,15 +258,40 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
 !       use compensated summation
         if(radptr%luse)then
           do n=1,npred-2
-             rpred(ic,n)=rpred(ic,n)+radptr%pred1(n)*val
+             rpred_loc(n,ic)=rpred_loc(n,ic)+radptr%pred1(n)*val
           end do
-          rpred(ic,npred) =rpred(ic,npred) +val*tlap
-          rpred(ic,npred1)=rpred(ic,npred1)+val*tlap2
+          rpred_loc(npred,ic) =rpred_loc(npred,ic) +val*tlap
+          rpred_loc(npred1,ic)=rpred_loc(npred1,ic)+val*tlap2
         end if
+       endif
      end do
 
-
+    if (l_do_adjoint) then
 !    Distribute adjoint contributions over surrounding grid points
+     ru(j1)=ru(j1)+w1*tval(nsig3p1)
+     ru(j2)=ru(j2)+w2*tval(nsig3p1)
+     ru(j3)=ru(j3)+w3*tval(nsig3p1)
+     ru(j4)=ru(j4)+w4*tval(nsig3p1)
+     rv(j1)=rv(j1)+w1*tval(nsig3p2)
+     rv(j2)=rv(j2)+w2*tval(nsig3p2)
+     rv(j3)=rv(j3)+w3*tval(nsig3p2)
+     rv(j4)=rv(j4)+w4*tval(nsig3p2)
+     if (l_foto) then
+       dhat_dt%u(j1)=dhat_dt%u(j1)+w1*tval(nsig3p1)*time_rad
+       dhat_dt%u(j2)=dhat_dt%u(j2)+w2*tval(nsig3p1)*time_rad
+       dhat_dt%u(j3)=dhat_dt%u(j3)+w3*tval(nsig3p1)*time_rad
+       dhat_dt%u(j4)=dhat_dt%u(j4)+w4*tval(nsig3p1)*time_rad
+       dhat_dt%v(j1)=dhat_dt%v(j1)+w1*tval(nsig3p2)*time_rad
+       dhat_dt%v(j2)=dhat_dt%v(j2)+w2*tval(nsig3p2)*time_rad
+       dhat_dt%v(j3)=dhat_dt%v(j3)+w3*tval(nsig3p2)*time_rad
+       dhat_dt%v(j4)=dhat_dt%v(j4)+w4*tval(nsig3p2)*time_rad
+     endif
+
+     rst(j1)=rst(j1)+w1*tval(nsig3p3)
+     rst(j2)=rst(j2)+w2*tval(nsig3p3)
+     rst(j3)=rst(j3)+w3*tval(nsig3p3)
+     rst(j4)=rst(j4)+w4*tval(nsig3p3)
+
      do k=1,nsig
         n_1=k+nsig
         n_2=k+nsig2
@@ -208,55 +304,45 @@ subroutine intrad(rt,rq,roz,ru,rv,rst,st,sq,soz,su,sv,sst,rpred,spred,   &
         rt(i2)=rt(i2)+w2*tval(k)
         rt(i3)=rt(i3)+w3*tval(k)
         rt(i4)=rt(i4)+w4*tval(k)
-        drt(i1)=drt(i1)+w1*tval(k)*time_rad
-        drt(i2)=drt(i2)+w2*tval(k)*time_rad
-        drt(i3)=drt(i3)+w3*tval(k)*time_rad
-        drt(i4)=drt(i4)+w4*tval(k)*time_rad
-
         rq(i1)=rq(i1)+w1*tval(n_1)
         rq(i2)=rq(i2)+w2*tval(n_1)
         rq(i3)=rq(i3)+w3*tval(n_1)
         rq(i4)=rq(i4)+w4*tval(n_1)
-        drq(i1)=drq(i1)+w1*tval(n_1)*time_rad
-        drq(i2)=drq(i2)+w2*tval(n_1)*time_rad
-        drq(i3)=drq(i3)+w3*tval(n_1)*time_rad
-        drq(i4)=drq(i4)+w4*tval(n_1)*time_rad
-
         roz(i1)=roz(i1)+w1*tval(n_2)
         roz(i2)=roz(i2)+w2*tval(n_2)
         roz(i3)=roz(i3)+w3*tval(n_2)
         roz(i4)=roz(i4)+w4*tval(n_2)
-        droz(i1)=droz(i1)+w1*tval(n_2)*time_rad
-        droz(i2)=droz(i2)+w2*tval(n_2)*time_rad
-        droz(i3)=droz(i3)+w3*tval(n_2)*time_rad
-        droz(i4)=droz(i4)+w4*tval(n_2)*time_rad
+        if (l_foto) then
+          dhat_dt%t(i1)=dhat_dt%t(i1)+w1*tval(k)*time_rad
+          dhat_dt%t(i2)=dhat_dt%t(i2)+w2*tval(k)*time_rad
+          dhat_dt%t(i3)=dhat_dt%t(i3)+w3*tval(k)*time_rad
+          dhat_dt%t(i4)=dhat_dt%t(i4)+w4*tval(k)*time_rad
+          dhat_dt%q(i1)=dhat_dt%q(i1)+w1*tval(n_1)*time_rad
+          dhat_dt%q(i2)=dhat_dt%q(i2)+w2*tval(n_1)*time_rad
+          dhat_dt%q(i3)=dhat_dt%q(i3)+w3*tval(n_1)*time_rad
+          dhat_dt%q(i4)=dhat_dt%q(i4)+w4*tval(n_1)*time_rad
+          dhat_dt%oz(i1)=dhat_dt%oz(i1)+w1*tval(n_2)*time_rad
+          dhat_dt%oz(i2)=dhat_dt%oz(i2)+w2*tval(n_2)*time_rad
+          dhat_dt%oz(i3)=dhat_dt%oz(i3)+w3*tval(n_2)*time_rad
+          dhat_dt%oz(i4)=dhat_dt%oz(i4)+w4*tval(n_2)*time_rad
+        endif
 
      end do
+    endif ! < l_do_adjoint >
 
-     ru(j1)=ru(j1)+w1*tval(nsig3p1)
-     ru(j2)=ru(j2)+w2*tval(nsig3p1)
-     ru(j3)=ru(j3)+w3*tval(nsig3p1)
-     ru(j4)=ru(j4)+w4*tval(nsig3p1)
-     dru(j1)=dru(j1)+w1*tval(nsig3p1)*time_rad
-     dru(j2)=dru(j2)+w2*tval(nsig3p1)*time_rad
-     dru(j3)=dru(j3)+w3*tval(nsig3p1)*time_rad
-     dru(j4)=dru(j4)+w4*tval(nsig3p1)*time_rad
- 
-     rv(j1)=rv(j1)+w1*tval(nsig3p2)
-     rv(j2)=rv(j2)+w2*tval(nsig3p2)
-     rv(j3)=rv(j3)+w3*tval(nsig3p2)
-     rv(j4)=rv(j4)+w4*tval(nsig3p2)
-     drv(j1)=drv(j1)+w1*tval(nsig3p2)*time_rad
-     drv(j2)=drv(j2)+w2*tval(nsig3p2)*time_rad
-     drv(j3)=drv(j3)+w3*tval(nsig3p2)*time_rad
-     drv(j4)=drv(j4)+w4*tval(nsig3p2)*time_rad
-
-     rst(j1)=rst(j1)+w1*tval(nsig3p3)
-     rst(j2)=rst(j2)+w2*tval(nsig3p3)
-     rst(j3)=rst(j3)+w3*tval(nsig3p3)
-     rst(j4)=rst(j4)+w4*tval(nsig3p3)
-
-     radptr => radptr%llpoint
+    radptr => radptr%llpoint
   end do
+
+! Return predictors in its original shape
+  jn=0
+  do j=1,jpch_rad
+    do n=1,npred
+       jn=jn+1
+       rpred(jn)=rpred_loc(n,j)
+    end do
+  end do
+
   return
-end subroutine intrad
+end subroutine intrad_
+
+end module intradmod

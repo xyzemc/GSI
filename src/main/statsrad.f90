@@ -24,6 +24,7 @@ subroutine statsrad(aivals,stats,ndata)
 !   2005-09-28  derber  - replace dtype parameter with obstype_all
 !   2005-10-20  kazumori - add amsre
 !   2006-02-03  derber - modify to simplify and new obs control
+!   2008-04-11  safford - rm unused vars, comment out unused labels
 !
 !   input argument list:
 !     aivals   - array holding sums fro various statistical output
@@ -51,10 +52,9 @@ subroutine statsrad(aivals,stats,ndata)
   integer(i_kind),dimension(ndat,3),intent(in):: ndata
 
 ! Declare local variables
-  integer(i_kind) nsig2,nsigx,nsigx1,nx,iobs2,i,j,is,n,ii,iasim
-  integer(i_kind) iobs1,iland,isnoice,icoast,ireduce,itopo,ivarl,igross,nlgross,nlgross_all
-  integer(i_kind) ich1,ich2,ich3,ich4,ich5,ich8,ich12,ich21,iemiss,iice
-  integer(i_kind) iang,jsat,icerr
+  integer(i_kind) iobs2,i,j,is,iasim
+  integer(i_kind) iland,isnoice,icoast,ireduce,ivarl,nlgross,nlgross_all
+  integer(i_kind) icerr
   
   real(r_kind) penalty_all,qcpenalty_all,rpenal,qcpenal
   real(r_kind) svar,rsum,stdev,cpen,qcpen

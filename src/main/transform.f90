@@ -26,7 +26,7 @@ subroutine sptez_s(wave,grid,idir)
 ! program history log:
 !   1996-02-29  iredell
 !   2004-08-23  treadon - adapt splib routine sptez for gsi use
-!
+!   2007-04-25  errico  - replace use of duplicate arguments in sptranf_s
 !   input arguments:
 !     wave     - real (2*mx) wave field if idir>0
 !                where mx=(jcap+1)*((iromb+1)*jcap+2)/2
@@ -83,12 +83,12 @@ subroutine sptez_s(wave,grid,idir)
   endif
 
 ! Call spectral <--> grid transform
-  call sptranf_s(wave,grid,grid,idir)
+  call sptranf_s(wave,grid,idir)
 
   return
 end subroutine sptez_s
 
-subroutine sptranf_s(wave,gridn,grids,idir)
+subroutine sptranf_s(wave,grid,idir)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:  sptranf_s     perform a scalar spherical transform
@@ -121,18 +121,18 @@ subroutine sptranf_s(wave,gridn,grids,idir)
 !   1998-12-15  iredell  generic fft used
 !   2004-08-23  treadon - adapt splib routine sptranf for gsi use
 !   2006-05-03  treadon - remove jc from specmod list since not used
+!   2007-04-25  errico  - replace use of duplicate arguments
+!   2008-04-03  safford - rm unused vars and uses
 !
 !   input arguments:
 !     wave     - real (*) wave fields if idir>0
-!     gridn    - real (*) n.h. grid fields (starting at jb) if idir<0
-!     grids    - real (*) s.h. grid fields (starting at jb) if idir<0
+!     grid     - real (*) grid fields (starting at jb) if idir<0
 !     idir     - integer transform flag
 !                (idir>0 for wave to grid, idir<0 for grid to wave)
 !
 !   output arguments:
 !     wave     - real (*) wave fields if idir<0
-!     gridn    - real (*) n.h. grid fields (starting at jb) if idir>0
-!     grids    - real (*) s.h. grid fields (starting at jb) if idir>0
+!     grid     - real (*) grid fields (starting at jb) if idir>0
 !
 ! subprograms called:
 !   sptranf1     sptranf spectral transform
@@ -161,7 +161,7 @@ subroutine sptranf_s(wave,gridn,grids,idir)
   use kinds, only: r_kind,i_kind
   use constants, only: zero
   use specmod, only: iromb,jcap,idrt,imax,jmax,ijmax,&
-       jn,js,kw,jb,je,nc,ioffset,&
+       jn,js,jb,je,nc,ioffset,&
        eps,epstop,enn1,elonn1,eon,eontop,&
        afft,clat,slat,wlat,pln,plntop
   implicit none
@@ -169,13 +169,14 @@ subroutine sptranf_s(wave,gridn,grids,idir)
 ! Declare passed variables
   integer(i_kind),intent(in):: idir
   real(r_kind),dimension(nc),intent(inout):: wave
-  real(r_kind),dimension(ijmax),intent(inout):: gridn
-  real(r_kind),dimension(ijmax),intent(inout):: grids
+  real(r_kind),dimension(ijmax),intent(inout):: grid
 
 ! Declare local variables
-  integer(i_kind) i,j,jj,ij,ijn,ijs,mp
+  integer(i_kind) i,j,jj,ijn,ijs,mp
   real(r_kind),dimension(2*(jcap+1)):: wtop
   real(r_kind),dimension(imax,2):: g
+  integer(i_kind) :: ldafft
+  ldafft=256+imax
 
 ! Initialize local variables
   mp=0
@@ -190,15 +191,15 @@ subroutine sptranf_s(wave,gridn,grids,idir)
      do j=jb,je
         call sptranf1(iromb,jcap,idrt,imax,jmax,j,j, &
              eps,epstop,enn1,elonn1,eon,eontop, &
-             afft,clat(j),slat(j),wlat(j), &
+             afft(1:ldafft),clat(j),slat(j),wlat(j), &
              pln(1,j),plntop(1,j),mp, &
              wave,wtop,g,idir)
         do i=1,imax
            jj  = j-jb
            ijn = i + jj*jn
            ijs = i + jj*js + ioffset
-           gridn(ijn)=g(i,1)
-           grids(ijs)=g(i,2)
+           grid(ijn)=g(i,1)
+           grid(ijs)=g(i,2)
         enddo
      enddo
 !!$omp end parallel do
@@ -212,13 +213,13 @@ subroutine sptranf_s(wave,gridn,grids,idir)
               jj  = j-jb
               ijn = i + jj*jn
               ijs = i + jj*js + ioffset
-              g(i,1)=gridn(ijn)
-              g(i,2)=grids(ijs)
+              g(i,1)=grid(ijn)
+              g(i,2)=grid(ijs)
               
            enddo
            call sptranf1(iromb,jcap,idrt,imax,jmax,j,j, &
                 eps,epstop,enn1,elonn1,eon,eontop, &
-                afft,clat(j),slat(j),wlat(j), &
+                afft(1:ldafft),clat(j),slat(j),wlat(j), &
                 pln(1,j),plntop(1,j),mp, &
                 wave,wtop,g,idir)
         endif
@@ -256,6 +257,8 @@ subroutine sptez_v(waved,wavez,gridu,gridv,idir)
 ! program history log:
 !   1996-02-29  iredell
 !   2004-08-23  treadon - adapt splib routine sptezv for gsi use
+!   2007-04-25  errico  - replace use of duplicate arguments in sptranf_v
+!   2008-04-03  safford - rm unused vars 
 !
 !   input arguments:
 !     waved    - real (2*mx) wave divergence field if idir>0
@@ -305,7 +308,7 @@ subroutine sptez_v(waved,wavez,gridu,gridv,idir)
   real(r_kind),dimension(ijmax),intent(inout):: gridu,gridv
 
 ! Declare local variables
-  integer(i_kind) i,j
+  integer(i_kind) i
 
 ! Zero appropriate output array based on direction of transform
   if (idir<0) then
@@ -321,11 +324,11 @@ subroutine sptez_v(waved,wavez,gridu,gridv,idir)
   endif
 
 ! Call spectral <--> grid transform
-  call sptranf_v(waved,wavez,gridu,gridu,gridv,gridv,idir)
+  call sptranf_v(waved,wavez,gridu,gridv,idir)
 
 end subroutine sptez_v
 
-subroutine sptranf_v(waved,wavez,gridun,gridus,gridvn,gridvs,idir)
+subroutine sptranf_v(waved,wavez,gridu,gridv,idir)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:  sptranf_v     perform a vecor spherical transform
@@ -359,14 +362,13 @@ subroutine sptranf_v(waved,wavez,gridun,gridus,gridvn,gridvs,idir)
 !   2004-08-23  treadon - adapt splib routine sptranfv for gsi use
 !   2006-05-03  treadon - remove jc from specmod list since not used
 !   2006-07-07  kleist - correct bug in indexing of j=1,2*ncd2 loop
+!   2007-04-25  errico  - replace use of duplicate arguments
 !
 !   input arguments:
 !     waved    - real (*) wave divergence fields if idir>0
 !     wavez    - real (*) wave vorticity fields if idir>0
-!     gridun   - real (*) n.h. grid u-winds (starting at jb) if idir<0
-!     gridus   - real (*) s.h. grid u-winds (starting at jb) if idir<0
-!     gridvn   - real (*) n.h. grid v-winds (starting at jb) if idir<0
-!     gridvs   - real (*) s.h. grid v-winds (starting at jb) if idir<0
+!     gridu    - real (*) grid u-winds (starting at jb) if idir<0
+!     gridv    - real (*) grid v-winds (starting at jb) if idir<0
 !     idir     - integer transform flag
 !                (idir>0 for wave to grid, idir<0 for grid to wave)
 !
@@ -375,10 +377,8 @@ subroutine sptranf_v(waved,wavez,gridun,gridus,gridvn,gridvs,idir)
 !                [waved=(d(gridu)/dlam+d(clat*gridv)/dphi)/(clat*rerth)]
 !     wavez    - real (*) wave vorticity fields if idir<0
 !                [wavez=(d(gridv)/dlam-d(clat*gridu)/dphi)/(clat*rerth)]
-!     gridun   - real (*) n.h. grid u-winds (starting at jb) if idir>0
-!     gridus   - real (*) s.h. grid u-winds (starting at jb) if idir>0
-!     gridvn   - real (*) n.h. grid v-winds (starting at jb) if idir>0
-!     gridvs   - real (*) s.h. grid v-winds (starting at jb) if idir>0
+!     gridu    - real (*) grid u-winds (starting at jb) if idir>0
+!     gridv    - real (*) grid v-winds (starting at jb) if idir>0
 !
 ! subprograms called:
 !   sptranf1     sptranf spectral transform
@@ -408,7 +408,7 @@ subroutine sptranf_v(waved,wavez,gridun,gridus,gridvn,gridvs,idir)
 !$$$
   use kinds, only: r_kind,i_kind
   use specmod, only: iromb,jcap,idrt,imax,jmax,ijmax,&
-       jn,js,kw,jb,je,ncd2,nc,ioffset,&
+       jn,js,jb,je,ncd2,nc,ioffset,&
        eps,epstop,enn1,elonn1,eon,eontop,&
        afft,clat,slat,wlat,pln,plntop
   implicit none
@@ -416,16 +416,18 @@ subroutine sptranf_v(waved,wavez,gridun,gridus,gridvn,gridvs,idir)
 ! Declare passed variables
   integer(i_kind),intent(in):: idir
   real(r_kind),dimension(nc):: waved,wavez
-  real(r_kind),dimension(ijmax):: gridun,gridus,gridvn,gridvs
+  real(r_kind),dimension(ijmax):: gridu,gridv
 
 
 ! Declare local variables
-  integer(i_kind) i,j,jj,ij,ijn,ijs
+  integer(i_kind) i,j,jj,ijn,ijs
   integer(i_kind),dimension(2):: mp
   real(r_kind),dimension(ncd2*2,2):: w
   real(r_kind),dimension(2*(jcap+1),2):: wtop
   real(r_kind),dimension(imax,2,2):: g
   real(r_kind),dimension(ncd2*2,2):: winc
+  integer(i_kind) :: ldafft
+  ldafft=256+imax
 
 ! Set parameters
   mp=1
@@ -438,13 +440,240 @@ subroutine sptranf_v(waved,wavez,gridun,gridus,gridvn,gridvs,idir)
      do j=jb,je
         call sptranf1(iromb,jcap,idrt,imax,jmax,j,j, &
              eps,epstop,enn1,elonn1,eon,eontop, &
-             afft,clat(j),slat(j),wlat(j), &
+             afft(1:ldafft),clat(j),slat(j),wlat(j), &
              pln(1,j),plntop(1,j),mp, &
              w(1,1),wtop(1,1),g(1,1,1),idir)
         call sptranf1(iromb,jcap,idrt,imax,jmax,j,j, &
              eps,epstop,enn1,elonn1,eon,eontop, &
-             afft,clat(j),slat(j),wlat(j), &
+             afft(1:ldafft),clat(j),slat(j),wlat(j), &
              pln(1,j),plntop(1,j),mp, &
+             w(1,2),wtop(1,2),g(1,1,2),idir)
+        do i=1,imax
+           jj   = j-jb
+           ijn = i + jj*jn
+           ijs = i + jj*js + ioffset
+           gridu(ijn)=g(i,1,1)
+           gridu(ijs)=g(i,2,1)
+           gridv(ijn)=g(i,1,2)
+           gridv(ijs)=g(i,2,2)
+           
+        enddo
+     enddo
+
+!  Transform grid to wave
+  else
+     w=0
+     wtop=0
+     do j=jb,je
+        if(wlat(j).gt.0.) then
+           do i=1,imax
+              jj   = j-jb
+              ijn = i + jj*jn
+              ijs = i + jj*js + ioffset
+
+              g(i,1,1)=gridu(ijn)/clat(j)**2
+              g(i,2,1)=gridu(ijs)/clat(j)**2
+              g(i,1,2)=gridv(ijn)/clat(j)**2
+              g(i,2,2)=gridv(ijs)/clat(j)**2
+           enddo
+           call sptranf1(iromb,jcap,idrt,imax,jmax,j,j, &
+                eps,epstop,enn1,elonn1,eon,eontop, &
+                afft(1:ldafft),clat(j),slat(j),wlat(j), &
+                pln(1,j),plntop(1,j),mp, &
+                w(1,1),wtop(1,1),g(1,1,1),idir)
+           call sptranf1(iromb,jcap,idrt,imax,jmax,j,j, &
+                eps,epstop,enn1,elonn1,eon,eontop, &
+                afft(1:ldafft),clat(j),slat(j),wlat(j), &
+                pln(1,j),plntop(1,j),mp, &
+                w(1,2),wtop(1,2),g(1,1,2),idir)
+        endif
+     enddo
+     call spuv2dz(iromb,jcap,enn1,elonn1,eon,eontop, &
+          w(1,1),w(1,2),wtop(1,1),wtop(1,2), &
+          winc(1,1),winc(1,2))
+     
+     do j=1,2*ncd2
+        waved(j)=waved(j)+winc(j,1)
+        wavez(j)=wavez(j)+winc(j,2)
+     end do
+  endif
+
+ end subroutine sptranf_v
+
+subroutine sptez_s_bkg(wave,grid,idir)
+  use kinds, only: r_kind,i_kind
+  use specmod, only: nc_b,ijmax
+  use constants, only: zero
+  implicit none
+
+! Declare passed variables
+  integer(i_kind),intent(in):: idir
+  real(r_kind),dimension(nc_b),intent(inout):: wave
+  real(r_kind),dimension(ijmax),intent(inout):: grid
+
+! Declare local variables
+  integer(i_kind) i
+
+! Zero appropriate output array based on direction of transform
+  if (idir<0) then
+     do i=1,nc_b
+        wave(i)=zero
+     end do
+  elseif (idir>0) then
+     do i=1,ijmax
+        grid(i)=zero
+     end do
+
+  endif
+
+! Call spectral <--> grid transform
+  call sptranf_s_bkg(wave,grid,grid,idir)
+
+  return
+end subroutine sptez_s_bkg
+
+subroutine sptranf_s_bkg(wave,gridn,grids,idir)
+  use kinds, only: r_kind,i_kind
+  use constants, only: zero
+  use specmod, only: iromb_b,jcap_b,idrt_b,imax,jmax,ijmax,&
+       jn,js,jb,je,nc_b,ioffset,&
+       eps_b,epstop_b,enn1_b,elonn1_b,eon_b,eontop_b,&
+       afft,clat,slat,wlat,pln_b,plntop_b
+  implicit none
+
+! Declare passed variables
+  integer(i_kind),intent(in):: idir
+  real(r_kind),dimension(nc_b),intent(inout):: wave
+  real(r_kind),dimension(ijmax),intent(inout):: gridn
+  real(r_kind),dimension(ijmax),intent(inout):: grids
+
+! Declare local variables
+  integer(i_kind) i,j,jj,ijn,ijs,mp
+  real(r_kind),dimension(2*(jcap_b+1)):: wtop
+  real(r_kind),dimension(imax,2):: g
+
+! Initialize local variables
+  mp=0
+
+  do i=1,2*(jcap_b+1)
+     wtop(i)=zero
+  end do
+
+! Transform wave to grid
+  if(idir.gt.0) then
+!!$omp parallel do private(j,i,jj,ijn,ijs,g)
+     do j=jb,je
+        call sptranf1(iromb_b,jcap_b,idrt_b,imax,jmax,j,j, &
+             eps_b,epstop_b,enn1_b,elonn1_b,eon_b,eontop_b, &
+             afft,clat(j),slat(j),wlat(j), &
+            pln_b(1,j),plntop_b(1,j),mp, &
+             wave,wtop,g,idir)
+        do i=1,imax
+           jj  = j-jb
+           ijn = i + jj*jn
+           ijs = i + jj*js + ioffset
+           gridn(ijn)=g(i,1)
+           grids(ijs)=g(i,2)
+        enddo
+     enddo
+!!$omp end parallel do
+
+! Transform grid to wave
+  else
+!!$omp parallel do private(j,i,jj,ijn,ijs,g)
+     do j=jb,je
+        if(wlat(j).gt.0.) then
+           do i=1,imax
+              jj  = j-jb
+              ijn = i + jj*jn
+              ijs = i + jj*js + ioffset
+              g(i,1)=gridn(ijn)
+              g(i,2)=grids(ijs)
+
+           enddo
+           call sptranf1(iromb_b,jcap_b,idrt_b,imax,jmax,j,j, &
+                eps_b,epstop_b,enn1_b,elonn1_b,eon_b,eontop_b, &
+                afft,clat(j),slat(j),wlat(j), &
+                pln_b(1,j),plntop_b(1,j),mp, &
+                wave,wtop,g,idir)
+        endif
+     enddo
+!!$omp end parallel do
+  endif
+end subroutine sptranf_s_bkg
+
+subroutine sptez_v_bkg(waved,wavez,gridu,gridv,idir)
+  use kinds, only: r_kind,i_kind
+  use specmod, only: nc_b,ijmax,imax,jmax
+  use constants, only: zero
+  implicit none
+
+! Declare passed variables
+  integer(i_kind),intent(in):: idir
+  real(r_kind),dimension(nc_b),intent(inout):: waved,wavez
+  real(r_kind),dimension(ijmax),intent(inout):: gridu,gridv
+
+! Declare local variables
+  integer(i_kind) i
+
+! Zero appropriate output array based on direction of transform
+  if (idir<0) then
+     do i=1,nc_b
+        waved(i)=zero
+        wavez(i)=zero
+     end do
+  elseif (idir>0) then
+     do i=1,ijmax
+        gridu(i)=zero
+        gridv(i)=zero
+     end do
+  endif
+
+! Call spectral <--> grid transform
+  call sptranf_v_bkg(waved,wavez,gridu,gridu,gridv,gridv,idir)
+
+end subroutine sptez_v_bkg
+
+subroutine sptranf_v_bkg(waved,wavez,gridun,gridus,gridvn,gridvs,idir)
+  use kinds, only: r_kind,i_kind
+  use specmod, only: iromb_b,jcap_b,idrt_b,imax,jmax,ijmax,&
+       jn,js,jb,je,ncd2_b,nc_b,ioffset,&
+       eps_b,epstop_b,enn1_b,elonn1_b,eon_b,eontop_b,&
+       afft,clat,slat,wlat,pln_b,plntop_b
+  implicit none
+
+! Declare passed variables
+  integer(i_kind),intent(in):: idir
+  real(r_kind),dimension(nc_b):: waved,wavez
+  real(r_kind),dimension(ijmax):: gridun,gridus,gridvn,gridvs
+
+
+! Declare local variables
+  integer(i_kind) i,j,jj,ijn,ijs
+  integer(i_kind),dimension(2):: mp
+  real(r_kind),dimension(ncd2_b*2,2):: w
+  real(r_kind),dimension(2*(jcap_b+1),2):: wtop
+  real(r_kind),dimension(imax,2,2):: g
+  real(r_kind),dimension(ncd2_b*2,2):: winc
+
+! Set parameters
+  mp=1
+
+! Transform wave to grid
+  if(idir.gt.0) then
+     call spdz2uv(iromb_b,jcap_b,enn1_b,elonn1_b,eon_b,eontop_b, &
+          waved,wavez, &
+          w(1,1),w(1,2),wtop(1,1),wtop(1,2))
+     do j=jb,je
+        call sptranf1(iromb_b,jcap_b,idrt_b,imax,jmax,j,j, &
+             eps_b,epstop_b,enn1_b,elonn1_b,eon_b,eontop_b, &
+             afft,clat(j),slat(j),wlat(j), &
+             pln_b(1,j),plntop_b(1,j),mp, &
+             w(1,1),wtop(1,1),g(1,1,1),idir)
+        call sptranf1(iromb_b,jcap_b,idrt_b,imax,jmax,j,j, &
+             eps_b,epstop_b,enn1_b,elonn1_b,eon_b,eontop_b, &
+             afft,clat(j),slat(j),wlat(j), &
+             pln_b(1,j),plntop_b(1,j),mp, &
              w(1,2),wtop(1,2),g(1,1,2),idir)
         do i=1,imax
            jj   = j-jb
@@ -454,7 +683,7 @@ subroutine sptranf_v(waved,wavez,gridun,gridus,gridvn,gridvs,idir)
            gridus(ijs)=g(i,2,1)
            gridvn(ijn)=g(i,1,2)
            gridvs(ijs)=g(i,2,2)
-           
+
         enddo
      enddo
 
@@ -474,26 +703,27 @@ subroutine sptranf_v(waved,wavez,gridun,gridus,gridvn,gridvs,idir)
               g(i,1,2)=gridvn(ijn)/clat(j)**2
               g(i,2,2)=gridvs(ijs)/clat(j)**2
            enddo
-           call sptranf1(iromb,jcap,idrt,imax,jmax,j,j, &
-                eps,epstop,enn1,elonn1,eon,eontop, &
+           call sptranf1(iromb_b,jcap_b,idrt_b,imax,jmax,j,j, &
+                eps_b,epstop_b,enn1_b,elonn1_b,eon_b,eontop_b, &
                 afft,clat(j),slat(j),wlat(j), &
-                pln(1,j),plntop(1,j),mp, &
+                pln_b(1,j),plntop_b(1,j),mp, &
                 w(1,1),wtop(1,1),g(1,1,1),idir)
-           call sptranf1(iromb,jcap,idrt,imax,jmax,j,j, &
-                eps,epstop,enn1,elonn1,eon,eontop, &
+           call sptranf1(iromb_b,jcap_b,idrt_b,imax,jmax,j,j, &
+                eps_b,epstop_b,enn1_b,elonn1_b,eon_b,eontop_b, &
                 afft,clat(j),slat(j),wlat(j), &
-                pln(1,j),plntop(1,j),mp, &
+                pln_b(1,j),plntop_b(1,j),mp, &
                 w(1,2),wtop(1,2),g(1,1,2),idir)
         endif
      enddo
-     call spuv2dz(iromb,jcap,enn1,elonn1,eon,eontop, &
+     call spuv2dz(iromb_b,jcap_b,enn1_b,elonn1_b,eon_b,eontop_b, &
           w(1,1),w(1,2),wtop(1,1),wtop(1,2), &
           winc(1,1),winc(1,2))
-     
-     do j=1,2*ncd2
+
+     do j=1,2*ncd2_b
         waved(j)=waved(j)+winc(j,1)
         wavez(j)=wavez(j)+winc(j,2)
      end do
   endif
 
- end subroutine sptranf_v
+ end subroutine sptranf_v_bkg
+

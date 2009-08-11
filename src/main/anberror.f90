@@ -24,6 +24,7 @@ module anberror
 !                                       related variables
 !   sub destroy_anberror_vars_reg - deallocate regional anisotropic background error 
 !                                       related variables
+!
 ! Variable Definitions:
 !   def anisotropic - if true, then use anisotropic background error
 !   def ids         -
@@ -88,7 +89,6 @@ module anberror
 !   def an_flen_z   - coupling parameter for connecting terrain gradient to background error
 !
 !
-!
 ! attributes:
 !   language: f90
 !   machine:  ibm RS/6000 SP
@@ -120,6 +120,7 @@ module anberror
 
 
 contains
+
   subroutine init_anberror
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -140,7 +141,8 @@ contains
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
+
     use kinds, only: i_kind
     use constants, only:  zero,half,one,two,three
     implicit none
@@ -188,6 +190,7 @@ contains
 
   end subroutine init_anberror
 
+
   subroutine create_anberror_vars(mype)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -208,7 +211,8 @@ contains
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
+
     use jfunc, only: nrclen
     use berror, only: varprd
     implicit none
@@ -222,6 +226,7 @@ contains
     call anberror_vert_partition(mype)
 
   end subroutine create_anberror_vars
+
 
   subroutine destroy_anberror_vars
 !$$$  subprogram documentation block
@@ -244,6 +249,7 @@ contains
 !
 !$$$
   end subroutine destroy_anberror_vars
+
 
   subroutine create_anberror_vars_reg(mype)
 !$$$  subprogram documentation block
@@ -295,10 +301,30 @@ contains
 
   end subroutine create_anberror_vars_reg
 
-  subroutine anberror_vert_partition(mype)
 
-!    using existing vertical ordering of variables, create 
-!      modified indexing compatable with anisotropic filter code.
+  subroutine anberror_vert_partition(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    anberror_vert_partition
+!
+!   prgrmmr:
+!
+! abstract:      using existing vertical ordering of variables, create 
+!                modified indexing compatable with anisotropic filter code.
+!
+! program history log:
+!   2008-06-05  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
     use kinds, only: i_kind
     use gridmod, only: nsig,nsig1o
@@ -404,10 +430,12 @@ contains
 
   end subroutine anberror_vert_partition
 
+
   subroutine destroy_anberror_vars_reg
 !$$$  subprogram documentation block
 !                .      .    .                                       .
-! subprogram:    destroy_berror_vars_reg  deallocate reg anisotropic background error arrays
+! subprogram:    destroy_berror_vars_reg  deallocate reg anisotropic background 
+!                                         error arrays
 !   prgmmr: parrish          org: np23                date: 2005-02-08
 !
 ! abstract: deallocates regional anisotropic background error arrays
@@ -415,6 +443,7 @@ contains
 ! program history log:
 !   2005-02-08  parrish
 !   2007-08-21  pondeca - add qvar3d deallocate
+!   2008-06-05  safford - rm unused var
 !
 !   input argument list:
 !
@@ -424,8 +453,7 @@ contains
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
-    integer(i_kind) k
+!$$$ end documentation block
 
     deallocate(qvar3d)
   end subroutine destroy_anberror_vars_reg

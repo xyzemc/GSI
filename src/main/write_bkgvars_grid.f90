@@ -1,13 +1,33 @@
 subroutine write_bkgvars_grid(a,b,c,d,mype)
 !$$$  subroutine documentation block
 !
+! subprogram:    write_bkgvars_grid
+!
+!   prgrmmr:
+!
 ! abstract:  modified routine to write out files to compare spectral computation
 !            of horizontal derivatives with the derivatives that are being
 !            carried around for the dynamical balance constraint
 !
+! program history log:
+!   2008-03-27  safford -- add subprogram doc block, rm unused vars and uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     a        -
+!     b        -
+!     c        -
+!     d        -
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
 !$$$
   use kinds, only: r_kind,i_kind,r_single
-  use gridmod, only: nlat,nlon,nsig,lat2,lon2,rlats
+  use gridmod, only: nlat,nlon,nsig,lat2,lon2
   implicit none
 
   integer(i_kind),intent(in):: mype
@@ -22,7 +42,7 @@ subroutine write_bkgvars_grid(a,b,c,d,mype)
   real(r_single),dimension(nlon,nlat,nsig):: a4,b4,c4
   real(r_single),dimension(nlon,nlat):: d4
 
-  integer ncfggg,iret,ii,jj,i,j,k
+  integer ncfggg,iret,i,j,k
 
 ! gather stuff to processor 0
   call gather_stuff2(a,ag,nsig,mype,0)
@@ -63,6 +83,28 @@ subroutine write_bkgvars_grid(a,b,c,d,mype)
 end subroutine write_bkgvars_grid
 
 subroutine load_grid2(grid_in,grid_out)
+!$$$  subroutine documentation block
+!
+! subprogram:    load_grid2
+!
+!   prgrmmr:
+!
+! abstract: 
+!
+! program history log:
+!   2008-03-27  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     grid_in  - input grid 
+!
+!   output argument list:
+!     grid_out - output grid
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$
   use kinds, only: r_kind
   use gridmod, only:  nlat,nlon
   implicit none
@@ -70,7 +112,7 @@ subroutine load_grid2(grid_in,grid_out)
   real(r_kind),dimension(nlat,nlon),intent(in):: grid_in        ! input grid
   real(r_kind),dimension(nlon,nlat-2),intent(out):: grid_out    ! output grid
 
-  integer i,j,k,nlatm1,jj,j2
+  integer i,j,nlatm1,jj,j2
 
 ! Transfer contents of local array to output array.
   nlatm1=nlat-1
@@ -86,6 +128,29 @@ subroutine load_grid2(grid_in,grid_out)
 end subroutine load_grid2
 
 subroutine fill_ns2(grid_in,grid_out)
+!$$$  subroutine documentation block
+!
+! subprogram:    fill_ns2
+!
+!   prgrmmr:
+!
+! abstract: 
+!
+! program history log:
+!   2008-03-27  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     grid_in  - input grid 
+!
+!   output argument list:
+!     grid_out - output grid
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$
+  use kinds, only: r_kind
   use kinds, only: r_kind
   use gridmod, only: nlat,nlon
   implicit none
@@ -93,7 +158,7 @@ subroutine fill_ns2(grid_in,grid_out)
   real(r_kind),dimension(nlon,nlat-2),intent(in):: grid_in  ! input grid
   real(r_kind),dimension(nlat,nlon),intent(out):: grid_out  ! output grid
 !  Declare local variables
-  integer i,j,k,jj,nlatm2
+  integer i,j,jj,nlatm2
   real(r_kind) rnlon,sumn,sums
 
 !  Transfer contents of input grid to local work array

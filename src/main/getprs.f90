@@ -11,6 +11,8 @@ subroutine getprs(ps,prs)
 !   2007-05-08  kleist  - add generalized vert coord and derivative call
 !   2007-07-26  cucurull- compute 3d pressure and derivatives in different subroutines
 !                       - remove gues_tv from argument list; clean up code
+!   2008-06-04  safford - rm unused uses
+!   2008-09-05  lueken  - merged ed's changes into q1fy09 code
 !
 !   input argument list:
 !     ps       - surface pressure
@@ -18,11 +20,17 @@ subroutine getprs(ps,prs)
 !   output argument list:
 !     prs        - 3d pressure
 !
-!$$$
+! attributes:
+!   language:  f90
+!   machine:   ibm/RS6000 SP
+!
+!$$$ end documentation block
+
   use kinds,only: r_kind,i_kind
   use constants,only: zero,half,one_tenth,rd_over_cp,one
   use gridmod,only: nsig,lat2,lon2,ak5,bk5,ck5,tref5,idvc5
-  use gridmod,only: regional,wrf_nmm_regional,eta1_ll,eta2_ll,pdtop_ll,pt_ll
+  use gridmod,only: wrf_nmm_regional,nems_nmmb_regional,eta1_ll,eta2_ll,pdtop_ll,pt_ll,&
+       regional,wrf_mass_regional,twodvar_regional
   use guess_grids, only: ges_tv,ntguessig
   implicit none
 
@@ -41,17 +49,27 @@ subroutine getprs(ps,prs)
   prs=zero 
   it=ntguessig
 
-  if(wrf_nmm_regional) then
-    do k=1,nsig+1
-      do j=1,lon2
-        do i=1,lat2
-          prs(i,j,k)=one_tenth* &
-                           (eta1_ll(k)*pdtop_ll + &
-                            eta2_ll(k)*(ten*ps(i,j)-pdtop_ll-pt_ll) + &
-                            pt_ll)
+  if (regional) then
+     if(wrf_nmm_regional.or.nems_nmmb_regional) then
+        do k=1,nsig+1
+           do j=1,lon2
+              do i=1,lat2
+                 prs(i,j,k)=one_tenth* &
+                      (eta1_ll(k)*pdtop_ll + &
+                      eta2_ll(k)*(ten*ps(i,j)-pdtop_ll-pt_ll) + &
+                      pt_ll)
+              end do
+           end do
         end do
-      end do
-    end do
+     elseif (wrf_mass_regional .or. twodvar_regional) then
+        do k=1,nsig+1
+           do j=1,lon2
+              do i=1,lat2
+                 prs(i,j,k)=one_tenth*(eta1_ll(k)*(ten*ps(i,j)-pt_ll) + pt_ll)
+              end do
+           end do
+        end do
+     endif
   else
     k=1
     k2=nsig+1
@@ -84,8 +102,19 @@ subroutine getprs(ps,prs)
   return
 end subroutine getprs
 
+
 subroutine getprs_horiz(ps_x,ps_y,mype,prs,prs_x,prs_y)
+!$$$  subprogram docuentation block
+!                .     .    .                     .
+! subprogram:    getprs_horiz
 !
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-06-04  safford - complete documentation block, rm unused var k2
+!   2008-09-05  lueken  - merged ed's changes into q1fy09 code
 !
 !   input argument list:
 !     prs      - 3d pressure
@@ -96,11 +125,18 @@ subroutine getprs_horiz(ps_x,ps_y,mype,prs,prs_x,prs_y)
 !     prs_x      - dp/dx
 !     prs_y      - dp/dy
 !
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
 !$$$
+  
   use kinds,only: r_kind,i_kind
   use constants,only: zero
-  use gridmod,only: nsig,lat2,lon2
-  use gridmod,only: regional,wrf_nmm_regional,eta2_ll
+  use gridmod,only: nsig,lat2,lon2,nlat,nlon
+  use gridmod,only: regional,wrf_nmm_regional,nems_nmmb_regional,eta2_ll
+  use mpimod, only: npe,nvarbal_id,nlevsbal,nnnvsbal
+  use compact_diffs, only: compact_dlat,compact_dlon
   implicit none
 
 ! Declare passed variables
@@ -110,11 +146,13 @@ subroutine getprs_horiz(ps_x,ps_y,mype,prs,prs_x,prs_y)
   integer(i_kind),intent(in):: mype
 
 ! Declare local variables
-  integer(i_kind) i,j,k,k2
+  integer(i_kind) i,j,k,iflg
+  real(r_kind),dimension(lat2,lon2,nsig):: st,vp,t
+  real(r_kind),dimension(nlat,nlon,nnnvsbal):: hwork,hwork_x,hwork_y
 
 
   if(regional)then
-     if(wrf_nmm_regional) then
+     if(wrf_nmm_regional.or.nems_nmmb_regional) then
        do k=1,nsig+1
          do j=1,lon2
            do i=1,lat2
@@ -127,8 +165,20 @@ subroutine getprs_horiz(ps_x,ps_y,mype,prs,prs_x,prs_y)
        prs_x=zero ; prs_y=zero
      end if
   else
-    call mp_compact_dlon1(prs,prs_x,.false.,nsig+1,mype)
-    call mp_compact_dlat1(prs,prs_y,.false.,nsig+1,mype)
+    iflg=1
+    st=zero
+    vp=zero
+    t=zero
+    hwork=zero
+    call sub2grid2(hwork,st,vp,prs,t,iflg)
+    do k=1,nnnvsbal
+     if(nvarbal_id(k) == 3)then
+      call compact_dlon(hwork(1,1,k),hwork_x(1,1,k),.false.)
+      call compact_dlat(hwork(1,1,k),hwork_y(1,1,k),.false.)
+     end if
+    end do
+    call grid2sub2(hwork_x,st,vp,prs_x,t)
+    call grid2sub2(hwork_y,st,vp,prs_y,t)
   end if
 
   return
@@ -136,7 +186,8 @@ end subroutine getprs_horiz
 
 
 subroutine getprs_tl(ps,t,prs)
-!
+!$$$ subprogram documentation block
+!               .      .    .                       .
 ! subprogram:    getprs_tl    TLM of getprs
 !   prgmmr: kleist           org: np20                date: 2005-09-29
 !
@@ -147,9 +198,11 @@ subroutine getprs_tl(ps,t,prs)
 !   2006-04-12  treadon - replace sigi with bk5
 !   2006-07-31  kleist  - analysis variable change from ln(ps) to ps
 !   2007-05-08  kleist  - add generalized vert coord and derivative call
-!   2007-07-26  cucurull- compute 3d pressure and derivatives in different subroutines 
+!   2007-07-26  cucurull- compute 3d pressure and derivatives in different subroutines
 !                       - remove gues_tv from argument list; clean up code;
 !                       - fix buf for t dimension
+!   2008-06-04  safford - complete doc block, rm unused uses
+!   2008-09-05  lueken  - merged ed's changes into q1fy09 code
 !
 !   input argument list:
 !     ps       - surface pressure
@@ -157,12 +210,17 @@ subroutine getprs_tl(ps,t,prs)
 !   output argument list:
 !     prs        - 3d pressure
 !
-!$$$
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+  
   use kinds,only: r_kind,i_kind
   use constants,only: zero,one,rd_over_cp,half
-  use jfunc,only: iter
-  use gridmod,only: nsig,lat2,lon2,ak5,bk5,ck5,idvc5,tref5
-  use gridmod,only: regional,wrf_nmm_regional,eta2_ll
+  use gridmod,only: nsig,lat2,lon2,bk5,ck5,idvc5,tref5
+  use gridmod,only: wrf_nmm_regional,nems_nmmb_regional,eta2_ll,eta1_ll,regional,wrf_mass_regional,&
+       twodvar_regional
   use guess_grids, only: ges_tv,ntguessig
   implicit none
 
@@ -175,14 +233,24 @@ subroutine getprs_tl(ps,t,prs)
   real(r_kind) kapr,kaprm1,trk,tc1,t9trm
   integer(i_kind) i,j,k,k2,it
 
-  if(wrf_nmm_regional) then
-    do k=1,nsig+1
-      do j=1,lon2
-        do i=1,lat2
-          prs(i,j,k)=eta2_ll(k)*ps(i,j)
+  if (regional) then
+     if(wrf_nmm_regional.or.nems_nmmb_regional) then
+        do k=1,nsig+1
+           do j=1,lon2
+              do i=1,lat2
+                 prs(i,j,k)=eta2_ll(k)*ps(i,j)
+              end do
+           end do
         end do
-      end do
-    end do
+     elseif (wrf_mass_regional .or. twodvar_regional) then
+        do k=1,nsig+1
+           do j=1,lon2
+              do i=1,lat2
+                 prs(i,j,k)=eta1_ll(k)*ps(i,j)
+              end do
+           end do
+        end do
+     endif
   else
     k=1
     k2=nsig+1
@@ -220,7 +288,19 @@ subroutine getprs_tl(ps,t,prs)
   return
 end subroutine getprs_tl
 
+
 subroutine getprs_horiz_tl(ps_x,ps_y,mype,prs,prs_x,prs_y)
+!$$$ subprogram documentation block
+!               .      .    .                     .
+! subprogram:   getprs_horiz_tl
+!
+!  prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-06-04  safford - complete doc block
+!   2008-09-05  lueken  - merged ed's changes into q1fy09 code
 !
 !   input argument list:
 !     prs      - 3d pressure
@@ -231,13 +311,20 @@ subroutine getprs_horiz_tl(ps_x,ps_y,mype,prs,prs_x,prs_y)
 !     prs_x      - dp/dx
 !     prs_y      - dp/dy
 !
+! attributes:
+!   language:  f90
+!   machine    ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
+
   use kinds,only: r_kind,i_kind
   use constants,only: zero
-  use gridmod,only: nsig,lat2,lon2
-  use gridmod,only: regional,wrf_nmm_regional,eta2_ll
+  use gridmod,only: nsig,lat2,lon2,nlat,nlon
+  use gridmod,only: regional,wrf_nmm_regional,nems_nmmb_regional,eta2_ll
+  use mpimod, only: npe,nvarbal_id,nlevsbal,nnnvsbal
+  use compact_diffs, only: compact_dlat,compact_dlon
   implicit none
+
 ! Declare passed variables
   real(r_kind),dimension(lat2,lon2),intent(in):: ps_x,ps_y
   real(r_kind),dimension(lat2,lon2,nsig+1),intent(in):: prs
@@ -245,10 +332,13 @@ subroutine getprs_horiz_tl(ps_x,ps_y,mype,prs,prs_x,prs_y)
   integer(i_kind),intent(in):: mype
 
 ! Declare local variables
-  integer(i_kind) i,j,k
+  integer(i_kind) i,j,k,iflg
+  real(r_kind),dimension(lat2,lon2,nsig):: st,vp,t
+  real(r_kind),dimension(nlat,nlon,nnnvsbal):: hwork,hwork_x,hwork_y
+
 
   if(regional)then
-    if(wrf_nmm_regional) then
+    if(wrf_nmm_regional.or.nems_nmmb_regional) then
        do k=1,nsig+1
          do j=1,lon2
            do i=1,lat2
@@ -262,8 +352,19 @@ subroutine getprs_horiz_tl(ps_x,ps_y,mype,prs,prs_x,prs_y)
       prs_y=zero
     end if
   else
-    call mp_compact_dlon1(prs,prs_x,.false.,nsig+1,mype)
-    call mp_compact_dlat1(prs,prs_y,.false.,nsig+1,mype)
+    iflg=1
+    st=zero
+    vp=zero
+    t=zero
+    call sub2grid2(hwork,st,vp,prs,t,iflg)
+    do k=1,nnnvsbal
+     if(nvarbal_id(k) == 3)then
+      call compact_dlon(hwork(1,1,k),hwork_x(1,1,k),.false.)
+      call compact_dlat(hwork(1,1,k),hwork_y(1,1,k),.false.)
+     end if
+    end do
+    call grid2sub2(hwork_x,st,vp,prs_x,t)
+    call grid2sub2(hwork_y,st,vp,prs_y,t)
   endif
 
   return
@@ -271,7 +372,8 @@ end subroutine getprs_horiz_tl
 
 
 subroutine getprs_ad(ps,t,prs)
-!
+!$$$ subprogram documentation block
+!               .      .    .                    .
 ! subprogram:    getprs_ad    adjoint of getprs_tl
 !   prgmmr: kleist           org: np20                date: 2005-09-29
 !
@@ -284,8 +386,9 @@ subroutine getprs_ad(ps,t,prs)
 !   2007-05-08  kleist  - add generalized vert coord and derivative call
 !   2007-07-26  cucurull- compute 3d pressure and derivatives in different subroutines
 !                       - remove gues_tv from argument list; clean up code
+!   2008-06-04  safford - complete doc block, rm unused uses
+!   2008-09-05  lueken  - merged ed's changes into q1fy09 code
 !
-! usage:
 !   input argument list:
 !     prs        - 3d pressure
 !
@@ -295,10 +398,16 @@ subroutine getprs_ad(ps,t,prs)
 !  notes:
 !     Adjoint check performed and verified on 2005-08-29 by d. kleist
 !
-!$$$
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+  
   use kinds,only: r_kind,i_kind
-  use gridmod,only: nsig,lat2,lon2,ak5,bk5,ck5,tref5,idvc5
-  use gridmod,only: regional,wrf_nmm_regional,eta2_ll
+  use gridmod,only: nsig,lat2,lon2,bk5,ck5,tref5,idvc5
+  use gridmod,only: wrf_nmm_regional,nems_nmmb_regional,eta2_ll,regional,wrf_mass_regional,eta1_ll,&
+       twodvar_regional
   use guess_grids, only: ges_tv,ntguessig 
   use constants,only: zero,half,one,rd_over_cp
 
@@ -314,14 +423,24 @@ subroutine getprs_ad(ps,t,prs)
   integer(i_kind) i,j,k,it
 
 
-  if(wrf_nmm_regional) then
-    do k=1,nsig+1
-      do j=1,lon2
-        do i=1,lat2
-          ps(i,j) = ps(i,j) + eta2_ll(k)*prs(i,j,k)
+  if (regional) then
+     if(wrf_nmm_regional.or.nems_nmmb_regional) then
+        do k=1,nsig+1
+           do j=1,lon2
+              do i=1,lat2
+                 ps(i,j) = ps(i,j) + eta2_ll(k)*prs(i,j,k)
+              end do
+           end do
         end do
-      end do
-    end do
+     elseif (wrf_mass_regional .or. twodvar_regional) then
+        do k=1,nsig+1
+           do j=1,lon2
+              do i=1,lat2
+                 ps(i,j) = ps(i,j) + eta1_ll(k)*prs(i,j,k)
+              end do
+           end do
+        end do
+     endif
   else
     if (idvc5 /= 3) then
       do k=2,nsig
@@ -369,6 +488,17 @@ end subroutine getprs_ad
 
 
 subroutine getprs_horiz_ad(ps_x,ps_y,mype,prs,prs_x,prs_y)
+!$$$ subprogram documentation block
+!               .      .    .              .
+! subprogram:  getprs_horiz_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-06-04  safford - complete doc block
+!   2008-09-05  lueken  - merged ed's changes into q1fy09
 !
 !   input argument list:
 !     prs_x      - dp/dx
@@ -382,10 +512,18 @@ subroutine getprs_horiz_ad(ps_x,ps_y,mype,prs,prs_x,prs_y)
 !  notes:
 !     Adjoint check performed and verified on 2005-08-29 by d. kleist
 !
-!$$$
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
   use kinds,only: r_kind,i_kind
-  use gridmod,only: nsig,lat2,lon2
-  use gridmod,only: regional,wrf_nmm_regional,eta2_ll
+  use constants,only: zero
+  use gridmod,only: nsig,lat2,lon2,nlat,nlon
+  use gridmod,only: regional,wrf_nmm_regional,nems_nmmb_regional,eta2_ll
+  use mpimod, only: npe,nvarbal_id,nlevsbal,nnnvsbal
+  use compact_diffs, only: tcompact_dlat,tcompact_dlon
 
   implicit none
 
@@ -396,11 +534,13 @@ subroutine getprs_horiz_ad(ps_x,ps_y,mype,prs,prs_x,prs_y)
   integer(i_kind),intent(in):: mype
 
 ! Declare local variables
-  integer(i_kind) i,j,k
+  integer(i_kind) i,j,k,iflg
+  real(r_kind),dimension(lat2,lon2,nsig):: st,vp,t
+  real(r_kind),dimension(nlat,nlon,nnnvsbal):: hwork,hwork_x,hwork_y
 
 ! Adjoint of horizontal derivatives
   if (regional) then
-    if(wrf_nmm_regional) then
+    if(wrf_nmm_regional.or.nems_nmmb_regional) then
       do k=1,nsig+1
         do j=1,lon2
           do i=1,lat2
@@ -411,8 +551,27 @@ subroutine getprs_horiz_ad(ps_x,ps_y,mype,prs,prs_x,prs_y)
       end do
     end if
   else
-    call mp_compact_dlon1_ad(prs,prs_x,.false.,nsig+1,mype)
-    call mp_compact_dlat1_ad(prs,prs_y,.false.,nsig+1,mype)
+    iflg=1
+    st=zero
+    vp=zero
+    t=zero
+    hwork=zero
+    call sub2grid2(hwork_x,st,vp,prs_x,t,iflg)
+    call sub2grid2(hwork_y,st,vp,prs_y,t,iflg)
+    do k=1,nnnvsbal
+     if(nvarbal_id(k) == 3)then
+      call tcompact_dlon(hwork(1,1,k),hwork_x(1,1,k),.false.)
+      call tcompact_dlat(hwork(1,1,k),hwork_y(1,1,k),.false.)
+     end if
+    end do
+    call grid2sub2(hwork,st,vp,prs_x,t)
+    do k=1,nsig+1
+      do j=1,lon2
+        do i=1,lat2
+         prs(i,j,k)=prs(i,j,k)+prs_x(i,j,k)
+        end do
+      end do
+    end do
   end if
 
 

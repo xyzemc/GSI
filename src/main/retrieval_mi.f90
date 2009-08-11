@@ -1,6 +1,6 @@
-! ======================================================
-  subroutine retrieval_mi(tb,nchanl,ssmi,ssmis,   &
+  subroutine retrieval_mi(tb,nchanl,ssmi,ssmis, no85GHz,   &
                           tpwc,clw,si85,kraintype,ierr)   
+!$$$ subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    retrieval_mi    retrieve clw/tpw and identify rain for SSM/I
 !   prgmmr: okamoto          org: np23                date: 2003-12-27
@@ -30,11 +30,15 @@
 !   2005-09-20  sienkiewicz - move tb22v test to avoid negative log evaluation
 !   2005-10-20  kazumori - delete amsre
 !   2006-04-27  derber - clean up
+!   2006-12-20  sienkiewicz - add no85GHz workaround for f08 DMSP
+!   2008-04-16  safford - rm unused vars
 !
 !   input argument list:
 !     tb      - Observed brightness temperature [K]
 !     nchanl  - number of channels per obs
 !     ssmi    - logical true if ssmi is processed
+!     ssmis   - logical true if ssmis is processed
+!     no85GHz - SSM/I 85GHz channels not used
 !
 !   output argument list:
 !     tpwc    - column water vapor over ocean  [kg/m2]
@@ -53,17 +57,17 @@
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
 
   use kinds, only: r_kind, i_kind
-  use constants, only: two,three,zero,one,izero
+  use constants, only: two,zero,izero
 
   implicit none
     
 ! Declare passed variables
   integer(i_kind),intent(in)::nchanl
   real(r_kind),dimension(nchanl),intent(in)::tb
-  logical,intent(in):: ssmi,ssmis
+  logical,intent(in):: ssmi,ssmis, no85GHz
 
   integer(i_kind),intent(out)::kraintype,ierr
   real(r_kind),intent(out)::tpwc,clw
@@ -71,7 +75,7 @@
 ! Declare local variables
   real(r_kind)::tbpol(3),tb19v,tb19h,tb22v,tb37v,tb37h,tb85v,tb85h
   real(r_kind)::tpw,tpw0,clw19,clw37,clw85
-  real(r_kind)::si85,pd19
+  real(r_kind)::si85
   real(r_kind)::clw2term
   real(r_kind)::rmis=-9.99e11_r_kind
  
@@ -105,33 +109,54 @@
 
 ! Gross error check on all channels.  If there are any
 ! bad channels, skip this obs. 
-  if ( any(tb < 70.0_r_kind) .or. any(tb > 320.0_r_kind ) ) then
-     ierr = 1 
-     return
-  end if
+  if ( no85GHz ) then                ! if no 85GHz, only check ch 1-5
+     if ( any(tb(1:5)  < 70.0_r_kind) .or. any(tb(1:5) > 320.0_r_kind ) ) then
+        ierr = 1
+        return
+     endif
+  else
+     if ( any(tb < 70.0_r_kind) .or. any(tb > 320.0_r_kind ) ) then
+        ierr = 1 
+        return
+     end if
+  endif
  
 ! Polarization check based on SSMI/EDR Algorithm Specification Document
   tbpol(1) = tb19v-tb19h     !tb19V-tb19h
   tbpol(2) = tb37v-tb37h     !tb37V-tb37h
   tbpol(3) = tb85v-tb85h     !tb85V-tb85h
 
-  if ( any(tbpol < -two ) ) then 
+
+  if ( no85GHz ) then                ! if no 85GHz, just check 22,37 GHz
+     if (tbpol(1) < -two .or. tbpol(2) < -two) then
+        ierr = 2
+     endif
+     
+  else if ( any(tbpol < -two ) ) then 
      ierr = 2 
      return
   end if
  
+!
+! Use scattering index for rain rate, only if 85V channel can be used.
+!    note: this expression ~ Ferraro, et al 1988 JAS
+!
+  if ( .not. no85GHz ) then
+
 !  =======   Rain Rate  ==============
 
 ! Generate rain rates over ocean using Sec 3.6 algorithm
 !
 
 !    Compute scattering index
-  si85 = -174.4_r_kind + 0.715_r_kind*tb19v +  &
-         2.439_r_kind*tb22v - 0.00504_r_kind*tb22v*tb22v - tb85v
+     si85 = -174.4_r_kind + 0.715_r_kind*tb19v +  &
+          2.439_r_kind*tb22v - 0.00504_r_kind*tb22v*tb22v - tb85v
 
-  if (si85 >= r10) then
-      kraintype=2
-  end if
+     if (si85 >= r10) then
+        kraintype=2
+     end if
+
+  endif
 
 !   Skip emission-based rain rate retrieve process kraintype=1 to speedup 
 !   Observations contaminated by emission-based rain are tossed by 
@@ -174,7 +199,8 @@
                    2.84_r_kind - 0.4_r_kind*clw2term  ) 
          if (clw19 > 0.7_r_kind) then 
            clw = clw19
-         else if (clw37 <= 0.28_r_kind .and. tb85h<r285) then 
+         else if ( .not. no85GHz .and. &
+              clw37 <= 0.28_r_kind .and. tb85h<r285) then 
 !
 !          CLW using 85h as primary channel
            clw85 = -0.44_r_kind*( log(r290-tb85h) + & 

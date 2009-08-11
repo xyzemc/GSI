@@ -9,6 +9,7 @@ subroutine get_tend_derivs(ut,vt,phit,ut_x,vt_y,fut_y,fvt_x,phit_lap,&
 !
 ! program history log:
 !   2006-02-24  kleist
+!   2008-06-04  safford - rm unused vars and uses
 !
 !   input argument list:
 !     ut       - zonal wind tendency
@@ -31,24 +32,24 @@ subroutine get_tend_derivs(ut,vt,phit,ut_x,vt_y,fut_y,fvt_x,phit_lap,&
 !$$$
   use kinds, only: r_kind,i_kind
   use constants, only: zero
-  use gridmod, only: regional,nlat,nLon,lat2,lon2,nsig,nsig1o
+  use gridmod, only: regional,nlat,nlon,lat2,lon2,nsig,nnnn1o
   use compact_diffs, only: compact_dlat,compact_dlon,compact_delsqr
-  use mpimod, only: npe,nvar_id
+  use mpimod, only: nvar_id
   use tendsmod, only: coriolis
   implicit none
 
 ! Passed variables
   integer(i_kind) mype
-  integer(i_kind) nlevs,nfldsig
+  integer(i_kind) nlevs
 
   real(r_kind),dimension(lat2,lon2,nsig),intent(in):: ut,vt,phit
   real(r_kind),dimension(lat2,lon2,nsig),intent(out):: ut_x,vt_y,fut_y,fvt_x,phit_lap
 
 ! Local Variables
-  integer(i_kind) iflg,k,i,j,nbad,it
+  integer(i_kind) iflg,k,i,j
   real(r_kind),dimension(lat2,lon2):: dum1,dum2,dum3,dum4
   real(r_kind),dimension(lat2,lon2,nsig):: dum3d
-  real(r_kind),dimension(nlat,nlon,nsig1o):: hwork,hworkd
+  real(r_kind),dimension(nlat,nlon,nnnn1o):: hwork,hworkd
   logical vectflg
 
 ! ----------------------------------------- !
@@ -96,7 +97,7 @@ subroutine get_tend_derivs(ut,vt,phit,ut_x,vt_y,fut_y,fvt_x,phit_lap,&
 ! call sub2grid(hwork,       t, lnps,    q,   oz, sst, slndt, sicet, cwmr,   st,  vp,iflg)
   hwork=zero
   call sub2grid(hwork,phit_lap, dum1,fut_y,fvt_x,dum2, dum3,  dum4, dum3d, ut_x,vt_y,iflg)
-  do k=1,nsig1o
+  do k=1,nnnn1o
     if(k.gt.nlevs) then
       do j=1,nlon
         do i=1,nlat
@@ -143,6 +144,7 @@ subroutine get_tend_derivs(ut,vt,phit,ut_x,vt_y,fut_y,fvt_x,phit_lap,&
   return
 end subroutine get_tend_derivs
 
+
 subroutine tget_tend_derivs(ut,vt,phit,ut_x,vt_y,fut_y,fvt_x,phit_lap,&
                  nlevs,mype)
 !$$$  subprogram documentation block
@@ -154,6 +156,7 @@ subroutine tget_tend_derivs(ut,vt,phit,ut_x,vt_y,fut_y,fvt_x,phit_lap,&
 !
 ! program history log:
 !   2006-02-24  kleist
+!   2008-06-04  safford - rm unused vars and uses
 !
 !   input argument list:
 !     ut_x     - zonal derivative of zonal wind tendency
@@ -179,9 +182,9 @@ subroutine tget_tend_derivs(ut,vt,phit,ut_x,vt_y,fut_y,fvt_x,phit_lap,&
 !$$$
   use kinds, only: r_kind,i_kind
   use constants, only: zero
-  use gridmod, only: regional,nlat,nLon,lat2,lon2,nsig,nsig1o
+  use gridmod, only: regional,nlat,nlon,lat2,lon2,nsig,nnnn1o
   use compact_diffs, only: tcompact_dlat,tcompact_dlon,tcompact_delsqr
-  use mpimod, only: npe,nvar_id
+  use mpimod, only: nvar_id
   use tendsmod, only: coriolis
   implicit none
 
@@ -193,10 +196,10 @@ subroutine tget_tend_derivs(ut,vt,phit,ut_x,vt_y,fut_y,fvt_x,phit_lap,&
   real(r_kind),dimension(lat2,lon2,nsig),intent(in):: ut_x,vt_y,fut_y,fvt_x,phit_lap
 
 ! Local Variables
-  integer(i_kind) iflg,k,i,j,nbad,it
+  integer(i_kind) iflg,k,i,j
   real(r_kind),dimension(lat2,lon2):: dum1,dum2,dum3,dum4
   real(r_kind),dimension(lat2,lon2,nsig):: dum3d
-  real(r_kind),dimension(nlat,nlon,nsig1o):: hwork,hworkd
+  real(r_kind),dimension(nlat,nlon,nnnn1o):: hwork,hworkd
   logical vectflg
 
   iflg=1

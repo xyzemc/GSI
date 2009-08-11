@@ -1,5 +1,25 @@
-subroutine stpt(rt,st,rtv,stv,rq,sq,ru,su,rv,sv,rp,sp,rsst,ssst, &
-                out,sges,drt,dst,drtsen,dstsen,drq,dsq,dru,dsu,drv,dsv,drp,dsp)
+module stptmod
+
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    stptmod    module for stpt and its tangent linear stpt_tl
+!
+! abstract: module for stpt and its tangent linear stpt_tl
+!
+! program history log:
+!   2005-05-19  Yanqiu zhu - wrap stpt and its tangent linear stpt_tl into one module
+!   2005-11-16  Derber - remove interfaces
+!   2008-12-02  Todling - remove stpt_tl
+!
+
+implicit none
+
+PRIVATE
+PUBLIC stpt
+
+contains
+
+subroutine stpt(thead,rt,st,rtv,stv,rq,sq,ru,su,rv,sv,rp,sp,rsst,ssst,out,sges)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    stpt        calculate penalty and contribution to stepsize
@@ -20,11 +40,14 @@ subroutine stpt(rt,st,rtv,stv,rq,sq,ru,su,rv,sv,rp,sp,rsst,ssst, &
 !   2005-09-28  derber  - consolidate location and weight arrays
 !   2005-10-21  su      - modify for variational qc
 !   2005-12-20  parrish - add code to enable boundary layer forward model option
+!   2007-03-19  tremolet - binning of observations
 !   2007-07-28  derber  - modify to use new inner loop obs data structure
 !                       - unify NL qc
 !   2006-07-28  derber  - modify output for b1 and b3 and add sensible temperature
 !   2007-02-15  rancic  - add foto
 !   2007-06-04  derber  - use quad precision to get reproducability over number of processors
+!   2008-06-02  safford - rm unused var and uses
+!   2008-12-03  todling - changed handling of ptr%time
 !
 !   input argument list:
 !     rt       - search direction for sensible t
@@ -42,16 +65,6 @@ subroutine stpt(rt,st,rtv,stv,rq,sq,ru,su,rv,sv,rp,sp,rsst,ssst, &
 !     rsst     - search direction for sst
 !     ssst     - analysis increment for sst
 !     sges     - step size estimates (4)
-!     drt      - search direction for time derivative of t
-!     dst      - analysis increment for time derivative of t
-!     drq      - search direction for time derivative of q
-!     dsq      - analysis increment for time derivative of q
-!     dru      - search direction for time derivative of u
-!     dsu      - analysis increment for time derivative of u
-!     drv      - search direction for time derivative of v
-!     dsv      - analysis increment for time derivative of v
-!     drp      - search direction for time derivative of p
-!     dsp      - analysis increment for time derivative of p
 !                                         
 !   output argument list:         
 !     out(1)   - penalty from temperature observations sges(1)
@@ -67,25 +80,25 @@ subroutine stpt(rt,st,rtv,stv,rq,sq,ru,su,rv,sv,rp,sp,rsst,ssst, &
 !
 !$$$
   use kinds, only: r_kind,i_kind,r_quad
-  use obsmod, only: thead,tptr
-  use qcmod, only: nlnqc_iter,c_varqc
-  use constants, only: zero,half,one,two,tiny_r_kind,cg_term,zero_quad
-  use gridmod, only: latlon1n,latlon11
-  use jfunc, only: iter,jiter,niter_no_qc,jiterstart
+  use obsmod, only: t_ob_type
+  use qcmod, only: nlnqc_iter,varqc_iter
+  use constants, only: zero,half,one,two,tiny_r_kind,cg_term,zero_quad,r3600
+  use gridmod, only: latlon1n,latlon11,latlon1n1
+  use jfunc, only: iter,jiter,niter_no_qc,jiterstart,l_foto,xhat_dt,dhat_dt
   implicit none
 
 ! Declare passed variables
+  type(t_ob_type),pointer,intent(in):: thead
   real(r_quad),dimension(6),intent(out):: out
   real(r_kind),dimension(latlon1n),intent(in):: rt,st,rtv,stv,rq,sq,ru,su,rv,sv
-  real(r_kind),dimension(latlon1n),intent(in):: drt,dst,drq,dsq,dru,dsu,drv,dsv
-  real(r_kind),dimension(latlon11),intent(in):: rsst,ssst,rp,sp,drp,dsp
-  real(r_kind),dimension(latlon1n),intent(in):: drtsen,dstsen
+  real(r_kind),dimension(latlon11),intent(in):: rsst,ssst
+  real(r_kind),dimension(latlon1n1),intent(in):: rp,sp
   real(r_kind),dimension(4),intent(in):: sges
 
 ! Declare local variables
-  integer(i_kind) i,j1,j2,j3,j4,j5,j6,j7,j8
+  integer(i_kind) j1,j2,j3,j4,j5,j6,j7,j8
   real(r_kind) w1,w2,w3,w4,w5,w6,w7,w8
-  real(r_kind) cg_t,pen1,pen2,pen3,pencur,t1,t2,t3,val,val2,wgross,wnotgross,t_pg,varqc_iter
+  real(r_kind) cg_t,pen1,pen2,pen3,pencur,t1,t2,t3,val,val2,wgross,wnotgross,t_pg
   real(r_kind) tg_prime0,tg_prime1,tg_prime2,tg_prime3
   real(r_kind) ts_prime0,ts_prime1,ts_prime2,ts_prime3
   real(r_kind) qs_prime0,qs_prime1,qs_prime2,qs_prime3
@@ -93,17 +106,15 @@ subroutine stpt(rt,st,rtv,stv,rq,sq,ru,su,rv,sv,rp,sp,rsst,ssst, &
   real(r_kind) vs_prime0,vs_prime1,vs_prime2,vs_prime3
   real(r_kind) psfc_prime0,psfc_prime1,psfc_prime2,psfc_prime3
   real(r_kind) t0,time_t
-  real(r_kind) t2_prime0,t2_prime1,t2_prime2,t2_prime3
-  real(r_kind) q2_prime0,q2_prime1,q2_prime2,q2_prime3
-  real(r_kind) u10_prime0,u10_prime1,u10_prime2,u10_prime3
-  real(r_kind) v10_prime0,v10_prime1,v10_prime2,v10_prime3
   real(r_kind) alpha,ccoef,bcoef1,bcoef2,cc
+  type(t_ob_type), pointer :: tptr
 
   out=zero_quad
   alpha=one/(sges(3)-sges(2))
   ccoef=half*alpha*alpha
   bcoef1=half*half*alpha
   bcoef2=sges(3)*ccoef
+
   tptr => thead
   do while (associated(tptr))
 
@@ -124,28 +135,40 @@ subroutine stpt(rt,st,rtv,stv,rq,sq,ru,su,rv,sv,rp,sp,rsst,ssst, &
       w6=tptr%wij(6)
       w7=tptr%wij(7)
       w8=tptr%wij(8)
-      time_t=tptr%time
 !  Note time derivative stuff not consistent for virtual temperature
 
       if(tptr%tv_ob)then
         val= w1*rtv(j1)+w2*rtv(j2)+w3*rtv(j3)+w4*rtv(j4)+ &
-             w5*rtv(j5)+w6*rtv(j6)+w7*rtv(j7)+w8*rtv(j8)+ &
-            (w1*drt(j1)+w2*drt(j2)+w3*drt(j3)+w4*drt(j4)+ &
-             w5*drt(j5)+w6*drt(j6)+w7*drt(j7)+w8*drt(j8))*time_t
+             w5*rtv(j5)+w6*rtv(j6)+w7*rtv(j7)+w8*rtv(j8)
 
         val2=w1*stv(j1)+w2*stv(j2)+w3*stv(j3)+w4*stv(j4)+ &
-             w5*stv(j5)+w6*stv(j6)+w7*stv(j7)+w8*stv(j8)+ &
-            (w1*dst(j1)+w2*dst(j2)+w3*dst(j3)+w4*dst(j4)+ &
-             w5*dst(j5)+w6*dst(j6)+w7*dst(j7)+w8*dst(j8))*time_t
+             w5*stv(j5)+w6*stv(j6)+w7*stv(j7)+w8*stv(j8)
+        if(l_foto)then
+          time_t=tptr%time*r3600
+          val =val + (w1*dhat_dt%t(j1)+w2*dhat_dt%t(j2)+ &
+                      w3*dhat_dt%t(j3)+w4*dhat_dt%t(j4)+ &
+                      w5*dhat_dt%t(j5)+w6*dhat_dt%t(j6)+ &
+                      w7*dhat_dt%t(j7)+w8*dhat_dt%t(j8))*time_t
+          val2=val2+ (w1*xhat_dt%t(j1)+w2*xhat_dt%t(j2)+ &
+                      w3*xhat_dt%t(j3)+w4*xhat_dt%t(j4)+ &
+                      w5*xhat_dt%t(j5)+w6*xhat_dt%t(j6)+ &
+                      w7*xhat_dt%t(j7)+w8*xhat_dt%t(j8))*time_t
+        end if
       else
         val= w1*    rt(j1)+w2*    rt(j2)+w3*    rt(j3)+w4*    rt(j4)+ &
-             w5*    rt(j5)+w6*    rt(j6)+w7*    rt(j7)+w8*    rt(j8)+ &
-            (w1*drtsen(j1)+w2*drtsen(j2)+w3*drtsen(j3)+w4*drtsen(j4)+ &
-             w5*drtsen(j5)+w6*drtsen(j6)+w7*drtsen(j7)+w8*drtsen(j8))*time_t
-        val2=w1*     st(j1)+w2*    st(j2)+w3*    st(j3)+w4*    st(j4)+ &
-             w5*     st(j5)+w6*    st(j6)+w7*    st(j7)+w8*    st(j8)+ &
-             (w1*dstsen(j1)+w2*dstsen(j2)+w3*dstsen(j3)+w4*dstsen(j4)+ &
-              w5*dstsen(j5)+w6*dstsen(j6)+w7*dstsen(j7)+w8*dstsen(j8))*time_t
+             w5*    rt(j5)+w6*    rt(j6)+w7*    rt(j7)+w8*    rt(j8)
+        val2=w1*    st(j1)+w2*    st(j2)+w3*    st(j3)+w4*    st(j4)+ &
+             w5*    st(j5)+w6*    st(j6)+w7*    st(j7)+w8*    st(j8)
+        if(l_foto)then
+          val =val + (w1*dhat_dt%tsen(j1)+w2*dhat_dt%tsen(j2)+ &
+                      w3*dhat_dt%tsen(j3)+w4*dhat_dt%tsen(j4)+ &
+                      w5*dhat_dt%tsen(j5)+w6*dhat_dt%tsen(j6)+ &
+                      w7*dhat_dt%tsen(j7)+w8*dhat_dt%tsen(j8))*time_t
+          val2=val2+ (w1*xhat_dt%tsen(j1)+w2*xhat_dt%tsen(j2)+ &
+                      w3*xhat_dt%tsen(j3)+w4*xhat_dt%tsen(j4)+ &
+                      w5*xhat_dt%tsen(j5)+w6*xhat_dt%tsen(j6)+ &
+                      w7*xhat_dt%tsen(j7)+w8*xhat_dt%tsen(j8))*time_t
+        end if
       end if
 
       t0=val2+sges(1)*val
@@ -167,37 +190,53 @@ subroutine stpt(rt,st,rtv,stv,rq,sq,ru,su,rv,sv,rp,sp,rsst,ssst, &
         tg_prime2=val2+sges(3)*val
         tg_prime3=val2+sges(4)*val
 
-        val =w1* rq(j1)+w2* rq(j2)+w3* rq(j3)+w4* rq(j4)+ &
-            (w1*drq(j1)+w2*drq(j2)+w3*drq(j3)+w4*drq(j4))*time_t
-        val2=w1* sq(j1)+w2* sq(j2)+w3* sq(j3)+w4* sq(j4)+ &
-            (w1*dsq(j1)+w2*dsq(j2)+w3*dsq(j3)+w4*dsq(j4))*time_t
+        val =w1* rq(j1)+w2* rq(j2)+w3* rq(j3)+w4* rq(j4)
+        val2=w1* sq(j1)+w2* sq(j2)+w3* sq(j3)+w4* sq(j4)
+        if(l_foto)then
+          val =val +(w1*dhat_dt%q(j1)+w2*dhat_dt%q(j2)+ &
+                     w3*dhat_dt%q(j3)+w4*dhat_dt%q(j4))*time_t
+          val2=val2+(w1*xhat_dt%q(j1)+w2*xhat_dt%q(j2)+ &
+                     w3*xhat_dt%q(j3)+w4*xhat_dt%q(j4))*time_t
+        end if
         qs_prime0=val2+sges(1)*val
         qs_prime1=val2+sges(2)*val
         qs_prime2=val2+sges(3)*val
         qs_prime3=val2+sges(4)*val
 
-        val =w1* ru(j1)+w2* ru(j2)+w3* ru(j3)+w4* ru(j4)+ &
-            (w1*dru(j1)+w2*dru(j2)+w3*dru(j3)+w4*dru(j4))*time_t
-        val2=w1* su(j1)+w2* su(j2)+w3* su(j3)+w4* su(j4)+ &
-            (w1*dsu(j1)+w2*dsu(j2)+w3*dsu(j3)+w4*dsu(j4))*time_t
+        val =w1* ru(j1)+w2* ru(j2)+w3* ru(j3)+w4* ru(j4)
+        val2=w1* su(j1)+w2* su(j2)+w3* su(j3)+w4* su(j4)
+        if(l_foto)then
+          val =val +(w1*dhat_dt%u(j1)+w2*dhat_dt%u(j2)+ &
+                     w3*dhat_dt%u(j3)+w4*dhat_dt%u(j4))*time_t
+          val2=val2+(w1*xhat_dt%u(j1)+w2*xhat_dt%u(j2)+ &
+                     w3*xhat_dt%u(j3)+w4*xhat_dt%u(j4))*time_t
+        end if
         us_prime0=val2+sges(1)*val
         us_prime1=val2+sges(2)*val
         us_prime2=val2+sges(3)*val
         us_prime3=val2+sges(4)*val
 
-        val =w1* rv(j1)+w2* rv(j2)+w3* rv(j3)+w4* rv(j4)+ &
-            (w1*drv(j1)+w2*drv(j2)+w3*drv(j3)+w4*drv(j4))*time_t
-        val2=w1* sv(j1)+w2* sv(j2)+w3* sv(j3)+w4* sv(j4)+ &
-            (w1*dsv(j1)+w2*dsv(j2)+w3*dsv(j3)+w4*dsv(j4))*time_t
+        val =w1* rv(j1)+w2* rv(j2)+w3* rv(j3)+w4* rv(j4)
+        val2=w1* sv(j1)+w2* sv(j2)+w3* sv(j3)+w4* sv(j4)
+        if(l_foto)then
+          val =val +(w1*dhat_dt%v(j1)+w2*dhat_dt%v(j2)+ &
+                     w3*dhat_dt%v(j3)+w4*dhat_dt%v(j4))*time_t
+          val2=val2+(w1*xhat_dt%v(j1)+w2*xhat_dt%v(j2)+ &
+                     w3*xhat_dt%v(j3)+w4*xhat_dt%v(j4))*time_t
+        end if
         vs_prime0=val2+sges(1)*val
         vs_prime1=val2+sges(2)*val
         vs_prime2=val2+sges(3)*val
         vs_prime3=val2+sges(4)*val
 
-        val =w1* rp(j1)+w2* rp(j2)+w3* rp(j3)+w4* rp(j4)+ &
-            (w1*drp(j1)+w2*drp(j2)+w3*drp(j3)+w4*drp(j4))*time_t
-        val2=w1* sp(j1)+w2* sp(j2)+w3* sp(j3)+w4* sp(j4)+ &
-            (w1*dsp(j1)+w2*dsp(j2)+w3*dsp(j3)+w4*dsp(j4))*time_t
+        val =w1* rp(j1)+w2* rp(j2)+w3* rp(j3)+w4* rp(j4)
+        val2=w1* sp(j1)+w2* sp(j2)+w3* sp(j3)+w4* sp(j4)
+        if(l_foto)then
+          val =val +(w1*dhat_dt%p3d(j1)+w2*dhat_dt%p3d(j2)+ &
+                     w3*dhat_dt%p3d(j3)+w4*dhat_dt%p3d(j4))*time_t
+          val2=val2+(w1*xhat_dt%p3d(j1)+w2*xhat_dt%p3d(j2)+ &
+                     w3*xhat_dt%p3d(j3)+w4*xhat_dt%p3d(j4))*time_t
+        end if
         psfc_prime0=val2+sges(1)*val
         psfc_prime1=val2+sges(2)*val
         psfc_prime2=val2+sges(3)*val
@@ -229,16 +268,9 @@ subroutine stpt(rt,st,rtv,stv,rq,sq,ru,su,rv,sv,rp,sp,rsst,ssst, &
       pen3   = t3*t3*tptr%err2
 
 !  Modify penalty term if nonlinear QC
-!     Variational qc is gradually increased to avoid possible convergence problems
-      if(jiter == jiterstart .and. nlnqc_iter .and. tptr%pg > tiny_r_kind) then
-         varqc_iter=c_varqc*(iter-niter_no_qc(1)+one)
-         if(varqc_iter >=one) varqc_iter= one
-         t_pg=tptr%pg*varqc_iter
-      else
-         t_pg=tptr%pg
-      endif
 
       if (nlnqc_iter .and. tptr%pg > tiny_r_kind .and. tptr%b >tiny_r_kind) then
+        t_pg=tptr%pg*varqc_iter
         cg_t=cg_term/tptr%b
         wnotgross= one-t_pg
         wgross =t_pg*cg_t/wnotgross
@@ -265,3 +297,5 @@ subroutine stpt(rt,st,rtv,stv,rq,sq,ru,su,rv,sv,rp,sp,rsst,ssst, &
   end do
   return
 end subroutine stpt
+
+end module stptmod

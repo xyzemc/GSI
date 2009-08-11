@@ -1,6 +1,6 @@
 subroutine combine_radobs(mype,mype_sub,mype_root,&
      npe_sub,mpi_comm_sub,nele,itxmax,nread,ndata,&
-     data_all,data_crit,idata_itx)
+     data_all,data_crit)
 
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -24,7 +24,6 @@ subroutine combine_radobs(mype,mype_sub,mype_root,&
 !     itxmax   - maximum number of observations
 !     data_all - observation data array
 !     data_crit- array containing observation "best scores"
-!     idata_itx- array containing thinning grid location of obs
 !     nread    - task specific number of obesrvations read from data file
 !     ndata    - task specific number of observations keep for assimilation
 !
@@ -33,7 +32,6 @@ subroutine combine_radobs(mype,mype_sub,mype_root,&
 !     ndata    - total number of observations keep for assimilation (mype_root)
 !     data_all - merged observation data array (mype_root)
 !     data_crit- merged array containing observation "best scores" (mype_root)
-!     idata_itx- merged array containing thinning grid location of obs (mype_root)
 !     
 !
 ! attributes:
@@ -42,8 +40,8 @@ subroutine combine_radobs(mype,mype_sub,mype_root,&
 !
 !$$$
   use kinds, only: r_kind,i_kind
-  use constants, only: zero,izero
-  use mpimod, only: ierror,mpi_rtype,mpi_itype,mpi_sum
+  use constants, only: zero,izero,ione
+  use mpimod, only: ierror,mpi_rtype,mpi_itype,mpi_sum,mpi_min
   implicit none
 
 ! Declare passed variables
@@ -53,108 +51,91 @@ subroutine combine_radobs(mype,mype_sub,mype_root,&
   integer(i_kind),intent(in):: nele
   integer(i_kind),intent(in):: mpi_comm_sub
   integer(i_kind),intent(inout):: nread,ndata
-  integer(i_kind),dimension(itxmax),intent(inout):: idata_itx
   real(r_kind),dimension(itxmax),intent(inout):: data_crit
   real(r_kind),dimension(nele,itxmax),intent(inout):: data_all
 
 ! Declare local variables
-  integer(i_kind):: i,j,k,kk,l,n
-  integer(i_kind):: itx_sub,itx,ndata1
-  integer(i_kind),dimension(npe_sub+2):: ncounts,ncounts1
-  integer(i_kind),dimension(npe_sub):: recvcounts,displs,displs2
-  integer(i_kind),dimension(itxmax):: itxsave
+  integer(i_kind):: i,k,l,ndata1,ndata2
+  integer(i_kind):: ncounts,ncounts1
 
-  real(r_kind):: crit_sub
-  real(r_kind),dimension(nele+2,ndata) :: data_sub
-  real(r_kind),allocatable,dimension(:,:):: data_all_sub
+  real(r_kind),dimension(itxmax):: data_crit_min
+  real(r_kind),dimension(nele,itxmax):: data_all_in
 
-! Determine total number of data read and retained.
-  do i=1,npe_sub
-     ncounts(i)=izero
-  end do
-  ncounts(mype_sub+1)=ndata
-  ncounts(npe_sub+1)=nread
-  ncounts(npe_sub+2)=ndata
-  call mpi_allreduce(ncounts,ncounts1,npe_sub+2,mpi_itype,mpi_sum,mpi_comm_sub,ierror)
+  ndata=0
+  if(npe_sub > 1)then
+!   Determine total number of data read and retained.
+    ncounts=nread
+    call mpi_allreduce(ncounts,ncounts1,1,mpi_itype,mpi_sum,mpi_comm_sub,ierror)
 
-! Set total number of observations summed over all tasks and
-! construct starting location of subset in reduction array
+!   Set total number of observations summed over all tasks and
+!   construct starting location of subset in reduction array
 
-  nread=0
-  ndata1=ncounts1(npe_sub+2)
-  if (mype_sub==mype_root) nread = ncounts1(npe_sub+1)
-  if (ndata1 == 0)return
+    nread=0
+    if (mype_sub==mype_root) nread = ncounts1
+    if (ncounts1 == 0)return
 
-  recvcounts(1)=ncounts1(1)*(nele+2)
-  displs(1)=0
-  displs2(1)=0
-  do i=2,npe_sub
-    recvcounts(i)=ncounts1(i)*(nele+2)
-    displs(i)=displs(i-1)+ncounts1(i-1)*(nele+2)
-    displs2(i)=displs2(i-1)+ncounts1(i-1)
-  end do
+!   Allocate arrays to hold data
+      
+!   gather arrays over all tasks in mpi_comm_sub.  Reduction result
+!   is only needed on task mype_root
+    call mpi_allreduce(data_crit,data_crit_min,itxmax,mpi_rtype,mpi_min,mpi_comm_sub,ierror)
 
-  do i=1,ndata
-    do j=1,nele
-      data_sub(j,i)=data_all(j,i)
-    end do
-    data_sub(nele+1,i)=data_crit(i)
-    data_sub(nele+2,i)=idata_itx(i) + 0.01_r_kind
-  end do
-
-! Allocate arrays to hold data
-  if(mype_sub==mype_root)allocate(data_all_sub(nele+2,ndata1))
-
-! gather arrays over all tasks in mpi_comm_sub.  Reduction result
-! is only needed on task mype_root
-  call mpi_gatherv(data_sub,(nele+2)*ndata,mpi_rtype,data_all_sub,recvcounts,displs, &
-       mpi_rtype,mype_root,mpi_comm_sub,ierror)
-
-! Reset counters
-  
-! A single task, mype_root, merges the all the data together
-  if (mype_sub==mype_root) then
-
-     nread = ncounts1(npe_sub+1)
-
-     do k=1,itxmax
-        itxsave(k)=0
-        data_crit(k)=999999._r_kind
-     end do
-
-!    Loop over task specific obs.  Retain "best"
-!    observations from each task
-     data_loop: do kk=1,ndata1
-
-!       Loop over contents of scratch file just read in.
-!       Retain best observation in each thinning grid box
-
-           crit_sub=data_all_sub(nele+1,kk)
-           itx_sub=data_all_sub(nele+2,kk)
-           
-           if(itxsave(itx_sub) == 0 .or. data_crit(itx_sub) > crit_sub)then
-              itxsave(itx_sub)=kk
-              data_crit(itx_sub)=crit_sub
-           end if 
-              
-     end do data_loop
-     ndata=0
-     do i=1,itxmax
-       if(itxsave(i) > 0)then
-         itx=itxsave(i)
+    ndata=0
+    ndata1=0
+    data_all_in=zero
+    do k=1,itxmax
+      if(data_crit_min(k) < 5.e9_r_kind)then
          ndata=ndata+1
-         do l=1,nele
-            data_all(l,ndata)=data_all_sub(l,itx)
-         end do
+         if(data_crit_min(k) /= data_crit(k)) then
+            data_crit(ndata)=1.e10_r_kind
+            do l=1,nele
+               data_all_in(l,ndata)=zero
+            end do
+         else
+            ndata1=ndata1+1
+            data_crit(ndata)=data_crit(k)
+            do l=1,nele
+               data_all_in(l,ndata)=data_all(l,k)
+            end do
+         end if
        end if
-     end do
+    end do
+    call mpi_allreduce(ndata1,ndata2,1,mpi_itype,mpi_sum,mpi_comm_sub,ierror)
 
-!    Deallocate arrays
-     deallocate(data_all_sub)
+!  Following code only in the unlikely circumstance that 2 min crit's in one grid box are identical
+    if(ndata /= ndata2)then
+      do i=1,ndata
+        data_crit(i)=data_crit(i)+float(mype_sub)
+      end do
+      call mpi_allreduce(data_crit,data_crit_min,ndata,mpi_rtype,mpi_min,mpi_comm_sub,ierror)
 
-! End of block for mype_root task
-  endif
+      do k=1,ndata
+        if(data_crit_min(k) < 5.e9_r_kind)then
+           if(data_crit_min(k) /= data_crit(k)) then
+              do l=1,nele
+                 data_all_in(l,k)=zero
+              end do
+           end if
+         end if
+       end do
+      
+    end if
 
+!  get all data on process mype_root
+    call mpi_reduce(data_all_in,data_all,nele*ndata,mpi_rtype,mpi_sum,&
+         mype_root,mpi_comm_sub,ierror)
+  else
+
+    if(nread <= izero)return
+    do k=1,itxmax
+      if(data_crit(k) < 1.e9_r_kind)then
+        ndata=ndata+1
+        do l=1,nele
+           data_all(l,ndata)=data_all(l,k)
+        end do
+      end if
+    end do
+  end if
 
 ! End of routine
   return

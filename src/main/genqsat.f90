@@ -20,6 +20,7 @@ subroutine genqsat(qsat,ice,itime,dlnesdtv,dmax)
 !   2006-02-02  treadon - rename prsl as ges_prsl
 !   2006-09-18  derber - modify to limit saturated values near top
 !   2006-11-22  derber - correct bug:  es<esmax should be es<=esmax
+!   2008-06-04  safford - rm unused vars
 !
 !   input argument list:
 !     ggrid_g31 - guess grids, contains temperature and log(ps)               
@@ -53,9 +54,9 @@ subroutine genqsat(qsat,ice,itime,dlnesdtv,dmax)
   integer(i_kind),intent(in):: itime
 
   integer(i_kind) k,j,i
-  real(r_kind) pw,q,tdry,tr,es,qs,tmax
+  real(r_kind) pw,tdry,tr,es
   real(r_kind) w,onep3,esmax
-  real(r_kind) desidt,deswdt,dtdtv,dwdt,desdt,esi,esw
+  real(r_kind) desidt,deswdt,dwdt,desdt,esi,esw
   real(r_kind),dimension(lat2,lon2):: mint,estmax
   real(r_kind),dimension(nsig)::maxrh
   integer(i_kind),dimension(lat2,lon2):: lmint

@@ -29,6 +29,8 @@ subroutine nlmsas_ad(im,ix,km,jcap,delt,del,sl,rcs,&
 !                         with global constant "tiny_r_kind"
 !   2006-01-06  treadon - fix cnvflg bug
 !   2006-04-12  treadon - change del and sl from 1d to 2d arrays
+!   2008-04-29  safford - rm unused vars
+!   2008-10-29  min-jeong kim - make consistent with global_fcst
 !
 !  input argument list:
 !     im       - integer number of points
@@ -103,7 +105,7 @@ subroutine nlmsas_ad(im,ix,km,jcap,delt,del,sl,rcs,&
   real(r_kind) u1_ad(km,ix),v1_ad(km,ix),cwm1_ad(km,ix)
 
 ! Local variables and arrays
-  logical adjoint,totflg
+  logical adjoint
   logical,dimension(ix):: cnvflg,dwnflg,dwnflg2,flg
   logical,dimension(km,ix):: flgk
 
@@ -124,20 +126,19 @@ subroutine nlmsas_ad(im,ix,km,jcap,delt,del,sl,rcs,&
   real(r_kind) qcko(km,ix),eta(km,ix)
   real(r_kind) etad(km,ix)
   real(r_kind) qrcdo(km,ix),dtconv0(ix)
-  real(r_kind) pwo(km,ix),pwdo(km,ix),dtconv(ix),deltv(ix),acrt(ix)
-  real(r_kind) psfc(ix),hmax(ix),delq(ix)
+  real(r_kind) pwo(km,ix),pwdo(km,ix),dtconv(ix),acrt(ix)
+  real(r_kind) psfc(ix),hmax(ix)
   real(r_kind) hkbo(ix),qkbo(ix),pbcdif(ix)
   real(r_kind) hmin(ix),pwavo(ix)
   real(r_kind) aa1(ix),vshear(ix)
   real(r_kind) edt(ix)
   real(r_kind) edto(ix),pwevo(ix)
-  real(r_kind) hcdo(ix),qcdo(ix),ddp(ix),adet(ix),aatmp(ix)
+  real(r_kind) hcdo(ix),qcdo(ix)
   real(r_kind) xhkb(ix),xqkb(ix),xpwav(ix),xpwev(ix),xhcd(ix)
   real(r_kind) xaa0(ix),f(ix),xk(ix),xmb(ix)
   real(r_kind) edtx(ix),xqcd(ix)
   real(r_kind) hsbar(ix),xmbmax(ix),xlamb(ix),xlamd(ix)
   real(r_kind) xlamdet(ix),xlamdet0(ix),xlamdet1(ix)
-  real(r_kind) delhbar(ix),delqbar(ix),deltbar(ix)
   real(r_kind) pcrit(15), acritt(15), acrit(15)
   real(r_kind) mbdt
   real(r_kind) rntot(ix)
@@ -155,8 +156,8 @@ subroutine nlmsas_ad(im,ix,km,jcap,delt,del,sl,rcs,&
   real(r_kind) dpscl(ix),tdpscl(ix),dpcld(ix),tdpcld(ix)
   real(r_kind) tcwfup(ix),tcwfdn(ix),tdetrn(ix),tdpdwn(ix)
   real(r_kind) eta0(km,ix),hcko0(km,ix),hckod(km,ix),hcko1(km,ix)
-  real(r_kind) qcko0(km,ix),dqk(km,ix),edt0(ix),edto0(ix),qcko00(km,ix)
-  real(r_kind) xtemp0(km,ix),edtx0(ix),xmb0(ix),rn11(ix)
+  real(r_kind) qcko0(km,ix),dqk(km,ix),edt0(ix),qcko00(km,ix)
+  real(r_kind) xtemp0(km,ix),xmb0(ix),rn11(ix)
   real(r_kind) qeso2(km,ix),rn0k(km,ix),delqevk(km,ix)
   real(r_kind) edto1(ix),edto10(ix),edtx1(ix),edtx10(ix)
 !new
@@ -210,7 +211,7 @@ subroutine nlmsas_ad(im,ix,km,jcap,delt,del,sl,rcs,&
   real(r_kind) etah_ad,esl_ad,dqsdp_ad,xpw_ad,xqrch_ad,qlk_ad,dz_ad,dz1_ad
   real(r_kind) dvv1_ad,dvu1_ad,dvq1_ad,dv1_ad,pprime_ad,es_ad,desdt_ad,qs_ad
   real(r_kind) termq_ad,term1_ad,term2_ad,term3_ad,term4_ad,dv3v_ad,dv2v_ad
-  real(r_kind) dv1v_ad,dv3u_ad,dv2u_ad,dv1u_ad,dv2_adq,dv1q_ad
+  real(r_kind) dv1v_ad,dv3u_ad,dv2u_ad,dv1u_ad,dv1q_ad
   real(r_kind) dv2_ad,dv3_ad,detad_ad,detau_ad,termu_ad,termv_ad
   real(r_kind) shear_ad,rain_ad,dellat_ad,ratio_ad,dt_ad,dqs_ad,es0_ad
   real(r_kind) evef_ad,qevap_ad,delqev_ad,rn0_ad,term5_ad,dhh_ad,term_ad
@@ -519,7 +520,7 @@ subroutine nlmsas_ad(im,ix,km,jcap,delt,del,sl,rcs,&
   betas   = 0.15_r_kind
   betal   = 0.05_r_kind
   betas   = 0.05_r_kind
-  evfact = 0.7_r_kind
+  evfact = 0.3_r_kind
   pdpdwn  = zero
   pdetrn  = 200._r_kind
   xlambu  = 1.e-4_r_kind
@@ -1226,14 +1227,9 @@ subroutine nlmsas_ad(im,ix,km,jcap,delt,del,sl,rcs,&
            qrcdo(k,i) = dq + term5*term6*dh
            detad = etad(k+1,i) - etad(k,i)
            if (k < jmin(i)-1) then
-              term1 = etad(k+1,i)*qrcdo(k+1,i)
+              term1 = etad(k+1,i)*qcdo(i)
               term2 = etad(k,i) * qrcdo(k,i)
               term3 = detad*half*(qrcdo(k,i)+qrcdo(k+1,i))
-              pwdo(k,i) = term1 - term2 - term3
-           else
-              term1 = etad(k+1,i)*qol(k+1,i)
-              term2 = etad(k,i) * qrcdo(k,i)
-              term3 = detad*half*(qrcdo(k,i)+qesol(k+1,i))
               pwdo(k,i) = term1 - term2 - term3
            endif
            pwevo(i) = pwevo(i) + pwdo(k,i)
@@ -3392,21 +3388,10 @@ subroutine nlmsas_ad(im,ix,km,jcap,delt,del,sl,rcs,&
                   detad_ad = +half*(qrcdo(k,i)+qrcdo(k+1,i))*term3_ad
                   qrcdo_ad(k,i) = qrcdo_ad(k,i) + etad(k,i)*term2_ad
                   etad_ad(k,i) = etad_ad(k,i) + qrcdo(k,i)*term2_ad
-                  qrcdo_ad(k+1,i) =qrcdo_ad(k+1,i) +term1_ad*etad(k+1,i)
-                  etad_ad(k+1,i) =etad_ad(k+1,i) +term1_ad*qrcdo(k+1,i)
-               else
-                  term1_ad = term1_ad + pwdo_ad(k,i)
-                  term2_ad = term2_ad - pwdo_ad(k,i)
-                  term3_ad = term3_ad - pwdo_ad(k,i)
-
-                  qesol_ad(k+1,i) = qesol_ad(k+1,i) + detad*half*term3_ad
-                  qrcdo_ad(k,i) = qrcdo_ad(k,i) + detad*half*term3_ad
-                  detad_ad = term3_ad*half*(qrcdo(k,i)+qesol(k+1,i))
-                  qrcdo_ad(k,i) = qrcdo_ad(k,i) + etad(k,i)*term2_ad
-                  etad_ad(k,i) = etad_ad(k,i) + qrcdo(k,i)*term2_ad
-                  qol_ad(k+1,i)  = qol_ad(k+1,i) + etad(k+1,i)*term1_ad
-                  etad_ad(k+1,i) = etad_ad(k+1,i) + qol(k+1,i)*term1_ad
+                  qcdo_ad(i) =qcdo_ad(i) +term1_ad*etad(k+1,i)
+                  etad_ad(k+1,i) =etad_ad(k+1,i) +term1_ad*qcdo(i)
                endif
+
                etad_ad(k,i) = etad_ad(k,i) - detad_ad
                etad_ad(k+1,i) = etad_ad(k+1,i) + detad_ad
 

@@ -1,4 +1,29 @@
-subroutine intdw(ru,rv,su,sv,dru,drv,dsu,dsv)
+module intdwmod
+
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    intdwmod    module for intdw and its tangent linear intdw_tl
+!
+! abstract: module for intdw and its tangent linear intdw_tl
+!
+! program history log:
+!   2005-05-12  Yanqiu zhu - wrap intdw and its tangent linear intdw_tl into one module
+!   2005-11-16  Derber - remove interfaces
+!   2008-11-26  Todling - remove intdw_tl
+!
+
+implicit none
+
+PRIVATE
+PUBLIC intdw
+
+interface intdw; module procedure &
+          intdw_
+end interface
+
+contains
+
+subroutine intdw_(dwhead,ru,rv,su,sv)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    intw        apply nonlin qc operator for lidar winds
@@ -19,19 +44,23 @@ subroutine intdw(ru,rv,su,sv,dru,drv,dsu,dsv)
 !   2006-07-28  derber  - modify to use new inner loop obs data structure
 !                       - unify NL qc
 !   2007-02-15  rancic - add foto
+!   2007-03-19  tremolet - binning of observations
+!   2007-06-05  tremolet - use observation diagnostics structure
+!   2007-07-09  tremolet - observation sensitivity
+!   2008-06-02  safford - rm unused vars
+!   2008-01-04  tremolet - Don't apply H^T if l_do_adjoint is false
+!   2008-11-28  todling  - turn FOTO optional; changed ptr%time handle
 !
 ! usage: call intdw(ru,rv,su,sv)
 !   input argument list:
+!     dwhead   - obs type pointer to obs structure
 !     su       - u increment in grid space
 !     sv       - v increment in grid space
-!     dsu      - time derivative of u increment in grid space
-!     dsv      - time derivative of v increment in grid space
 !
 !   output argument list:
+!     dwhead   - obs type pointer to obs structure
 !     ru       - output u adjoint operator results 
 !     rv       - output v adjoint operator results 
-!     dru      - output time derivative of u adjoint operator results 
-!     drv      - output time derivative of v adjoint operator results 
 !
 ! attributes:
 !   language: f90
@@ -39,21 +68,24 @@ subroutine intdw(ru,rv,su,sv,dru,drv,dsu,dsv)
 !
 !$$$
   use kinds, only: r_kind,i_kind
-  use constants, only: half,one,two,zero,tiny_r_kind,cg_term
-  use obsmod, only: dwhead,dwptr
-  use qcmod, only: nlnqc_iter
+  use constants, only: half,one,zero,tiny_r_kind,cg_term,r3600
+  use obsmod, only: dw_ob_type,lsaveobsens,l_do_adjoint
+  use qcmod, only: nlnqc_iter,varqc_iter
   use gridmod, only: latlon1n
+  use jfunc, only: jiter,l_foto,xhat_dt,dhat_dt
   implicit none
 
 ! Declare passed variables
-  real(r_kind),dimension(latlon1n),intent(in):: su,sv,dsu,dsv
-  real(r_kind),dimension(latlon1n),intent(inout):: ru,rv,dru,drv
+  type(dw_ob_type),pointer,intent(in):: dwhead
+  real(r_kind),dimension(latlon1n),intent(in):: su,sv
+  real(r_kind),dimension(latlon1n),intent(inout):: ru,rv
 
 ! Declare local variables
-  integer(i_kind) i,j1,j2,j3,j4,j5,j6,j7,j8
+  integer(i_kind) j1,j2,j3,j4,j5,j6,j7,j8
 ! real(r_kind) penalty
-  real(r_kind) val,valu,valv,w1,w2,w3,w4,w5,w6,w7,w8
+  real(r_kind) val,valu,valv,w1,w2,w3,w4,w5,w6,w7,w8,pg_dw
   real(r_kind) cg_dw,p0,grad,wnotgross,wgross,time_dwi
+  type(dw_ob_type), pointer :: dwptr
 
 
   dwptr => dwhead
@@ -75,30 +107,54 @@ subroutine intdw(ru,rv,su,sv,dru,drv,dsu,dsv)
      w7=dwptr%wij(7)
      w8=dwptr%wij(8)
      
-     time_dwi=dwptr%time
+
 !    Forward model
      val=(w1*su(j1)+w2*su(j2)+w3*su(j3)+w4*su(j4)+                   &
-          w5*su(j5)+w6*su(j6)+w7*su(j7)+w8*su(j8))*dwptr%sinazm+  &
+          w5*su(j5)+w6*su(j6)+w7*su(j7)+w8*su(j8))*dwptr%sinazm+     &
          (w1*sv(j1)+w2*sv(j2)+w3*sv(j3)+w4*sv(j4)+                   &
-          w5*sv(j5)+w6*sv(j6)+w7*sv(j7)+w8*sv(j8))*dwptr%cosazm   &
-          -dwptr%res
-     val=((w1*dsu(j1)+w2*dsu(j2)+w3*dsu(j3)+w4*dsu(j4)+                &
-           w5*dsu(j5)+w6*dsu(j6)+w7*dsu(j7)+w8*dsu(j8))*dwptr%sinazm+  &
-          (w1*dsv(j1)+w2*dsv(j2)+w3*dsv(j3)+w4*dsv(j4)+                &
-           w5*dsv(j5)+w6*dsv(j6)+w7*dsv(j7)+w8*dsv(j8))*dwptr%cosazm)  &
-           *time_dwi+val
+          w5*sv(j5)+w6*sv(j6)+w7*sv(j7)+w8*sv(j8))*dwptr%cosazm
 
-!    gradient of nonlinear operator
-     if (nlnqc_iter .and. dwptr%pg > tiny_r_kind .and. &
-                          dwptr%b  > tiny_r_kind) then
-        cg_dw=cg_term/dwptr%b
-        wnotgross= one-dwptr%pg
-        wgross = dwptr%pg*cg_dw/wnotgross
-        p0   = wgross/(wgross+exp(-half*dwptr%err2*val**2))
-        val = val*(one-p0)
+     if ( l_foto ) then
+       time_dwi=dwptr%time*r3600
+       val=val+                                              &
+         ((w1*xhat_dt%u(j1)+w2*xhat_dt%u(j2)+                &
+           w3*xhat_dt%u(j3)+w4*xhat_dt%u(j4)+                &
+           w5*xhat_dt%u(j5)+w6*xhat_dt%u(j6)+                &
+           w7*xhat_dt%u(j7)+w8*xhat_dt%u(j8))*dwptr%sinazm+  &
+          (w1*xhat_dt%v(j1)+w2*xhat_dt%v(j2)+                &
+           w3*xhat_dt%v(j3)+w4*xhat_dt%v(j4)+                &
+           w5*xhat_dt%v(j5)+w6*xhat_dt%v(j6)+                &
+           w7*xhat_dt%v(j7)+w8*xhat_dt%v(j8))*dwptr%cosazm)  &
+           *time_dwi
      endif
 
-     grad     = val * dwptr%raterr2 * dwptr%err2
+     if (lsaveobsens) then
+       dwptr%diags%obssen(jiter) = val * dwptr%raterr2 * dwptr%err2
+     else
+       if (dwptr%luse) dwptr%diags%tldepart(jiter)=val
+     endif
+
+!   Do Adjoint
+    if (l_do_adjoint) then
+     if (lsaveobsens) then
+       grad = dwptr%diags%obssen(jiter)
+
+     else
+       val=val-dwptr%res
+
+!      gradient of nonlinear operator
+       if (nlnqc_iter .and. dwptr%pg > tiny_r_kind .and. &
+                            dwptr%b  > tiny_r_kind) then
+          pg_dw=varqc_iter*dwptr%pg
+          cg_dw=cg_term/dwptr%b
+          wnotgross= one-pg_dw
+          wgross = pg_dw*cg_dw/wnotgross
+          p0   = wgross/(wgross+exp(-half*dwptr%err2*val**2))
+          val = val*(one-p0)
+       endif
+
+       grad = val * dwptr%raterr2 * dwptr%err2
+     endif
 
 !    Adjoint
      valu=dwptr%sinazm * grad
@@ -119,27 +175,33 @@ subroutine intdw(ru,rv,su,sv,dru,drv,dsu,dsv)
      rv(j6)=rv(j6)+w6*valv
      rv(j7)=rv(j7)+w7*valv
      rv(j8)=rv(j8)+w8*valv
-     valu = valu*time_dwi
-     valv = valv*time_dwi
-     dru(j1)=dru(j1)+w1*valu
-     dru(j2)=dru(j2)+w2*valu
-     dru(j3)=dru(j3)+w3*valu
-     dru(j4)=dru(j4)+w4*valu
-     dru(j5)=dru(j5)+w5*valu
-     dru(j6)=dru(j6)+w6*valu
-     dru(j7)=dru(j7)+w7*valu
-     dru(j8)=dru(j8)+w8*valu
-     drv(j1)=drv(j1)+w1*valv
-     drv(j2)=drv(j2)+w2*valv
-     drv(j3)=drv(j3)+w3*valv
-     drv(j4)=drv(j4)+w4*valv
-     drv(j5)=drv(j5)+w5*valv
-     drv(j6)=drv(j6)+w6*valv
-     drv(j7)=drv(j7)+w7*valv
-     drv(j8)=drv(j8)+w8*valv
+     if(l_foto)then
+       valu = valu*time_dwi
+       valv = valv*time_dwi
+       dhat_dt%u(j1)=dhat_dt%u(j1)+w1*valu
+       dhat_dt%u(j2)=dhat_dt%u(j2)+w2*valu
+       dhat_dt%u(j3)=dhat_dt%u(j3)+w3*valu
+       dhat_dt%u(j4)=dhat_dt%u(j4)+w4*valu
+       dhat_dt%u(j5)=dhat_dt%u(j5)+w5*valu
+       dhat_dt%u(j6)=dhat_dt%u(j6)+w6*valu
+       dhat_dt%u(j7)=dhat_dt%u(j7)+w7*valu
+       dhat_dt%u(j8)=dhat_dt%u(j8)+w8*valu
+       dhat_dt%v(j1)=dhat_dt%v(j1)+w1*valv
+       dhat_dt%v(j2)=dhat_dt%v(j2)+w2*valv
+       dhat_dt%v(j3)=dhat_dt%v(j3)+w3*valv
+       dhat_dt%v(j4)=dhat_dt%v(j4)+w4*valv
+       dhat_dt%v(j5)=dhat_dt%v(j5)+w5*valv
+       dhat_dt%v(j6)=dhat_dt%v(j6)+w6*valv
+       dhat_dt%v(j7)=dhat_dt%v(j7)+w7*valv
+       dhat_dt%v(j8)=dhat_dt%v(j8)+w8*valv
+     end if
+    endif
 
      dwptr => dwptr%llpoint
 
   end do
+
   return
-end subroutine intdw
+end subroutine intdw_
+
+end module intdwmod

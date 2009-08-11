@@ -1,11 +1,29 @@
-!C===============================================================
-!C  Block partition the loop bounds (lb...ub) -> (i1...i2).
-!C  The number of tasks is ntasks;  taskid = 0, 1, ..., ntasks-1.
-!C  The first nt1 tasks get a chunk one bigger than the rest.
-!C  The counts and displacements arrays range from 1 to ntasks.
-!C===============================================================
-!C
+
       subroutine looplimits(taskid, ntasks, lb, ub, i1, i2)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    looplimits
+!
+!   prgrmmr:
+!
+! abstract:     Block partition the loop bounds (lb...ub) -> (i1...i2).
+!               The number of tasks is ntasks;  taskid = 0, 1, ..., ntasks-1.
+!               The first nt1 tasks get a chunk one bigger than the rest.
+!               The counts and displacements arrays range from 1 to ntasks.
+!
+! program history log:
+!   2008-05-29  safford -- add subprogram doc block
+!
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
       use kinds, only: i_kind
       implicit none
       integer(i_kind) taskid, ntasks, lb, ub, i1, i2

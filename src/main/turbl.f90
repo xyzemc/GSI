@@ -1,8 +1,40 @@
 subroutine turbl(uges,vges,pges,tges,oges,zges,termu,termv,termt)
+
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    turbl
+!
+!   prgrmmr: 
+!
+! abstract:      Calculate tendencies of wind and virtual temperature
+!                due to vertical turbulent mixing. 
+!
+! program history log:
+!   2008-04-02  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     zges     -
+!     pges     -
+!     uges     - 
+!     vges     - 
+!     tges     - 
+!     termu    - 
+!     termv    - 
+!     termt    - 
+!     oges     - 
+!
+!   output argument list:
+!     termu    - 
+!     termv    - 
+!     termt    - 
+!     oges     - 
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
 !$$$
-!    Calculate tendencies of wind and virtual temperature
-!    due to vertical turbulent mixing 
-!$$$
+
   use kinds,only: r_kind,i_kind
   use constants,only: one,zero,two,half,rd_over_g,rd_over_cp,grav
   use gridmod,only: lat2,lon2,nsig,nsig_hlf
@@ -14,7 +46,6 @@ subroutine turbl(uges,vges,pges,tges,oges,zges,termu,termv,termt)
                       f3my20,f4my20,f5my20,f6my20,f7my20,f8my20,b1my20, &
                       karmy20,l0my20,alf0my20
   use turblmod, only: ricmy20,rfcmy20,shcmy20,smcmy20,eps_m
-  use turblmod, only: fsm_my20,fsh_my20
   use turblmod, only: ri_int
   implicit none
 
@@ -28,12 +59,11 @@ subroutine turbl(uges,vges,pges,tges,oges,zges,termu,termv,termt)
   real(r_kind),dimension(lat2,lon2,nsig),intent(inout):: termu,termv,termt,oges
 
 ! Declare local variables
-  real(r_kind),dimension(nsig_hlf):: zl,dzl
-  real(r_kind),dimension(nsig_hlf):: kmaz,khaz
+  real(r_kind),dimension(nsig_hlf):: zl,kmaz,khaz
   real(r_kind),dimension(nsig_hlf):: tloc,uloc,vloc,oloc,zmix
   real(r_kind),dimension(nsig_hlf+1):: ploc
 
-  real(r_kind) px,rdzik,rdzlk,kmrdz,khrdz,ssq,aux,oml,omr,upl0,nml0,kterm,l0
+  real(r_kind) px,rdzik,rdzlk,kmrdz,khrdz,ssq,aux,l0
   integer(i_kind) i,j,k
   
   if(.not. use_pbl)return

@@ -46,7 +46,28 @@ implicit none
 
 contains
 
+
   subroutine init_strongvars
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    init_strongvars
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-05-05  safford -- add subprogram doc block
+!
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
     jcstrong=.false.
     jcstrong_option=1

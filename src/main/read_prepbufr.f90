@@ -55,8 +55,11 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
 !   2006-06-21  wu - deallocate etabl array
 !   2006-07-28  derber  - temporarily add subtype for meteosat winds based on sat ID
 !   2006-07-31  kleist  - change to surface pressure ob error from ln(ps) to ps(cb)
+!   2006-10-25  sienkiewicz - add blacklist of raob data
+!   2006-12-01  todling - embedded blacklist into a module
 !   2007-02-13  parrish - add ability to use obs files with ref time different from analysis time
 !   2007-02-20  wu - correct errors in quality mark checks
+!   2007-03-01  tremolet - measure time from beginning of assimilation window
 !   2007-03-15  su - remove the error table reading part to a subroutine
 !   2007-04-24  wu - add TAMDAR (134) to be used as sensible T
 !   2007-05-17  kleist - generalize flag for virtual/sensible temperature obs
@@ -66,7 +69,11 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
 !   2007-11-03  su  -   modify conventional thinning algorithm
 !   2008-03-28  wu - add code to generate optional observation perturbations
 !   2008-03-31  li.bi - add ascat
+!   2008-05-27  safford - rm unused vars and uses
 !   2008-06-02  treadon - check iret from inital readmg and act accordingly
+!   2008-09-08  lueken  - merged ed's changges into q1fy09 code
+!   2008-21-25  todling - adapted Tremolet 2007-03-01 change of time window
+!                       - remove unused vars
 !
 !   input argument list:
 !     infile   - unit from which to read BUFR data
@@ -89,38 +96,39 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   use kinds, only: r_kind,r_double,i_kind
   use constants, only: zero,one_tenth,one,deg2rad,fv,t0c,half,&
        three,four,rad2deg,tiny_r_kind,huge_r_kind,huge_i_kind,&
-       izero, ione
+       izero
   use gridmod, only: diagnostic_reg,regional,nlon,nlat,nsig,&
        tll2xy,txy2ll,rotate_wind_ll2xy,rotate_wind_xy2ll,&
        rlats,rlons,twodvar_regional,check_rotate_wind
-  use convinfo, only: nconvtype,ctwind,cgross,cermax,cermin,cvar_b,cvar_pg, &
+  use convinfo, only: nconvtype,ctwind, &
         ncmiter,ncgroup,ncnumgrp,icuse,ictype,icsubtype,ioctype, &
-		ithin_conv,rmesh_conv,pmesh_conv,npred_conv, &
-		id_bias_ps,id_bias_t,id_bias_spd,conv_bias_ps,conv_bias_t,conv_bias_spd
+		ithin_conv,rmesh_conv,pmesh_conv, &
+		id_bias_ps,id_bias_t,conv_bias_ps,conv_bias_t
 
   use obsmod, only: iadate,oberrflg,offtime_data,perturb_obs,perturb_fact,ran01dom
+  use obsmod, only: blacklst
   use converr,only: etabl
+  use gsi_4dvar, only: l4dvar,idmodel,iadatebgn,iadateend,time_4dvar,winlen
   use qcmod, only: errormod,noiqc
   use convthin, only: make3grids,map3grids,del3grids,use_all
+  use blacklist, only : blacklist_read,blacklist_destroy
+  use blacklist, only : blkstns,blkkx,ibcnt
 
   implicit none
 
 ! Declare passed variables
-  character(10),intent(in):: infile,obstype
-  character(20),intent(in):: sis
+  character(len=*),intent(in):: infile,obstype
+  character(len=*),intent(in):: sis
   integer(i_kind),intent(in):: lunout
   integer(i_kind),intent(inout):: nread,ndata,nodata
   real(r_kind),intent(in):: twindin
   real(r_kind),dimension(nlat,nlon,nsig),intent(in):: prsl_full
 
 ! Declare local parameters
-  real(r_kind),parameter:: r0_001=0.001_r_kind
   real(r_kind),parameter:: r0_5 = 0.5_r_kind
   real(r_kind),parameter:: r0_75 = 0.75_r_kind
   real(r_kind),parameter:: r0_7 = 0.7_r_kind
-  real(r_kind),parameter:: r0_8 = 0.8_r_kind
   real(r_kind),parameter:: r1_2 = 1.2_r_kind
-  real(r_kind),parameter:: r1_5 = 1.5_r_kind
   real(r_kind),parameter:: r3_33= three + one/three
   real(r_kind),parameter:: r6   = 6.0_r_kind
   real(r_kind),parameter:: r10  = 10.0_r_kind
@@ -128,7 +136,6 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   real(r_kind),parameter:: r50  = 50.0_r_kind
   real(r_kind),parameter:: r90  = 90.0_r_kind
   real(r_kind),parameter:: r100 = 100.0_r_kind
-  real(r_kind),parameter:: r300 = 300.0_r_kind
   real(r_kind),parameter:: r360 = 360.0_r_kind
   real(r_kind),parameter:: r500 = 500.0_r_kind
   real(r_kind),parameter:: r999 = 999.0_r_kind
@@ -152,10 +159,10 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   character(16) cprovider(200)    
   character(80) cstring           
 
-  integer(i_kind) io,lunin,i,maxobs,sstmeas,j,idomsfc,itemp
+  integer(i_kind) lunin,i,maxobs,j,idomsfc,itemp
   integer(i_kind) kk,klon1,klat1,klonp1,klatp1
-  integer(i_kind) nc,nx,id,ier,isflg,ntread,itx
-  integer(i_kind) jdate,ihh,idd,idate,iret,im,iy,k,levs
+  integer(i_kind) nc,nx,id,isflg,ntread,itx
+  integer(i_kind) ihh,idd,idate,iret,im,iy,k,levs
   integer(i_kind) kx,nreal,nchanl,ilat,ilon,ithin
   integer(i_kind) cat,zqm,pwq,sstq,qm,lim_qm,lim_zqm
   integer(i_kind) lim_tqm,lim_qqm
@@ -165,31 +172,28 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
 
 ! bias and thinning variables
   logical luse
-  integer(i_kind) n,nda,ntmp,iout
-  integer(i_kind):: iobs
+  integer(i_kind) ntmp,iout
   integer(i_kind):: pflag
   real(r_kind) crit1,timedif,xmesh,pmesh
 
 ! solar angle variables
-  real(r_kind) dangl,sdgl,cdgl,tsnoon,solar
+  real(r_kind) dangl,sdgl,cdgl,tsnoon
   integer(i_kind) idayr,idaysy
 
-  real(r_kind) time,timex,time_drift,timeobs
+  real(r_kind) time,timex,time_drift,timeobs,toff,t4dv,zeps
   real(r_kind) qtflg,tdry,rmesh,ediff,usage
   real(r_kind) u0,v0,uob,vob,dx,dy,dx1,dy1,w00,w10,w01,w11
-  real(r_kind) qoe,qobcon,pwoe,pwmerr,dlnpob,ppb,poe,qmaxerr,wtype
+  real(r_kind) qoe,qobcon,pwoe,pwmerr,dlnpob,ppb,poe,qmaxerr
   real(r_kind) toe,woe,errout,oelev,dlat,dlon,sstoe,dlat_earth,dlon_earth
   real(r_kind) selev,elev,stnelev
-  real(r_kind) :: tsavg,vty,vfr,sty,stp,sm,sn,zz,ff10,sfcr
-  real(r_kind),dimension(0:3):: sfcpct
-  real(r_kind),dimension(0:3):: ts
+  real(r_kind) :: tsavg,sty,ff10,sfcr
   real(r_kind),dimension(nsig):: presl
   real(r_kind),dimension(nsig-1):: dpres
   real(r_kind),allocatable,dimension(:):: presl_thin
   real(r_kind),allocatable,dimension(:,:):: cdata_all,cdata_out
   integer(i_kind),allocatable,dimension(:):: isort,iloc
 
-  real(r_double) rstation_id
+  real(r_double) rstation_id,qcmark_huge
 
   real(r_double),dimension(8):: hdr
   real(r_double),dimension(8,255):: drfdat,qcmark,obserr
@@ -199,8 +203,6 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   real(r_double),dimension(1,1):: r_prvstg,r_sprvstg 
   real(r_double),dimension(1,255):: levdat
   real(r_kind),dimension(255)::plevs
-  real(r_kind),dimension(1000):: twind,gross,ermax,ermin,var_b,var_pg
-  integer(i_kind),dimension(1000):: itype,iuse,numgrp,ngroup,nmiter
 
   real(r_kind),dimension(255):: tvflg
   real(r_double),dimension(255,20):: tpc
@@ -208,13 +210,16 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   real(r_kind) bmiss/10.e10/
   
   real(r_kind) cdist,disterr,disterrmax,rlon00,rlat00
-  real(r_kind) vdisterr,vdisterrmax,u00,v00
-  integer(i_kind) ntest,nvtest,iosub,ixsub,isubsub,iosubsub,iobsub
+  real(r_kind) vdisterrmax,u00,v00
+  integer(i_kind) ntest,nvtest,iosub,ixsub,isubsub,iobsub
 
-  integer(i_kind) ierrcode,kl,k1,k2
-  integer(i_kind) l,m,ikx,itypex
+  integer(i_kind) kl,k1,k2
+  integer(i_kind) m,ikx,itypex
   integer(i_kind) nprov
-  real(r_kind) del,terrmin,werrmin,perrmin,qerrmin,pwerrmin,ntbx
+  real(r_kind) del,terrmin,werrmin,perrmin,qerrmin,pwerrmin
+
+  character(len=8) stnid
+  logical black
 
   integer(i_kind) idate5(5),minobs,minan
   real(r_kind) time_correction
@@ -239,7 +244,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   
 !**************************************************************************
 ! added by jw for speedup
-  integer(i_kind) ntb,imsg,isub,ntab,i1st,iunit
+  integer(i_kind) ntb
   integer(i_kind),parameter:: mxtb=5000000           
   integer(i_kind) tab(mxtb)
 ! added by woollen, kistler for speedup
@@ -283,6 +288,8 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   if(perturb_obs .and. (tob .or. psob .or. qob))nreal=nreal+1
   if(perturb_obs .and. uvob )nreal=nreal+2
 
+  qcmark_huge = huge_i_kind
+
 
 ! Read in mesonet provider names from the uselist
  nprov=0
@@ -302,6 +309,8 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
      close(88)
   endif
 
+  if (blacklst) call blacklist_read(obstype)
+
 !------------------------------------------------------------------------
 ! Open, then read date from bufr data
   call closbf(lunin)
@@ -310,6 +319,10 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   call datelen(10)
   call readmg(lunin,subset,idate,iret)
   if (iret/=0) goto 900
+
+! Time offset
+  call time_4dvar(idate,toff)
+
 ! On temperature task, write out date information.  If date in prepbufr
 !    file does not agree with analysis date, print message and stop program
 !    execution.
@@ -317,17 +330,25 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   if(tob) then
      write(date,'( i10)') idate
      read (date,'(i4,3i2)') iy,im,idd,ihh
-     write(6,*)'READ_PREPBUFR: bufr file date is ',iy,im,idd,ihh
-     if(iy/=iadate(1).or.im/=iadate(2).or.idd/=iadate(3).or.&
-         ihh/=iadate(4)) then
-       write(6,*)'***READ_PREPBUFR ERROR*** incompatable analysis ',&
-          'and observation date/time'
-       write(6,*)' year  anal/obs ',iadate(1),iy
-       write(6,*)' month anal/obs ',iadate(2),im
-       write(6,*)' day   anal/obs ',iadate(3),idd
-       write(6,*)' hour  anal/obs ',iadate(4),ihh
-       call stop2(94)
-     end if
+     write(6,*)'READ_PREPBUFR: bufr file date is ',idate
+     IF (idate<iadatebgn.OR.idate>iadateend) THEN
+            if(offtime_data) then
+                write(6,*)'***READ_PREPBUFR analysis and data file date differ, but use anyway'
+            else
+                write(6,*)'***READ_PREPBUFR ERROR*** incompatable analysis ',&
+                     'and observation date/time'
+            endif
+            write(6,*)'Analysis start  :',iadatebgn
+            write(6,*)'Analysis end    :',iadateend
+            write(6,*)'Observation time:',idate
+            write(6,*)' month anal/obs ',iadate(2),im
+            write(6,*)' day   anal/obs ',iadate(3),idd
+            write(6,*)' hour  anal/obs ',iadate(4),ihh
+            if(.not.offtime_data) call stop2(94)
+     END IF
+     write(6,*)'READ_PREPBUFR: bufr file date is ',idate
+     write(6,*)'READ_PREPBUFR: time offset is ',toff,' hours.'
+
 !    compute day of the year, # days in year, true solar noon for today's date
 
 !    call w3fs13(iadate(1),iadate(2),iadate(3),idayr)  ! day of year
@@ -524,10 +545,8 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
          id=ictype(nc)
          if( id ==243 .or. id == 253 .or. id ==254 ) then
              call ufbint(lunin,satqc,4,1,iret,satqcstr)
-!!           if(satqc(3) <  85.0) cycle loop_readsb   ! QI w/o fcst (su's setup
- 
-             if(satqc(2) <= 80.0) cycle loop_readsb   ! QI w/ fcst (old prepdata)
-
+             if(satqc(3) <  85.0) cycle loop_readsb   ! QI w/o fcst (su's setup
+!!           if(satqc(2) <= 80.0) cycle loop_readsb   ! QI w/ fcst (old prepdata)
          endif
        endif
                  
@@ -545,7 +564,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
              cdist=sin(dlat_earth)*sin(rlat00)+cos(dlat_earth)*cos(rlat00)* &
                   (sin(dlon_earth)*sin(rlon00)+cos(dlon_earth)*cos(rlon00))
              cdist=max(-one,min(cdist,one))
-             disterr=acosd(cdist)
+             disterr=acos(cdist)*rad2deg
              disterrmax=max(disterrmax,disterr)
           end if
           if(outside) cycle loop_readsb   ! check to see if outside regional domain
@@ -586,14 +605,20 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
        end if
 
        timeobs=real(real(hdr(4),4),8)
+       t4dv=timeobs + toff
+       zeps=1.0e-8_r_kind
+       if (t4dv<zero  .and.t4dv>      -zeps) t4dv=zero
+       if (t4dv>winlen.and.t4dv<winlen+zeps) t4dv=winlen
+       t4dv=t4dv + time_correction
        time=timeobs + time_correction
        kx=hdr(5)
 
 !      If ASCAT data, determine primary surface type.  If not open sea,
 !      skip this observation.  This check must be done before thinning.
-       if (kx==290) then
-          call deter_sfc_type(dlat_earth,dlon_earth,isflg)
+       if (kx==290 .or. kx==289 .or. kx==285) then
+          call deter_sfc_type(dlat_earth,dlon_earth,t4dv,isflg,tsavg)
           if (isflg /= 0) cycle loop_readsb
+          if (tsavg <= 273.0_r_kind) cycle loop_readsb
        endif
 
 
@@ -616,8 +641,14 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
 
 !    Balloon drift information available for these data
      driftl=kx==120.or.kx==220.or.kx==221
-     if((real(abs(time)) > real(ctwind(nc)) .or. real(abs(time)) > real(twindin)) &
-             .and. .not. driftl)cycle loop_readsb ! outside time window
+
+     if (l4dvar) then
+       if ((t4dv<zero.OR.t4dv>winlen) .and. .not.driftl) cycle loop_readsb ! outside time window
+     else
+       if((real(abs(time)) > real(ctwind(nc)) .or. real(abs(time)) > real(twindin)) &
+               .and. .not. driftl)cycle loop_readsb ! outside time window
+     endif
+
      timex=time
      
 !    Extract data information on levels
@@ -677,10 +708,24 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
 
 !    If data with drift position, get drift information
      if(driftl)call ufbint(lunin,drfdat,8,255,iret,drift)
+
+!    Check for blacklisting of station ID
+     black = .false.
+     if (blacklst .and. ibcnt > 0) then
+        stnid = transfer(hdr(1),stnid)
+        do i = 1,ibcnt
+           if( kx == blkkx(i) .and. stnid == blkstns(i) ) then
+              black = .true.
+              write(6,*)'READ_PREPBUFR: blacklist station ',stnid, &
+                   'for obstype ',trim(obstype),' and kx=',kx
+           endif
+        enddo
+     endif
+
 !    Loop over levels       
      do k=1,levs
        do i=1,8
-          qcmark(i,k) = min(qcmark(i,k),huge_i_kind)
+          qcmark(i,k) = min(qcmark(i,k),qcmark_huge)
        end do
 
        if (kx == id_bias_ps) then
@@ -754,7 +799,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            qm=pwq
         else if(sstob) then
            sstq=100
-           if (k==1) sstq=nint(min(sstdat(4,k),huge_i_kind))
+           if (k==1) sstq=nint(min(sstdat(4,k),qcmark_huge))
            qm=sstq
         end if
 
@@ -776,23 +821,17 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
 
 !       Check qc marks to see if obs should be processed or skipped
         if (psob) then
-           cat=nint(min(obsdat(8,k),huge_i_kind))
-           if ( obsdat(1,k)< r500 .or. cat /=0 ) cycle loop_k_levs
+           cat=nint(min(obsdat(8,k),qcmark_huge))
+           if ( cat /=0 ) cycle loop_k_levs
+           if ( obsdat(1,k)< r500) qm=100
            zqm=nint(qcmark(4,k))
            if (zqm>=lim_zqm .and. zqm/=15 .and. zqm/=9) qm=9
         endif
 
-!!  PLEASE NOTE:  A new prepbufr file is coming which will
-!!                remove the need for the code below.  As
-!!                such, the code is commented out.
+!       if(convobs .and. pqm(k) >=lim_qm .and. qm/=15 .and. qm/=9 )cycle loop_k_levs
+!       if(qm >=lim_qm .and. qm /=15 .and. qm /=9)cycle loop_k_levs
+        if(qm > 15 .or. qm < 0) cycle loop_k_levs
 
-!       Using all EUMETSAT winds
-!!        if( kx == 243 .or. kx == 244 .or. kx == 254) then
-!!           if(qm  >= 7) qm =2.0
-!!        endif
-        
-        if(convobs .and. pqm(k) >=lim_qm .and. qm/=15 .and. qm/=9 )cycle loop_k_levs
-        if(qm >=lim_qm .and. qm /=15 .and. qm /=9)cycle loop_k_levs
 
 
 !       Set usage variable              
@@ -802,6 +841,8 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
         if(ncnumgrp(nc) > 0 )then                     ! cross validation on
           if(mod(ndata+1,ncnumgrp(nc))== ncgroup(nc)-1)usage=ncmiter(nc)
         end if
+        if(qm >=lim_qm )usage=101.
+        if(convobs .and. pqm(k) >=lim_qm )usage=102.
 
 
 !       If needed, extract drift information.   
@@ -826,11 +867,19 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            if (abs(time_drift-time)>four) time_drift = time
 
 !          Check to see if the time is outside range
-           if(abs(time_drift) > ctwind(nc) .or. abs(time_drift) > twindin)then
-              time_drift=timex
-              if(abs(timex) > ctwind(nc) .or. abs(timex) > twindin) CYCLE LOOP_K_LEVS
-           end if
-           time=time_drift
+           if (l4dvar) then
+             t4dv=toff+time_drift
+             if (t4dv<zero .or. t4dv>winlen) then
+                t4dv=toff+timex
+                if (t4dv<zero .or. t4dv>winlen) CYCLE LOOP_K_LEVS
+             end if
+           else
+             if(abs(time_drift) > ctwind(nc) .or. abs(time_drift) > twindin)then
+                time_drift=timex
+                if(abs(timex) > ctwind(nc) .or. abs(timex) > twindin) CYCLE LOOP_K_LEVS
+             end if
+             t4dv = toff + time_drift
+           endif
            
            dlat_earth = drfdat(2,k) * deg2rad
            dlon_earth = drfdat(1,k) * deg2rad
@@ -882,7 +931,11 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            ntmp=ndata  ! counting moved to map3gridS
            
 !          Set data quality index for thinning
-           timedif=abs(time)
+           if (l4dvar) then
+              timedif = zero
+           else
+              timedif=abs(t4dv-toff)
+           endif
            if(kx == 243 .or. kx == 253 .or. kx ==254) then
               crit1 = timedif/r6+half + four*(one-satqc(3)/r100)*r3_33
            else
@@ -905,7 +958,6 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            if (.not. luse) cycle loop_readsb
 
         else
-!!           luse=.true.
            ndata=ndata+1
            nodata=nodata+1
            if(uvob)nodata=nodata+1
@@ -917,10 +969,9 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            ndata = maxobs
         end if
 
-!!	if (.not. luse) cycle loop_readsb
 
 ! Get information from surface file necessary for conventional data here
-        call deter_sfc2(dlat_earth,dlon_earth,time,idomsfc,tsavg,ff10,sfcr)
+        call deter_sfc2(dlat_earth,dlon_earth,t4dv,idomsfc,tsavg,ff10,sfcr)
 
 
 !       Temperature
@@ -943,7 +994,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            endif
 
            cdata_all(6,iout)=rstation_id             ! station id
-           cdata_all(7,iout)=time                    ! time
+           cdata_all(7,iout)=t4dv                    ! time
            cdata_all(8,iout)=nc                      ! type
            cdata_all(9,iout)=qtflg                   ! qtflg (virtual temperature flag)
            cdata_all(10,iout)=tqm(k)                 ! quality mark
@@ -1003,7 +1054,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            cdata_all(6,iout)=uob                     ! u obs
            cdata_all(7,iout)=vob                     ! v obs
            cdata_all(8,iout)=rstation_id             ! station id
-           cdata_all(9,iout)=time                    ! time
+           cdata_all(9,iout)=t4dv                    ! time
            cdata_all(10,iout)=nc                     ! type
            cdata_all(11,iout)=selev                  ! station elevation
            cdata_all(12,iout)=wqm(k)                 ! quality mark
@@ -1032,7 +1083,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            cdata_all(5,iout)=obsdat(5,k)             ! u obs
            cdata_all(6,iout)=obsdat(6,k)             ! v obs
            cdata_all(7,iout)=rstation_id             ! station id
-           cdata_all(8,iout)=time                    ! time
+           cdata_all(8,iout)=t4dv                    ! time
            cdata_all(9,iout)=nc                      ! type
            cdata_all(10,iout)=elev                   ! elevation of observation
            cdata_all(11,iout)=wqm(k)                 ! quality mark
@@ -1060,7 +1111,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            cdata_all(5,iout)=obsdat(4,k)             ! surface height
            cdata_all(6,iout)=obsdat(3,k)+t0c         ! surface temperature
            cdata_all(7,iout)=rstation_id             ! station id
-           cdata_all(8,iout)=time                    ! time
+           cdata_all(8,iout)=t4dv                    ! time
            cdata_all(9,iout)=nc                      ! type
            cdata_all(10,iout)=pqm(k)                 ! quality mark
            cdata_all(11,iout)=obserr(1,k)*one_tenth  ! original obs error (cb)
@@ -1091,7 +1142,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            cdata_all(4,iout)=dlnpob                  ! ln(pressure in cb)
            cdata_all(5,iout)=qobcon                  ! q ob
            cdata_all(6,iout)=rstation_id             ! station id
-           cdata_all(7,iout)=time                    ! time
+           cdata_all(7,iout)=t4dv                    ! time
            cdata_all(8,iout)=nc                      ! type
            cdata_all(9,iout)=qmaxerr                 ! q max error
            cdata_all(10,iout)=tdry                   ! dry temperature (obs is tv)
@@ -1118,7 +1169,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            cdata_all(3,iout)=dlat                    ! grid relative latitude
            cdata_all(4,iout)=obsdat(7,k)             ! pw obs
            cdata_all(5,iout)=rstation_id             ! station id
-           cdata_all(6,iout)=time                    ! time
+           cdata_all(6,iout)=t4dv                    ! time
            cdata_all(7,iout)=nc                      ! type
            cdata_all(8,iout)=pwmerr                  ! pw max error
            cdata_all(9,iout)=pwq                     ! quality mark
@@ -1149,7 +1200,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            cdata_all(3,iout)=dlat                    ! grid relative latitude
            cdata_all(4,iout)=sstdat(3,k)             ! sst obs
            cdata_all(5,iout)=rstation_id             ! station id
-           cdata_all(6,iout)=time                    ! time
+           cdata_all(6,iout)=t4dv                    ! time
            cdata_all(7,iout)=nc                      ! type
            cdata_all(8,iout)=sstoe*three             ! pw max error
            cdata_all(9,iout)=sstdat(2,k)             ! depth of measurement
@@ -1265,4 +1316,5 @@ enddo loop_convinfo! loops over convinfo entry matches
 
 ! End of routine
   return
+
 end subroutine read_prepbufr

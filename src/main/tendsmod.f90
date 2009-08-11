@@ -11,6 +11,7 @@ module tendsmod
 ! program history log:
 !   2005-10-28  kleist
 !   2006-02-24  kleist - additions for divergence and ageostrophic vorticity tendencies
+!   2006-12-15  todling - protection against over-initizing
 !   2007-05-08  kleist - add arrays for generalized coordinate
 !
 ! subroutines included:
@@ -45,8 +46,10 @@ module tendsmod
 !
 !$$$ end documentation block
 
-  use kinds, only: r_kind,i_kind
+  use kinds, only: r_kind
   implicit none
+
+  logical, save :: tndvar_initilized = .false.
 
   real(r_kind),allocatable,dimension(:,:,:):: what9,prsth9,r_prsum9,prdif9,r_prdif9,&
      pr_xsum9,pr_xdif9,pr_ysum9,pr_ydif9
@@ -69,6 +72,8 @@ contains
 ! program history log:
 !   2005-10-27  kleist
 !   2006-02-24  kleist, new arrays for mass variable tendency
+!   2006-12-15  todling, protection against over-initizing
+!   2008-04-03  safford - rm unused vars and uses
 !
 !   input argument list:
 !
@@ -79,12 +84,10 @@ contains
 !   machine:  ibm RS/6000 SP
 !
 !$$$
-    use constants, only: one,zero
     use gridmod, only: lat2,lon2,nsig
-    use kinds, only: i_kind 
     implicit none   
 
-    integer(i_kind) i,j,k
+    if(tndvar_initilized) return
 
     allocate( what9(lat2,lon2,nsig+1),prsth9(lat2,lon2,nsig+1),&
              r_prsum9(lat2,lon2,nsig),prdif9(lat2,lon2,nsig),&
@@ -99,6 +102,7 @@ contains
 
     allocate(t_over_pbar(nsig),dp_over_pbar(nsig))
 
+    tndvar_initilized = .true.
     return
   end subroutine create_tendvars
 
@@ -113,6 +117,7 @@ contains
 ! program history log:
 !   2005-10-27  kleist
 !   2006-02-24  kleist, new variables for mass variable tendency
+!   2006-12-15  todling, protection against over-initizing
 !
 !   input argument list:
 !
@@ -123,6 +128,7 @@ contains
 !   machine:  ibm RS/6000 SP
 !
 !$$$
+    if(.not.tndvar_initilized) return
     deallocate(what9,prsth9,r_prsum9,r_prdif9,prdif9,pr_xsum9,&
        pr_xdif9,pr_ysum9,pr_ydif9)
     deallocate(factk9,adiag9,bdiag9,r_bdiag9,cdiag9,wint9_f,wint9)

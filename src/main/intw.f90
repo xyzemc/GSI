@@ -1,4 +1,29 @@
-subroutine intw(ru,rv,su,sv,dru,drv,dsu,dsv)
+module intwmod
+
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    intwmod    module for intw and its tangent linear intw_tl
+!
+! abstract: module for intw and its tangent linear intw_tl
+!
+! program history log:
+!   2005-05-16  Yanqiu zhu - wrap intw and its tangent linear intw_tl into one module
+!   2005-11-16  Derber - remove interfaces
+!   2008-11-26  Todling - remove intw_tl; add interface back
+!
+
+implicit none
+
+PRIVATE
+PUBLIC intw
+
+interface intw; module procedure &
+          intw_
+end interface
+
+contains
+
+subroutine intw_(whead,ru,rv,su,sv)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    intw        apply nonlin qc obs operator for winds
@@ -21,18 +46,21 @@ subroutine intw(ru,rv,su,sv,dru,drv,dsu,dsv)
 !   2006-07-28  derber  - modify to use new inner loop obs data structure
 !                       - unify NL qc
 !   2006-10-20  rancic  - add foto
+!   2007-03-19  tremolet - binning of observations
+!   2007-06-05  tremolet - use observation diagnostics structure
+!   2007-07-09  tremolet - observation sensitivity
+!   2008-01-04  tremolet - Don't apply H^T if l_do_adjoint is false
+!   2008-11-28  todling  - turn FOTO optional; changed ptr%time handle
 !
 !   input argument list:
+!     whead    - obs type pointer to obs structure
 !     su       - u increment in grid space
 !     sv       - v increment in grid space
-!     dsu      - time derivative of u increment in grid space
-!     dsv      - time derivative of v increment in grid space
 !
 !   output argument list:
+!     whead    - obs type pointer to obs structure
 !     ru       - u results from observation operator 
 !     rv       - v results from observation operator 
-!     dru      - time derivative of u results from observation operator 
-!     drv      - time derivative of v results from observation operator 
 !
 ! attributes:
 !   language: f90
@@ -40,22 +68,24 @@ subroutine intw(ru,rv,su,sv,dru,drv,dsu,dsv)
 !
 !$$$
   use kinds, only: r_kind,i_kind
-  use constants, only: zero,half,one,two,tiny_r_kind,cg_term
-  use obsmod, only: whead,wptr
-  use qcmod, only: nlnqc_iter,c_varqc
+  use constants, only: zero,half,one,two,tiny_r_kind,cg_term,r3600
+  use obsmod, only: w_ob_type,lsaveobsens,l_do_adjoint
+  use qcmod, only: nlnqc_iter,varqc_iter
   use gridmod, only: latlon1n
-  use jfunc, only: iter,jiter,niter_no_qc,jiterstart
+  use jfunc, only: iter,jiter,niter_no_qc,jiterstart,l_foto,xhat_dt,dhat_dt
   implicit none
 
 ! Declare passed variables
-  real(r_kind),dimension(latlon1n),intent(in):: su,sv,dsu,dsv
-  real(r_kind),dimension(latlon1n),intent(inout):: ru,rv,dru,drv
+  type(w_ob_type),pointer,intent(in):: whead
+  real(r_kind),dimension(latlon1n),intent(in):: su,sv
+  real(r_kind),dimension(latlon1n),intent(inout):: ru,rv
 
 ! Declare local variables
-  integer(i_kind) i,i1,i2,i3,i4,i5,i6,i7,i8
+  integer(i_kind) i1,i2,i3,i4,i5,i6,i7,i8
 ! real(r_kind) penalty
   real(r_kind) valu,valv,w1,w2,w3,w4,w5,w6,w7,w8,time_w
-  real(r_kind) cg_w,p0,gradu,gradv,wnotgross,wgross,term,w_pg,varqc_iter
+  real(r_kind) cg_w,p0,gradu,gradv,wnotgross,wgross,term,w_pg
+  type(w_ob_type), pointer :: wptr
 
   wptr => whead
   do while(associated(wptr))
@@ -76,42 +106,62 @@ subroutine intw(ru,rv,su,sv,dru,drv,dsu,dsv)
      w7=wptr%wij(7)
      w8=wptr%wij(8)
   
-     time_w=wptr%time
 !    Forward model
      valu=w1* su(i1)+w2* su(i2)+w3* su(i3)+w4* su(i4)+&
-          w5* su(i5)+w6* su(i6)+w7* su(i7)+w8* su(i8)-wptr%ures +&
-         (w1*dsu(i1)+w2*dsu(i2)+w3*dsu(i3)+w4*dsu(i4)+&
-          w5*dsu(i5)+w6*dsu(i6)+w7*dsu(i7)+w8*dsu(i8))*time_w
-
+          w5* su(i5)+w6* su(i6)+w7* su(i7)+w8* su(i8)
      valv=w1* sv(i1)+w2* sv(i2)+w3* sv(i3)+w4* sv(i4)+&
-          w5* sv(i5)+w6* sv(i6)+w7* sv(i7)+w8* sv(i8)-wptr%vres +&
-         (w1*dsv(i1)+w2*dsv(i2)+w3*dsv(i3)+w4*dsv(i4)+&
-          w5*dsv(i5)+w6*dsv(i6)+w7*dsv(i7)+w8*dsv(i8))*time_w
+          w5* sv(i5)+w6* sv(i6)+w7* sv(i7)+w8* sv(i8)
+     if (l_foto) then
+       time_w=wptr%time*r3600
+       valu=valu+&
+         (w1*xhat_dt%u(i1)+w2*xhat_dt%u(i2)+ &
+          w3*xhat_dt%u(i3)+w4*xhat_dt%u(i4)+ &
+          w5*xhat_dt%u(i5)+w6*xhat_dt%u(i6)+ &
+          w7*xhat_dt%u(i7)+w8*xhat_dt%u(i8))*time_w
+       valv=valv+&
+         (w1*xhat_dt%v(i1)+w2*xhat_dt%v(i2)+ &
+          w3*xhat_dt%v(i3)+w4*xhat_dt%v(i4)+ &
+          w5*xhat_dt%v(i5)+w6*xhat_dt%v(i6)+ &
+          w7*xhat_dt%v(i7)+w8*xhat_dt%v(i8))*time_w
+      endif
 
-!    gradient of nonlinear operator
-!    Gradually turn on variational qc to avoid possible convergence problems
-     if(jiter == jiterstart .and. nlnqc_iter .and. wptr%pg > tiny_r_kind) then
-        varqc_iter=c_varqc*(iter-niter_no_qc(1)+one)
-        if(varqc_iter >=one) varqc_iter= one
-        w_pg=wptr%pg*varqc_iter
+     if (lsaveobsens) then
+       wptr%diagu%obssen(jiter) = valu*wptr%raterr2*wptr%err2
+       wptr%diagv%obssen(jiter) = valv*wptr%raterr2*wptr%err2
      else
-        w_pg=wptr%pg
+       if (wptr%luse) then
+         wptr%diagu%tldepart(jiter)=valu
+         wptr%diagv%tldepart(jiter)=valv
+       endif
      endif
 
-     if (nlnqc_iter .and. wptr%pg > tiny_r_kind .and.  &
-                          wptr%b  > tiny_r_kind) then
-        cg_w=cg_term/wptr%b
-        wnotgross= one-w_pg
-        wgross =w_pg*cg_w/wnotgross                ! wgross is gama in Enderson
-        p0=wgross/(wgross+                      &  ! p0 is P in Enderson
-         exp(-half*wptr%err2*(valu**2+valv**2))) 
-        term=one-p0                                !  term is Wqc in Enderson
-        valu = valu*term
-        valv = valv*term
-     endif
+    if (l_do_adjoint) then
+     if (lsaveobsens) then
+       gradu = wptr%diagu%obssen(jiter)
+       gradv = wptr%diagv%obssen(jiter)
 
-     gradu = valu*wptr%raterr2*wptr%err2
-     gradv = valv*wptr%raterr2*wptr%err2
+     else
+       valu=valu-wptr%ures
+       valv=valv-wptr%vres
+
+!      gradient of nonlinear operator
+
+       if (nlnqc_iter .and. wptr%pg > tiny_r_kind .and.  &
+                            wptr%b  > tiny_r_kind) then
+          w_pg=wptr%pg*varqc_iter
+          cg_w=cg_term/wptr%b
+          wnotgross= one-w_pg
+          wgross =w_pg*cg_w/wnotgross                ! wgross is gama in Enderson
+          p0=wgross/(wgross+                      &  ! p0 is P in Enderson
+           exp(-half*wptr%err2*(valu**2+valv**2))) 
+          term=one-p0                                !  term is Wqc in Enderson
+          valu = valu*term
+          valv = valv*term
+       endif
+
+       gradu = valu*wptr%raterr2*wptr%err2
+       gradv = valv*wptr%raterr2*wptr%err2
+     endif
 
 !    Adjoint
      ru(i1)=ru(i1)+w1*gradu
@@ -132,28 +182,33 @@ subroutine intw(ru,rv,su,sv,dru,drv,dsu,dsv)
      rv(i7)=rv(i7)+w7*gradv
      rv(i8)=rv(i8)+w8*gradv
      
-     gradu=gradu*time_w
-     gradv=gradv*time_w
-     dru(i1)=dru(i1)+w1*gradu
-     dru(i2)=dru(i2)+w2*gradu
-     dru(i3)=dru(i3)+w3*gradu
-     dru(i4)=dru(i4)+w4*gradu
-     dru(i5)=dru(i5)+w5*gradu
-     dru(i6)=dru(i6)+w6*gradu
-     dru(i7)=dru(i7)+w7*gradu
-     dru(i8)=dru(i8)+w8*gradu
+     if (l_foto) then
+       gradu=gradu*time_w
+       gradv=gradv*time_w
+       dhat_dt%u(i1)=dhat_dt%u(i1)+w1*gradu
+       dhat_dt%u(i2)=dhat_dt%u(i2)+w2*gradu
+       dhat_dt%u(i3)=dhat_dt%u(i3)+w3*gradu
+       dhat_dt%u(i4)=dhat_dt%u(i4)+w4*gradu
+       dhat_dt%u(i5)=dhat_dt%u(i5)+w5*gradu
+       dhat_dt%u(i6)=dhat_dt%u(i6)+w6*gradu
+       dhat_dt%u(i7)=dhat_dt%u(i7)+w7*gradu
+       dhat_dt%u(i8)=dhat_dt%u(i8)+w8*gradu
 
-     drv(i1)=drv(i1)+w1*gradv
-     drv(i2)=drv(i2)+w2*gradv
-     drv(i3)=drv(i3)+w3*gradv
-     drv(i4)=drv(i4)+w4*gradv
-     drv(i5)=drv(i5)+w5*gradv
-     drv(i6)=drv(i6)+w6*gradv
-     drv(i7)=drv(i7)+w7*gradv
-     drv(i8)=drv(i8)+w8*gradv
+       dhat_dt%v(i1)=dhat_dt%v(i1)+w1*gradv
+       dhat_dt%v(i2)=dhat_dt%v(i2)+w2*gradv
+       dhat_dt%v(i3)=dhat_dt%v(i3)+w3*gradv
+       dhat_dt%v(i4)=dhat_dt%v(i4)+w4*gradv
+       dhat_dt%v(i5)=dhat_dt%v(i5)+w5*gradv
+       dhat_dt%v(i6)=dhat_dt%v(i6)+w6*gradv
+       dhat_dt%v(i7)=dhat_dt%v(i7)+w7*gradv
+       dhat_dt%v(i8)=dhat_dt%v(i8)+w8*gradv
+     endif
+    endif
 
      wptr => wptr%llpoint
 
   end do
   return
-end subroutine intw
+end subroutine intw_
+
+end module intwmod

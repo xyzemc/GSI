@@ -16,6 +16,8 @@ subroutine read_modsbufr(nread,ndata,nodata,gstime,infile,obstype,lunout, &
 !   2006-02-08  derber  - modify to use new convinfo module
 !   2006-02-24  derber  - modify to take advantage of convinfo module
 !   2006-04-12  treadon - remove unused variables from gridmod module
+!   2007-03-01  tremolet - measure time from beginning of assimilation window
+!   2008-04-18  safford - rm unused vars and uses
 !
 !   input argument list:
 !     infile   - unit from which to read BUFR data
@@ -35,18 +37,19 @@ subroutine read_modsbufr(nread,ndata,nodata,gstime,infile,obstype,lunout, &
 !
 !$$$
   use kinds, only: r_kind,r_double,i_kind,r_single
-  use constants, only: izero,zero,one_tenth,one,deg2rad,fv,t0c,half,&
-       three,four,rd_over_cp,stndrd_atmos_ps,rad2deg
+  use constants, only: izero,zero,one_tenth,one,deg2rad,&
+       three,rad2deg,r60inv
   use gridmod, only: diagnostic_reg,regional,nlon,nlat,&
        tll2xy,txy2ll,rlats,rlons,twodvar_regional
-  use convinfo, only: nconvtype,ctwind,cgross,cermax,cermin,cvar_b,cvar_pg, &
+  use convinfo, only: nconvtype,ctwind, &
         ncmiter,ncgroup,ncnumgrp,icuse,ictype,icsubtype,ioctype
-  use obsmod, only: iadate,oberrflg
+  use obsmod, only: oberrflg
+  use gsi_4dvar, only: l4dvar, idmodel, iwinbgn, winlen
   implicit none
 
 ! Declare passed variables
-  character(10),intent(in):: infile,obstype
-  character(20),intent(in):: sis
+  character(len=*),intent(in):: infile,obstype
+  character(len=*),intent(in):: sis
   integer(i_kind),intent(in):: lunout
   integer(i_kind),intent(inout):: nread,ndata,nodata
   real(r_kind),intent(in):: gstime,twindin
@@ -55,7 +58,6 @@ subroutine read_modsbufr(nread,ndata,nodata,gstime,infile,obstype,lunout, &
   real(r_double),parameter:: d250 = 250.0_r_double
   real(r_double),parameter:: d400 = 400.0_r_double
   real(r_kind),parameter:: r0_5 = 0.5_r_kind
-  real(r_kind),parameter:: r60  = 60.0_r_kind
   real(r_kind),parameter:: r100 = 100.0_r_kind
   real(r_kind),parameter:: r360 = 360.0_r_kind
 
@@ -65,10 +67,10 @@ subroutine read_modsbufr(nread,ndata,nodata,gstime,infile,obstype,lunout, &
   logical outside
 
   integer(i_kind) lunin,i,maxobs
-  integer(i_kind) jdate,ihh,idd,idate,iret,im,iy,k,levs
-  integer(i_kind) kx,nreal,nchanl,ilat,ilon,ithin
+  integer(i_kind) idate,iret,k
+  integer(i_kind) kx,nreal,nchanl,ilat,ilon
   integer(i_kind) sstq,nmind
-  integer(i_kind):: ituse,ntumgrp,ntgroup,ntmiter,idomsfc
+  integer(i_kind):: idomsfc
 
   integer(i_kind) :: ireadmg,ireadsb
   integer(i_kind), dimension(5) :: idate5
@@ -80,7 +82,7 @@ subroutine read_modsbufr(nread,ndata,nodata,gstime,infile,obstype,lunout, &
   real(r_double)  :: msst,sst
   equivalence (crpid,hdr(9))
 
-  real(r_kind) :: tdiff,sstime,time,rmesh,usage,sfcr,tsavg,ff10
+  real(r_kind) :: tdiff,sstime,usage,sfcr,tsavg,ff10,t4dv
   real(r_kind) :: dlat,dlon,sstoe,dlat_earth,dlon_earth
 
   real(r_kind) cdist,disterr,disterrmax,rlon00,rlat00
@@ -88,15 +90,13 @@ subroutine read_modsbufr(nread,ndata,nodata,gstime,infile,obstype,lunout, &
 
   real(r_kind),allocatable,dimension(:,:):: cdata_all
   real(r_single),allocatable::etabl(:,:,:)
-  integer(i_kind) ietabl,lcount,itypex,ierrcode,numbcast,kl,k1,k2
+  integer(i_kind) ietabl,lcount,itypex
   integer(i_kind) l,m,ikx
-  real(r_kind) del,terrmin,werrmin,perrmin,qerrmin,pwerrmin
+  real(r_kind) terrmin,werrmin,perrmin,qerrmin,pwerrmin
 
   data headr/'YEAR MNTH DAYS HOUR MINU CLATH CLONH SELV RPID'/
 
   data lunin / 10 /
-  data ithin / -9 /
-  data rmesh / -99.999 /
 !**************************************************************************
 ! Initialize variables
   disterrmax=zero
@@ -204,7 +204,7 @@ subroutine read_modsbufr(nread,ndata,nodata,gstime,infile,obstype,lunout, &
             cdist=sin(dlat_earth)*sin(rlat00)+cos(dlat_earth)*cos(rlat00)* &
                  (sin(dlon_earth)*sin(rlon00)+cos(dlon_earth)*cos(rlon00))
             cdist=max(-one,min(cdist,one))
-            disterr=acosd(cdist)
+            disterr=acos(cdist)*rad2deg
             disterrmax=max(disterrmax,disterr)
           end if
         if(outside) go to 10   ! check to see if outside regional domain
@@ -222,13 +222,6 @@ subroutine read_modsbufr(nread,ndata,nodata,gstime,infile,obstype,lunout, &
       idate5(4) = nint(hdr(4))    !hour
       idate5(5) = nint(hdr(5))    !minute
        
-      call w3fs21(idate5,nmind)
-      sstime=float(nmind)
-       
-      tdiff=(sstime-gstime)/r60
-       
- 
-!
 !     determine platform (ships, dbuoy, fbuoy or lcman) dependent obs. error
 !
       if ( subset == 'SHIPS' ) then                                            ! ships
@@ -266,7 +259,15 @@ subroutine read_modsbufr(nread,ndata,nodata,gstime,infile,obstype,lunout, &
 
       if(ikx == izero) go to 10             ! not ob type used
 
-      if(abs(tdiff) > twindin  .or. abs(tdiff) > ctwind(ikx)) go to 10                      ! outside time window
+      call w3fs21(idate5,nmind)
+      t4dv=real((nmind-iwinbgn),r_kind)*r60inv
+!
+      if (l4dvar) then
+        if (t4dv<zero .OR. t4dv>winlen) go to 10
+      else
+        tdiff=(sstime-gstime)*r60inv
+        if(abs(tdiff)>twindin .or. abs(tdiff)>ctwind(ikx)) go to 10  ! outside time window
+      endif
 
 !    If running in 2d-var (surface analysis) mode, check to see if observation
 !    is surface type.  If not, read next observation report from bufr file
@@ -284,14 +285,14 @@ subroutine read_modsbufr(nread,ndata,nodata,gstime,infile,obstype,lunout, &
            write(6,*)'READ_MODSBUFR:  ***WARNING*** ndata > maxobs for ',obstype
            ndata = maxobs
       end if
-      call deter_sfc2(dlat_earth,dlon_earth,tdiff,idomsfc,tsavg,ff10,sfcr)
+      call deter_sfc2(dlat_earth,dlon_earth,t4dv,idomsfc,tsavg,ff10,sfcr)
 
       cdata_all(1,ndata)  = sstoe                   ! sst error
       cdata_all(2,ndata)  = dlon                    ! grid relative longitude
       cdata_all(3,ndata)  = dlat                    ! grid relative latitude
       cdata_all(4,ndata)  = sst                     ! sst obs
       cdata_all(5,ndata)  = hdr(9)                  ! station id
-      cdata_all(6,ndata)  = tdiff                   ! time
+      cdata_all(6,ndata)  = t4dv                    ! time
       cdata_all(7,ndata)  = ikx                     ! type
       cdata_all(8,ndata)  = sstoe*three             ! pw max error
       cdata_all(9,ndata)  = hdr(8)                  ! depth of measurement

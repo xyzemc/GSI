@@ -14,7 +14,7 @@ module ncepgfs_io
 !                           on grid to analysis subdomains
 !   sub read_gfssfc       - read ncep gfs surface file, scatter on grid to 
 !                           analysis subdomains
-!   sub read_gfssfc_full  - read ncep gfs surface file, keep on full model grid
+!   sub sfc_interpolate   - interpolate from gfs atm grid to gfs sfc grid
 !   sub write_gfs         - driver to write ncep gfs atmospheric and surface
 !                           analysis files
 !   sub write_gfsatm      - gather on grid, transform to spectral, write ncep
@@ -31,11 +31,10 @@ module ncepgfs_io
   private
   public read_gfsatm
   public read_gfssfc
-  public read_gfssfc2
-  public read_gfssfc_full
   public write_gfs
   public write_gfsatm
   public write_gfssfc
+  public sfc_interpolate
 
 contains
 
@@ -70,6 +69,7 @@ contains
 !   2006-09-18  treadon - replace lnps with ps
 !   2007-05-07  treadon - add gfsio 
 !   2007-05-08  kleist - add option for lnps or ps
+!   2008-05-28  safford - rm unused vars
 !
 !   input argument list:
 !     inges    - unit number of guess coefs
@@ -90,9 +90,9 @@ contains
          ird_s,iglobal,nsig,nlat,nlon,lat2,lon2,hybrid,ltosi_s,&
          itotsub,fill_ns,filluv_ns,ncep_sigio,ncepgfs_head,idpsfc5,idthrm5,&
          ntracer,idvc5,cp5,idvm5
-    use specmod, only: factsml,factvml,jcap,nc,idrt,imax,jmax
+    use specmod, only: factsml_b,factvml_b,jcap_b,nc_b,idrt_b,imax,jmax
     use mpimod, only: npe,mpi_comm_world,ierror,mpi_rtype,reload
-    use constants, only: izero,zero,one,fv,half
+    use constants, only: izero,zero,one,fv
     use sigio_module, only: sigio_intkind,sigio_head,sigio_data,&
          sigio_srohdc,sigio_axdata
     use gfsio_module, only: gfsio_gfile,gfsio_open,gfsio_close,&
@@ -118,11 +118,10 @@ contains
     integer(i_kind):: iret,nlatm2,ij,n,ii1,l,m
     integer(i_kind) i,j,k,icount,icount_prev,mm1
     integer(i_kind) mype_hs,mype_ps
-    integer(i_kind):: jrec,iret_gfsio
     real(r_kind),dimension(nlon,nlat-2):: grid,grid_u,grid_v,&
          grid_vor,grid_div,grid2,grid3
     real(r_kind),dimension(nlon,nlat-2,ntracer):: grid_q
-    real(r_kind),dimension(nc):: spec_work,spec_vor,spec_div
+    real(r_kind),dimension(nc_b):: spec_work,spec_vor,spec_div
     real(r_kind),dimension(itotsub):: work,work_vor,work_div,&
          work_u,work_v
     real(r_kind),dimension(lat2*lon2,max(2*nsig,npe)):: sub,sub_div,sub_vor,&
@@ -240,11 +239,11 @@ contains
 !   Terrain:  spectral --> grid transform, scatter to all mpi tasks
     if (mype==mype_hs) then
        if (ncep_sigio) then
-          do i=1,nc
+          do i=1,nc_b
              spec_work(i)=sigdata%hs(i)
-             if(factsml(i))spec_work(i)=zero
+             if(factsml_b(i))spec_work(i)=zero
           end do
-          call sptez_s(spec_work,grid,1)
+          call sptez_s_bkg(spec_work,grid,1)
        else
           ij=0
           do j=1,gfshead%latb
@@ -268,11 +267,11 @@ contains
 !   
     if (mype==mype_ps) then
        if (ncep_sigio) then
-          do i=1,nc
+          do i=1,nc_b
              spec_work(i)=sigdata%ps(i)
-             if(factsml(i))spec_work(i)=zero
+             if(factsml_b(i))spec_work(i)=zero
           end do
-          call sptez_s(spec_work,grid,1)
+          call sptez_s_bkg(spec_work,grid,1)
           call fill_ns(grid,work)
 
 !         If ln(ps), take exponential to convert to ps in cb
@@ -309,11 +308,11 @@ contains
        icount=icount+1
        if (mype==mod(icount-1,npe)) then
           if (ncep_sigio) then
-             do i=1,nc
+             do i=1,nc_b
                 spec_work(i)=sigdata%t(i,k)
-                if(factsml(i))spec_work(i)=zero
+                if(factsml_b(i))spec_work(i)=zero
              end do
-             call sptez_s(spec_work,grid,1)
+             call sptez_s_bkg(spec_work,grid,1)
 
 !            SIGIO has three possible thermodynamic variables
 !            Variable idthrm5 indicates the type
@@ -328,11 +327,11 @@ contains
 
 !               Convert tracers from spectral coefficients to grid
                 do n=1,ntracer
-                   do i=1,nc
+                   do i=1,nc_b
                       spec_work(i)=sigdata%q(i,k,n)
-                      if(factsml(i))spec_work(i)=zero
+                      if(factsml_b(i))spec_work(i)=zero
                    end do
-                   call sptez_s(spec_work,grid_q(1,1,n),1)
+                   call sptez_s_bkg(spec_work,grid_q(1,1,n),1)
                 end do
 
 !               Convert input thermodynamic variable to dry temperature
@@ -391,17 +390,17 @@ contains
 
 !         Convert spectral coefficients of div and vor to grid space
           if (ncep_sigio) then
-             do i=1,nc
+             do i=1,nc_b
                 spec_div(i)=sigdata%d(i,k)   !div
                 spec_vor(i)=sigdata%z(i,k)   !vor
-                if(factvml(i))then
+                if(factvml_b(i))then
                    spec_div(i)=zero
                    spec_vor(i)=zero
                 end if
              end do
-             call sptez_s(spec_div,grid_div,1)
-             call sptez_s(spec_vor,grid_vor,1)
-             call sptez_v(spec_div,spec_vor,grid_u,grid_v,1)
+             call sptez_s_bkg(spec_div,grid_div,1)
+             call sptez_s_bkg(spec_vor,grid_vor,1)
+             call sptez_v_bkg(spec_div,spec_vor,grid_u,grid_v,1)
 
 !         Convert grid u,v to div and vor
           else
@@ -413,9 +412,9 @@ contains
                    grid_v(i,j)=gfsdata%v(ij,k)
                 end do
              end do
-             call sptez_v(spec_div,spec_vor,grid_u,grid_v,-1)
-             call sptez_s(spec_div,grid_div,1)
-             call sptez_s(spec_vor,grid_vor,1)
+             call sptez_v_bkg(spec_div,spec_vor,grid_u,grid_v,-1)
+             call sptez_s_bkg(spec_div,grid_div,1)
+             call sptez_s_bkg(spec_vor,grid_vor,1)
           endif
           
           call fill_ns(grid_div,work_div)
@@ -457,11 +456,11 @@ contains
        icount=icount+1
        if (mype==mod(icount-1,npe)) then
           if (ncep_sigio) then
-             do i=1,nc
+             do i=1,nc_b
                 spec_work(i)=sigdata%q(i,k,1)
-                if(factsml(i))spec_work(i)=zero
+                if(factsml_b(i))spec_work(i)=zero
              end do
-             call sptez_s(spec_work,grid,1)
+             call sptez_s_bkg(spec_work,grid,1)
           else
              ij=0
              do j=1,gfshead%latb
@@ -492,10 +491,10 @@ contains
                    if (grid(i,j)<qsmall) grid2(i,j)=qsmall-grid(i,j)
                 end do
              end do
-             call sptez_s(spec_work,grid2,-1)
+             call sptez_s_bkg(spec_work,grid2,-1)
              ii1=izero
-             do l=izero,jcap
-                do m=izero,jcap-l
+             do l=izero,jcap_b
+                do m=izero,jcap_b-l
                    ii1=ii1+2
                    fact=exp(-r0_01*float(l+m)**2)
                    spec_work(ii1)  =fact*spec_work(ii1)
@@ -507,7 +506,7 @@ contains
                    if (l==izero) spec_work(ii1)=zero
                 end do
              end do
-             call sptez_s(spec_work,grid2,1)
+             call sptez_s_bkg(spec_work,grid2,1)
              do j=1,nlatm2
                 do i=1,nlon
                    grid3(i,j)=grid3(i,j)+grid2(i,j)
@@ -546,11 +545,11 @@ contains
        icount=icount+1
        if (mype==mod(icount-1,npe)) then
           if (ncep_sigio) then
-             do i=1,nc
+             do i=1,nc_b
                 spec_work(i)=sigdata%q(i,k,2)
-                if(factsml(i))spec_work(i)=zero
+                if(factsml_b(i))spec_work(i)=zero
              end do
-             call sptez_s(spec_work,grid,1)
+             call sptez_s_bkg(spec_work,grid,1)
           else
              ij=0
              do j=1,gfshead%latb
@@ -581,11 +580,11 @@ contains
           icount=icount+1
           if (mype==mod(icount-1,npe)) then
              if (ncep_sigio) then
-                do i=1,nc
+                do i=1,nc_b
                    spec_work(i)=sigdata%q(i,k,3)
-                   if(factsml(i))spec_work(i)=zero
+                   if(factsml_b(i))spec_work(i)=zero
                 end do
-                call sptez_s(spec_work,grid,1)
+                call sptez_s_bkg(spec_work,grid,1)
              else
                 ij=0
                 do j=1,gfshead%latb
@@ -644,8 +643,9 @@ contains
   end subroutine read_gfsatm
 
 
+
   subroutine read_gfssfc(filename,mype,fact10,sfct,sno,veg_type,&
-       veg_frac,soil_type,soil_temp,soil_moi,isli,isli_gl,sfc_rough)
+       veg_frac,soil_type,soil_temp,soil_moi,isli,sfc_rough,terrain)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    read_gfssfc     read gfs surface file
@@ -660,6 +660,8 @@ contains
 !   2005-01-27  treadon - rewrite to make use of sfcio module
 !   2005-03-07  todling - die gracefully when return error from sfcio
 !   2006-09-28  treadon - pull out surface roughness
+!   2008-05-28  safford - rm unused vars
+!   2009-01-12  gayno   - add read of terrain height
 !
 !   input argument list:
 !     filename - name of surface guess file
@@ -677,209 +679,7 @@ contains
 !     isli      - sea/land/ice mask (subdomain)
 !     isli_g    - global sea/land/ice mask
 !     sfc_rough - surface roughness
-!
-! attributes:
-!   language: f90
-!   machine:  ibm RS/6000 SP
-!
-!$$$
-    use kinds, only: r_kind,i_kind
-    use mpimod, only: ierror,mpi_rtype,mpi_comm_world,npe
-    use gridmod, only: ijn_s,ird_s,irc_s,displs_s,ltosj_s,nlat,lon2,&
-         lat2,ltosi_s,itotsub,nlon
-    use sfcio_module, only: sfcio_intkind,sfcio_head,sfcio_data,&
-         sfcio_srohdc,sfcio_axdata
-    use constants, only: izero,zero
-    implicit none
-
-!   Declare passed variables
-    character(24),intent(in):: filename
-    integer(i_kind),intent(in):: mype
-    integer(i_kind),dimension(lat2*lon2),intent(out):: isli
-    integer(i_kind),dimension(nlat,nlon),intent(out):: isli_gl
-    real(r_kind),dimension(lat2*lon2),intent(out):: fact10,sfct,sno,&
-         veg_type,veg_frac,soil_type,soil_temp,soil_moi,sfc_rough
-    
-!   Declare local parameters
-    integer(sfcio_intkind):: lunges = 11
-    integer(i_kind),parameter:: nsfc=10
-
-!   Declare local variables
-    integer(i_kind) ni1,ni2,i,j,k,icount,icount_prev,latb,lonb
-    integer(sfcio_intkind):: irets
-    real(r_kind) sumn,sums
-    real(r_kind),dimension(itotsub):: buff
-    real(r_kind),dimension(lat2*lon2):: sli
-    real(r_kind),dimension(lat2*lon2,max(2*nsfc,npe)):: sfcsub
-    real(r_kind),dimension(itotsub,nsfc):: sfcges
-    real(r_kind),allocatable,dimension(:,:,:):: work
-    
-    type(sfcio_head):: sfc_head
-    type(sfcio_data):: sfc_data
-
-!-----------------------------------------------------------------------------
-!   Read surface file
-    call sfcio_srohdc(lunges,filename,sfc_head,sfc_data,irets)
-
-
-!   Check for possible problems
-    if (irets /= izero) then
-       write(6,*)'READ_GFSSFC:  ***ERROR*** problem reading ',filename,&
-            ', irets=',irets
-       call sfcio_axdata(sfc_data,irets)
-       call stop2(80)
-    endif
-    latb=sfc_head%latb
-    lonb=sfc_head%lonb
-    if ( (latb /= nlat-2) .or. &
-         (lonb /= nlon) ) then
-       write(6,*)'READ_GFSSFC:  ***ERROR*** inconsistent grid dimensions.  ',&
-            ', nlon,nlat-2=',nlon,nlat-2,' -vs- sfc file lonb,latb=',&
-            lonb,latb
-       call sfcio_axdata(sfc_data,irets)
-       call stop2(80)
-    endif
-
-
-!   Load surface fields into local work array
-    allocate(work(lonb,latb,nsfc))
-    do k=1,nsfc
-       do j=1,latb
-          do i=1,lonb
-             work(i,j,k) = zero
-          end do
-       end do
-    end do
-    do j=1,latb
-       do i=1,lonb
-          work(i,j,1) = sfc_data%tsea(i,j)     ! skin temperature
-          work(i,j,2) = sfc_data%smc(i,j,1)    ! soil moisture
-          work(i,j,3) = sfc_data%sheleg(i,j)   ! snow depth
-          work(i,j,4) = sfc_data%stc(i,j,1)    ! soil temperature
-          work(i,j,5) = sfc_data%slmsk(i,j)    ! sea/land/ice mask
-          work(i,j,6) = sfc_data%vfrac(i,j)    ! vegetation cover
-          work(i,j,7) = sfc_data%f10m(i,j)     ! 10m wind factor
-          work(i,j,8) = sfc_data%vtype(i,j)    ! vegetation type
-          work(i,j,9) = sfc_data%stype(i,j)    ! soil type
-          work(i,j,10) = sfc_data%zorl(i,j)    ! surface roughness length (cm)
-       end do
-    end do
-    
-!   Fill surface guess array
-    do k=1,nsfc
-
-!      Compute mean for southern- and northern-most rows 
-!      of surface guess array
-       sumn = zero
-       sums = zero
-       do i=1,nlon
-          sumn = work(i,1,k)    + sumn
-          sums = work(i,latb,k) + sums
-       end do
-       sumn = sumn/nlon
-       sums = sums/nlon
-
-!      Transfer from local work array to surface guess array
-       do i = 1,itotsub
-          sfcges(i,k) = zero
-          ni1=ltosi_s(i)
-          ni2=ltosj_s(i)
-          if (ni1>1 .and. ni1<nlat) sfcges(i,k) = work(ni2,nlat-ni1,k)
-          if (ni1==1) sfcges(i,k)=sums
-          if (ni1==nlat) sfcges(i,k)=sumn
-       end do
-       
-!   End of loop over data records
-    end do
-
-!   Deallocate local work arrays
-    deallocate(work)
-    call sfcio_axdata(sfc_data,irets)
-
-
-!   Load the sea/land/ice mask into nlat x nlon array
-    do i=1,itotsub
-       ni1=ltosi_s(i); ni2=ltosj_s(i)
-       isli_gl(ni1,ni2)=sfcges(i,5)
-    end do
-    
-
-!   Scatter these fields to all tasks
-    sfcsub=0
-    icount=0
-    icount_prev=1
-    do k=1,nsfc
-       icount=icount+1
-       if (mype==mod(icount-1,npe)) then
-          do i=1,itotsub
-             buff(i)=sfcges(i,k)
-          end do
-       endif
-       if (mod(icount,npe)==0 .or. icount==nsfc) then
-          call mpi_alltoallv(buff,ijn_s,displs_s,mpi_rtype,&
-               sfcsub(1,icount_prev),irc_s,ird_s,mpi_rtype,&
-               mpi_comm_world,ierror)
-          icount_prev=icount+1
-       endif
-    end do
-    
-!   Load data into output arrays
-    do k=1,lat2*lon2
-       sfct(k)      = sfcsub(k,1)
-       soil_moi(k)  = sfcsub(k,2)
-       sno(k)       = sfcsub(k,3)
-       soil_temp(k) = sfcsub(k,4)
-       isli(k)      = nint(sfcsub(k,5)+0.0000001)
-       veg_frac(k)  = sfcsub(k,6)
-       fact10(k)    = sfcsub(k,7)
-       veg_type(k)  = sfcsub(k,8)
-       soil_type(k) = sfcsub(k,9)
-       sfc_rough(k) = sfcsub(k,10)
-    end do
-
-!   Print date/time stamp
-    if(mype==izero) then
-       write(6,700) nlat,nlon,sfc_head%fhour,sfc_head%idate
-700    format('READ_GFSSFC:  ges read/scatter, nlat,nlon=',&
-            2i6,', hour=',f10.1,', idate=',4i5)
-    end if
-    
-    return
-  end subroutine read_gfssfc
-
-  subroutine read_gfssfc2(filename,mype,fact10,sfct,sno,veg_type,&
-       veg_frac,soil_type,soil_temp,soil_moi,isli,sfc_rough)
-!$$$  subprogram documentation block
-!                .      .    .                                       .
-! subprogram:    read_gfssfc     read gfs surface file
-!   prgmmr: treadon          org: np23                date: 2003-04-10
-!
-! abstract: read gfs surface file
-!
-! program history log:
-!   2003-04-10  treadon
-!   2004-05-18  kleist, add global isli & documentation
-!   2004-09-07  treadon fix mpi bug when npe > nsfc
-!   2005-01-27  treadon - rewrite to make use of sfcio module
-!   2005-03-07  todling - die gracefully when return error from sfcio
-!   2006-09-28  treadon - pull out surface roughness
-!
-!   input argument list:
-!     filename - name of surface guess file
-!     mype     - mpi task id
-!
-!   output argument list:
-!     fact10    - 10 meter wind factor
-!     sfct      - surface temperature (skin temp)
-!     sno       - snow depth
-!     veg_type  - vegetation type
-!     veg_frac  - vegetation fraction
-!     soil_type - soil type
-!     soil_temp - soil temperature of first layer
-!     soil_moi  - soil moisture of first layer
-!     isli      - sea/land/ice mask (subdomain)
-!     isli_g    - global sea/land/ice mask
-!     sfc_rough - surface roughness
+!     terrain   - terrain height
 !
 ! attributes:
 !   language: f90
@@ -901,14 +701,14 @@ contains
     integer(i_kind),intent(in):: mype
     integer(i_kind),dimension(nlat_sfc,nlon_sfc),intent(out):: isli
     real(r_kind),dimension(nlat_sfc,nlon_sfc),intent(out):: fact10,sfct,sno,&
-         veg_type,veg_frac,soil_type,soil_temp,soil_moi,sfc_rough
+         veg_type,veg_frac,soil_type,soil_temp,soil_moi,sfc_rough,terrain
 
 !   Declare local parameters
     integer(sfcio_intkind):: lunges = 11
-    integer(i_kind),parameter:: nsfc=10
+    integer(i_kind),parameter:: nsfc=11
 
 !   Declare local variables
-    integer(i_kind) ni1,ni2,i,j,k,latb,lonb,mm1,il,jl
+    integer(i_kind) i,j,k,latb,lonb,mm1
     integer(sfcio_intkind):: irets
     real(r_kind) sumn,sums
     real(r_kind),allocatable,dimension(:,:,:):: work,sfcges
@@ -917,7 +717,6 @@ contains
     type(sfcio_data):: sfc_data
 
     mm1=mype+1
-!   if(mype == izero) then
 !-----------------------------------------------------------------------------
 !     Read surface file
       call sfcio_srohdc(lunges,filename,sfc_head,sfc_data,irets)
@@ -934,7 +733,7 @@ contains
       lonb=sfc_head%lonb
       if ( (latb /= nlat_sfc-2) .or. &
            (lonb /= nlon_sfc) ) then
-         write(6,*)'READ_GFSSFC2:  ***ERROR*** inconsistent grid dimensions.  ',&
+         write(6,*)'READ_GFSSFC:  ***ERROR*** inconsistent grid dimensions.  ',&
               ', nlon,nlat-2=',nlon_sfc,nlat_sfc-2,' -vs- sfc file lonb,latb=',&
               lonb,latb
          call sfcio_axdata(sfc_data,irets)
@@ -962,6 +761,7 @@ contains
             work(i,j,8) = sfc_data%vtype(i,j)    ! vegetation type
             work(i,j,9) = sfc_data%stype(i,j)    ! soil type
             work(i,j,10) = sfc_data%zorl(i,j)    ! surface roughness length (cm)
+            work(i,j,11) = sfc_data%orog(i,j)    ! terrain
          end do
       end do
 
@@ -993,7 +793,6 @@ contains
 
 !     Deallocate local work arrays
       deallocate(work)
-!   end if
 !   Load data into output arrays
     do j=1,lonb
      do i=1,latb+2
@@ -1007,6 +806,7 @@ contains
        veg_type(i,j)  = sfcges(i,j,8)
        soil_type(i,j) = sfcges(i,j,9)
        sfc_rough(i,j) = sfcges(i,j,10)
+       terrain(i,j)   = sfcges(i,j,11)
      end do
     end do
     deallocate(sfcges)
@@ -1019,170 +819,38 @@ contains
     end if
 
     return
-  end subroutine read_gfssfc2
+  end subroutine read_gfssfc
 
 
-  subroutine read_gfssfc_full(field_g,tag)
+  subroutine write_gfs(increment,mype,mype_atm,mype_sfc)
 !$$$  subprogram documentation block
-!                .      .    .                                       .
-! subprogram:    rdbges                     read and reorder bges file   
-!   prgmmr: derber           org: np23                date: 1992-09-08
+!                .      .    .
+! subprogram:    write_gfs
 !
-! abstract:  This routine extracts a specified record from a GFS
-!            surface file.  
+!   prgrmmr:
+!
+! abstract:
 !
 ! program history log:
-!   1992-09-08  derber 
-!   1995-07-17  derber
-!   1998-04-17  weiyu yang
-!   1999-08-24  derber, j., treadon, r., yang, w., first frozen mpp version
-!   2004-06-22  treadon - update documentation
-!   2004-08-03  treadon - add only to module use, add intent in/out
-!   2004-12-23  treadon - remove write(6,*) of hour & date information
-!   2005-01-27  treadon - rewrite to make use of sfcio module
-!   2005-02-18  todling - added protection to dealloc() of sfc-data array
-!   2006-04-06  middlecoff - change lunges from 15 to 11
-!
-!   input argument list:
-!     tag     - character string idenfying field to extract
-!
-!   output argument list:
-!     field_g - irec-th record from GFS surface file.  The suffix
-!                 "_g" indicates that the extracted record is on
-!                  the global (full domain) grid.
-!
-! attributes:
-!   language: f90
-!   machine:  ibm RS/6000 SP
-!
-!$$$
-    use kinds, only: i_kind,r_kind,r_single
-    use constants, only: zero
-    use gridmod, only: nlat,nlon
-    use sfcio_module, only: sfcio_intkind,sfcio_head,sfcio_data,&
-         sfcio_srohdc,sfcio_axdata
-    implicit none
-  
-!   Declare local parameters
-    character(6),parameter:: sfcfile = 'sfcf06'  ! name of surface guess file
-    integer(sfcio_intkind),parameter:: lunges=11 ! unit for surface file
-
-
-!   Below are names of fields that may currently be extracted
-!   from surface file.  There are more fields in surface file.
-!   The three fields below are the only ones currently used
-
-    character(6),parameter:: tsea   = 'tsea'     ! skin 
-    character(6),parameter:: slmsk  = 'slmsk'
-    character(6),parameter:: sheleg = 'sheleg'
-
-!   Declare passed variables
-    character(6),intent(in):: tag
-    real(r_kind),dimension(nlat,nlon),intent(out):: field_g
-
-!   Declare local variables  
-    integer(sfcio_intkind):: iret
-    integer(i_kind) latb,lonb,i,j
-    real(r_kind) sums,sumn
-    real(r_kind),allocatable,dimension(:,:):: work
-    
-    type(sfcio_head):: sfc_head
-    type(sfcio_data):: sfc_data
-
-!-----------------------------------------------------------------------------
-!   Zero output array
-    field_g=zero
-
-!   Read surface file
-    call sfcio_srohdc(lunges,sfcfile,sfc_head,sfc_data,iret)
-
-!   Check for possible problems
-    if (iret /= 0) then
-       write(6,*)'READ_GFSSFC_FULL:  ***ERROR*** problem reading ',sfcfile,&
-            ', iret=',iret
-       call stop2(80)
-    endif
-    latb=sfc_head%latb
-    lonb=sfc_head%lonb
-    if ( (latb /= nlat-2) .or. &
-         (lonb /= nlon) ) then
-       write(6,*)'READ_GFSSFC_FULL:  ***ERROR*** inconsistent grid dimensions.  ',&
-            ', nlon,nlat=',nlon,nlat-2,' -vs- sfc file lonb,latb=',&
-            lonb,latb
-       call stop2(80)
-    endif
-    
-!   Allocate work array and extract requested field
-    allocate(work(lonb,latb))
-    if (trim(adjustl(tag)) == tsea) then
-       do j=1,latb
-          do i=1,lonb
-             work(i,j) = sfc_data%tsea(i,j)
-          end do
-       end do
-       
-    elseif (trim(adjustl(tag)) == sheleg) then
-       do j=1,latb
-          do i=1,lonb
-             work(i,j) = sfc_data%sheleg(i,j)
-          end do
-       end do
-       
-    elseif (trim(adjustl(tag)) == slmsk) then
-       do j=1,latb
-          do i=1,lonb
-             work(i,j) = sfc_data%slmsk(i,j)
-          end do
-       end do
-       
-    else
-       write(6,*)'READ_GFSSFC_FULL:  ***ERROR*** passed tag = ',tag,&
-            ' is not yet supported'
-       call stop2(81)
-    endif
-
-!   Fill in southern and northern rows of output array
-    sumn = zero
-    sums = zero
-    do i=1,nlon
-       sumn = work(i,1)    + sumn
-       sums = work(i,latb) + sums
-    end do
-    sumn = sumn/nlon
-    sums = sums/nlon
-    
-!   Load output array
-    do j=1,nlon
-       do i=1,nlat-2
-          field_g(i+1,j) = work(j,nlat-1-i)
-       end do
-    end do
-    
-    do j=1,nlon
-       field_g(1,j)    = sums
-       field_g(nlat,j) = sumn
-    end do
-    
-!   Deallocate work arrays
-    deallocate(work)
-    call sfcio_axdata(sfc_data,iret)
-
-!   Check for possible problems
-    if (iret /= 0) then
-       write(6,*)'READ_GFSSFC_FULL:  ***ERROR*** ',&
-            'problem dealloc mem for sfc-data iret=',iret
-       call stop2(80)
-    endif
-    
-    return    
-  end subroutine read_gfssfc_full
-  
-  subroutine write_gfs(mype,mype_atm,mype_sfc)
-
-!
 !   2006-07-31  kleist - pass ges_ps instead of ges_lnps
 !   2006-10-11  treadon - update 10m wind factor in sfc file
+!   2008-05-28  safford - rm unused vars, add doc block
+!   2008-12-05  todling - adjustment for dsfct time dimension addition
+!   2009-11-28  todling - add increment option (hook-only for now)
 !
+!   input argument list:
+!     increment          - when .t. will name files as increment files
+!     mype               - mpi task id
+!     mype_atm,mype_sfc  -
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
     use kinds, only: i_kind,r_kind
     use guess_grids, only: ges_z,ges_ps,ges_vor,ges_div,&
          ges_tv,ges_q,ges_oz,ges_cwmr,ges_prsl,&
@@ -1192,11 +860,17 @@ contains
 
     implicit none
 
+    logical,intent(in)::increment
     integer(i_kind),intent(in):: mype,mype_atm,mype_sfc
-    integer(i_kind) i,j
     character(24):: filename
 !   Write atmospheric analysis file
-    filename='siganl'
+    if (increment) then
+      filename='siginc'
+      if(mype==0) write(6,'(a)') 'write_gfs: sorry, I do not know how to write increments yet'
+      return
+    else
+      filename='siganl'
+    endif
     call write_gfsatm(filename,mype,mype_atm,&
          ges_z(1,1,ntguessig),ges_ps(1,1,ntguessig),&
          ges_vor(1,1,1,ntguessig),ges_div(1,1,1,ntguessig),&
@@ -1206,31 +880,81 @@ contains
          ges_v(1,1,1,ntguessig),ges_prsi(1,1,1,ntguessig))
 
 !   Write surface analysis file
-    filename='sfcanl.gsi'
-    call write_gfssfc(filename,mype,mype_sfc,dsfct)
+    if (increment) then
+      filename='sfcinc.gsi'
+    else
+      filename='sfcanl.gsi'
+    endif
+    call write_gfssfc(filename,mype,mype_sfc,dsfct(1,1,ntguessfc))
   end subroutine write_gfs
 
-!-------------------------------------------------------------------------
-!    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
-!-------------------------------------------------------------------------
-!BOP
-!
-! !ROUTINE:  write_gfsatm --- Gather, transform, and write out spectal coefficients
-!
-! !INTERFACE:
-!
 
   subroutine write_gfsatm(filename,mype,mype_out,sub_z,sub_ps,&
        sub_vor,sub_div,sub_tv,sub_q,sub_oz,sub_cwmr,sub_prsl,&
        sub_u,sub_v,sub_prsi)
+
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    write_gfsatm --- Gather, transform, and write out 
+!                                 spectal coefficients
+!   prgrmmr:     parrish    - author; org: np22
 !
+! abstract: This routine gathers fields needed for the GSI analysis
+!           file from subdomains and then transforms the fields from
+!           grid to spectral space.  The spectral coefficients are 
+!           then written to an atmospheric analysis file.
+!
+! program history log:
+!   1998-07-10  weiyu yang
+!   1999-08-24  derber, j., treadon, r., yang, w., first frozen mpp version
+!   2003-10-31  kleist, d. - add capability to generate output file for 
+!                            either hybrid or sigma vertical coordinate
+!   2004-06-15  treadon - update documentation
+!   2004-07-15  todling - protex-compliant prologue; added intent/only's
+!   2004-08-27  treadon - use splib routine for grid <---> spectral transforms
+!   2005-03-07  dee     - support gmao model interface
+!   2005-03-10  treadon - remove iadate from calling list, access via obsmod
+!   2005-04-05  wgu     - bug fix: modified iadate not properly merge w/ gmao_intfc case
+!   2005-10-13  treadon - properly specify vcid4 in NCEP sigma file header
+!   2005-12-09  guo     - removed special GMAO spectral output format
+!   2006-01-09  treadon - use sigio
+!   2006-09-18  treadon - convert ps to lnps
+!   2007-05-07  treadon - add gfsio
+!   2007-05-08  kleist  - add options for ps or lnps
+!   2008-05-28  safford - rm unused vars and uses
+!   2009-06-11  kleist  - add sppad for multiple spectral resolutions
+!
+!   input argument list:
+!     filename  - file to open and write to
+!     mype      - mpi task number
+!     mype_out  - mpi task to write output file
+!     sub_z     - GFS terrain field on subdomains
+!     sub_ps    - surface pressure on subdomains
+!     sub_vor   - vorticity on subdomains
+!     sub_div   - divergence on subdomains
+!     sub_tv    - virtual temperature on subdomains
+!     sub_q     - specific humidity on subdomains
+!     sub_oz    - ozone on subdomains
+!     sub_cwmr  - cloud condensate mixing ratio on subdomains
+!     sub_prsl  - layer midpoint pressure
+!     sub_u     - zonal wind
+!     sub_v     - meridional wind
+!     sub_prsi  - interface  pressure
+!
+!   output argument list:
+!
+! attributes:
+!   language: f90
+!   machines: ibm RS/6000 SP; SGI Origin 2000; Compaq HP
+!
+!$$$ end documentation block
+
 ! !USES:
-!
     use kinds, only: r_kind,i_kind,r_single
     
-    use constants, only: zero_single,r1000,fv,one,rad2deg,zero
+    use constants, only: zero_single,r1000,fv,one,zero
   
-    use mpimod, only: mpi_rtype
+    use mpimod, only: mpi_rtype,mpi_rtype4
     use mpimod, only: mpi_comm_world
     use mpimod, only: strip
     use mpimod, only: ierror
@@ -1260,10 +984,10 @@ contains
     
     use obsmod, only: iadate
     
-    use specmod, only: nc
-    use specmod, only: jcap
-    use specmod, only: factsml
-    use specmod, only: factvml
+    use specmod, only: nc_b,nc
+    use specmod, only: jcap_b,jcap
+    use specmod, only: factsml_b
+    use specmod, only: factvml_b
     
     use sigio_module, only: sigio_intkind,sigio_head,sigio_data,&
          sigio_sropen,sigio_srhead,sigio_sclose,sigio_aldata,&
@@ -1276,12 +1000,7 @@ contains
   
     implicit none
 
-!
-! !LOCAL PARAMETER:
-! 
-!
 ! !INPUT PARAMETERS:
-!
 
     character(24),intent(in):: filename     ! file to open and write to
 
@@ -1301,44 +1020,6 @@ contains
     real(r_kind),dimension(lat2,lon2,nsig),intent(in):: sub_v    ! meridional wind
     real(r_kind),dimension(lat2,lon2,nsig+1),intent(in):: sub_prsi ! interface  pressure
 
-!
-! !OUTPUT PARAMETERS:
-!
-
-! !DESCRIPTION: This routine gathers fields needed for the GSI analysis
-!           file from subdomains and then transforms the fields from
-!           grid to spectral space.  The spectral coefficients are 
-!           then written to an atmospheric analysis file.
-!
-! !REVISION HISTORY:
-!
-!   1998-07-10  weiyu yang
-!   1999-08-24  derber, j., treadon, r., yang, w., first frozen mpp version
-!   2003-10-31  kleist, d. - add capability to generate output file for 
-!                            either hybrid or sigma vertical coordinate
-!   2004-06-15  treadon - update documentation
-!   2004-07-15  todling - protex-compliant prologue; added intent/only's
-!   2004-08-27  treadon - use splib routine for grid <---> spectral transforms
-!   2005-03-07  dee     - support gmao model interface
-!   2005-03-10  treadon - remove iadate from calling list, access via obsmod
-!   2005-04-05  wgu     - bug fix: modified iadate not properly merge w/ gmao_intfc case
-!   2005-10-13  treadon - properly specify vcid4 in NCEP sigma file header
-!   2005-12-09  guo     - removed special GMAO spectral output format
-!   2006-01-09  treadon - use sigio
-!   2006-09-18  treadon - convert ps to lnps
-!   2007-05-07  treadon - add gfsio
-!   2007-05-08  kleist  - add options for ps or lnps
-!
-! !REMARKS:
-!
-!   language: f90
-!   machines: ibm RS/6000 SP; SGI Origin 2000; Compaq HP
-!
-! !AUTHOR:
-!
-!   1990-10-10  parrish    - author; org: np22
-!
-!EOP
 !-------------------------------------------------------------------------
 
     integer(i_kind),parameter::  lunges = 11
@@ -1346,21 +1027,21 @@ contains
 
     character(5):: string
     character(6):: fname_ges
-    integer(i_kind) i,j,ij,k,mm1,ii,nlatm2,n
+    integer(i_kind) i,j,ij,k,mm1,nlatm2
     integer(sigio_intkind):: iret
     
-    real(r_kind),dimension(lat1*lon1):: hsm,psm,tsm
+    real(r_kind),dimension(lat1*lon1):: hsm,psm
     real(r_kind),dimension(lat2,lon2,nsig):: sub_dp
-    real(r_kind),dimension(lat1*lon1,nsig):: tvsm,vorsm,divsm,ozsm
-    real(r_kind),dimension(lat1*lon1,nsig):: cwmrsm,prslm,usm,vsm,dpsm
+    real(r_kind),dimension(lat1*lon1,nsig):: tvsm,vorsm,divsm
+    real(r_kind),dimension(lat1*lon1,nsig):: prslm,usm,vsm,dpsm
     real(r_kind),dimension(lat1*lon1,nsig,ntracer):: qsm
     real(r_kind),dimension(max(iglobal,itotsub)):: work1
     real(r_kind),dimension(max(iglobal,itotsub),nsig):: work1_k
-    real(r_kind),dimension(max(iglobal,itotsub),nsig+1):: work2
     real(r_kind),dimension(nlon,nlat-2):: grid,grid2
-    real(r_single),dimension(nlon*(nlat-2)):: grido
-    real(r_kind),dimension(nc):: spec_work
-    
+    real(r_kind),dimension(nc_b):: spec_work
+    real(r_kind),dimension(nc):: spec_work_sm
+
+
     type(sigio_head):: sighead
     type(sigio_data):: sigdata
     type(gfsio_gfile) :: gfilei,gfileo
@@ -1428,20 +1109,20 @@ contains
 !         Read header and spectral coefficients from guess
           call sigio_srohdc(lunges,fname_ges,sighead,sigdata,iret)
 !send data to compute pes
-       call mpi_send(sigdata%t,nc*nsig,mpi_rtype,mype_th,&
+       call mpi_send(sigdata%t,nc_b*nsig,mpi_rtype4,mype_th,&
                      itag_th,mpi_comm_world,ierror)
-       call mpi_send(sigdata%q(1,1,1),nc*nsig,mpi_rtype,mype_sh,&
+       call mpi_send(sigdata%q(1,1,1),nc_b*nsig,mpi_rtype4,mype_sh,&
                      itag_sh,mpi_comm_world,ierror)
-       call mpi_send(sigdata%q(1,1,2),nc*nsig,mpi_rtype,mype_oz,&
+       call mpi_send(sigdata%q(1,1,2),nc_b*nsig,mpi_rtype4,mype_oz,&
                      itag_oz,mpi_comm_world,ierror)
        if (ntracer>2 .or. ncloud>=1) then
-        call mpi_send(sigdata%q(1,1,3),nc*nsig,mpi_rtype,mype_clc,&
+        call mpi_send(sigdata%q(1,1,3),nc_b*nsig,mpi_rtype4,mype_clc,&
                       itag_clc,mpi_comm_world,ierror)
        endif
-       call mpi_send(sigdata%d,nc*nsig,mpi_rtype,mype_div,&
+       call mpi_send(sigdata%d,nc_b*nsig,mpi_rtype4,mype_div,&
                      itag_div,mpi_comm_world,ierror)
 
-       call mpi_send(sigdata%z,nc*nsig,mpi_rtype,mype_vort,&
+       call mpi_send(sigdata%z,nc_b*nsig,mpi_rtype4,mype_vort,&
                      itag_vort,mpi_comm_world,ierror)
 !
 
@@ -1469,35 +1150,35 @@ contains
           call sigio_swhead(lunanl,sighead,iret)
     else
      if (mype==mype_th) then
-      allocate (temp(nc,nsig),stat=istat)
-      call mpi_recv(temp,nc*nsig,mpi_rtype,mype_out,&
+      allocate (temp(nc_b,nsig),stat=istat)
+      call mpi_recv(temp,nc_b*nsig,mpi_rtype4,mype_out,&
                     itag_th,mpi_comm_world,status,ierror)
      endif
      if (mype==mype_sh) then
-      allocate (temp(nc,nsig),stat=istat)
-      call mpi_recv(temp,nc*nsig,mpi_rtype,mype_out,&
+      allocate (temp(nc_b,nsig),stat=istat)
+      call mpi_recv(temp,nc_b*nsig,mpi_rtype4,mype_out,&
                     itag_sh,mpi_comm_world,status,ierror)
      endif
      if (mype==mype_oz) then
-      allocate (temp(nc,nsig),stat=istat)
-      call mpi_recv(temp,nc*nsig,mpi_rtype,mype_out,&
+      allocate (temp(nc_b,nsig),stat=istat)
+      call mpi_recv(temp,nc_b*nsig,mpi_rtype4,mype_out,&
                     itag_oz,mpi_comm_world,status,ierror)
      endif
      if (mype==mype_clc) then
        if (ntracer>2 .or. ncloud>=1) then
-        allocate (temp(nc,nsig),stat=istat)
-        call mpi_recv(temp,nc*nsig,mpi_rtype,mype_out,&
+        allocate (temp(nc_b,nsig),stat=istat)
+        call mpi_recv(temp,nc_b*nsig,mpi_rtype4,mype_out,&
                       itag_clc,mpi_comm_world,status,ierror)
        endif
      endif
      if (mype==mype_div) then
-      allocate (temp(nc,nsig),stat=istat)
-      call mpi_recv(temp,nc*nsig,mpi_rtype,mype_out,&
+      allocate (temp(nc_b,nsig),stat=istat)
+      call mpi_recv(temp,nc_b*nsig,mpi_rtype4,mype_out,&
                     itag_div,mpi_comm_world,status,ierror)
      endif
      if (mype==mype_vort) then
-      allocate (temp(nc,nsig),stat=istat)
-      call mpi_recv(temp,nc*nsig,mpi_rtype,mype_out,&
+      allocate (temp(nc_b,nsig),stat=istat)
+      call mpi_recv(temp,nc_b*nsig,mpi_rtype4,mype_out,&
                     itag_vort,mpi_comm_world,status,ierror)
      endif
     endif
@@ -1647,16 +1328,17 @@ contains
     if (mype==mype_out) then
        call load_grid(work1,grid)
        if (ncep_sigio) then
-          do i=1,nc
+          do i=1,nc_b
              spec_work(i) = sigdata%hs(i)
-             if(factsml(i))spec_work(i)=zero
+             if(factsml_b(i))spec_work(i)=zero
           end do
-          call sptez_s(spec_work,grid2,1)
+          call sptez_s_bkg(spec_work,grid2,1)
           grid=grid-grid2
-          call sptez_s(spec_work,grid,-1)
-          do i=1,nc
+          call sptez_s(spec_work_sm,grid,-1)
+          call sppad(0,jcap,spec_work_sm,0,jcap_b,spec_work)
+          do i=1,nc_b
              sigdata%hs(i)=sigdata%hs(i)+spec_work(i)
-             if(factsml(i))sigdata%hs(i)=zero_single
+             if(factsml_b(i))sigdata%hs(i)=zero_single
           end do
        else
           ij=0
@@ -1685,16 +1367,17 @@ contains
     if (mype==mype_out) then
        call load_grid(work1,grid)
        if (ncep_sigio) then
-          do i=1,nc
+          do i=1,nc_b
              spec_work(i) = sigdata%ps(i)
-             if(factsml(i))spec_work(i)=zero
+             if(factsml_b(i))spec_work(i)=zero
           end do
-          call sptez_s(spec_work,grid2,1)
+          call sptez_s_bkg(spec_work,grid2,1)
           grid=grid-grid2
-          call sptez_s(spec_work,grid,-1)
-          do i=1,nc
+          call sptez_s(spec_work_sm,grid,-1)
+          call sppad(0,jcap,spec_work_sm,0,jcap_b,spec_work)
+          do i=1,nc_b
              sigdata%ps(i)=sigdata%ps(i)+spec_work(i)
-             if(factsml(i))sigdata%ps(i)=zero_single
+             if(factsml_b(i))sigdata%ps(i)=zero_single
           end do
        else
           ij=0
@@ -1714,21 +1397,22 @@ contains
 !$omp parallel do private(k,grid,i,spec_work,grid2)
       do k=1,nsig
           call load_grid(work1_k(1,k),grid)
-             do i=1,nc
+             do i=1,nc_b
                 spec_work(i) = temp(i,k)
-                if(factsml(i))spec_work(i)=zero
+                if(factsml_b(i))spec_work(i)=zero
              end do
-             call sptez_s(spec_work,grid2,1)
+             call sptez_s_bkg(spec_work,grid2,1)
              grid=grid-grid2
-             call sptez_s(spec_work,grid,-1)
-             do i=1,nc
+             call sptez_s(spec_work_sm,grid,-1)
+             call sppad(0,jcap,spec_work_sm,0,jcap_b,spec_work)
+             do i=1,nc_b
                 temp(i,k)=temp(i,k)+spec_work(i)
-                if(factsml(i))temp(i,k)=zero_single
+                if(factsml_b(i))temp(i,k)=zero_single
              end do
        end do
 !$omp end parallel do
 !send temperature back to mype_out
-       call mpi_send(temp,nc*nsig,mpi_rtype,mype_out,&
+       call mpi_send(temp,nc_b*nsig,mpi_rtype4,mype_out,&
                      itag_th,mpi_comm_world,ierror)
      endif
     else                 !GFS I/O
@@ -1756,22 +1440,23 @@ contains
 !$omp parallel do private(k,grid,i,spec_work,grid2)
       do k=1,nsig
           call load_grid(work1_k(1,k),grid)
-             do i=1,nc
+             do i=1,nc_b
                 spec_work(i) = temp(i,k)
-                if(factsml(i))spec_work(i)=zero
+                if(factsml_b(i))spec_work(i)=zero
              end do
-             call sptez_s(spec_work,grid2,1)
+             call sptez_s_bkg(spec_work,grid2,1)
              call load_grid(work1_k(1,k),grid)
              grid=grid-grid2
-             call sptez_s(spec_work,grid,-1)
-             do i=1,nc
+             call sptez_s(spec_work_sm,grid,-1)
+             call sppad(0,jcap,spec_work_sm,0,jcap_b,spec_work)
+             do i=1,nc_b
                 temp(i,k) =temp(i,k)+spec_work(i)
-                if(factsml(i))temp(i,k)=zero_single
+                if(factsml_b(i))temp(i,k)=zero_single
              end do
        end do
 !$omp end parallel do
 !send sh back to mype_out
-       call mpi_send(temp,nc*nsig,mpi_rtype,mype_out,&
+       call mpi_send(temp,nc_b*nsig,mpi_rtype4,mype_out,&
                      itag_sh,mpi_comm_world,ierror)
      endif
   else             !GFS I/O
@@ -1800,22 +1485,23 @@ contains
 !$omp parallel do private(k,grid,i,spec_work,grid2)
       do k=1,nsig
           call load_grid(work1_k(1,k),grid)
-             do i=1,nc
+             do i=1,nc_b
                 spec_work(i) = temp(i,k)
-                if(factsml(i))spec_work(i)=zero
+                if(factsml_b(i))spec_work(i)=zero
              end do
-             call sptez_s(spec_work,grid2,1)
+             call sptez_s_bkg(spec_work,grid2,1)
              call load_grid(work1_k(1,k),grid)
              grid=grid-grid2
-             call sptez_s(spec_work,grid,-1)
-             do i=1,nc
+             call sptez_s(spec_work_sm,grid,-1)
+             call sppad(0,jcap,spec_work_sm,0,jcap_b,spec_work)
+             do i=1,nc_b
                 temp(i,k) =temp(i,k) + spec_work(i)
-                if(factsml(i))temp(i,k)=zero_single
+                if(factsml_b(i))temp(i,k)=zero_single
              end do
        end do
 !$omp end parallel do
 !send sh back to mype_out
-       call mpi_send(temp,nc*nsig,mpi_rtype,mype_out,&
+       call mpi_send(temp,nc_b*nsig,mpi_rtype4,mype_out,&
                      itag_oz,mpi_comm_world,ierror)
      endif
     else          !GFS I/O
@@ -1845,22 +1531,23 @@ contains
 !$omp parallel do private(k,grid,i,spec_work,grid2)
      do k=1,nsig
              call load_grid(work1_k(1,k),grid)
-                do i=1,nc
+                do i=1,nc_b
                    spec_work(i) = temp(i,k)
-                   if(factsml(i))spec_work(i)=zero
+                   if(factsml_b(i))spec_work(i)=zero
                 end do
-                call sptez_s(spec_work,grid2,1)
+                call sptez_s_bkg(spec_work,grid2,1)
                 call load_grid(work1_k(1,k),grid)
                 grid=grid-grid2
-                call sptez_s(spec_work,grid,-1)
-                do i=1,nc
+                call sptez_s(spec_work_sm,grid,-1)
+                call sppad(0,jcap,spec_work_sm,0,jcap_b,spec_work)
+                do i=1,nc_b
                    temp(i,k) =temp(i,k)+spec_work(i)
-                   if(factsml(i))temp(i,k)=zero_single
+                   if(factsml_b(i))temp(i,k)=zero_single
                 end do
        end do
 !$omp end parallel do
 !send sh back to mype_out
-       call mpi_send(temp,nc*nsig,mpi_rtype,mype_out,&
+       call mpi_send(temp,nc_b*nsig,mpi_rtype4,mype_out,&
                      itag_clc,mpi_comm_world,ierror)
      endif
     else          !GFS I/O
@@ -1890,43 +1577,45 @@ contains
      if (mype==mype_div) then
 !$omp parallel do private(k,grid,i,spec_work,grid2)
       do k=1,nsig
-             do i=1,nc
+             do i=1,nc_b
                 spec_work(i) = temp(i,k)
-                if(factsml(i))spec_work(i)=zero
+                if(factsml_b(i))spec_work(i)=zero
              end do
-             call sptez_s(spec_work,grid2,1)
+             call sptez_s_bkg(spec_work,grid2,1)
              call load_grid(work1_k(1,k),grid)
              grid=grid-grid2
-             call sptez_s(spec_work,grid,-1)
-             do i=1,nc
+             call sptez_s(spec_work_sm,grid,-1)
+             call sppad(0,jcap,spec_work_sm,0,jcap_b,spec_work)
+             do i=1,nc_b
                 temp(i,k) = temp(i,k) + spec_work(i)
-                if(factvml(i))temp(i,k)=zero_single
+                if(factvml_b(i))temp(i,k)=zero_single
              end do
       end do
 !$omp end parallel do
 !send sh back to mype_out
-       call mpi_send(temp,nc*nsig,mpi_rtype,mype_out,&
+       call mpi_send(temp,nc_b*nsig,mpi_rtype4,mype_out,&
                      itag_div,mpi_comm_world,ierror)
      endif
 
      if (mype==mype_vort) then
 !$omp parallel do private(k,grid,i,spec_work,grid2)
       do k=1,nsig
-             do i=1,nc
+             do i=1,nc_b
                 spec_work(i) = temp(i,k)
-                if(factsml(i))spec_work(i)=zero
+                if(factsml_b(i))spec_work(i)=zero
              end do
-             call sptez_s(spec_work,grid2,1)
+             call sptez_s_bkg(spec_work,grid2,1)
              call load_grid(work1_k(1,k),grid)
              grid=grid-grid2
-             call sptez_s(spec_work,grid,-1)
-             do i=1,nc
+             call sptez_s(spec_work_sm,grid,-1)
+             call sppad(0,jcap,spec_work_sm,0,jcap_b,spec_work)
+             do i=1,nc_b
                 temp(i,k) =temp(i,k) + spec_work(i)
-                if(factvml(i))temp(i,k)=zero_single
+                if(factvml_b(i))temp(i,k)=zero_single
              end do
       end do
 !$omp end parallel do
-       call mpi_send(temp,nc*nsig,mpi_rtype,mype_out,&
+       call mpi_send(temp,nc_b*nsig,mpi_rtype4,mype_out,&
                      itag_vort,mpi_comm_world,ierror)
      endif
     endif
@@ -2015,24 +1704,24 @@ contains
     if (mype==mype_out) then
       if (ncep_sigio) then
 !receive temperature from mype_th
-        call mpi_recv(sigdata%t,nc*nsig,mpi_rtype,mype_th,&
+        call mpi_recv(sigdata%t,nc_b*nsig,mpi_rtype4,mype_th,&
                       itag_th,mpi_comm_world,status,ierror)
 !receive specific humidity from mype_sh
-        call mpi_recv(sigdata%q(1,1,1),nc*nsig,mpi_rtype,mype_sh,&
+        call mpi_recv(sigdata%q(1,1,1),nc_b*nsig,mpi_rtype4,mype_sh,&
                       itag_sh,mpi_comm_world,status,ierror)
 !receive ozone from mype_oz
-        call mpi_recv(sigdata%q(1,1,2),nc*nsig,mpi_rtype,mype_oz,&
+        call mpi_recv(sigdata%q(1,1,2),nc_b*nsig,mpi_rtype4,mype_oz,&
                       itag_oz,mpi_comm_world,status,ierror)
 !receive cloud condensate mixing ratio from mype_clc
        if (ntracer>2 .or. ncloud>=1) then
-        call mpi_recv(sigdata%q(1,1,3),nc*nsig,mpi_rtype,mype_clc,&
+        call mpi_recv(sigdata%q(1,1,3),nc_b*nsig,mpi_rtype4,mype_clc,&
                       itag_clc,mpi_comm_world,status,ierror)
        endif 
 !receive divergence from mype_div
-       call mpi_recv(sigdata%d,nc*nsig,mpi_rtype,mype_div,&
+       call mpi_recv(sigdata%d,nc_b*nsig,mpi_rtype4,mype_div,&
                      itag_div,mpi_comm_world,status,ierror)
 !receive vorticity from mype_vort
-       call mpi_recv(sigdata%z,nc*nsig,mpi_rtype,mype_vort,&
+       call mpi_recv(sigdata%z,nc_b*nsig,mpi_rtype4,mype_vort,&
                      itag_vort,mpi_comm_world,status,ierror)
 !
           string='sigio'
@@ -2052,58 +1741,15 @@ contains
     return
   end subroutine write_gfsatm
 
-!-------------------------------------------------------------------------
-!    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
-!-------------------------------------------------------------------------
-!BOP
-!
-! !ROUTINE:  write_gfssfc --- Write surface analysis to file
-!
-! !INTERFACE:
-!
 
   subroutine write_gfssfc(filename,mype,mype_sfc,dsfct)
-
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    write_gfssfc --- Write surface analysis to file
 !
-! !USES:
+!   prgrmmr:     treadon -  initial version; org: np22
 !
-    use kinds, only: r_kind,r_single,i_kind
-  
-    use mpimod, only: mpi_rtype
-    use mpimod, only: mpi_comm_world
-    use mpimod, only: ierror
-    
-    use gridmod, only: nlat,nlon
-    use gridmod, only: lat1,lon1
-    use gridmod, only: lat2,lon2
-    use gridmod, only: iglobal
-    use gridmod, only: ijn
-    use gridmod, only: ltosi,ltosj
-    use gridmod, only: displs_g
-    use gridmod, only: itotsub
-    
-    use obsmod, only: iadate
-    
-    use constants, only: zero_single
-    
-    use sfcio_module, only: sfcio_intkind,sfcio_head,sfcio_data,&
-         sfcio_srohdc,sfcio_swohdc,sfcio_axdata
-    
-    implicit none
-!
-! !INPUT PARAMETERS:
-!
-    character(24),intent(in):: filename  ! file to open and write to
-
-    real(r_kind),dimension(lat2,lon2), intent(in) :: dsfct   ! delta skin temperature
-
-    integer(i_kind),              intent(in)  :: mype     ! mpi task number
-    integer(i_kind),              intent(in)  :: mype_sfc ! mpi task to write output file
-!
-! !OUTPUT PARAMETERS:
-!
-
-! !DESCRIPTION: This routine writes the updated surface analysis.  At
+! abstract:     This routine writes the updated surface analysis.  At
 !               this point (20040615) the only surface field update by 
 !               the gsi is the skin temperature.  The current (20040615)
 !               GDAS setup does use the updated surface file.  Rather,
@@ -2140,8 +1786,7 @@ contains
 !       data record 19    soil type
 !       data record 20    zenith angle dependent vegetation fraction (two types)
 !
-! !REVISION HISTORY:
-!
+! program history log:
 !   2004-06-15  treadon -  updated documentation
 !   2004-07-15  todling -  protex-compliant prologue; added intent/only's
 !   2004-12-03  treadon -  replace mpe_igatherv (IBM extension) with
@@ -2151,17 +1796,57 @@ contains
 !   2005-03-07  todling -  die gracefully when return error from sfcio
 !   2005-03-10  treadon - remove iadate from calling list, access via obsmod
 !   2006-10-11  treadon - update 10m wind factor in sfc file
+!   2008-05-28  safford - rm unused vars
 !
-! !REMARKS:
+!   input argument list:
+!     filename  - file to open and write to
+!     dsfct     - delta skin temperature
+!     mype      - mpi task number
+!     mype_sfc  - mpi task to write output file
 !
+!   output argument list:
+!
+! attributes:
 !   language: f90
 !   machines: ibm RS/6000 SP; SGI Origin 2000; Compaq HP
 !
-! !AUTHOR:
-!
-!   2003-07-03  treadon -  initial version; org: np22
-!
-!EOP
+!$$$ end documentation block
+
+! !USES:
+    use kinds, only: r_kind,r_single,i_kind
+  
+    use mpimod, only: mpi_rtype
+    use mpimod, only: mpi_comm_world
+    use mpimod, only: ierror
+    
+    use gridmod, only: nlat,nlon
+    use gridmod, only: lat1,lon1
+    use gridmod, only: lat2,lon2
+    use gridmod, only: iglobal
+    use gridmod, only: ijn
+    use gridmod, only: ltosi,ltosj
+    use gridmod, only: displs_g
+    use gridmod, only: itotsub
+    
+    use obsmod, only: iadate
+    
+    use constants, only: zero_single
+    
+    use sfcio_module, only: sfcio_intkind,sfcio_head,sfcio_data,&
+         sfcio_srohdc,sfcio_swohdc,sfcio_axdata
+    
+    implicit none
+
+! !INPUT PARAMETERS:
+    character(24),intent(in):: filename  ! file to open and write to
+
+    real(r_kind),dimension(lat2,lon2), intent(in) :: dsfct   ! delta skin temperature
+
+    integer(i_kind),              intent(in)  :: mype     ! mpi task number
+    integer(i_kind),              intent(in)  :: mype_sfc ! mpi task to write output file
+
+! !OUTPUT PARAMETERS:
+
 !-------------------------------------------------------------------------
 
 !   Declare local parameters
@@ -2174,8 +1859,7 @@ contains
 !   Declare local variables
     integer(sfcio_intkind):: iret
     integer(i_kind) latb,lonb,nlatm2
-    integer(i_kind) latd,lonl,version
-    integer(i_kind) i,j,k,ip1,jp1,ilat,ilon,jj,mm1
+    integer(i_kind) i,j,ip1,jp1,ilat,ilon,jj,mm1
 
     real(r_kind),dimension(nlon,nlat):: buffer
     real(r_kind),dimension(lat1,lon1):: sfcsub
@@ -2205,11 +1889,8 @@ contains
          sfcall,ijn,displs_g,mpi_rtype,mype_sfc,&
          mpi_comm_world,ierror)
 
-    
-
 !   Only MPI task mype_sfc writes the surface file.
     if (mype==mype_sfc) then
-
 
 !      Reorder updated skin temperature to output format
        do i=1,iglobal
@@ -2286,54 +1967,47 @@ contains
   end subroutine write_gfssfc
 
 
-!-------------------------------------------------------------------------
-!    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
-!-------------------------------------------------------------------------
-!BOP
-!
-! !ROUTINE:  reorder_gfsgrib --- transfer gfsgrib data 1d <--> 2d
-!
-! !INTERFACE:
-!
-
   subroutine reorder_gfsgrib(nx,ny,grid_1d,grid_2d)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    reorder_gfsgrib --- transfer gfsgrib data 1d <--> 2d
+!
+!   prgrmmr:     treadon -  initial version; org: np23
+!
+! abstract:      This routine transfers the contents of gfs grib arrays
+!                between 1d and 2d.
+!
+! program history log:
+!   2007-04-30  treadon -  original routine
+!   2008-05-28  safford -- add subprogram doc block
+!
+!   input argument list:
+!     nx        - number of grid points in zonal direction 
+!     ny        - number of grid points in meridional direction
+!     grid_1d   - 1d array
+!
+!   output argument list:
+!     grid_2d   - 2d array
+!
+! attributes:
+!   language: f90
+!   machines: ibm RS/6000 SP; SGI Origin 2000; Compaq HP
+!
+!$$$ end documentation block
 
-!
 ! !USES:
-!
     use kinds, only: r_kind,i_kind
     
     implicit none
-!
 ! !INPUT PARAMETERS:
-!
     integer(i_kind),intent(in):: nx      ! number of grid points in zonal direction 
     integer(i_kind),intent(in):: ny      ! number of grid points in meridional direction
 
     real(r_kind),dimension(nx*ny), intent(in)::  grid_1d   ! 1d array
+
+! !OUTPUT PARAMETERS:
     real(r_kind),dimension(nx,ny), intent(out):: grid_2d   ! 2d array
 
-!
-! !OUTPUT PARAMETERS:
-!
-
-! !DESCRIPTION: This routine transfers the contents of gfs grib arrays
-!               between 1d and 2d.
-!
-! !REVISION HISTORY:
-!
-!   2007-04-30  treadon -  original routine
-!
-! !REMARKS:
-!
-!   language: f90
-!   machines: ibm RS/6000 SP; SGI Origin 2000; Compaq HP
-!
-! !AUTHOR:
-!
-!   2007-04-30  treadon -  initial version; org: np23
-!
-!EOP
 !-------------------------------------------------------------------------
 
 !   Declare local variables
@@ -2355,30 +2029,45 @@ contains
     return
   end subroutine reorder_gfsgrib
 
-!-------------------------------------------------------------------------------
-!-------------------------------------------------------------------------
-!    NOAA/NCEP, National Centers for Environmental Prediction GSI        !
-!-------------------------------------------------------------------------
-!BOP
-!
-! !ROUTINE:  sfc_interpolate --- interpolates from analysis grid to surface grid
-!
-! !INTERFACE:
-!
 
   subroutine sfc_interpolate(a,na_lon,na_lat,b,ns_lon,ns_lat)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    sfc_interpolate --- interpolates from analysis grid to 
+!                                    surface grid
+!   prgrmmr:     derber -  initial version; org: np2
+!
+! abstract:      This routine interpolates a on analysis grid to b on 
+!                surface grid
+!
+! program history log:
+!   2008-02-26  derber  - original routine
+!   2008-05-28  safford - add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     na_lon  - number of longitude grid analysis 
+!     na_lat  - number of latitude grid analysis
+!     ns_lon  - number of longitude grid sfc 
+!     ns_lat  - number of latitude grid sfc
+!     a       - analysis values
+!
+!   output argument list:
+!     b       - surface values
+!
+! attributes:
+!   language: f90
+!   machines: ibm RS/6000 SP; SGI Origin 2000; Compaq HP
+!
+!$$$ end documentation block
 
-!
 ! !USES:
-!
     use kinds, only: r_kind,i_kind,r_single
     use constants, only: zero,one
     use gridmod, only: rlats,rlons,rlats_sfc,rlons_sfc
     
     implicit none
-!
+
 ! !INPUT PARAMETERS:
-!
     integer(i_kind),intent(in):: na_lon  ! number of longitude grid analysis 
     integer(i_kind),intent(in):: na_lat  ! number of latitude grid analysis
     integer(i_kind),intent(in):: ns_lon  ! number of longitude grid sfc 
@@ -2386,28 +2075,9 @@ contains
 
     real(r_kind),dimension(na_lon,na_lat), intent(in)::  a   ! analysis values
 
-!
 ! !OUTPUT PARAMETERS:
-!
     real(r_single),dimension(ns_lon,ns_lat), intent(out):: b   ! surface values
 
-! !DESCRIPTION: This routine interpolates a on analysis grid to b on surface grid
-!
-! !REVISION HISTORY:
-!
-!   2008-02-26  derber -  original routine
-!
-! !REMARKS:
-!
-!   language: f90
-!   machines: ibm RS/6000 SP; SGI Origin 2000; Compaq HP
-!
-! !AUTHOR:
-!
-!   2008-02-26  derber -  initial version; org: np2
-!
-!EOP
-!-------------------------------------------------------------------------
 
 !   Declare local variables
     integer(i_kind) i,j,ix,iy,ixp,iyp
@@ -2451,8 +2121,35 @@ contains
     return
   end subroutine sfc_interpolate
 
+
 !-------------------------------------------------------------------------------
   subroutine sigio_cnvtdv8(im,ix,km,idvc,idvm,ntrac,iret,t,q,cpi,cnflg)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    sigio_cnvtdv8
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-05-28  safford -- add subprogram doc block
+!
+!   input argument list:
+!     im,ix,km,idvc,idvm,ntrac,cnflg
+!     q, cpi
+!     t
+!
+!   output argument list:
+!     iret
+!     t
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
     use kinds, only: i_kind,r_kind
     use constants, only: zero,one,fv
     implicit none
@@ -2463,6 +2160,7 @@ contains
     integer(i_kind)                  :: thermodyn_id, n
     real(r_kind)                     :: xcp(ix,km), sumq(ix,km)
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    iret=0
     thermodyn_id = mod(IDVM/10,10)
 !
     if (thermodyn_id == 3 .and. idvc == 3) then

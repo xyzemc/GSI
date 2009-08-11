@@ -22,6 +22,8 @@ subroutine read_superwinds(nread,ndata,nodata,infile,obstype,lunout, &
 !   2006-02-03  derber  - modify for new obs control and obs count
 !   2006-02-08  derber  - modify to use new convinfo module
 !   2006-02-24  derber  - modify to take advantage of convinfo module
+!   2007-03-01  tremolet - measure time from beginning of assimilation window
+!   2008-04-17  safford - rm unused vars
 !
 !   input argument list:
 !     nread    - counter for all data on this pe
@@ -78,14 +80,15 @@ subroutine read_superwinds(nread,ndata,nodata,infile,obstype,lunout, &
   use convinfo, only: nconvtype,ctwind,cgross,cermax,cermin,cvar_b,cvar_pg, &
         ncmiter,ncgroup,ncnumgrp,icuse,ictype,icsubtype,ioctype
   use obsmod, only: iadate,offtime_data
+  use gsi_4dvar, only: iadatebgn,iadateend,l4dvar,idmodel,winlen,time_4dvar
   implicit none
 
 ! Declare local parameters
   real(r_kind),parameter:: r360=360.0_r_kind
 
 ! Declare passed variables
-  character(10),intent(in):: obstype,infile
-  character(20),intent(in):: sis
+  character(len=*),intent(in):: obstype,infile
+  character(len=*),intent(in):: sis
   real(r_kind),intent(in):: twind
   integer(i_kind),intent(in):: lunout
   integer(i_kind),intent(inout):: nread,ndata,nodata
@@ -93,18 +96,18 @@ subroutine read_superwinds(nread,ndata,nodata,infile,obstype,lunout, &
 ! Declare local variables  
   logical outside
   integer(i_kind) ndata_in,iord_in,iuvw_in,nbar_in,ithin
-  integer(i_kind) iyref,imref,idref,ihref
+  integer(i_kind) iyref,imref,idref,ihref,idate
   real(r_single)suplon0,suplat0,suphgt,suptime0,supyhat(2),suprhat(2),supbigu(2,2)
   real(r_single)suptime,supid(2)
   real(r_kind) supid8
   equivalence(supid(1),supid8)
   real(r_kind) rstation_id,rmesh,usage
   real(r_kind),allocatable,dimension(:,:):: cdata_all
-  integer(i_kind) lnbufr,nmrecs,i,maxobs,ikx,idomsfc
+  integer(i_kind) lnbufr,i,maxobs,ikx,idomsfc
   integer(i_kind) ilon,ilat,k,icount,nchanl,nreal
 
-  real(r_kind) dlat,dlon,dlat_earth,dlon_earth,sfcr,skint,ff10
-  real(r_kind) u0,v0,superror,uob,vob,rlat,rlon,rlat0,rlon0,superrinv(2)
+  real(r_kind) dlat,dlon,dlat_earth,dlon_earth,sfcr,skint,ff10,t4dv,toff
+  real(r_kind) u0,v0,superror,uob,vob,superrinv(2)
 
   integer(i_kind) idate5(5),minobs,minan
   real(r_kind) time_correction
@@ -157,9 +160,10 @@ subroutine read_superwinds(nread,ndata,nodata,infile,obstype,lunout, &
   else
      time_correction=zero
   end if
-  write(6,*)'READ_SUPERWINDS: input file date is ',iyref,imref,idref,ihref
-  if(iyref/=iadate(1).or.imref/=iadate(2).or.idref/=iadate(3).or.&
-       ihref/=iadate(4)) then
+  idate=1000000*iyref+10000*imref+100*idref+ihref
+  call time_4dvar(idate,toff)
+  write(6,*)'READ_SUPERWINDS: input file date is ',idate
+  if (idate<iadatebgn.OR.idate>iadateend) THEN
      if(offtime_data) then
           write(6,*)'***allow off time READ_PREPBUFR file ',&
              'observation date/time and time_correction follow:'
@@ -167,13 +171,16 @@ subroutine read_superwinds(nread,ndata,nodata,infile,obstype,lunout, &
        write(6,*)'***READ_SUPERWINDS ERROR*** incompatable analysis ',&
           'and observation date/time'
      end if
+     write(6,*)'Analysis start  :',iadatebgn
+     write(6,*)'Analysis end    :',iadateend
+     write(6,*)'Observation time:',idate
      write(6,*)' year  anal/obs ',iadate(1),iyref
      write(6,*)' month anal/obs ',iadate(2),imref
      write(6,*)' day   anal/obs ',iadate(3),idref
      write(6,*)' hour  anal/obs ',iadate(4),ihref
      if(offtime_data) write(6,'(" time_correction = ",f12.2)') time_correction
      if(.not.offtime_data) call stop2(92)
-  end if
+  endif
   rstation_id=999.
   write(6,*)'READ_SUPERWINDS:  ndata_in,iord_in,iuvw_in,nbar_in =', &
        ndata_in,iord_in,iuvw_in,nbar_in
@@ -188,9 +195,14 @@ subroutine read_superwinds(nread,ndata,nodata,infile,obstype,lunout, &
   do icount=1,ndata_in
      nread=nread+2
      read(lnbufr)suplon0,suplat0,suphgt,suptime0,supyhat,suprhat,supbigu,supid
-     suptime=suptime0+time_correction
-                         
-     if(abs(suptime) > ctwind(ikx) .or. abs(suptime) > twind)cycle
+
+     t4dv = toff + suptime0
+     if (l4dvar) then
+       if (t4dv<zero .OR. t4dv>winlen) cycle
+     else
+       suptime=suptime0 + time_correction
+       if(abs(suptime) > ctwind(ikx) .or. abs(suptime) > twind)cycle
+     endif
      dlat_earth = suplat0
      dlon_earth = suplon0
      if (dlon_earth>=r360) dlon_earth = dlon_earth - r360
@@ -252,13 +264,13 @@ subroutine read_superwinds(nread,ndata,nodata,infile,obstype,lunout, &
        if(mod(ndata,ncnumgrp(ikx))== ncgroup(ikx)-1)usage=ncmiter(ikx)
      end if
 
-     call deter_sfc2(dlat_earth,dlon_earth,suptime,idomsfc,skint,ff10,sfcr)
+     call deter_sfc2(dlat_earth,dlon_earth,t4dv,idomsfc,skint,ff10,sfcr)
 
 !    Load superobs wind data into output array
      cdata_all(1,ndata)=dlon     ! grid relative longitude
      cdata_all(2,ndata)=dlat     ! grid relative latitude
      cdata_all(3,ndata)=suphgt
-     cdata_all(4,ndata)=suptime
+     cdata_all(4,ndata)=t4dv
      cdata_all(5,ndata)=supyhat(1)*superrinv(1)
      cdata_all(6,ndata)=supyhat(2)*superrinv(2)
      cdata_all(7,ndata)=superror

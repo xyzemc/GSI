@@ -25,6 +25,7 @@ module berror
 !   2005-11-29  derber -  remove set_ozone_var (included in prewgt_reg and prewgt)
 !   2006-01-09  derber - remove set_nrh_var and move capability to compute_derived
 !   2006-04-21  kleist - add capability to perturb background error parameters 
+!   2006-11-30  todling - add fpsproj to control full nsig projection onto ps
 !   2007-03-13  derber - add qvar3d array to allow qoption=2 to work similar to others
 !   2007-07-03  kleist - add variables for flow-dependent background error variances
 !
@@ -91,6 +92,7 @@ module berror
 !   def pert_berr_fct - scaling factor for randum numbers for berror perturbations 
 !   def bkgv_flowdep  - logical to turn on flow-dependence to background error variances
 !   def bkgv_rewgtfct - scaling factor to reweight flow-dependent background error variances
+!   def fpsproj   - controls full nsig projection onto surface pressure
 !   def bkgv_write- logical to turn on/off generation of binary file with reweighted variances
 !
 ! attributes:
@@ -122,8 +124,10 @@ module berror
   logical pert_berr,bkgv_flowdep,bkgv_write
   real(r_kind) pert_berr_fct,bkgv_rewgtfct
 
+  logical,save :: fpsproj
 
 contains
+
   subroutine init_berror
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -136,6 +140,7 @@ contains
 !   2004-01-01  kleist
 !   2004-11-03  treadon - add default definition for horizontal scale weighting factors
 !   2005-06-06  wu - add logical fstat
+!   2006-11-30  todling - add logical fpsproj
 !
 !   input argument list:
 !
@@ -165,6 +170,8 @@ contains
 
     bw=zero
 
+    fpsproj = .true.
+
     do i=1,10
        as(i)=0.60_r_kind
     end do
@@ -181,6 +188,7 @@ contains
 
   return
   end subroutine init_berror
+
 
   subroutine create_berror_vars
 !$$$  subprogram documentation block
@@ -205,8 +213,9 @@ contains
 !
 !$$$
   use balmod, only: llmin,llmax
-  use gridmod, only: nlat,nlon,lat2,lon2,nsig,nsig1o
+  use gridmod, only: nlat,nlon,lat2,lon2,nsig,nnnn1o
   use jfunc, only: nrclen
+  use constants, only: zero
   implicit none
   
   llmin=1
@@ -235,19 +244,21 @@ contains
            qvar3d(lat2,lon2,nsig),&
            dssvp(lat2,lon2),&
            dssvt(lat2,lon2,3))
+  dssvt = zero
   allocate(varprd(nrclen))
   allocate(inaxs(nf,nlon/8), &
            inxrs(nlon/8,mr:nr) )
 
-  allocate(slw(ny*nx,nsig1o),&
-           slw1((2*nf+1)*(2*nf+1),nsig1o),&
-           slw2((2*nf+1)*(2*nf+1),nsig1o))
-  allocate(ii(ny,nx,3,nsig1o),jj(ny,nx,3,nsig1o),&
-           ii1(2*nf+1,2*nf+1,3,nsig1o),jj1(2*nf+1,2*nf+1,3,nsig1o),&
-           ii2(2*nf+1,2*nf+1,3,nsig1o),jj2(2*nf+1,2*nf+1,3,nsig1o))
+  allocate(slw(ny*nx,nnnn1o),&
+           slw1((2*nf+1)*(2*nf+1),nnnn1o),&
+           slw2((2*nf+1)*(2*nf+1),nnnn1o))
+  allocate(ii(ny,nx,3,nnnn1o),jj(ny,nx,3,nnnn1o),&
+           ii1(2*nf+1,2*nf+1,3,nnnn1o),jj1(2*nf+1,2*nf+1,3,nnnn1o),&
+           ii2(2*nf+1,2*nf+1,3,nnnn1o),jj2(2*nf+1,2*nf+1,3,nnnn1o))
 
   return
  end subroutine create_berror_vars
+
 
   subroutine destroy_berror_vars
 !$$$  subprogram documentation block
@@ -278,6 +289,7 @@ contains
     deallocate(ii,jj,ii1,jj1,ii2,jj2)
     return
   end subroutine destroy_berror_vars
+
 
   subroutine set_predictors_var
 !$$$  subprogram documentation block
@@ -317,7 +329,8 @@ contains
     return
   end subroutine set_predictors_var
 
-  subroutine init_rftable(mype,rate,sli,sli1,sli2)
+
+  subroutine init_rftable(mype,rate,nnn,sli,sli1,sli2)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    init_rftable    initializes constants for the background error
@@ -331,6 +344,8 @@ contains
 !                        reproducible with different number of processors and
 !                        save only those elements of table which are used
 !   2005-06-10  devenyi/treadon - remove mype from call rfdparv
+!   2008-06-05  safford - rm unused uses
+!   2009-03-09  derber  - modify to make arrays smaller
 !
 !   input argument list:
 !     sli      - horizontal scale info for 1st patch
@@ -345,9 +360,9 @@ contains
 !
 !$$$
     use kinds, only: i_kind,r_kind
-    use gridmod, only:  nsig,nsig1o,regional
-    use mpimod, only:  levs_id,npe
-    use constants, only: zero,one,two,four
+    use gridmod, only:  regional
+    use mpimod, only:  levs_id
+    use constants, only: zero,one
     implicit none
 
     real(r_kind),parameter:: tin = 0.2e-3_r_kind
@@ -356,8 +371,8 @@ contains
     integer(i_kind) nnn,mype,ihwlb
     integer(i_kind) nfg,ntax,iloc
     
-    real(r_kind),optional,dimension((2*nf+1)*(2*nf+1),3,nsig1o):: sli1,sli2
-    real(r_kind),dimension(ny*nx,3,nsig1o):: sli
+    real(r_kind),optional,dimension((2*nf+1)*(2*nf+1),2,nnn):: sli1,sli2
+    real(r_kind),dimension(ny*nx,2,nnn):: sli
     real(r_kind),dimension(ndeg):: rate
     real(r_kind):: hwlmax,hwlmin,hwlb,hwle,wni2
     real(r_kind),parameter:: r999         = 999.0_r_kind
@@ -376,44 +391,31 @@ contains
       nfnf=nfg*nfg
     end if
 
-    nnn=0
-    do k=1,nsig1o
-      if (levs_id(k)/=0) nnn=nnn+1
-    end do
-
 ! Determine lower/upper bounds on scales
     hwlmax=-r999
     hwlmin=r999
     do k=1,nnn
 
-!       Load slw arrays
         do j=1,nynx
-           slw(j,k)=sli(j,1,k)
-        end do
-        do j=1,nynx
-           hwlmax=max(hwlmax,sli(j,2,k))
-           hwlmin=min(hwlmin,sli(j,2,k))
-        end do
-        do j=1,nynx
-           hwlmax=max(hwlmax,sli(j,3,k))
-           hwlmin=min(hwlmin,sli(j,3,k))
+           hwlmax=max(hwlmax,sli(j,1,k),sli(j,2,k))
+           hwlmin=min(hwlmin,sli(j,1,k),sli(j,2,k))
+!          hwlmax=max(hwlmax,sli(j,1,k))
+!          hwlmin=min(hwlmin,sli(j,1,k))
+!          hwlmax=max(hwlmax,sli(j,2,k))
+!          hwlmin=min(hwlmin,sli(j,2,k))
         end do
         if(.not. regional)then
           do j=1,nfnf
-           slw1(j,k) = sli1(j,1,k)
-           slw2(j,k) = sli2(j,1,k)
-          end do
-          do j=1,nfnf
-           hwlmax=max(hwlmax,sli1(j,2,k))
-           hwlmin=min(hwlmin,sli1(j,2,k))
-           hwlmax=max(hwlmax,sli2(j,2,k))
-           hwlmin=min(hwlmin,sli2(j,2,k))
-          end do
-          do j=1,nfnf
-           hwlmax=max(hwlmax,sli1(j,3,k))
-           hwlmin=min(hwlmin,sli1(j,3,k))
-           hwlmax=max(hwlmax,sli2(j,3,k))
-           hwlmin=min(hwlmin,sli2(j,3,k))
+           hwlmax=max(hwlmax,sli1(j,1,k),sli2(j,1,k),sli1(j,2,k),sli2(j,2,k))
+           hwlmin=min(hwlmin,sli1(j,1,k),sli2(j,1,k),sli1(j,2,k),sli2(j,2,k))
+!          hwlmax=max(hwlmax,sli1(j,1,k))
+!          hwlmin=min(hwlmin,sli1(j,1,k))
+!          hwlmax=max(hwlmax,sli2(j,1,k))
+!          hwlmin=min(hwlmin,sli2(j,1,k))
+!          hwlmax=max(hwlmax,sli1(j,2,k))
+!          hwlmin=min(hwlmin,sli1(j,2,k))
+!          hwlmax=max(hwlmax,sli2(j,2,k))
+!          hwlmin=min(hwlmin,sli2(j,2,k))
           end do
         end if
     enddo
@@ -444,7 +446,7 @@ contains
     iuse=.false.
     wni2=one/tin
     do k=1,nnn
-        do n=2,3
+        do n=1,2
            do i=1,nynx
              do j=1,3
                iloc=min(ntax,nint(one-ihwlb+wni2/(hzscl(j)*sli(i,n,k))))
@@ -525,6 +527,7 @@ contains
 ! program history log:
 !   2004-01-01  kleist
 !   2004-11-22  derber  - modify to be consistent with init_rftable
+!   2008-06-05  safford - rm unused var
 !
 !   input argument list:
 !     nxdim    - 1st dimension of arrays
@@ -550,21 +553,21 @@ contains
     use constants, only: one
     implicit none
 
-    integer(i_kind) iy,nydim,ix,nxdim,im,nta,iloc,ntax
+    integer(i_kind) iy,nydim,ix,nxdim,nta,iloc,ntax
     integer(i_kind),dimension(nxdim,nydim):: iix,jjx
     integer(i_kind),dimension(ntax):: ipoint
     integer(i_kind) ihwlb
 
     real(r_kind) wni2,factor,tin
-    real(r_kind),dimension(nxdim,nydim,3):: sli
+    real(r_kind),dimension(nxdim,nydim,2):: sli
 
 !   Load pointers for table array
     wni2=one/tin
     do iy=1,nydim
        do ix=1,nxdim
-         iloc=min(ntax, max(1, nint(one-ihwlb+wni2/(sli(ix,iy,2)*factor))))
+         iloc=min(ntax, max(1, nint(one-ihwlb+wni2/(sli(ix,iy,1)*factor))))
          iix(ix,iy)=ipoint(iloc)
-         iloc=min(ntax, max(1, nint(one-ihwlb+wni2/(sli(ix,iy,3)*factor))))
+         iloc=min(ntax, max(1, nint(one-ihwlb+wni2/(sli(ix,iy,2)*factor))))
          jjx(ix,iy)=ipoint(iloc)
        enddo
     enddo
@@ -572,7 +575,8 @@ contains
     return
   end subroutine initable
 
-  subroutine create_berror_vars_reg(mype)
+
+  subroutine create_berror_vars_reg
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    create_berror_vars_reg  create arrays for reg background error
@@ -587,6 +591,7 @@ contains
 !   2005-05-24  pondeca - take into consideration that npred=npredp=0
 !                         for 2dvar only surface analysis option
 !   2005-06-23  middlecoff/treadon - iniitalize mr,nr,nf
+!   2009-01-04  todling - remove mype
 !
 !   input argument list:
 !
@@ -600,11 +605,9 @@ contains
 !$$$
     use kinds, only: i_kind
     use balmod, only: llmin,llmax
-    use gridmod, only: nlat,nlon,nsig,nsig1o,lat2,lon2
+    use gridmod, only: nlat,nlon,nsig,nnnn1o,lat2,lon2
     use jfunc, only: nrclen
     implicit none
-    
-    integer(i_kind),intent(in):: mype
     
     nx=nlon
     ny=nlat
@@ -623,12 +626,13 @@ contains
     
     allocate(varprd(max(1,nrclen) ) )     
 
-    allocate(slw(ny*nx,nsig1o) )
-    allocate(ii(ny,nx,3,nsig1o),jj(ny,nx,3,nsig1o) )
+    allocate(slw(ny*nx,nnnn1o) )
+    allocate(ii(ny,nx,3,nnnn1o),jj(ny,nx,3,nnnn1o) )
     
     
     return
   end subroutine create_berror_vars_reg
+
 
   subroutine destroy_berror_vars_reg
 !$$$  subprogram documentation block

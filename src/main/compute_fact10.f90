@@ -8,6 +8,7 @@ subroutine compute_fact10(u,v,t,q,ps,prsi1,prsi2,skint,z0rl,islimsk,f10m)
 !
 ! program history log:
 !   2006-09-28 treadon - initial routine
+!   2008-06-05 safford - rm unused vars and uses, comment out unused params
 !
 !   input argument list:
 !      u       - u wind component (2d field, 1st model layer)
@@ -28,12 +29,11 @@ subroutine compute_fact10(u,v,t,q,ps,prsi1,prsi2,skint,z0rl,islimsk,f10m)
 !   language: f90
 !   machine:  ibm RS/6000 SP
 !
-!$$$
+!$$$ end documentation block
 
   use kinds, only: r_kind,i_kind
   use constants, only: grav,zero,half,one,two,four,quarter,izero,&
        fv,rd,rd_over_cp
-  use gridmod, only: lat2,lon2,nsig
   implicit none
 
 ! Passed Variables
@@ -43,7 +43,6 @@ subroutine compute_fact10(u,v,t,q,ps,prsi1,prsi2,skint,z0rl,islimsk,f10m)
   real(r_kind),intent(in):: prsi1,prsi2
 
 ! Local Variables
-  integer(i_kind) i,j,k
   real(r_kind):: prsl,prkl
   real(r_kind):: prki1,prki2
   real(r_kind):: q0,tem,del,rkap,rkapi,rkapp1
@@ -51,13 +50,12 @@ subroutine compute_fact10(u,v,t,q,ps,prsi1,prsi2,skint,z0rl,islimsk,f10m)
        rat,thv1,theta1,tvs,dtv,rb,fm,fh,hlinf, &
        hl1,pm,ph,pm10,hl12,ph2,fm10
   real(r_kind):: psurf,ps1
-  real(r_kind):: cm,ffmmin
   real(r_kind) restar,aa0,bb0,fhs,fms,hl0,hlt,adtv,bb,aa,hl0inf,hltinf,&
-       hl110,olinf,lnsig
+       hl110,olinf
 
 ! Local Parameters
   real(r_kind),parameter::  charnok=0.014_r_kind
-  real(r_kind),parameter::  ca=0.4_r_kind
+! real(r_kind),parameter::  ca=0.4_r_kind
   real(r_kind),parameter::  alpha=5.0_r_kind
   real(r_kind),parameter::  a0=-3.975_r_kind
   real(r_kind),parameter::  a1=12.32_r_kind
@@ -68,13 +66,13 @@ subroutine compute_fact10(u,v,t,q,ps,prsi1,prsi2,skint,z0rl,islimsk,f10m)
   real(r_kind),parameter::  b1p=-8.705_r_kind
   real(r_kind),parameter::  b2p=7.899_r_kind 
   real(r_kind),parameter::  vis=1.4e-5_r_kind
-  real(r_kind),parameter::  aa1=-1.076_r_kind
-  real(r_kind),parameter::  bb1=0.7045_r_kind
-  real(r_kind),parameter::  cc1=-0.05808_r_kind
-  real(r_kind),parameter::  bb2=-0.1954_r_kind
-  real(r_kind),parameter::  cc2=0.009999_r_kind
-  real(r_kind),parameter::  rnu=1.51e-5_r_kind
-  real(r_kind),parameter::  arnu=0.135_r_kind*rnu
+! real(r_kind),parameter::  aa1=-1.076_r_kind
+! real(r_kind),parameter::  bb1=0.7045_r_kind
+! real(r_kind),parameter::  cc1=-0.05808_r_kind
+! real(r_kind),parameter::  bb2=-0.1954_r_kind
+! real(r_kind),parameter::  cc2=0.009999_r_kind
+! real(r_kind),parameter::  rnu=1.51e-5_r_kind
+! real(r_kind),parameter::  arnu=0.135_r_kind*rnu
   real(r_kind),parameter::  ten=10.0_r_kind
 
 

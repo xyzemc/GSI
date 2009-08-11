@@ -15,6 +15,8 @@ module pcpinfo
 !   2006-02-03  derber  - modify for new obs control and obs count
 !   2006-04-27  derber - remove jppfp
 !   2007-01-19  treadon - remove tinym1_obs since no longer used
+!   2008-04-29  safford - rm unused uses
+!   2009-01-23  todling - place back tinym1_obs since need for ltlint option
 !
 ! Subroutines Included:
 !   sub init_pcp          - initialize pcp related variables to defaults
@@ -31,6 +33,7 @@ module pcpinfo
 !   def deltim      - model timestep
 !   def dtphys      - relaxation time scale for convection
 !   def tiny_obs    - used to check whether or not to include pcp forcing
+!   def tinym1_obs  - small number (tiny_obs) minus one
 !   def varchp      - precipitation rate observation error
 !   def gross_pcp   - gross error for precip obs      
 !   def b_pcp       - b value for variational QC      
@@ -53,7 +56,7 @@ module pcpinfo
   logical diag_pcp
   integer(i_kind) npredp,npcptype,mype_pcp
   real(r_kind) deltim,dtphys
-  real(r_kind) tiny_obs
+  real(r_kind) tinym1_obs,tiny_obs
   real(r_kind),allocatable,dimension(:):: varchp,gross_pcp,b_pcp,pg_pcp
   real(r_kind),allocatable,dimension(:,:):: predxp ,xkt2d
   integer(i_kind),allocatable,dimension(:):: iusep,ibias
@@ -83,8 +86,7 @@ contains
 !   machine:  ibm rs/6000 sp
 !
 !$$$
-    use constants, only: one
-    use constants, only: r3600
+    use constants, only: r3600,one
     implicit none
     real(r_kind),parameter:: r1200=1200.0_r_kind
 
@@ -96,7 +98,8 @@ contains
     mype_pcp  = 0      ! task to print pcp info to.  Note that mype_pcp MUST equal
                        !    mype_rad (see radinfo.f90) in order for statspcp.f90
                        !    to print out the correct information          
-	tiny_obs = 1.e-9_r_kind   ! "small" observation
+    tiny_obs = 1.e-9_r_kind   ! "small" observation
+    tinym1_obs = tiny_obs - one
   end subroutine init_pcp
 
   subroutine pcpinfo_read(mype)
@@ -115,6 +118,8 @@ contains
 !   2004-05-13  treadon, documentation
 !   2004-08-04  treadon - add only on use declarations; add intent in/out
 !   2005-10-11  treadon - change pcpinfo read to free format
+!   2008-04-29  safford - rm redundent uses
+!   2008-10-10  derber  - flip indices for predxp
 !
 !   input argument list:
 !      mype - mpi task id
@@ -126,7 +131,6 @@ contains
 !   machine:  ibm rs/6000 sp
 !
 !$$$
-    use kinds, only: r_kind,i_kind
     use constants, only: zero
     use obsmod, only: iout_pcp
     implicit none
@@ -138,7 +142,7 @@ contains
     logical lexist
     character(len=1):: cflg
     character(len=120) crecord
-    integer(i_kind) lunin,i,j,k,istat,nlines,jtyp
+    integer(i_kind) lunin,i,j,k,istat,nlines
     real(r_kind),dimension(npredp):: predrp
 
     data lunin / 48 /
@@ -196,9 +200,9 @@ contains
          f7.3,' gross = ',f7.3,' b_pcp = ',f7.3, ' pg_pcp = ',f7.3)
 
     
-    allocate(predxp(npcptype,npredp))
-    do j=1,npredp
-       do i=1,npcptype
+    allocate(predxp(npredp,npcptype))
+    do j=1,npcptype
+       do i=1,npredp
           predxp(i,j)=zero
        end do
     end do
@@ -212,9 +216,9 @@ contains
           read(lunin,'(I5,10f12.6)') i,(predrp(j),j=1,npredp)
           if (istat /= 0) exit
           do j=1,npredp
-             predxp(i,j)=predrp(j)
+             predxp(j,i)=predrp(j)
           end do
-          if(mype==mype_pcp) write(iout_pcp,140) i,(predxp(i,j),j=1,npredp)
+          if(mype==mype_pcp) write(iout_pcp,140) i,(predxp(j,i),j=1,npredp)
        end do read2
 140    format(1x,'npcptype=',i3,10f12.6)
        close(lunin)
@@ -237,6 +241,7 @@ contains
 ! program history log:
 !   2003-09-25  treadon
 !   2004-05-13  treadon, documentation
+!   2008-10-10  derber  - flip indices for predxp
 !
 !   input argument list:
 !
@@ -248,13 +253,13 @@ contains
 !
 !$$$
     implicit none
-    integer(i_kind) iobcof,itype,ityp,ip
+    integer(i_kind) iobcof,ityp,ip
 
     iobcof=52
     open(iobcof,file='pcpbias_out',form='formatted')
     rewind iobcof
     do ityp=1,npcptype
-       write(iobcof,'(I5,10f12.6)') ityp,(predxp(ityp,ip),ip=1,npredp)
+       write(iobcof,'(I5,10f12.6)') ityp,(predxp(ip,ityp),ip=1,npredp)
     end do
     close(iobcof)
     return

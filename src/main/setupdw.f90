@@ -24,12 +24,14 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
   use constants, only: grav_ratio,flattening,grav,zero,rad2deg,deg2rad, &
        grav_equator,one,two,somigliana,semi_major_axis,eccentricity,r1000,&
        wgtlim
-  use constants, only: tiny_r_kind,one_tenth,half,cg_term,huge_single,r3600
+  use constants, only: tiny_r_kind,one_tenth,half,cg_term,huge_single
 
-  use obsmod, only: rmiss_single,dwtail,dwhead
+  use obsmod, only: rmiss_single,dwtail,dwhead,i_dw_ob_type,obsdiags,&
+                    lobsdiagsave,nobskeep,lobsdiag_allocated,time_offset,&
+                    time_offset
+  use gsi_4dvar, only: nobs_bins,hr_obsbin
 
-  use jfunc, only: last, jiter
-  use jfunc, only: l_foto     
+  use jfunc, only: last, jiter, miter
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype
   use convinfo, only: icsubtype
 
@@ -83,7 +85,12 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
 !                       - unify NL qc
 !   2006-07-31  kleist - use ges_ps
 !   2006-08-28      su - fix a bug in variational qc
+!   2007-03-19  tremolet - binning of observations
+!   2007-06-05  tremolet - add observation diagnostics structure
 !   2007-08-28      su - modify the gross check error 
+!   2008-05-23  safford - rm unused vars
+!   2008-12-03  todling - changed handle of tail%time
+!   2009-03-19  mccarty - set initial obs error to that from bufr
 !
 ! !REMARKS:
 !   language: f90
@@ -105,12 +112,12 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
   real(r_double) rstation_id
   real(r_kind) sinazm,cosazm,scale
   real(r_kind) ratio_errors,dlat,dlon,dtime,error,dpres
-  real(r_kind) dlnp,pobl,rhgh,rsig,rlow,rlat00,rlon00
-  real(r_kind) rlat,rlon,zob,termrg,dz,termr,sin2,termg
+  real(r_kind) dlnp,pobl,rhgh,rsig,rlow
+  real(r_kind) zob,termrg,dz,termr,sin2,termg
   real(r_kind) sfcchk,slat,psges,dwwind
   real(r_kind) ugesindw,vgesindw,factw,presw
   real(r_kind) residual,obserrlm,obserror,ratio,val2
-  real(r_kind) dx,dy,ds,dx1,dy1,ds1,ress,ressw
+  real(r_kind) ress,ressw
   real(r_kind) val,valqc,ddiff,rwgt,sfcr,skint
   real(r_kind) cg_dw,wgross,wnotgross,wgt,arg,term,exp_arg,rat_err2
   real(r_kind) errinv_input,errinv_adjst,errinv_final
@@ -120,9 +127,9 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
   real(r_kind),dimension(nsig):: hges,zges,prsltmp
   real(r_single),allocatable,dimension(:,:)::rdiagbuf
 
-  integer(i_kind) mm1,ikxx,nn,isli
-  integer(i_kind) itype,jlat,jlon,jsig
-  integer(i_kind) nx,i,nchar,nreal,k,j,k1,n,nstart,jj,l,ii,k2
+  integer(i_kind) mm1,ikxx,nn,isli,ibin,ioff
+  integer(i_kind) jsig
+  integer(i_kind) i,nchar,nreal,k,j,k1,jj,l,ii,k2
   integer(i_kind) ier,ilon,ilat,ihgt,ilob,id,itime,ikx,iatd,inls,incls
   integer(i_kind) iazm,ielva,iuse,ilate,ilone,istat
   integer(i_kind) idomsfc,isfcr,iff10,iskint
@@ -185,6 +192,7 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
      ii=0
      nchar=1
      nreal=26
+     if (lobsdiagsave) nreal=nreal+4*miter+1
      allocate(cdiagbuf(nobs),rdiagbuf(nreal,nobs))
   end if
 
@@ -199,6 +207,55 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
      dpres=data(ihgt,i)
      dtime=data(itime,i)
      ikx=nint(data(ikxx,i))
+
+!    Link observation to appropriate observation bin
+     if (nobs_bins>1) then
+       ibin = NINT( dtime/hr_obsbin ) + 1
+     else
+       ibin = 1
+     endif
+     IF (ibin<1.OR.ibin>nobs_bins) write(6,*)mype,'Error nobs_bins,ibin= ',nobs_bins,ibin
+
+!    Link obs to diagnostics structure
+     if (.not.lobsdiag_allocated) then
+       if (.not.associated(obsdiags(i_dw_ob_type,ibin)%head)) then
+         allocate(obsdiags(i_dw_ob_type,ibin)%head,stat=istat)
+         if (istat/=0) then
+           write(6,*)'setupdw: failure to allocate obsdiags',istat
+           call stop2(253)
+         end if
+         obsdiags(i_dw_ob_type,ibin)%tail => obsdiags(i_dw_ob_type,ibin)%head
+       else
+         allocate(obsdiags(i_dw_ob_type,ibin)%tail%next,stat=istat)
+         if (istat/=0) then
+           write(6,*)'setupdw: failure to allocate obsdiags',istat
+           call stop2(254)
+         end if
+         obsdiags(i_dw_ob_type,ibin)%tail => obsdiags(i_dw_ob_type,ibin)%tail%next
+       end if
+       allocate(obsdiags(i_dw_ob_type,ibin)%tail%muse(miter+1))
+       allocate(obsdiags(i_dw_ob_type,ibin)%tail%nldepart(miter+1))
+       allocate(obsdiags(i_dw_ob_type,ibin)%tail%tldepart(miter))
+       allocate(obsdiags(i_dw_ob_type,ibin)%tail%obssen(miter))
+       obsdiags(i_dw_ob_type,ibin)%tail%indxglb=i
+       obsdiags(i_dw_ob_type,ibin)%tail%nchnperobs=-99999
+       obsdiags(i_dw_ob_type,ibin)%tail%luse=.false.
+       obsdiags(i_dw_ob_type,ibin)%tail%muse(:)=.false.
+       obsdiags(i_dw_ob_type,ibin)%tail%nldepart(:)=-huge(zero)
+       obsdiags(i_dw_ob_type,ibin)%tail%tldepart(:)=zero
+       obsdiags(i_dw_ob_type,ibin)%tail%wgtjo=-huge(zero)
+       obsdiags(i_dw_ob_type,ibin)%tail%obssen(:)=zero
+     else
+       if (.not.associated(obsdiags(i_dw_ob_type,ibin)%tail)) then
+         obsdiags(i_dw_ob_type,ibin)%tail => obsdiags(i_dw_ob_type,ibin)%head
+       else
+         obsdiags(i_dw_ob_type,ibin)%tail => obsdiags(i_dw_ob_type,ibin)%tail%next
+       end if
+       if (obsdiags(i_dw_ob_type,ibin)%tail%indxglb/=i) then
+         write(6,*)'setupdw: index error'
+         call stop2(255)
+       end if
+     endif
 
 ! Save observation latitude.  This is needed when converting 
 ! geopotential to geometric height (hges --> zges below)
@@ -295,10 +352,14 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
       if(rlow/=zero) awork(3)=awork(3)+one
     end if
 
-! Adjust observation error.
-! Variable repe_dw contains a value which should be tuned to
-! account for representativeness error.
-
+! Set initial obs error to that supplied in BUFR stream.
+    error = data(ier,i)
+! Add Representativeness Error via variable repe_dw .
+! Currently hardcoded in qcmod.f90 (as of 3-19-09), 
+!                 repe_dw = 1.0 .
+! This variable should be tuned/adjusted to better
+! characterize the representativeness error of the 
+! DWL observations.
     error = error + repe_dw
     ratio_errors = error/abs(error + 1.0e6*rhgh + r8*rlow)
     error = one/error
@@ -332,8 +393,10 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
        ratio_errors=ratio_errors/sqrt(dup(i))
      endif
 
-!    Compute penalty terms
      if (ratio_errors*error <= tiny_r_kind) muse(i) = .false.
+     if (nobskeep>0) muse(i)=obsdiags(i_dw_ob_type,ibin)%tail%muse(nobskeep)
+
+!    Compute penalty terms
      val   = error*ddiff
      if(luse(i))then
        val2     = val*val
@@ -391,40 +454,42 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
        end do
      end if
 
+     obsdiags(i_dw_ob_type,ibin)%tail%luse=luse(i)
+     obsdiags(i_dw_ob_type,ibin)%tail%muse(jiter)=muse(i)
+     obsdiags(i_dw_ob_type,ibin)%tail%nldepart(jiter)=ddiff
+     obsdiags(i_dw_ob_type,ibin)%tail%wgtjo= (error*ratio_errors)**2
+
 !    If obs is "acceptable", load array with obs info for use
 !    in inner loop minimization (int* and stp* routines)
      if (.not. last .and. muse(i)) then
 
-        if(.not. associated(dwhead))then
-            allocate(dwhead,stat=istat)
+        if(.not. associated(dwhead(ibin)%head))then
+            allocate(dwhead(ibin)%head,stat=istat)
             if(istat /= 0)write(6,*)' failure to write dwhead '
-            dwtail => dwhead
+            dwtail(ibin)%head => dwhead(ibin)%head
         else
-            allocate(dwtail%llpoint,stat=istat)
-            dwtail => dwtail%llpoint
+            allocate(dwtail(ibin)%head%llpoint,stat=istat)
             if(istat /= 0)write(6,*)' failure to write dwtail%llpoint '
+            dwtail(ibin)%head => dwtail(ibin)%head%llpoint
         end if
 
 !       Set (i,j,k) indices of guess gridpoint that bound obs location
-        call get_ijk(mm1,dlat,dlon,dpres,dwtail%ij(1),dwtail%wij(1))
+        call get_ijk(mm1,dlat,dlon,dpres,dwtail(ibin)%head%ij(1),dwtail(ibin)%head%wij(1))
 
         do j=1,8
-          dwtail%wij(j)=factw*dwtail%wij(j)  
+          dwtail(ibin)%head%wij(j)=factw*dwtail(ibin)%head%wij(j)  
         end do                                                 
 
-        dwtail%res    = ddiff
-        dwtail%err2   = error**2
-        dwtail%raterr2=ratio_errors**2    
-        if(l_foto)then
-          dwtail%time   = dtime*r3600    
-        else
-          dwtail%time   = zero    
-        end if
-        dwtail%b      = cvar_b(ikx)
-        dwtail%pg     = cvar_pg(ikx)
-        dwtail%cosazm = cosazm                  ! v factor
-        dwtail%sinazm = sinazm                  ! u factor
-        dwtail%luse   = luse(i)
+        dwtail(ibin)%head%res    = ddiff
+        dwtail(ibin)%head%err2   = error**2
+        dwtail(ibin)%head%raterr2=ratio_errors**2    
+        dwtail(ibin)%head%time   = dtime
+        dwtail(ibin)%head%b      = cvar_b(ikx)
+        dwtail(ibin)%head%pg     = cvar_pg(ikx)
+        dwtail(ibin)%head%cosazm = cosazm                  ! v factor
+        dwtail(ibin)%head%sinazm = sinazm                  ! u factor
+        dwtail(ibin)%head%luse   = luse(i)
+        dwtail(ibin)%head%diags => obsdiags(i_dw_ob_type,ibin)%tail
 
      endif
 
@@ -442,7 +507,7 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
         rdiagbuf(5,ii)  = rmiss_single       ! station elevation (meters)
         rdiagbuf(6,ii)  = presw              ! observation pressure (hPa)
         rdiagbuf(7,ii)  = data(ihgt,i)       ! observation height (meters)
-        rdiagbuf(8,ii)  = dtime              ! obs time (hours relative to analysis time)
+        rdiagbuf(8,ii)  = dtime-time_offset  ! obs time (hours relative to analysis time)
 
         rdiagbuf(9,ii)  = rmiss_single       ! input prepbufr qc or event mark
         rdiagbuf(10,ii) = rmiss_single       ! setup qc or event mark
@@ -484,6 +549,30 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,conv_diagsave)
         rdiagbuf(24,ii) = data(incls,i)        ! number of cloud laser shots
         rdiagbuf(25,ii) = data(iatd,i)         ! atmospheric depth
         rdiagbuf(26,ii) = data(ilob,i)         ! line of sight component of wind orig.
+
+        if (lobsdiagsave) then
+          ioff=26
+          do jj=1,miter 
+            ioff=ioff+1 
+            if (obsdiags(i_dw_ob_type,ibin)%tail%muse(jj)) then
+              rdiagbuf(ioff,ii) = one
+            else
+              rdiagbuf(ioff,ii) = -one
+            endif
+          enddo
+          do jj=1,miter+1
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsdiags(i_dw_ob_type,ibin)%tail%nldepart(jj)
+          enddo
+          do jj=1,miter
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsdiags(i_dw_ob_type,ibin)%tail%tldepart(jj)
+          enddo
+          do jj=1,miter
+            ioff=ioff+1
+            rdiagbuf(ioff,ii) = obsdiags(i_dw_ob_type,ibin)%tail%obssen(jj)
+          enddo
+        endif
 
      end if
 

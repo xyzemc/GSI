@@ -87,8 +87,33 @@ subroutine adjoint_check4(filter,ngauss, &
              ips, ipe, jps, jpe, kps, kpe, &                          ! patch indices
              ims, ime, jms, jme, kms, kme, &                          ! memory indices
              mype, npes)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    adjoint_check4
+!
+!   prgrmmr:
+!
+! abstract:  test that filter is symmetric
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     ids, ide, jds, jde, kds, kde      - domain indices
+!     ips, ipe, jps, jpe, kps, kpe      - patch indices
+!     ims, ime, jms, jme, kms, kme      - memory indices
+!     mype                              - mpi task id 
+!     npes                              -
+!     ngauss                            -
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$ end documentation block
 
-!   test that filter is symmetric
 
 
   INTEGER(i_long), INTENT(IN) :: ids, ide, jds, jde, kds, kde, &   ! domain indices
@@ -157,8 +182,32 @@ SUBROUTINE raf4_ad(g,filter,ngauss, &
              ips, ipe, jps, jpe, kps, kpe, &                          ! patch indices
              ims, ime, jms, jme, kms, kme, &                          ! memory indices
              mype, npes)
-
-!  2nd half of recursive anisotropic self-adjoint filter (full-strings version)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    raf4_ad
+!
+!   prgrmmr:
+!
+! abstract:  2nd half of recursive anisotropic self-adjoint filter (full-strings version)
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     ids, ide, jds, jde, kds, kde      - domain indices
+!     ips, ipe, jps, jpe, kps, kpe      - patch indices
+!     ims, ime, jms, jme, kms, kme      - memory indices
+!     ngauss                            -
+!     mype                              - mpi task id
+!     npes                              -
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$ end documentation block
 
   implicit none
 
@@ -214,6 +263,32 @@ SUBROUTINE raf_sm4_ad(g,filter,ngauss, &
              ips, ipe, jps, jpe, kps, kpe, &                          ! patch indices
              ims, ime, jms, jme, kms, kme, &                          ! memory indices
              mype, npes)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    raf_sm4_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     ids, ide, jds, jde, kds, kde      - domain indices
+!     ips, ipe, jps, jpe, kps, kpe      - patch indices
+!     ims, ime, jms, jme, kms, kme      - memory indices
+!     mype                              - mpi task id
+!     npes                              -
+!     ngauss                            -
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$ end documentation block
 
 !  2nd half of recursive anisotropic self-adjoint filter (full-strings version)
 !        (no amplitude factor--used only for local weighted averages)
@@ -259,10 +334,34 @@ SUBROUTINE rad_sm24_ad(g,filter,ngauss, &
              ips, ipe, jps, jpe, kps, kpe, &                          ! patch indices
              ims, ime, jms, jme, kms, kme, &                          ! memory indices
              mype, npes)
-
-!    do two fields at same time, each real(4)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    rad_sm24_ad
+!
+!   prgrmmr:
+!
+! abstract:     do two fields at same time, each real(4)
 !  2nd half of recursive anisotropic self-adjoint filter (full-strings version)
 !        (no amplitude factor--used only for local weighted averages)
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     ids, ide, jds, jde, kds, kde      - domain indices
+!     ips, ipe, jps, jpe, kps, kpe      - patch indices
+!     ims, ime, jms, jme, kms, kme      - memory indices
+!     mype                              - mpi task id
+!     npes                              - 
+!     ngauss                            -
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$
 
   implicit none
 
@@ -307,9 +406,32 @@ subroutine alpha_beta4(info_string,aspect_full,rgauss,lnf,bnf,igauss,ngauss, &
                      ips, ipe, jps, jpe, kps, kpe, &                          ! patch indices
                      ims, ime, jms, jme, kms, kme, &                          ! memory indices
                      mype, npes,nvars)
-
-
-  !   compute recursion constants alpha and beta along unbroken strings
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    alpha_beta4
+!
+!   prgrmmr:
+!
+! abstract:   compute recursion constants alpha and beta along unbroken strings
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     ids, ide, jds, jde, kds, kde      - domain indices
+!     ips, ipe, jps, jpe, kps, kpe      - patch indices
+!     ims, ime, jms, jme, kms, kme      - memory indices
+!     mype                              - mpi task id
+!     npes                              -
+!     nvars                             -
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:
+!
+!$$$ end documentation block
 
   IMPLICIT NONE
 
@@ -394,16 +516,32 @@ subroutine alpha_beta4(info_string,aspect_full,rgauss,lnf,bnf,igauss,ngauss, &
 end subroutine alpha_beta4
 
 subroutine alpha_betaa4(aspect,rgauss,ng,binomial,lnf,bnf,m,nstrings)
-
-  !  compute various constants for Purser 1-d high-order filter
-
-  !   --> aspect:   correlation scale (squared, i think), grid units
-  !   --> rgauss:   multiplier of aspect, for multiple gaussians--used for fat-tail filter
-  !   --> ng:       length of string
-  !   --> binomial: weighting factors (perhaps not needed with high-order filter)
-  !  <--  lnf,bnf:  filter parameters
-  !   --> m:        filter order
-  !
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    alpha_betaa4
+!
+!   prgrmmr:
+!
+! abstract:  compute various constants for Purser 1-d high-order filter
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     aspect   - correlation scale (squared, i think), grid units
+!     rgauss   - multiplier of aspect, for multiple gaussians--used for fat-tail filter
+!     ng       - length of string
+!     binomial - weighting factors (perhaps not needed with high-order filter)
+!     m        - filter order
+!
+!   output argument list:
+!     lnf,bnf  - filter parameters
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
   IMPLICIT NONE
 
@@ -416,7 +554,7 @@ subroutine alpha_betaa4(aspect,rgauss,ng,binomial,lnf,bnf,m,nstrings)
   real(r_double) rgauss
   real(r_single) lnf(m,ng),bnf(ng)
 
-  real(r_double) sig(ng),ssig(ng),snu(ng)
+  real(r_double) sig(ng),snu(ng)
   real(r_double) lnf8(m,ng),bnf8(ng)
   integer(i_long) i,j
 
@@ -435,8 +573,32 @@ subroutine alpha_betaa4(aspect,rgauss,ng,binomial,lnf,bnf,m,nstrings)
 end subroutine alpha_betaa4
 
 subroutine count_strings(info_string,nstrings,nstrings_var,nvars,npoints_mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    count_strings
+!
+!   prgrmmr:
+!
+! abstract:  compute recursion constants alpha and beta along unbroken strings
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     info_string            1       - distance from origin to current point
+!                            2,3,4   - origin coordinates
+!                            5,6,7,8 - jumpx,jumpy,jumpz,ivar for this string
+!     nvars                          -
+!     npoints_mype                   -
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
-  !   compute recursion constants alpha and beta along unbroken strings
 
   IMPLICIT NONE
 
@@ -479,9 +641,15 @@ subroutine count_strings(info_string,nstrings,nstrings_var,nvars,npoints_mype)
 return
 end subroutine count_strings
 
-!------------------------------------------------------------------------------
-!                             SUBROUTINE GETHEX                  Purser 1997
-! PURPOSE:
+
+SUBROUTINE GETHEX(UTARGET,LGUESS,LHEXAD,LUI,WHEXAD,KT)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    GETHEX
+!
+!   prgrmmr:     Purser 1997
+!
+! abstract:
 !    Apply implicit lattice transformations until the target tensor UTARGET
 !  can be represented as a positive combination of the components of a
 ! "canonical hexad", with coefficients which may each be interpreted as the
@@ -559,16 +727,26 @@ end subroutine count_strings
 !
 !
 !
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
 !
+!   input argument list:
+!     UTARGET    - 6-vector comprising components of the target aspect tensor
+!     LGUESS     - Code to tell whether input LHEXAD are feasible (LGUESS.NE.0)
+!     LHEXAD     - 6 integer basis vectors giving the canonical grid steps
+!     LUI        - 6 6-vectors dual to those of LU: [LUI]^t*[LU]=[I]
 !
-! --> UTARGET: 6-vector comprising components of the target aspect tensor
-! --> LGUESS:  Code to tell whether input LHEXAD are feasible (LGUESS.NE.0)
-! <-> LHEXAD:  6 integer basis vectors giving the canonical grid steps
-! <-> LUI:     6 6-vectors dual to those of LU: [LUI]^t*[LU]=[I]
-! <-- WHEXAD:  6 real "spread" components in generalized grid-step units
-! <-- KT:      The number of iterations it required to find the valid hexad
-!------------------------------------------------------------------------------
-      SUBROUTINE GETHEX(UTARGET,LGUESS,LHEXAD,LUI,WHEXAD,KT)
+!   output argument list:
+!     LHEXAD     - 6 integer basis vectors giving the canonical grid steps
+!     LUI        - 6 6-vectors dual to those of LU: [LUI]^t*[LU]=[I]
+!     WHEXAD     - 6 real "spread" components in generalized grid-step units
+!     KT         - The number of iterations it required to find the valid hexad
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
   implicit none
 
@@ -754,10 +932,31 @@ subroutine indexxi4(n,arrin4,indx)
 end subroutine indexxi4
 
 subroutine indexxi8(n,arrin8,indx)
-
-  !-------- indexes an array arrin of length n, i.e. outputs the array indx
-  !-------- such that arrin(indx(j)) is in ascending order for j=1,2,...,n.  The
-  !-------- input quantities n and arrin are not changed.
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    indexxi8
+!
+!   prgrmmr:
+!
+! abstract:  indexes an array arrin of length n, i.e. outputs the array indx
+!            such that arrin(indx(j)) is in ascending order for j=1,2,...,n.
+!            The input quantities n and arrin are not changed.
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     n      -  length of input array
+!     arrin  -  input array
+!
+!   output argument list:
+!     indx   - array index
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
   implicit none
 
@@ -766,7 +965,7 @@ subroutine indexxi8(n,arrin8,indx)
   integer(i_long) indx(n)
 
   integer(i_llong) q8
-  integer(i_long) i,indxt,ir,j,l,q4
+  integer(i_long) i,indxt,ir,j,l
 
   do j=1,n
    indx(j)=j
@@ -824,13 +1023,54 @@ SUBROUTINE init_raf4(aspect,triad4,ngauss,rgauss,npass,normal,binom,ifilt_ord,fi
                  ips, ipe, jps, jpe, kps, kpe, &         ! patch indices
                  ims, ime, jms, jme, kms, kme, &                     ! memory indices
                  mype, npes)
-
-  ! Obtain filtering constants for recursive anisotropic filter.
-  !     This form is based on assembling full strings, distributed evenly over processors.
-  !     No attempt is made in this version to treat any points specially when gathering 
-  !     the full strings required for each stage of the filter.  This is the simplest and probably
-  !     least efficient parallel version of the recursive anisotropic filter.
-
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    init_raf4
+!
+!   prgrmmr:
+!
+! abstract:  Obtain filtering constants for recursive anisotropic filter.
+!     This form is based on assembling full strings, distributed evenly over processors.
+!     No attempt is made in this version to treat any points specially when gathering 
+!     the full strings required for each stage of the filter.  This is the simplest and 
+!     probably least efficient parallel version of the recursive anisotropic filter.
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     aspect                           - aspect tensor for each point (destroyed)
+!     triad4                           - switch to turn on 4 color triad smoothing 
+!                                         for 2-dim variables
+!     ngauss                           - number of gaussians to be added together
+!     rgauss(ngauss)                   - multipying factors on aspect tensor for each term
+!     npass                            - 1/2 num of binomial weighted filter apps--npass <= 10
+!     normal                           - number of stocastic samples to use for normalization
+!     binom                            - .false., then uniform factors,
+!                                         .true., then binomial weighted factors
+!     ifilt_ord                        - filter order
+!     nvars                            - number of variables
+!     idvar(kds:kde)                   - variable number of each level
+!     kvar_start(nvars)                - starting global vertical index for each variable
+!     kvar_end(nvars)                  - ending global vertical index for each variable
+!     var_names(nvars)                 - descriptive name of each variable
+!     ids, ide, jds, jde, kds, kde     - domain indices
+!     ips, ipe, jps, jpe, kps, kpe     - patch indices
+!     ims, ime, jms, jme, kms, kme     - memory indices
+!     mype                             - mpi task id
+!     npes                             -
+!
+!   output argument list:
+!     aspect                           - aspect tensor for each point (destroyed)
+!     filter                           - structure which contains everything necessary to
+!                                         apply recursive anisotropic filter based on input
+!                                         aspect tensor
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
   INTEGER(i_long), INTENT(IN) :: ids, ide, jds, jde, kds, kde, &   ! domain indices
                             ips, ipe, jps, jpe, kps, kpe, &   ! patch indices
@@ -1336,6 +1576,33 @@ subroutine normalize_raf4(filter,ngauss,normal, &
                          ips, ipe, jps, jpe, kps, kpe, &                ! patch indices
                          ims, ime, jms, jme, kms, kme, &                ! memory indices
                          mype, npes)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    normalize_raf4
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     ngauss                        -
+!     normal                        -
+!     ids, ide, jds, jde, kds, kde  - domain indices
+!     ips, ipe, jps, jpe, kps, kpe  - patch indices
+!     ims, ime, jms, jme, kms, kme  - memory indices
+!     mype                          - mpi task id
+!     npes                          -
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
 
   INTEGER(i_long), INTENT(IN) :: ids, ide, jds, jde, kds, kde, &   ! domain indices
@@ -1353,7 +1620,6 @@ subroutine normalize_raf4(filter,ngauss,normal, &
   integer(i_long) i,igauss,j,k,loop,nsamples,ierror
 ! real(r_double) timef
 ! real(r_double) t0,t1,timerand,timetot,timerand0,timetot0
-  real(8) this_rnorm1,this_rnorm2,rnorm
   integer(i_long) kbegin,kend
   logical independent_of_npes
   real(4) this_one1,this_one2
@@ -1451,9 +1717,39 @@ subroutine one_color4(g,filter,ngauss,ipass,ifilt_ord, &
              ips, ipe, jps, jpe, kps, kpe, &                          ! patch indices
              ims, ime, jms, jme, kms, kme, &                          ! memory indices
              mype, npes)
-
-!   apply one forward-backward recursive filter for one color
-
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    one_color4
+!
+!   prgrmmr:
+!
+! abstract:  apply one forward-backward recursive filter for one color
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     g                             -  input--field on grid, output--filtered field on grid
+!     filter                        -
+!     ngauss                        -
+!     ipass                         - total number of contiguous string points
+!     ifilt_ord                     -
+!     nstrings                      -
+!     istart                        -
+!     ids, ide, jds, jde, kds, kde  - domain indices
+!     ips, ipe, jps, jpe, kps, kpe  - patch indices
+!     ims, ime, jms, jme, kms, kme  - memory indices
+!     mype                          - mpi task id
+!     npes                          -
+!
+!   output argument list:
+!     g        -  input--field on grid, output--filtered field on grid
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
   INTEGER(i_long), INTENT(IN) :: ids, ide, jds, jde, kds, kde, &   ! domain indices
                             ips, ipe, jps, jpe, kps, kpe, &   ! patch indices
@@ -1476,7 +1772,7 @@ subroutine one_color4(g,filter,ngauss,ipass,ifilt_ord, &
   real(r_single) work(ngauss,max(1,filter%npointsmax),2)
   real(r_single) work2(max(1,filter%npointsmax))
 
-  integer(i_long) i,ierr,igauss,ishort_end,j,l,mpi_string
+  integer(i_long) i,ierr,igauss,j,l,mpi_string
 
 !-- gather up strings
 
@@ -1563,9 +1859,39 @@ subroutine one_color24(g,filter,ngauss,ipass,ifilt_ord, &
              ips, ipe, jps, jpe, kps, kpe, &                          ! patch indices
              ims, ime, jms, jme, kms, kme, &                          ! memory indices
              mype, npes)
-
-!   apply one forward-backward recursive filter for one color
-
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    one_color24
+!
+!   prgrmmr:
+!
+! abstract:  apply one forward-backward recursive filter for one color
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     g                             -  input--field on grid, output--filtered field on grid
+!     filter                        -
+!     ngauss                        -
+!     ipass                         - total number of contiguous string points
+!     ifilt_ord                     -
+!     nstrings                      -
+!     istart                        -
+!     ids, ide, jds, jde, kds, kde  - domain indices
+!     ips, ipe, jps, jpe, kps, kpe  - patch indices
+!     ims, ime, jms, jme, kms, kme  - memory indices
+!     mype                          - mpi task id
+!     npes                          -
+!
+!   output argument list:
+!     g                             -  input--field on grid, output--filtered field on grid
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
   INTEGER(i_long), INTENT(IN) :: ids, ide, jds, jde, kds, kde, &   ! domain indices
                             ips, ipe, jps, jpe, kps, kpe, &   ! patch indices
@@ -1681,8 +2007,36 @@ SUBROUTINE raf4(g,filter,ngauss, &
              ips, ipe, jps, jpe, kps, kpe, &                          ! patch indices
              ims, ime, jms, jme, kms, kme, &                          ! memory indices
              mype, npes)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    raf4
+!
+!   prgrmmr:
+!
+! abstract:  1st half of recursive anisotropic self-adjoint filter (full-strings version)
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     g                             -  input--field on grid, output--filtered field on grid
+!     filter                        -
+!     ngauss                        -
+!     ids, ide, jds, jde, kds, kde  - domain indices
+!     ips, ipe, jps, jpe, kps, kpe  - patch indices
+!     ims, ime, jms, jme, kms, kme  - memory indices
+!     mype                          - mpi task id
+!     npes                          -
+!
+!   output argument list:
+!     g                             -  input--field on grid, output--filtered field on grid
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
-!  1st half of recursive anisotropic self-adjoint filter (full-strings version)
 
   implicit none
 
@@ -1743,8 +2097,35 @@ SUBROUTINE raf_sm4(g,filter,ngauss, &
              ips, ipe, jps, jpe, kps, kpe, &                          ! patch indices
              ims, ime, jms, jme, kms, kme, &                          ! memory indices
              mype, npes)
-
-!  1st half of recursive anisotropic self-adjoint filter (full-strings version)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    raf_sm4
+!
+!   prgrmmr:
+!
+! abstract:  1st half of recursive anisotropic self-adjoint filter (full-strings version)
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     g                             -  input--field on grid, output--filtered field on grid
+!     filter                        -
+!     ngauss                        -
+!     ids, ide, jds, jde, kds, kde  - domain indices
+!     ips, ipe, jps, jpe, kps, kpe  - patch indices
+!     ims, ime, jms, jme, kms, kme  - memory indices
+!     mype                          - mpi task id
+!     npes                          -
+!
+!   output argument list:
+!     g                             -  input--field on grid, output--filtered field on grid
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
   implicit none
 
@@ -1788,6 +2169,38 @@ subroutine sort_strings4(info_string,aspect_full, &
                      ips, ipe, jps, jpe, kps, kpe, &                          ! patch indices
                      ims, ime, jms, jme, kms, kme, &                          ! memory indices
                      mype, npes)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    sort_strings4
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     info_string                   - 1       - distance from origin to current point
+!                                     2,3,4   - origin coordinates
+!                                     5,6,7,8 - jumpx,jumpy,jumpz,ivar for this string
+!     aspect_full                   -
+!     npoints_recv                  -
+!     ids, ide, jds, jde, kds, kde  - domain indices
+!     ips, ipe, jps, jpe, kps, kpe  - patch indices
+!     ims, ime, jms, jme, kms, kme  - memory indices
+!     mype                          - mpi task id
+!     npes                          -
+!
+!   output argument list:
+!     info_string                   -
+!     aspect_full                   -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
   !   sort strings by string id and distance
 
@@ -1887,6 +2300,7 @@ subroutine sort_strings4(info_string,aspect_full, &
 
 end subroutine sort_strings4
 
+
 SUBROUTINE string_assemble4(i1filter,i2filter,nstrings,label_string, &
                      npoints_send,npoints_recv,aspect,icolor, &
                      info_string,aspect_full,nsend,ndsend,nrecv,ndrecv,ia,ja,ka, &
@@ -1894,6 +2308,43 @@ SUBROUTINE string_assemble4(i1filter,i2filter,nstrings,label_string, &
                      ips, ipe, jps, jpe, kps, kpe, &                          ! patch indices
                      ims, ime, jms, jme, kms, kme, &                          ! memory indices
                      mype, npes)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    string_assemble4
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     i1filter                     - i1filter(1-3,.)=jumpx,jumpy,jumpz
+!     i2filter                     - i2filter(1-5,.)=beginx,beginy,beginz,lenstring,ivar
+!     nstrings                     -
+!     label_string                 -  label_string(1-3,.)=originx,originy,originz
+!     npoints_send                 -  number of points to send for assembling strings
+!     npoints_recv                 -  number of points for assembled strings
+!     aspect                       - aspect tensor numbers
+!     icolor                       -
+!     ids, ide, jds, jde, kds, kde - domain indices
+!     ips, ipe, jps, jpe, kps, kpe - patch indices
+!     ims, ime, jms, jme, kms, kme - memory indices
+!     mype                         - mpi task id
+!     npes                         -
+!
+!   output argument list:
+!     info_string                  - 1---- distance from origin to current point
+!                                  - 2,3,4-- origin coordinates
+!                                  - 5,6,7,8-- jumpx,jumpy,jumpz,ivar for this string
+!     aspect_full                  -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
 !   assemble groups of unbroken strings approximately evenly distributed over all processors
 
@@ -2058,10 +2509,41 @@ SUBROUTINE string_label(i1filter,i2filter,nstrings,label_string,npoints_recv, &
                      ids, ide, jds, jde, kds, kde, &                          ! domain indices
                      ips, ipe, jps, jpe, kps, kpe, &                          ! patch indices
                      ims, ime, jms, jme, kms, kme, mype, npes,icolor )               ! memory indices
-
-  ! assign global string labels to each string
-  !   (global label is first i,j,k inside global domain)
-
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    string_label
+!
+!   prgrmmr:
+!
+! abstract:  assign global string labels to each string
+!             (global label is first i,j,k inside global domain)
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     i1filter                     - i1filter(1-3,.)=jumpx,jumpy,jumpz
+!     i2filter                     - i2filter(1-5,.)=beginx,beginy,beginz,lenstring,ivar
+!     nstrings                     -
+!     npoints_send                 -  number of points to send for assembling strings
+!     npoints_recv                 -  number of points for assembled strings
+!     icolor                       -
+!     ids, ide, jds, jde, kds, kde - domain indices
+!     ips, ipe, jps, jpe, kps, kpe - patch indices
+!     ims, ime, jms, jme, kms, kme - memory indices
+!     mype                         - mpi task id
+!     npes                         -
+!
+!   output argument list:
+!     label_string                 -  label_string(1-3,.)=originx,originy,originz
+!     aspect_full                  -
+!     mype     - mpi task id
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
 
               integer(i_long) icolor
   INTEGER(i_long), INTENT(IN) :: ids, ide, jds, jde, kds, kde, &   ! domain indices
@@ -2288,6 +2770,29 @@ end if
 end subroutine my_scatterv8
 
 subroutine what_color_is(i1,i2,i3,color)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    what_color_is
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-03-25  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     i1, i2, i3 -          
+!
+!   output argument list:
+!     color      -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 implicit none
 integer(i_long),intent(IN):: i1,i2,i3
 integer(i_long),intent(OUT):: color
@@ -2308,30 +2813,17 @@ color=dot_product(v,b124)
 end subroutine what_color_is
 
 end module raflib
+
+
+SUBROUTINE EIGEN(A,R,N,MV)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    EIGEN
 !
-!     ..................................................................
+!   prgrmmr:     R. J. Purser, NCEP 2005 
 !
-!        SUBROUTINE EIGEN
-!
-!        PURPOSE
-!           COMPUTE EIGENVALUES AND EIGENVECTORS OF A REAL SYMMETRIC
-!           MATRIX
-!
-!        USAGE
-!           CALL EIGEN(A,R,N,MV)
-!
-!        DESCRIPTION OF PARAMETERS
-!           A - ORIGINAL MATRIX (SYMMETRIC), DESTROYED IN COMPUTATION.
-!               RESULTANT EIGENVALUES ARE DEVELOPED IN DIAGONAL OF
-!               MATRIX A IN DESCENDING ORDER.
-!           R - RESULTANT MATRIX OF EIGENVECTORS (STORED COLUMNWISE,
-!               IN SAME SEQUENCE AS EIGENVALUES)
-!           N - ORDER OF MATRICES A AND R
-!           MV- INPUT CODE
-!                   0   COMPUTE EIGENVALUES AND EIGENVECTORS
-!                   1   COMPUTE EIGENVALUES ONLY (R NEED NOT BE
-!                       DIMENSIONED BUT MUST STILL APPEAR IN CALLING
-!                       SEQUENCE)
+! abstract:  COMPUTE EIGENVALUES AND EIGENVECTORS OF A REAL SYMMETRIC
+!            MATRIX
 !
 !        REMARKS
 !           ORIGINAL MATRIX A MUST BE REAL SYMMETRIC (STORAGE MODE=1)
@@ -2346,9 +2838,29 @@ end module raflib
 !           METHODS FOR DIGITAL COMPUTERS', EDITED BY A. RALSTON AND
 !           H.S. WILF, JOHN WILEY AND SONS, NEW YORK, 1962, CHAPTER 7
 !
-!     ..................................................................
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
 !
-      SUBROUTINE EIGEN(A,R,N,MV)
+!   input argument list:
+!     A - ORIGINAL MATRIX (SYMMETRIC), DESTROYED IN COMPUTATION.
+!         RESULTANT EIGENVALUES ARE DEVELOPED IN DIAGONAL OF
+!         MATRIX A IN DESCENDING ORDER.
+!     R - RESULTANT MATRIX OF EIGENVECTORS (STORED COLUMNWISE,
+!         IN SAME SEQUENCE AS EIGENVALUES)
+!     N - ORDER OF MATRICES A AND R
+!     MV- INPUT CODE
+!         0   COMPUTE EIGENVALUES AND EIGENVECTORS
+!         1   COMPUTE EIGENVALUES ONLY (R NEED NOT BE
+!             DIMENSIONED BUT MUST STILL APPEAR IN CALLING SEQUENCE)
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 !     REAL(4) A(1),R(1)
 !
 !        ...............................................................
@@ -2535,26 +3047,39 @@ end module raflib
       end do
       RETURN
       END
-!                                               ***************************
-!                                               *        C4TRIAD.F90      *
-!                                               * R. J. Purser, NCEP 2005 *
-!                                               ***************************
-! 4-color blended chromatic triad routines  
 
-!=============================================================================
+
 SUBROUTINE gettri4(us,lguess,lv,lui,w4)
-!=============================================================================
-!			      SUBROUTINE GETTRI4		 Purser 2003
-!                                                            (modified  2005)
-! Blended 4-color triads with bridging function of 2nd degree
-! --> US:      3-vector comprising components of the target aspect tensor
-! --> LGUESS:  Code to tell whether input LTRIAD are feasible (LGUESS.NE.0)
-! <-> LV:      4 integer basis 2-vectors giving the canonical grid steps
-! <-> LUI:     3 3-vectors dual to those of LU: [LUI]^t*[LU]=[I]
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    gettri4
+!
+!   prgrmmr:     Purser 2003
+!
+! abstract:  Blended 4-color triads with bridging function of 2nd degree
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     US:      3-vector comprising components of the target aspect tensor
+!     LGUESS:  Code to tell whether input LTRIAD are feasible (LGUESS.NE.0)
+!     LV:      4 integer basis 2-vectors giving the canonical grid steps
+!     LUI:     3 3-vectors dual to those of LU: [LUI]^t*[LU]=[I]
 !                where LU are the aspect vectors of the first three of LV.
-! <-- W4:      4 real "spread" weights, in generalized grid-step units, that
+!
+!   output argument list:
+!     LUI:     3 3-vectors dual to those of LU: [LUI]^t*[LU]=[I]
+!                where LU are the aspect vectors of the first three of LV.
+!     W4:      4 real "spread" weights, in generalized grid-step units, that
 !                correspond to the 4 grid-step generators, LV.
-!=============================================================================
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 IMPLICIT NONE
 REAL(8),DIMENSION(3),  INTENT(IN   ):: us
 INTEGER,               INTENT(IN   ):: lguess
@@ -2591,17 +3116,37 @@ c=c/v(3)
 w4=(w4c+MATMUL(w4l,v))*c
 END SUBROUTINE gettri4
 
-!=============================================================================
+
 SUBROUTINE gettri3(utarget,lguess,ltriad,lui,wtriad,kt)
-!=============================================================================
-!			      SUBROUTINE GETTRI3		 Purser 1997
-! --> UTARGET: 3-vector comprising components of the target aspect tensor
-! --> LGUESS:  Code to tell whether input LTRIAD are feasible (LGUESS.NE.0)
-! <-> LTRIAD:  3 integer basis 2-vectors giving the canonical grid steps
-! <-> LUI:     3 3-vectors dual to those of LU: [LUI]^t*[LU]=[I]
-! <-- WTRIAD:  3 real "spread" components in generalized grid-step units
-! <-- KT:      The number of iterations it required to find the valid triad
-!=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    gettri3
+!
+!   prgrmmr:     Purser 1997
+!
+! abstract:
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     UTARGET: 3-vector comprising components of the target aspect tensor
+!     LGUESS:  Code to tell whether input LTRIAD are feasible (LGUESS.NE.0)
+!     LTRIAD:  3 integer basis 2-vectors giving the canonical grid steps
+!     LUI:     3 3-vectors dual to those of LU: [LUI]^t*[LU]=[I]
+!
+!   output argument list:
+!     LTRIAD:  3 integer basis 2-vectors giving the canonical grid steps
+!     LUI:     3 3-vectors dual to those of LU: [LUI]^t*[LU]=[I]
+!     WTRIAD:  3 real "spread" components in generalized grid-step units
+!     KT:      The number of iterations it required to find the valid triad
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 IMPLICIT NONE
 REAL(8),DIMENSION(3),  INTENT(IN   ):: utarget
 INTEGER,               INTENT(IN   ):: lguess
@@ -2692,9 +3237,31 @@ write(6,*)'GETTRI3:  ALL 40 ITERATIONS USED UP.  This should never happen'
 call stop2(68)
 END SUBROUTINE gettri3
 
-!=============================================================================
+
 SUBROUTINE getcol4(lv,color)
-!=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    getcol4
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     lv    -
+!
+!   output argument list:
+!     color -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 IMPLICIT NONE
 INTEGER,DIMENSION(2,4),INTENT(IN ):: lv
 INTEGER,DIMENSION(4)  ,INTENT(OUT):: color
@@ -2706,17 +3273,33 @@ DO k=1,4
 ENDDO
 END SUBROUTINE getcol4
 
-!=============================================================================
+
 SUBROUTINE what_color_is_triad(i1,i2,color,p)
-!=============================================================================
-! Subroutine what_color_is
-! R. J. Purser, NCEP, August 2001
-! Find the color index associated with the given grid displacement vector
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    what_color_is_triad
+!
+!   prgrmmr:     R. J. Purser, NCEP, August 2001
+!
+! abstract:  Find the color index associated with the given grid displacement vector
 ! for the chromatic triad of type "p", where p is prime.
-! --> i1,i2   : displacement indices in x, y.
-! <-- color   : color index in the range [1, (p +1)], where,
-! --> p       : is the "chromatic prime index", presently one of {2, 3, 5}.
-!=============================================================================
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     i1,i2   - displacement indices in x, y.
+!     p       - is the "chromatic prime index", presently one of {2, 3, 5}.
+!
+!   output argument list:
+!     color   - color index in the range [1, (p +1)], where,
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 IMPLICIT NONE
 INTEGER,INTENT(IN )   :: i1,i2,p
 INTEGER,INTENT(OUT)   :: color
@@ -2750,9 +3333,31 @@ CASE default
 END SELECT
 END SUBROUTINE what_color_is_triad
 
-!=============================================================================
+
 FUNCTION same4(v1,v2,n)
-!=============================================================================
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    same4
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-22  safford -- add subprogram doc block
+!
+!   input argument list:
+!     v1, v2   -
+!     n        -
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 LOGICAL                        :: same4
 INTEGER,             INTENT(IN):: n
 INTEGER,DIMENSION(n),INTENT(IN):: v1,v2

@@ -24,6 +24,7 @@ subroutine calctends(u,v,t,q,oz,cw,teta,z,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
 !                         move getprs outside calctends;
 !                         remove ps from argument list
 !   2007-08-08  derber - optimize, remove calculation of t_over* and dp_over* unless needed.
+!   2008-06-05  safford - rm unused vars and uses
 !
 ! usage:
 !   input argument list:
@@ -62,13 +63,12 @@ subroutine calctends(u,v,t,q,oz,cw,teta,z,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
 !
 !$$$
   use kinds,only: r_kind,i_kind
-  use gridmod, only: lat2,lon2,nsig,istart,rlats,nlat,idvc5,ak5,bk5,ck5,tref5,&
-     jstart,region_lat,region_lon,eta2_ll,wrf_nmm_regional,nlon,nsig1o,regional
+  use gridmod, only: lat2,lon2,nsig,istart,rlats,nlat,idvc5,bk5,&
+     jstart,region_lat,region_lon,eta2_ll,wrf_nmm_regional,nems_nmmb_regional,nlon,regional
   use constants, only: zero,half,one,two,rearth,rd,rcp,omega,grav
   use tendsmod, only: what9,prsth9,r_prsum9,r_prdif9,prdif9,pr_xsum9,pr_xdif9,pr_ysum9,&
      pr_ydif9,curvfct,coriolis,ctph0,stph0,tlm0,t_over_pbar,dp_over_pbar
-  use mpimod, only: levs_id,mpi_rtype,mpi_sum,mpi_comm_world,ierror
-  use jcmod, only: jcdivt
+  use mpimod, only: mpi_rtype,mpi_sum,mpi_comm_world,ierror
   implicit none
 
 ! Declare passed variables
@@ -85,11 +85,9 @@ subroutine calctends(u,v,t,q,oz,cw,teta,z,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
   real(r_kind),dimension(lat2,lon2):: z_x,z_y
   real(r_kind),dimension(lat2,lon2,nsig+1):: pri_x,pri_y
   real(r_kind),dimension(lat2,lon2):: sumkm1,sumvkm1,sum2km1,sum2vkm1
-  real(r_kind),dimension(lat2,lon2,nsig):: o
-  real(r_kind),dimension(lat2,lon2,nsig):: utx,vty,futy,fvtx,philap,massv_t
   real(r_kind),dimension(nsig):: t_over_p,dp_over_p
-  real(r_kind) tmp,tmp2,count,count0,pmid
-  integer(i_kind) i,j,k,ix,jx,nnn
+  real(r_kind) tmp,tmp2,count,count0
+  integer(i_kind) i,j,k,ix,jx
   real(r_kind) relm,crlm,aph,sph,cph,cc,tph,sumk,sumvk,sum2k,sum2vk
 
 
@@ -103,7 +101,7 @@ subroutine calctends(u,v,t,q,oz,cw,teta,z,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
   what9=zero
 
 ! constants
-  if(wrf_nmm_regional) then
+  if(wrf_nmm_regional.or.nems_nmmb_regional) then
     do j=1,lon2
       jx=j+jstart(mype+1)-2
       jx=min(max(1,jx),nlon)
@@ -151,28 +149,6 @@ subroutine calctends(u,v,t,q,oz,cw,teta,z,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
   end do
 
 
-  if(jcdivt)then
-!   need horizontal mean quantities for pseudo-geopotential tendency calculation
-    t_over_p = zero ; dp_over_p=zero
-    do k=1,nsig
-      do j=2,lon2-1
-        do i=2,lat2-1
-          t_over_p(k)=t_over_p(k)+t(i,j,k)*r_prsum9(i,j,k)
-          dp_over_p(k) = dp_over_p(k)+prdif9(i,j,k)*r_prsum9(i,j,k)
-        end do
-      end do
-    end do
-    count=(lat2-2)*(lon2-2)
-
-    call mpi_allreduce(t_over_p,t_over_pbar,nsig,mpi_rtype,mpi_sum,mpi_comm_world,ierror)
-    call mpi_allreduce(dp_over_p,dp_over_pbar,nsig,mpi_rtype,mpi_sum,mpi_comm_world,ierror)
-    call mpi_allreduce(count,count0,1,mpi_rtype,mpi_sum,mpi_comm_world,ierror)
-    do k=1,nsig
-      t_over_pbar(k)=t_over_pbar(k)/count0
-      dp_over_pbar(k)=dp_over_pbar(k)/count0
-    end do
-  end if
-
 
 ! 1) Compute horizontal part of tendency for 3d pressure (so dps/dt is the same
 !    as prsth9(i,j,1) . . . also note that at the top, dp/dt=0
@@ -215,7 +191,7 @@ subroutine calctends(u,v,t,q,oz,cw,teta,z,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
     do k=2,nsig
       do j=1,lon2
         do i=1,lat2
-          if(wrf_nmm_regional) then
+          if(wrf_nmm_regional.or.nems_nmmb_regional) then
             what9(i,j,k)=prsth9(i,j,k)-eta2_ll(k)*prsth9(i,j,1)
           else
             what9(i,j,k)=prsth9(i,j,k)-bk5(k)*prsth9(i,j,1)
@@ -315,7 +291,7 @@ subroutine calctends(u,v,t,q,oz,cw,teta,z,u_x,u_y,v_x,v_y,t_x,t_y,ps_x,ps_y,&
 
   call turbl(u,v,pri,t,teta,z,u_t,v_t,t_t)
 
-  if(.not.wrf_nmm_regional)then
+  if(.not.wrf_nmm_regional.and..not.nems_nmmb_regional)then
     do k=1,nsig
 
       do j=1,lon2

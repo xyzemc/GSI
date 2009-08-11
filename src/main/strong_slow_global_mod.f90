@@ -1,24 +1,63 @@
 module strong_slow_global_mod
 !$$$   module documentation block
 !                .      .    .                                       .
-! module:    zrnmi_mod
+! module:    strong_slow_global_mod
 !
-! abstract: Contains all routines necessary for regional normal mode
-!             projection/initialization.
+! abstract: 
+!          
+! program history log:
+!   2008-04-04  safford - add module doc block
 !
-
-  use kinds, only: i_kind
-  use gridmod, only: nsig
-  use mpimod, only: nuvlevs
-  implicit none
-
+! subroutines included;
+!    init_strongvars_1                    --
+!    initialize_strong_slow_global        --
+!    strong_bal_correction_slow_global    -- compute balance adjustment
+!    strong_bal_correction_slow_global_ad -- adjoint of strong_bal_correction
+!    inmi_sub2grid                        -- special subdomain to horizontal grid
+!    inmi_grid2sub                        -- reverse of inmi_sub2grid
+!    get_mode_number                      -- define mode interleaving
+!    gather_rmstends                      -- get BAL diagnostics
+!
+! variable definitions:
 !     mode_number  - defines vertical mode layout for current processor
 !     mode_number0 - defines how vertical modes are interleaved across processors
 !                    in horizontal slab arrays
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!$$$ end documentation block
+
+  use kinds, only: i_kind
+  use gridmod, only: nsig
+  use mpimod, only: nuvlevs,nnnuvlevs
+  implicit none
+
   integer(i_kind),allocatable::mode_number(:),mode_number0(:)
 contains
 
   subroutine init_strongvars_1(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    init_strongvars_1
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
 
     use kinds, only: i_kind
 
@@ -29,6 +68,27 @@ contains
   end subroutine init_strongvars_1
 
 subroutine initialize_strong_slow_global(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    initialize_strong_slow_global
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
 
   use kinds, only: i_kind
   integer(i_kind),intent(in):: mype
@@ -40,7 +100,7 @@ subroutine initialize_strong_slow_global(mype)
 
 end subroutine initialize_strong_slow_global
 
-subroutine strong_bal_correction_slow_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_diagnostic,fullfield,update)
+subroutine strong_bal_correction_slow_global(u_t,v_t,t_t,ps_t,mype,psi,chi,t,ps,bal_diagnostic,fullfield,update)
 
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -55,6 +115,8 @@ subroutine strong_bal_correction_slow_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
 ! program history log:
 !   2006-07-15  parrish
 !   2007-04-16  kleist  - modified for full field or incremental diagnostics
+!   2008-04-04  safford - rm unused vars
+!   2008-10-08  derber  - modify to output streamfunction and vel. pot. and to not update time derivatives
 !
 !   input argument list:
 !     u_t      - input perturbation u tendency on gaussian grid (subdomains)
@@ -62,8 +124,8 @@ subroutine strong_bal_correction_slow_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
 !     t_t      - input perturbation T tendency on gaussian grid (subdomains)
 !     ps_t     - input perturbation surface pressure tendency on gaussian grid (subdomains)
 !     mype     - current processor
-!     u        - input perturbation u on gaussian grid (subdomains)
-!     v        - input perturbation v on gaussian grid (subdomains)
+!     psi      - input perturbation psi on gaussian grid (subdomains)
+!     chi      - input perturbation chi on gaussian grid (subdomains)
 !     t        - input perturbation T on gaussian grid (subdomains)
 !     ps       - input perturbation surface pressure on gaussian grid (subdomains)
 !     bal_diagnostic - if true, then compute BAL diagnostic, a measure of amplitude
@@ -73,8 +135,8 @@ subroutine strong_bal_correction_slow_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
 !     update   - if false, then do not update u,v,t,ps with balance increment
 !
 !   output argument list:
-!     u        - output balanced perturbation u on gaussian grid (subdomains)
-!     v        - output balanced perturbation v on gaussian grid (subdomains)
+!     psi      - output balanced perturbation psi on gaussian grid (subdomains)
+!     chi      - output balanced perturbation chi on gaussian grid (subdomains)
 !     t        - output balanced perturbation T on gaussian grid (subdomains)
 !     ps       - output balanced perturbation surface pressure on gaussian grid (subdomains)
 !
@@ -96,7 +158,7 @@ subroutine strong_bal_correction_slow_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
   logical,intent(in)::bal_diagnostic,update,fullfield
   real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::u_t,v_t,t_t
   real(r_kind),dimension(lat2,lon2),intent(inout)::ps_t
-  real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::u,v,t
+  real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::psi,chi,t
   real(r_kind),dimension(lat2,lon2),intent(inout)::ps
 
   real(r_kind),dimension(nvmodes_keep)::rmstend_uf,rmstend_g_uf
@@ -111,7 +173,6 @@ subroutine strong_bal_correction_slow_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
   real(r_kind),dimension(nuvlevs)::rmstend_loc_uf,rmstend_g_loc_uf
   real(r_kind),dimension(nuvlevs)::rmstend_loc_f,rmstend_g_loc_f
   real(r_kind),dimension(nc)::divhat,vorthat,mhat,deldivhat,delvorthat,delmhat
-  real(r_kind),dimension(nc)::divhat_g,vorthat_g,mhat_g
   real(r_kind) rmstend_all_uf,rmstend_all_g_uf,rmstend_all_f,rmstend_all_g_f
   real(r_kind),dimension(lat2,lon2,nsig)::u_t_g,v_t_g,t_t_g
   real(r_kind),dimension(lat2,lon2)::ps_t_g
@@ -190,7 +251,7 @@ subroutine strong_bal_correction_slow_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
           mwork(i,j,kk)=zero
         end do
       end do
-      call zds2uvg(delvorthat,deldivhat,uwork(1,1,kk),vwork(1,1,kk))
+      call zds2pcg(delvorthat,deldivhat,uwork(1,1,kk),vwork(1,1,kk))
       call s2g0(delmhat,mwork(1,1,kk))
 
   end do
@@ -246,7 +307,7 @@ subroutine strong_bal_correction_slow_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
 
   call vtrans_inv(delutilde,delvtilde,delmtilde,delu,delv,delt,delps)
 !????????????????????????????????in here, can insert diagnostic based on utilde_t_g and utilde_t,etc.
-  call vtrans_inv(utilde_t_g,vtilde_t_g,mtilde_t_g,u_t_g,v_t_g,t_t_g,ps_t_g)
+! call vtrans_inv(utilde_t_g,vtilde_t_g,mtilde_t_g,u_t_g,v_t_g,t_t_g,ps_t_g)
 
 
 !  update u,v,t,ps
@@ -256,26 +317,22 @@ subroutine strong_bal_correction_slow_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
     do k=1,nsig
       do j=1,lon2
         do i=1,lat2
-          u(i,j,k)=u(i,j,k)+delu(i,j,k)
-          v(i,j,k)=v(i,j,k)+delv(i,j,k)
+          psi(i,j,k)=psi(i,j,k)+delu(i,j,k)
+          chi(i,j,k)=chi(i,j,k)+delv(i,j,k)
           t(i,j,k)=t(i,j,k)+delt(i,j,k)
-          u_t(i,j,k)=u_t(i,j,k)-u_t_g(i,j,k)
-          v_t(i,j,k)=v_t(i,j,k)-v_t_g(i,j,k)
-          t_t(i,j,k)=t_t(i,j,k)-t_t_g(i,j,k)
         end do
       end do
     end do
     do j=1,lon2
       do i=1,lat2
         ps(i,j)=ps(i,j)+delps(i,j)
-        ps_t(i,j)=ps_t(i,j)-ps_t_g(i,j)
       end do
     end do
   end if
 
 end subroutine strong_bal_correction_slow_global
 
-subroutine strong_bal_correction_slow_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
+subroutine strong_bal_correction_slow_global_ad(u_t,v_t,t_t,ps_t,mype,psi,chi,t,ps)
 
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -293,14 +350,14 @@ subroutine strong_bal_correction_slow_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
 !     t_t      - input perturbation T tendency on gaussian grid (subdomains)
 !     ps_t     - input perturbation surface pressure tendency on gaussian grid (subdomains)
 !     mype     - current processor
-!     u        - input perturbation u on gaussian grid (subdomains)
-!     v        - input perturbation v on gaussian grid (subdomains)
+!     u        - input perturbation psi on gaussian grid (subdomains)
+!     v        - input perturbation chi on gaussian grid (subdomains)
 !     t        - input perturbation T on gaussian grid (subdomains)
 !     ps       - input perturbation surface pressure on gaussian grid (subdomains)
 !
 !   output argument list:
-!     u_t      - output perturbation u tendency on gaussian grid (subdomains)
-!     v_t      - output perturbation v tendency on gaussian grid (subdomains)
+!     u_t      - output perturbation psi tendency on gaussian grid (subdomains)
+!     v_t      - output perturbation chi tendency on gaussian grid (subdomains)
 !     t_t      - output perturbation T tendency on gaussian grid (subdomains)
 !     ps_t     - output perturbation surface pressure tendency on gaussian grid (subdomains)
 !
@@ -321,7 +378,7 @@ subroutine strong_bal_correction_slow_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
   integer(i_kind),intent(in)::mype
   real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::u_t,v_t,t_t
   real(r_kind),dimension(lat2,lon2),intent(inout)::ps_t
-  real(r_kind),dimension(lat2,lon2,nsig),intent(in)::u,v,t
+  real(r_kind),dimension(lat2,lon2,nsig),intent(in)::psi,chi,t
   real(r_kind),dimension(lat2,lon2),intent(in)::ps
 
   real(r_kind),dimension(lat2,lon2,nsig)::delu,delv,delt
@@ -345,19 +402,15 @@ subroutine strong_bal_correction_slow_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
   do j=1,lon2
     do i=1,lat2
       delps(i,j)=ps(i,j)
-      ps_t_g(i,j)=-ps_t(i,j)
     end do
   end do
 
   do k=1,nsig
     do j=1,lon2
       do i=1,lat2
-        delu(i,j,k)=u(i,j,k)
-        delv(i,j,k)=v(i,j,k)
+        delu(i,j,k)=psi(i,j,k)
+        delv(i,j,k)=chi(i,j,k)
         delt(i,j,k)=t(i,j,k)
-        u_t_g(i,j,k)=-u_t(i,j,k)
-        v_t_g(i,j,k)=-v_t(i,j,k)
-        t_t_g(i,j,k)=-t_t(i,j,k)
       end do
     end do
   end do
@@ -368,7 +421,6 @@ subroutine strong_bal_correction_slow_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
   delutilde=zero ; delvtilde=zero ; delmtilde=zero
   utilde_t_g=zero ; vtilde_t_g=zero ; mtilde_t_g=zero
   call vtrans_inv_ad(delutilde,delvtilde,delmtilde,delu,delv,delt,delps)
-  call vtrans_inv_ad(utilde_t_g,vtilde_t_g,mtilde_t_g,u_t_g,v_t_g,t_t_g,ps_t_g)
 
   call inmi_sub2grid(delutilde,utilde_t_g,uwork,mype)
   call inmi_sub2grid(delvtilde,vtilde_t_g,vwork,mype)
@@ -392,7 +444,7 @@ subroutine strong_bal_correction_slow_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
 !                     (slabs)                             (slabs)
 
       call s2g0_ad(delmhat,mwork(1,1,kk))
-      call zds2uvg_ad(delvorthat,deldivhat,uwork(1,1,kk),vwork(1,1,kk))
+      call zds2pcg_ad(delvorthat,deldivhat,uwork(1,1,kk),vwork(1,1,kk))
 
 !   4.  divhat,vorthat,mhat --> deldivhat,delvorthat,delmhat   (inmi correction)
 !          (slabs)                        (slabs)
@@ -447,6 +499,7 @@ subroutine inmi_sub2grid(utilde,utilde2,uwork,mype)
 !
 ! program history log:
 !   2006-08-03  parrish
+!   2008-04-04  safford  - rm unused uses
 !
 !   input argument list:
 !     utilde   - vertical tranformed variable on subdomains
@@ -464,10 +517,10 @@ subroutine inmi_sub2grid(utilde,utilde2,uwork,mype)
 
   use kinds, only: r_kind,i_kind
   use constants, only: zero
-  use gridmod, only: regional,lat2,nsig,iglobal,lon1,itotsub,lon2,lat1,ltosi,ltosj,nlon,nlat
-  use mpimod, only: iscuv_s,ierror,mpi_comm_world,irduv_s,ircuv_s,&
-       isduv_s,isduv_g,iscuv_g,irduv_g,ircuv_g,mpi_rtype,&
-       strip,reorder,reorder2
+  use gridmod, only: lat2,nsig,iglobal,lon1,itotsub,lon2,lat1,ltosi,ltosj,nlon,nlat
+  use mpimod, only: ierror,mpi_comm_world,&
+       isduv_g,iscuv_g,irduv_g,ircuv_g,mpi_rtype,&
+       strip,reorder
   use mod_vtrans, only: nvmodes_keep
   implicit none
 
@@ -480,7 +533,6 @@ subroutine inmi_sub2grid(utilde,utilde2,uwork,mype)
 
 ! Declare local variables
   integer(i_kind) i,j,k,isize,mode
-            integer(i_kind) ii
 
   real(r_kind),dimension(lat1,lon1,nsig):: usm
   real(r_kind),dimension(itotsub,nuvlevs):: work3
@@ -533,8 +585,8 @@ subroutine inmi_sub2grid(utilde,utilde2,uwork,mype)
          mpi_comm_world,ierror)
 
 !   reorder work arrays and transfer to output array
-    call reorder(work3,nuvlevs)
-    do k=1,nuvlevs
+    call reorder(work3,nuvlevs,nnnuvlevs)
+    do k=1,nnnuvlevs
       do i=1,iglobal
         uwork(ltosi(i),ltosj(i),k)=work3(i,k)
       end do
@@ -553,6 +605,7 @@ subroutine inmi_grid2sub(utilde,utilde2,uwork,mype)
 !
 ! program history log:
 !   2006-08-03  parrish
+!   2008-04-04  safford - rm unused vars and uses
 !
 !   input argument list:
 !     uwork    - input fields in horizontal slab mode
@@ -570,10 +623,9 @@ subroutine inmi_grid2sub(utilde,utilde2,uwork,mype)
 
   use kinds, only: r_kind,i_kind
   use constants, only: zero
-  use gridmod, only: regional,lat2,nsig,iglobal,lon1,itotsub,lon2,lat1,nlat,nlon,ltosi_s,ltosj_s
+  use gridmod, only: lat2,nsig,iglobal,lon1,itotsub,lon2,lat1,nlat,nlon,ltosi_s,ltosj_s
   use mpimod, only: iscuv_s,ierror,mpi_comm_world,irduv_s,ircuv_s,&
-       isduv_s,isduv_g,iscuv_g,irduv_g,ircuv_g,mpi_rtype,&
-       strip,reorder,reorder2
+       isduv_s,mpi_rtype,reorder2
   use mod_vtrans, only: nvmodes_keep
   implicit none
 
@@ -587,19 +639,18 @@ subroutine inmi_grid2sub(utilde,utilde2,uwork,mype)
 ! Declare local variables
   integer(i_kind) i,j,k,isize,mode
 
-  real(r_kind),dimension(lat1,lon1,nsig):: usm
   real(r_kind),dimension(itotsub,nuvlevs):: work3
 
 ! Initialize variables
   isize=max(iglobal,itotsub)
 
-    do k=1,nuvlevs
+    do k=1,nnnuvlevs
       do i=1,itotsub
         work3(i,k)=uwork(ltosi_s(i),ltosj_s(i),k)
       end do
     end do
 !   reorder the work array for the mpi communication
-    call reorder2(work3,nuvlevs)
+    call reorder2(work3,nuvlevs,nnnuvlevs)
 
 !   get u back on subdomains
     call mpi_alltoallv(work3(1,1),iscuv_s,isduv_s,&

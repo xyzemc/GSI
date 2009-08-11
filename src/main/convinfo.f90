@@ -11,6 +11,7 @@ module convinfo
 !   2006-04-20  kistler  - extensions for thinning and bias corrections
 !   2006-06-29  kistler  - ithin_conv,rmesh_conv moved added to convinfo file entry
 !   2007-11-03       su  - add pmesh_conv 
+!   2009-01-22  todling - add convinfo_inilialized
 !
 ! Subroutines Included:
 !   sub init_convinfo    - initialize conventional obs related variables
@@ -75,31 +76,34 @@ module convinfo
 
   real(r_kind),allocatable,dimension(:,:):: zbias     ! raob solar zenith angle dependent bias
 
+  logical,save :: convinfo_initialized=.false.
 
 contains
 
-!
-! !IROUTINE: init_convinfo --- Initialize parameters for conventional obs
-!
-! !INTERFACE:
-!
+
   subroutine init_convinfo
-
-! !USES:
-
-! !DESCRIPTION:  This routine sets default values for conventional obs
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    init_convinfo --- Initialize parameters for conventional obs
 !
-! !REVISION HISTORY:
+!   prgrmmr:     kistler      org: np23                date: 2006-04-20
 !
-! !REMARKS:
-!   language: f90
+! abstract:      This routine sets default values for conventional obs
+!
+! program history log:
+!   2008-06-04  safford -- add subprogram doc block
+!   2008-09-05  lueken -- merged ed's changes into q1fy09 code
+!
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
 !   machine:  ibm rs/6000 sp; SGI Origin 2000; Compaq/HP
 !
-! !AUTHOR:    
-!   kistler      org: np23                date: 2006-04-20
-!
-!EOP
-!-------------------------------------------------------------------------
+!$$$ end documentation block
+
     implicit none
 
     diag_conv = .true.    ! .true.=generate conv obs diagnostic file
@@ -133,6 +137,9 @@ contains
 ! program history log:
 !   2006-02-08  derber 
 !   2006-04-20  kistler - extended to read conv biases
+!   2008-06-04  safford - rm unused vars
+!   2008-09-05  lueken - merged ed's changes into q1fy09 code
+!   2009-01-22  todling - protect against non-initialized destroy call
 !
 !   input argument list:
 !     mype - mpi task id
@@ -153,7 +160,6 @@ contains
     character(len=1)cflg
     character(len=16) cob
     character(len=11) bias_file_in/'convbias_in'/
-    character(len=12) bias_file_out/'convbias_out'/
     character(len=7) iotype
     character(len=120) crecord
     integer(i_kind) lunin,i,n,nc,ier,istat
@@ -280,13 +286,36 @@ contains
 	if (npred_conv_max > 0) call conv_bias_print
 	
     close(lunin)
+    convinfo_initialized=.true.
     
     return
   end subroutine convinfo_read
 
+
   subroutine convinfo_write
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    convinfo_write
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-06-04  safford -- add subprogram doc block, rm unused vars
+!   2008-09-05  lueken -- merged ed's changes into q1fy09 code
+!
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
 	implicit none
-    character(len=7) iotype
 	integer(i_kind) np,n,nc,ier
 	integer (i_kind) iunit
 	iunit=53
@@ -304,8 +333,32 @@ contains
     return
 
   end subroutine convinfo_write
+
+
   subroutine conv_bias_print
-		integer (i_kind) n,nc,np
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    conv_bias_print
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-06-04  safford -- add subprogram doc block
+!   2008-09-05  lueken -- merged ed's changes into q1fy09 code
+!
+!   input argument list:
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$ end documentation block
+
+		integer (i_kind) nc,np
 		do nc=1,nconvtype
 			if (trim(ioctype(nc)) == 'ps') then
 				np=npred_conv(nc)
@@ -320,6 +373,7 @@ contains
 		enddo
   end subroutine conv_bias_print
 
+
   subroutine convinfo_destroy
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -331,6 +385,7 @@ contains
 ! program history log:
 !   2006-02-08  derber 
 !   2006-04-20  kistler - extended to read conv biases
+!   2009-01-22  todling - protect against non-initialized destroy call
 !
 !   input argument list:
 !
@@ -341,8 +396,10 @@ contains
 !   machine:  ibm rs/6000 sp
 !
 !$$$
+
     integer(i_kind) ier
 
+    if(.not.convinfo_initialized) return
     deallocate(ctwind,cgross,cermax,cermin, &
              cvar_b,cvar_pg,ncmiter,ncgroup, &
              ncnumgrp,icuse,ictype,icsubtype, &

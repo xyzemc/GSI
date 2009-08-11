@@ -12,6 +12,8 @@ subroutine tintrp3(f,g,dx,dy,dz,obstime,gridtime,n,mype,nflds)
 !   1999-08-24  derber, j., treadon, r., yang, w., first frozen mpp version
 !   2004-05-18  kleist, documentation
 !   2005-02-02  treadon - use ione from constants
+!   2008-04-03  safford - rm unused vars         
+!   2009-01-23  todling - dim on gridtime is nflds
 !
 !   input argument list:
 !     f        - input interpolator
@@ -39,15 +41,14 @@ subroutine tintrp3(f,g,dx,dy,dz,obstime,gridtime,n,mype,nflds)
   integer(i_kind),intent(in):: n,mype,nflds
   real(r_kind),dimension(lat2,lon2,nsig,nflds),intent(in):: f
   real(r_kind),dimension(n),intent(in):: dx,dy,dz,obstime
-  real(r_kind),dimension(100),intent(in):: gridtime
+  real(r_kind),dimension(nflds),intent(in):: gridtime
   real(r_kind),dimension(n),intent(out):: g
 
 ! Declare local variables
   integer(i_kind) m1,i,ix1,iy1,ix,ixp,iyp
   integer(i_kind) iy,iz,izp,itime,itimep,j
-  real(r_kind) delx,rdelt,delyp,delxp,delt,deltp
+  real(r_kind) delx,delyp,delxp,delt,deltp
   real(r_kind) dely,delz,delzp
-  real(r_kind),dimension(n):: g2,g3
 
   m1=mype+ione
   do i=ione,n

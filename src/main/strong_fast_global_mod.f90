@@ -1,11 +1,48 @@
 module strong_fast_global_mod
 !$$$   module documentation block
 !                .      .    .                                       .
-! module:    zrnmi_mod
+! module:    strong_fast_global_mod
 !
-! abstract: Contains all routines necessary for regional normal mode
-!             projection/initialization.
+! abstract: Contains all routines for fast strong balance constraint
 !
+
+! program history log:
+!   2008-04-04  safford - add moddule doc block and missing subroutine doc blocks
+!
+! subroutines included:
+!    init_strongvars_2        --
+!    initialize_strong_fast_global
+!    strong_bal_correction         -- strong balance correction
+!    strong_bal_correction_fast_global_ad -- adjoint of strong_bal_correction
+!    gather_rmstends0         -- get BAL diagnostics
+!    gather_rmstends          -- get BAL diagnostics
+!    inmi_coupler_sd2ew0      --
+!    inmi_coupler_sd2ew1      --
+!    inmi_coupler_sd2ew       --
+!    inmi_coupler_sd2ew1      --
+!    inmi_coupler_sd2ew       --
+!    inmi_coupler_ew2sd1      --
+!    inmi_coupler_ew2sd       --
+!    inmi_ew_trans            --
+!    inmi_ew_invtrans_ad      --
+!    inmi_ew_invtrans         --
+!    inmi_ew_trans_ad         --
+!    inmi_coupler_ew2ns0      --
+!    inmi_coupler_ew2ns1      --
+!    inmi_coupler_ew2ns       --
+!    inmi_coupler_ns2ew       --
+!    inmi_nsuvm2zdm           --
+!    spdz2uv_ns               -- COMPUTE WINDS FROM div and vort for 1 zonal wave number
+!    spuv2dz_ns               -- COMPUTE DIV,VORT FROM WINDS for one zonal wave number
+!    SPANALY_ns               -- ANALYZE SPECTRAL FROM FOURIER
+!    SPSYNTH_ns               -- SPSYNTH modified for one zonal wave number
+!
+! variable definitions:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!$$$ end documentation block
 
   use kinds, only: i_kind
   implicit none
@@ -39,6 +76,28 @@ contains
 
   subroutine init_strongvars_2(mype)
 
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    init_strongvars_2
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
+
     integer(i_kind),intent(in):: mype
 
     call initialize_strong_fast_global(mype)
@@ -46,6 +105,28 @@ contains
   end subroutine init_strongvars_2
 
 subroutine initialize_strong_fast_global(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    initialize_strong_fast_global
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
+
 
   use kinds, only: i_kind
   use gridmod, only: nlat
@@ -65,7 +146,8 @@ subroutine initialize_strong_fast_global(mype)
 end subroutine initialize_strong_fast_global
 
 
-subroutine strong_bal_correction_fast_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_diagnostic,fullfield,update)
+subroutine strong_bal_correction_fast_global(u_t,v_t,t_t,ps_t,mype,psi,chi,t,ps, &
+                                              bal_diagnostic,fullfield,update)
 
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -80,6 +162,7 @@ subroutine strong_bal_correction_fast_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
 ! program history log:
 !   2006-07-15  parrish
 !   2007-04-16  kleist  - modified for full field or incremental diagnostics
+!   2008-10-08  parrish/derber - modify to output streamfunction and vel. pot. and not update time derivatives
 !
 !   input argument list:
 !     u_t      - input perturbation u tendency on gaussian grid (subdomains)
@@ -87,8 +170,8 @@ subroutine strong_bal_correction_fast_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
 !     t_t      - input perturbation T tendency on gaussian grid (subdomains)
 !     ps_t     - input perturbation surface pressure tendency on gaussian grid (subdomains)
 !     mype     - current processor
-!     u        - input perturbation u on gaussian grid (subdomains)
-!     v        - input perturbation v on gaussian grid (subdomains)
+!     psi      - input perturbation psi on gaussian grid (subdomains)
+!     chi      - input perturbation chi on gaussian grid (subdomains)
 !     t        - input perturbation T on gaussian grid (subdomains)
 !     ps       - input perturbation surface pressure on gaussian grid (subdomains)
 !     bal_diagnostic - if true, then compute BAL diagnostic, a measure of amplitude
@@ -98,14 +181,10 @@ subroutine strong_bal_correction_fast_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
 !     update   - if false, then do not update u,v,t,ps with balance increment
 !
 !   output argument list:
-!     u        - output balanced perturbation u on gaussian grid (subdomains)
-!     v        - output balanced perturbation v on gaussian grid (subdomains)
+!     psi      - output balanced perturbation u on gaussian grid (subdomains)
+!     chi      - output balanced perturbation v on gaussian grid (subdomains)
 !     t        - output balanced perturbation T on gaussian grid (subdomains)
 !     ps       - output balanced perturbation surface pressure on gaussian grid (subdomains)
-!     u_t      - output perturbation u tendency projected on slow modes (subdomains)
-!     v_t      - output perturbation v tendency projected on slow modes (subdomains)
-!     t_t      - output perturbation T tendency projected on slow modes (subdomains)
-!     ps_t     - output perturbation ps tendency projected on slow modes (subdomains)
 !
 ! attributes:
 !   language: f90
@@ -118,14 +197,14 @@ subroutine strong_bal_correction_fast_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
   use mod_inmi, only: m,gspeed,mmax,dinmi,gproj
   use gridmod, only: nlat,nlon,lat2,lon2,nsig
   use specmod, only: jcap
-  use constants, only: zero
+  use constants, only: zero,one,rearth
   implicit none
 
   integer(i_kind),intent(in)::mype
   logical,intent(in)::bal_diagnostic,update,fullfield
-  real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::u_t,v_t,t_t
-  real(r_kind),dimension(lat2,lon2),intent(inout)::ps_t
-  real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::u,v,t
+  real(r_kind),dimension(lat2,lon2,nsig),intent(in)::u_t,v_t,t_t
+  real(r_kind),dimension(lat2,lon2),intent(in)::ps_t
+  real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::psi,chi,t
   real(r_kind),dimension(lat2,lon2),intent(inout)::ps
 
   real(r_kind),dimension(nvmodes_keep)::rmstend_uf,rmstend_g_uf
@@ -145,6 +224,7 @@ subroutine strong_bal_correction_fast_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
   real(r_kind) rmstend_all_uf,rmstend_all_g_uf,rmstend_all_f,rmstend_all_g_f
   real(r_kind),allocatable,dimension(:,:,:,:)::uvm_ew
   real(r_kind),allocatable,dimension(:,:,:,:,:)::uvm_ewtrans,uvm_ns,zdm_hat
+  real(r_kind) del2inv
 
   integer(i_kind) i,ipair,j,k,kk,mode,n
   logical filtered
@@ -207,11 +287,13 @@ subroutine strong_bal_correction_fast_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
 
       i=0
       do n=m,jcap
+        del2inv=zero
+        if(n.gt.0) del2inv=rearth**2/(n*(n+one))
         i=i+1
-        zdm_hat(1,1,i,ipair,kk)=delvorthat(1,n)
-        zdm_hat(1,2,i,ipair,kk)=delvorthat(2,n)
-        zdm_hat(2,1,i,ipair,kk)=deldivhat(1,n)
-        zdm_hat(2,2,i,ipair,kk)=deldivhat(2,n)
+        zdm_hat(1,1,i,ipair,kk)=-delvorthat(1,n)*del2inv
+        zdm_hat(1,2,i,ipair,kk)=-delvorthat(2,n)*del2inv
+        zdm_hat(2,1,i,ipair,kk)=-deldivhat(1,n)*del2inv
+        zdm_hat(2,2,i,ipair,kk)=-deldivhat(2,n)*del2inv
         zdm_hat(3,1,i,ipair,kk)=delmhat(1,n)
         zdm_hat(3,2,i,ipair,kk)=delmhat(2,n)
       end do
@@ -219,7 +301,7 @@ subroutine strong_bal_correction_fast_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
     end do
   end do
 
-  call inmi_nszdm2uvm(uvm_ns,zdm_hat,mype)
+  call inmi_nspcm_hat2pcm(uvm_ns,zdm_hat,mype)
   call inmi_coupler_ns2ew(uvm_ewtrans,uvm_ns,mype)
   call inmi_ew_invtrans(uvm_ew,uvm_ewtrans,mype)
   call inmi_coupler_ew2sd(delutilde,delvtilde,delmtilde,utilde_t_g,vtilde_t_g,mtilde_t_g,uvm_ew,mype)
@@ -270,7 +352,7 @@ subroutine strong_bal_correction_fast_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
 !       (subdomains)                      (subdomains)
 
   call vtrans_inv(delutilde,delvtilde,delmtilde,delu,delv,delt,delps)
-  call vtrans_inv(utilde_t_g,vtilde_t_g,mtilde_t_g,u_t_g,v_t_g,t_t_g,ps_t_g)
+! call vtrans_inv(utilde_t_g,vtilde_t_g,mtilde_t_g,u_t_g,v_t_g,t_t_g,ps_t_g)
 
 
 !  update u,v,t,ps
@@ -280,26 +362,22 @@ subroutine strong_bal_correction_fast_global(u_t,v_t,t_t,ps_t,mype,u,v,t,ps,bal_
     do k=1,nsig
       do j=1,lon2
         do i=1,lat2
-          u(i,j,k)=u(i,j,k)+delu(i,j,k)
-          v(i,j,k)=v(i,j,k)+delv(i,j,k)
+          psi(i,j,k)=psi(i,j,k)+delu(i,j,k)
+          chi(i,j,k)=chi(i,j,k)+delv(i,j,k)
           t(i,j,k)=t(i,j,k)+delt(i,j,k)
-          u_t(i,j,k)=u_t(i,j,k)-u_t_g(i,j,k)
-          v_t(i,j,k)=v_t(i,j,k)-v_t_g(i,j,k)
-          t_t(i,j,k)=t_t(i,j,k)-t_t_g(i,j,k)
         end do
       end do
     end do
     do j=1,lon2
       do i=1,lat2
         ps(i,j)=ps(i,j)+delps(i,j)
-        ps_t(i,j)=ps_t(i,j)-ps_t_g(i,j)
       end do
     end do
   end if
 
 end subroutine strong_bal_correction_fast_global
 
-subroutine strong_bal_correction_fast_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
+subroutine strong_bal_correction_fast_global_ad(u_t,v_t,t_t,ps_t,mype,psi,chi,t,ps)
 
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -310,6 +388,7 @@ subroutine strong_bal_correction_fast_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
 !
 ! program history log:
 !   2006-07-15  parrish
+!   2008-10-08  parrish/derber - modify to output streamfunction and vel. pot. and not update time derivatives
 !
 !   input argument list:
 !     u_t      - input perturbation u tendency on gaussian grid (subdomains)
@@ -317,8 +396,8 @@ subroutine strong_bal_correction_fast_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
 !     t_t      - input perturbation T tendency on gaussian grid (subdomains)
 !     ps_t     - input perturbation surface pressure tendency on gaussian grid (subdomains)
 !     mype     - current processor
-!     u        - input perturbation u on gaussian grid (subdomains)
-!     v        - input perturbation v on gaussian grid (subdomains)
+!     psi      - input perturbation psi on gaussian grid (subdomains)
+!     chi      - input perturbation chi on gaussian grid (subdomains)
 !     t        - input perturbation T on gaussian grid (subdomains)
 !     ps       - input perturbation surface pressure on gaussian grid (subdomains)
 !
@@ -339,17 +418,15 @@ subroutine strong_bal_correction_fast_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
   use mod_inmi, only: m,gspeed,mmax,dinmi_ad,gproj_ad
   use gridmod, only: nlat,nlon,lat2,lon2,nsig
   use specmod, only: jcap
-  use constants, only: zero
+  use constants, only: zero,one,rearth
   implicit none
 
   integer(i_kind),intent(in)::mype
   real(r_kind),dimension(lat2,lon2,nsig),intent(inout)::u_t,v_t,t_t
   real(r_kind),dimension(lat2,lon2),intent(inout)::ps_t
-  real(r_kind),dimension(lat2,lon2,nsig),intent(in)::u,v,t
+  real(r_kind),dimension(lat2,lon2,nsig),intent(in)::psi,chi,t
   real(r_kind),dimension(lat2,lon2),intent(in)::ps
 
-  real(r_kind),dimension(lat2,lon2,nsig):: u_t_g,v_t_g,t_t_g
-  real(r_kind),dimension(lat2,lon2):: ps_t_g
   real(r_kind),dimension(lat2,lon2,nsig)::delu,delv,delt
   real(r_kind),dimension(lat2,lon2)::delps
   real(r_kind),dimension(lat2,lon2,nvmodes_keep)::utilde_t,vtilde_t,mtilde_t
@@ -359,6 +436,7 @@ subroutine strong_bal_correction_fast_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
   real(r_kind),dimension(2,0:jcap)::divhat,vorthat,mhat,deldivhat,delvorthat,delmhat
   real(r_kind),allocatable,dimension(:,:,:,:)::uvm_ew
   real(r_kind),allocatable,dimension(:,:,:,:,:)::uvm_ewtrans,uvm_ns,zdm_hat
+  real(r_kind) del2inv
 
   integer(i_kind) i,ipair,j,k,kk,mode,n
 
@@ -369,19 +447,15 @@ subroutine strong_bal_correction_fast_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
   do j=1,lon2
     do i=1,lat2
       delps(i,j)=ps(i,j)
-      ps_t_g(i,j)=-ps_t(i,j)
     end do
   end do
 
   do k=1,nsig
     do j=1,lon2
       do i=1,lat2
-        delu(i,j,k)=u(i,j,k)
-        delv(i,j,k)=v(i,j,k)
+        delu(i,j,k)=psi(i,j,k)
+        delv(i,j,k)=chi(i,j,k)
         delt(i,j,k)=t(i,j,k)
-        u_t_g(i,j,k)=-u_t(i,j,k)
-        v_t_g(i,j,k)=-v_t(i,j,k)
-        t_t_g(i,j,k)=-t_t(i,j,k)
       end do
     end do
   end do
@@ -392,22 +466,19 @@ subroutine strong_bal_correction_fast_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
   delutilde=zero ; delvtilde=zero ; delmtilde=zero
   utilde_t_g=zero ; vtilde_t_g=zero ; mtilde_t_g=zero
   call vtrans_inv_ad(delutilde,delvtilde,delmtilde,delu,delv,delt,delps)
-  call vtrans_inv_ad(utilde_t_g,vtilde_t_g,mtilde_t_g,u_t_g,v_t_g,t_t_g,ps_t_g)
 
   allocate(uvm_ew(2,3,nlon,nlatm_0:nlatm_1),uvm_ewtrans(2,3,2,0:jcap,nlatm_0:nlatm_1))
   allocate(uvm_ns(3,2,nlat,2,m_0:m_1),zdm_hat(3,2,nlat,2,m_0:m_1))
   call inmi_coupler_sd2ew(delutilde,delvtilde,delmtilde,utilde_t_g,vtilde_t_g,mtilde_t_g,uvm_ew,mype)
   call inmi_ew_invtrans_ad(uvm_ew,uvm_ewtrans,mype)
   call inmi_coupler_ew2ns(uvm_ewtrans,uvm_ns,mype)
-  call inmi_nszdm2uvm_ad(uvm_ns,zdm_hat,mype)
+  call inmi_nspcm_hat2pcm_ad(uvm_ns,zdm_hat,mype)
   do kk=m_0,m_1
     do ipair=1,2
       m=mmode_list(ipair,kk)
       mode=mmode_list(ipair+2,kk)
       gspeed=sqrt(depths(abs(mode)))
-      i=0
       do n=m,jcap
-        i=i+1
         vorthat(1,n)=zero
         vorthat(2,n)=zero
         divhat( 1,n)=zero
@@ -417,11 +488,13 @@ subroutine strong_bal_correction_fast_global_ad(u_t,v_t,t_t,ps_t,mype,u,v,t,ps)
       end do
       i=0
       do n=m,jcap
+        del2inv=zero
+        if(n.gt.0) del2inv=rearth**2/(n*(n+one))
         i=i+1
-        delvorthat(1,n)=zdm_hat(1,1,i,ipair,kk)
-        delvorthat(2,n)=zdm_hat(1,2,i,ipair,kk)
-        deldivhat(1,n)=zdm_hat(2,1,i,ipair,kk)
-        deldivhat(2,n)=zdm_hat(2,2,i,ipair,kk)
+        delvorthat(1,n)=-zdm_hat(1,1,i,ipair,kk)*del2inv
+        delvorthat(2,n)=-zdm_hat(1,2,i,ipair,kk)*del2inv
+        deldivhat(1,n)=-zdm_hat(2,1,i,ipair,kk)*del2inv
+        deldivhat(2,n)=-zdm_hat(2,2,i,ipair,kk)*del2inv
         delmhat(1,n)=zdm_hat(3,1,i,ipair,kk)
         delmhat(2,n)=zdm_hat(3,2,i,ipair,kk)
       end do
@@ -467,7 +540,7 @@ subroutine gather_rmstends0(mype)
 
 !$$$  subprogram documentation block
 !                .      .    .                                       .
-! subprogram:    gather_rmstends  get BAL diagnostics
+! subprogram:    gather_rmstends0  get BAL diagnostics
 !   prgmmr: parrish          org: np23                date: 2006-08-03
 !
 ! abstract: compute BAL diagnostics which give amplitude of 
@@ -475,6 +548,7 @@ subroutine gather_rmstends0(mype)
 !
 ! program history log:
 !   2006-08-03  parrish
+!   2008-04-04  safford  - rm unused uses
 !
 !   input argument list:
 !     mype        - current processor number
@@ -489,9 +563,8 @@ subroutine gather_rmstends0(mype)
 !$$$
 
   use kinds, only: r_kind,i_kind
-  use mpimod, only: ierror,mpi_comm_world,mpi_integer4,mpi_rtype,npe
+  use mpimod, only: ierror,mpi_comm_world,mpi_integer4,npe
   use mod_vtrans, only: nvmodes_keep
-  use constants, only: zero
   use specmod, only: jcap
   implicit none
 
@@ -527,6 +600,7 @@ subroutine gather_rmstends(rmstend_loc,rmstend)
 !
 ! program history log:
 !   2006-08-03  parrish
+!   2008-04-04  safford  - rm unused uses
 !
 !   input argument list:
 !     rmstend_loc - previously computed energy norms of vertical modes
@@ -546,7 +620,7 @@ subroutine gather_rmstends(rmstend_loc,rmstend)
 !$$$
 
   use kinds, only: r_kind,i_kind
-  use mpimod, only: ierror,mpi_comm_world,mpi_integer4,mpi_rtype,npe
+  use mpimod, only: ierror,mpi_comm_world,mpi_rtype,npe
   use mod_vtrans, only: nvmodes_keep
   use constants, only: zero
   use specmod, only: jcap
@@ -575,6 +649,27 @@ subroutine gather_rmstends(rmstend_loc,rmstend)
 end subroutine gather_rmstends
 
 subroutine inmi_coupler_sd2ew0(mype)
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    inmi_coupler_sd2ew0
+!   prgmmr:
+!
+! abstract:  create ew (lat strips) subdivision for use with inmi
+!
+! program history log:
+!   2008-04-04  safford  - add doc block
+!
+!   input argument list:
+!     mype        - current processor number
+!
+!   output argument list:
+!
+! attributes:
+!   language: f90
+!   machine:  ibm RS/6000 SP
+!
+!$$$
+
 
 !  create ew (lat strips) subdivision for use with inmi
 
@@ -631,6 +726,28 @@ subroutine inmi_coupler_sd2ew0(mype)
 end subroutine inmi_coupler_sd2ew0
 
 subroutine inmi_coupler_sd2ew1(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_coupler_sd2ew1
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
+
 
 !  use mpi_alltoallv to move u_sd,v_sd,m_sd (subdomains) to uvm_ew (lat strips)
 
@@ -727,6 +844,35 @@ end subroutine inmi_coupler_sd2ew1
 
 subroutine inmi_coupler_sd2ew(u_sd1,v_sd1,m_sd1,u_sd2,v_sd2,m_sd2,uvm_ew,mype)
 
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    init_coupler_sd2ew
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     mype     - mpi task id
+!     u_sd1    -
+!     v_sd1    -
+!     m_sd1    -
+!     u_sd2    -
+!     v_sd2    -
+!     m_sd2    -
+!
+!   output argument list:
+!     uvm_ew   -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
+
 !  use mpi_alltoallv to move u_sd,v_sd,m_sd (subdomains) to uvm_ew (lat strips)
 
   use kinds, only: r_kind,i_kind
@@ -742,7 +888,7 @@ subroutine inmi_coupler_sd2ew(u_sd1,v_sd1,m_sd1,u_sd2,v_sd2,m_sd2,uvm_ew,mype)
   real(r_kind),dimension(2,3,nlon,nlatm_0:nlatm_1),intent(out)::uvm_ew
 
   real(r_kind),allocatable::sendbuf(:,:,:),recvbuf(:,:,:)
-  integer(i_kind) i,ii,ii0,ilat,imode,j,mm1,nn,nlonloc,ipe,ilatm,ilon,mpi_string1
+  integer(i_kind) ilat,imode,j,mm1,ilatm,ilon,mpi_string1
 
   mm1=mype+1
 
@@ -782,11 +928,31 @@ subroutine inmi_coupler_sd2ew(u_sd1,v_sd1,m_sd1,u_sd2,v_sd2,m_sd2,uvm_ew,mype)
 end subroutine inmi_coupler_sd2ew
 
 subroutine inmi_coupler_ew2sd1(mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_coupler_ew2sd1
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block, rm unused vars and uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
 
 !  use mpi_alltoallv to move uvm_ew (lat strips) to u_sd,v_sd,m_sd (subdomains)
 
   use kinds, only: r_kind,i_kind
-  use mod_vtrans, only: nvmodes_keep
   use gridmod, only: nlat,nlon,lon2,lat2,jstart,istart,ilat1,jlon1
   use mpimod, only: npe,mpi_comm_world,ierror,mpi_integer4
   implicit none
@@ -794,7 +960,7 @@ subroutine inmi_coupler_ew2sd1(mype)
 
   integer(i_kind),intent(in)::mype
 
-  integer(i_kind) i,ilat,imode,j,k,mm1,ipe,ilatm,ilon,mpi_string1,nn,ilonloc
+  integer(i_kind) i,ilat,imode,j,k,mm1,ipe,ilon,mpi_string1,nn
 
   allocate(nsend_ew2sd(npe),nrecv_ew2sd(npe))
   allocate(ndsend_ew2sd(npe+1),ndrecv_ew2sd(npe+1))
@@ -860,6 +1026,35 @@ subroutine inmi_coupler_ew2sd1(mype)
 end subroutine inmi_coupler_ew2sd1
 
 subroutine inmi_coupler_ew2sd(u_sd1,v_sd1,m_sd1,u_sd2,v_sd2,m_sd2,uvm_ew,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_coupler_ew2sd
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     mype     - mpi task id
+!     uvm_ew   -
+!
+!   output argument list:
+!     u_sd1    -
+!     v_sd1    -
+!     m_sd1    -
+!     u_sd2    -
+!     v_sd2    -
+!     m_sd2    -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
+
 
 !  use mpi_alltoallv to move uvm_ew (lat strips) to u_sd,v_sd,m_sd (subdomains)
 
@@ -876,7 +1071,7 @@ subroutine inmi_coupler_ew2sd(u_sd1,v_sd1,m_sd1,u_sd2,v_sd2,m_sd2,uvm_ew,mype)
   real(r_kind),dimension(2,3,nlon,nlatm_0:nlatm_1),intent(in)::uvm_ew
 
   real(r_kind),allocatable::sendbuf(:,:,:),recvbuf(:,:,:)
-  integer(i_kind) i,ilat,imode,j,k,mm1,ipe,ilatm,ilon,mpi_string1,nn,ilonloc
+  integer(i_kind) ilat,imode,j,k,mm1,ilatm,ilon,mpi_string1,ilonloc
 
   mm1=mype+1
 
@@ -928,12 +1123,34 @@ end subroutine inmi_coupler_ew2sd
 
 subroutine inmi_ew_trans(uvm_ew,uvm_ewtrans,mype)
 
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_ew_trans
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     uvm_ew   -
+!
+!   output argument list:
+!     uvm_ewtrans -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
+
   use kinds, only: r_kind,i_kind
-  use mod_vtrans, only: nvmodes_keep
   use gridmod, only: nlon
   use mpimod, only: npe,mpi_comm_world,ierror
   use specmod, only: jcap,afft
-  use constants, only: zero
   implicit none
 
   integer(i_kind),intent(in)::mype
@@ -962,13 +1179,34 @@ subroutine inmi_ew_trans(uvm_ew,uvm_ewtrans,mype)
 end subroutine inmi_ew_trans
 
 subroutine inmi_ew_invtrans_ad(uvm_ew,uvm_ewtrans,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_ew_invtrans_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     uvm_ew   -
+!
+!   output argument list:
+!     uvm_ewtrans -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
 
   use kinds, only: r_kind,i_kind
-  use mod_vtrans, only: nvmodes_keep
   use gridmod, only: nlon
-  use mpimod, only: npe,mpi_comm_world,ierror
   use specmod, only: jcap,afft
-  use constants, only: zero,two
+  use constants, only: two
   implicit none
 
   integer(i_kind),intent(in)::mype
@@ -1002,10 +1240,32 @@ end subroutine inmi_ew_invtrans_ad
 
 subroutine inmi_ew_invtrans(uvm_ew,uvm_ewtrans,mype)
 
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_ew_invtrans
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     mype        - mpi task id
+!     uvm_ewtrans -
+!
+!   output argument list:
+!     uvm_ew      -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
+
   use kinds, only: r_kind,i_kind
-  use mod_vtrans, only: nvmodes_keep
   use gridmod, only: nlon
-  use mpimod, only: npe,mpi_comm_world,ierror
   use specmod, only: jcap,afft
   use constants, only: zero
   implicit none
@@ -1042,11 +1302,34 @@ subroutine inmi_ew_invtrans(uvm_ew,uvm_ewtrans,mype)
 end subroutine inmi_ew_invtrans
 
 subroutine inmi_ew_trans_ad(uvm_ew,uvm_ewtrans,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_ew_trans_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block, rm unused vars
+!
+!   input argument list:
+!     mype        - mpi task id
+!     uvm_ewtrans -
+!
+!   output argument list:
+!   output argument list:
+!     uvm_ew      -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
+
 
   use kinds, only: r_kind,i_kind
-  use mod_vtrans, only: nvmodes_keep
   use gridmod, only: nlon
-  use mpimod, only: npe,mpi_comm_world,ierror
   use specmod, only: jcap,afft
   use constants, only: zero,half
   implicit none
@@ -1088,10 +1371,31 @@ end subroutine inmi_ew_trans_ad
 
 subroutine inmi_coupler_ew2ns0(mype)
 
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_coupler_ew2ns0
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
+
   use kinds, only: r_kind,i_kind
   use mod_vtrans, only: nvmodes_keep
-  use gridmod, only: nlat
-  use mpimod, only: npe,mpi_comm_world,ierror
+  use mpimod, only: npe
   use specmod, only: jcap
   implicit none
 
@@ -1217,6 +1521,28 @@ end subroutine inmi_coupler_ew2ns0
 
 subroutine inmi_coupler_ew2ns1(mype)
 
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_coupler_ew2ns1
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block
+!
+!   input argument list:
+!     mype     - mpi task id
+!
+!   output argument list:
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
+
   use kinds, only: r_kind,i_kind
   use mod_vtrans, only: nvmodes_keep
   use gridmod, only: nlat
@@ -1227,7 +1553,7 @@ subroutine inmi_coupler_ew2ns1(mype)
   integer(i_kind),intent(in)::mype
 
   integer(i_kind) mmode2_list(0:jcap,-nvmodes_keep:nvmodes_keep)
-  integer(i_kind) i,ip12,ipe,j,k,m,mm,nn,m1,m2,ilat,ilatm,imode,imode1,imode2
+  integer(i_kind) i,ip12,ipe,j,k,m,nn,m1,m2,ilat,ilatm,imode,imode1,imode2
   integer(i_kind) mpi_string1
        integer(i_kind) ibad,ibad0,loop
 
@@ -1346,8 +1672,31 @@ end subroutine inmi_coupler_ew2ns1
 
 subroutine inmi_coupler_ew2ns(uvm_ewtrans,uvm_ns,mype)
 
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_coupler_ew2ns
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block, rm unused vars and uses
+!
+!   input argument list:
+!     mype        - mpi task id
+!     uvm_ewtrans -
+!
+!   output argument list:
+!     uvm_ns      -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
+
   use kinds, only: r_kind,i_kind
-  use mod_vtrans, only: nvmodes_keep
   use gridmod, only: nlat
   use mpimod, only: mpi_comm_world,ierror,mpi_rtype
   use specmod, only: jcap
@@ -1357,7 +1706,7 @@ subroutine inmi_coupler_ew2ns(uvm_ewtrans,uvm_ns,mype)
   real(r_kind),dimension(2,3,2,0:jcap,nlatm_0:nlatm_1),intent(in)::uvm_ewtrans
   real(r_kind),dimension(3,2,nlat,2,m_0:m_1),intent(out)::uvm_ns
 
-  integer(i_kind) i,ip12,ipe,j,k,m,mm,ilat,ilatm,imode
+  integer(i_kind) ip12,j,m,mm,ilat,ilatm,imode
   integer(i_kind) mpi_string1
   real(r_kind),allocatable::sendbuf(:,:,:),recvbuf(:,:,:)
   integer(i_kind) loop
@@ -1401,8 +1750,31 @@ end subroutine inmi_coupler_ew2ns
 
 subroutine inmi_coupler_ns2ew(uvm_ewtrans,uvm_ns,mype)
 
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_coupler_ns2ew
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block, rm unused vars and uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     uvm_ns   -
+!
+!   output argument list:
+!     uvm_ewtrans -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
+
   use kinds, only: r_kind,i_kind
-  use mod_vtrans, only: nvmodes_keep
   use gridmod, only: nlat
   use mpimod, only: mpi_comm_world,ierror,mpi_rtype
   use specmod, only: jcap
@@ -1412,7 +1784,7 @@ subroutine inmi_coupler_ns2ew(uvm_ewtrans,uvm_ns,mype)
   real(r_kind),dimension(2,3,2,0:jcap,nlatm_0:nlatm_1),intent(out)::uvm_ewtrans
   real(r_kind),dimension(3,2,nlat,2,m_0:m_1),intent(in)::uvm_ns
 
-  integer(i_kind) i,ip12,ipe,j,k,m,mm,ilat,ilatm,imode
+  integer(i_kind) ip12,j,m,mm,ilat,ilatm,imode
   integer(i_kind) mpi_string1
   real(r_kind),allocatable::sendbuf(:,:,:),recvbuf(:,:,:)
        integer(i_kind) loop
@@ -1456,11 +1828,36 @@ end subroutine inmi_coupler_ns2ew
 
 subroutine inmi_nsuvm2zdm(uvm_ns,zdm_hat,mype)
 
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_nsuv2zdm
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     uvm_ns   -
+!
+!   output argument list:
+!     zdm_had  -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!   machine:   ibm RS/6000 SP
+!
+!$$$
+
+
+
   use kinds, only: r_kind,i_kind
-  use mod_vtrans, only: nvmodes_keep
   use gridmod, only: nlat
-  use mpimod, only: npe,mpi_comm_world,ierror
-  use specmod, only: jcap,jb,je,iromb,pln,plntop,enn1,elonn1,eon,eontop,wlat,clat
+  use specmod, only: jcap,jb,je,pln,plntop,enn1,elonn1,eon,eontop,wlat,clat
   use constants, only: zero
   implicit none
 
@@ -1540,12 +1937,33 @@ subroutine inmi_nsuvm2zdm(uvm_ns,zdm_hat,mype)
 end subroutine inmi_nsuvm2zdm
 
 subroutine inmi_nszdm2uvm_ad(uvm_ns,zdm_hat,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_nszdm2uvm_ad
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     uvm_ns   -
+!
+!   output argument list:
+!     zdm_had  -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
 
   use kinds, only: r_kind,i_kind
-  use mod_vtrans, only: nvmodes_keep
   use gridmod, only: nlat
-  use mpimod, only: npe,mpi_comm_world,ierror
-  use specmod, only: jcap,jb,je,iromb,pln,plntop,enn1,elonn1,eon,eontop,wlat,clat
+  use specmod, only: jcap,jb,je,pln,plntop,enn1,elonn1,eon,eontop,wlat,clat
   use constants, only: zero
   implicit none
 
@@ -1651,12 +2069,33 @@ subroutine inmi_nszdm2uvm_ad(uvm_ns,zdm_hat,mype)
 end subroutine inmi_nszdm2uvm_ad
 
 subroutine inmi_nszdm2uvm(uvm_ns,zdm_hat,mype)
+!$$$  subprogram documentation block
+!                .      .    .
+! subprogram:    inmi_szdm2uvm
+!
+!   prgrmmr:
+!
+! abstract:
+!
+! program history log:
+!   2008-04-04  safford -- add subprogram doc block, rm unused uses
+!
+!   input argument list:
+!     mype     - mpi task id
+!     uvm_ns   -
+!
+!   output argument list:
+!     zdm_had  -
+!
+! attributes:
+!   language:  f90
+!   machine:   ibm RS/6000 SP
+!
+!$$$
 
   use kinds, only: r_kind,i_kind
-  use mod_vtrans, only: nvmodes_keep
   use gridmod, only: nlat
-  use mpimod, only: npe,mpi_comm_world,ierror
-  use specmod, only: jcap,jb,je,iromb,pln,plntop,enn1,elonn1,eon,eontop,clat
+  use specmod, only: jcap,jb,je,pln,plntop,enn1,elonn1,eon,eontop,clat
   use constants, only: zero
   implicit none
 
@@ -1775,13 +2214,213 @@ subroutine inmi_nszdm2uvm(uvm_ns,zdm_hat,mype)
 
 end subroutine inmi_nszdm2uvm
 
+subroutine inmi_nspcm_hat2pcm(pcm_ns,pcm_hat,mype)
+
+  use kinds, only: r_kind,i_kind
+  use gridmod, only: nlat
+  use specmod, only: jcap,jb,je,pln,plntop,enn1,elonn1,eon,eontop,clat
+  use constants, only: zero
+  implicit none
+
+  integer(i_kind),intent(in)::mype
+  real(r_kind),dimension(3,2,nlat,2,m_0:m_1),intent(out)::pcm_ns
+  real(r_kind),dimension(3,2,nlat,2,m_0:m_1),intent(in)::pcm_hat
+
+  integer(i_kind) i,ics,j,jnorth,jsouth,m,mm,n,ipair
+  real(r_kind) spcp(2,0:jcap),spcc(2,0:jcap),spcm(2,0:jcap)
+  real(r_kind) plnloc(0:jcap+1)
+  real(r_kind) fp(2,2),fc(2,2),fm(2,2)
+
+  do mm=m_0,m_1
+    do ipair=1,2
+      m=mmode_list(ipair,mm)
+      ics=1+m*(2*jcap+3-m)/2
+
+!           gather up spcp, spcc, spcm
+
+      i=0
+      do n=m,jcap
+        i=i+1
+        spcp(1,n)=pcm_hat(1,1,i,ipair,mm)
+        spcp(2,n)=pcm_hat(1,2,i,ipair,mm)
+        spcc(1,n)=pcm_hat(2,1,i,ipair,mm)
+        spcc(2,n)=pcm_hat(2,2,i,ipair,mm)
+        spcm(1,n)=pcm_hat(3,1,i,ipair,mm)
+        spcm(2,n)=pcm_hat(3,2,i,ipair,mm)
+      end do
+
+      do j=jb,je
+        jsouth=1+j
+        jnorth=nlat-j
+
+!           create plnloc
+
+        do n=m,jcap
+          plnloc(n)=pln(ics+n-m,j)
+        end do
+        plnloc(jcap+1)=plntop(m+1,j)
+
+!          obtain f
+
+        call spsynth_ns(0,jcap,m,clat(j),plnloc(m),0,spcp(1,m),fp)
+        call spsynth_ns(0,jcap,m,clat(j),plnloc(m),0,spcc(1,m),fc)
+        call spsynth_ns(0,jcap,m,clat(j),plnloc(m),0,spcm(1,m),fm)
+
+!          scatter back to output pairs of lats
+
+        pcm_ns(1,1,jnorth,ipair,mm)=fp(1,1)
+        pcm_ns(1,2,jnorth,ipair,mm)=fp(2,1)
+        pcm_ns(1,1,jsouth,ipair,mm)=fp(1,2)
+        pcm_ns(1,2,jsouth,ipair,mm)=fp(2,2)
+        pcm_ns(2,1,jnorth,ipair,mm)=fc(1,1)
+        pcm_ns(2,2,jnorth,ipair,mm)=fc(2,1)
+        pcm_ns(2,1,jsouth,ipair,mm)=fc(1,2)
+        pcm_ns(2,2,jsouth,ipair,mm)=fc(2,2)
+        pcm_ns(3,1,jnorth,ipair,mm)=fm(1,1)
+        pcm_ns(3,2,jnorth,ipair,mm)=fm(2,1)
+        pcm_ns(3,1,jsouth,ipair,mm)=fm(1,2)
+        pcm_ns(3,2,jsouth,ipair,mm)=fm(2,2)
+
+      end do
+
+!  set pole values
+      if(m.eq.0) then
+        pcm_ns(1,1,1,ipair,mm)=pcm_ns(1,1,2,ipair,mm)
+        pcm_ns(1,2,1,ipair,mm)=zero
+        pcm_ns(1,1,nlat,ipair,mm)=pcm_ns(1,1,nlat-1,ipair,mm)
+        pcm_ns(1,2,nlat,ipair,mm)=zero
+        pcm_ns(2,1,1,ipair,mm)=pcm_ns(2,1,2,ipair,mm)
+        pcm_ns(2,2,1,ipair,mm)=zero
+        pcm_ns(2,1,nlat,ipair,mm)=pcm_ns(2,1,nlat-1,ipair,mm)
+        pcm_ns(2,2,nlat,ipair,mm)=zero
+        pcm_ns(3,1,1,ipair,mm)=pcm_ns(3,1,2,ipair,mm)
+        pcm_ns(3,2,1,ipair,mm)=zero
+        pcm_ns(3,1,nlat,ipair,mm)=pcm_ns(3,1,nlat-1,ipair,mm)
+        pcm_ns(3,2,nlat,ipair,mm)=zero
+      else
+        pcm_ns(1,1,1,ipair,mm)=zero
+        pcm_ns(1,2,1,ipair,mm)=zero
+        pcm_ns(2,1,1,ipair,mm)=zero
+        pcm_ns(2,2,1,ipair,mm)=zero
+        pcm_ns(3,1,1,ipair,mm)=zero
+        pcm_ns(3,2,1,ipair,mm)=zero
+        pcm_ns(1,1,nlat,ipair,mm)=zero
+        pcm_ns(1,2,nlat,ipair,mm)=zero
+        pcm_ns(2,1,nlat,ipair,mm)=zero
+        pcm_ns(2,2,nlat,ipair,mm)=zero
+        pcm_ns(3,1,nlat,ipair,mm)=zero
+        pcm_ns(3,2,nlat,ipair,mm)=zero
+      end if
+
+    end do
+
+  end do
+
+end subroutine inmi_nspcm_hat2pcm
+
+subroutine inmi_nspcm_hat2pcm_ad(pcm_ns,pcm_hat,mype)
+
+  use kinds, only: r_kind,i_kind
+  use gridmod, only: nlat
+  use specmod, only: jcap,jb,je,pln,plntop,enn1,elonn1,eon,eontop,wlat,clat
+  use constants, only: zero
+  implicit none
+
+  integer(i_kind),intent(in)::mype
+  real(r_kind),dimension(3,2,nlat,2,m_0:m_1),intent(in)::pcm_ns
+  real(r_kind),dimension(3,2,nlat,2,m_0:m_1),intent(out)::pcm_hat
+
+  real(r_kind),dimension(3,2,nlat,2,m_0:m_1)::pcm_ns_temp
+  integer(i_kind) i,ics,j,jnorth,jsouth,m,mm,n,ipair
+  real(r_kind) spcp(2,0:jcap),spcc(2,0:jcap),spcm(2,0:jcap)
+  real(r_kind) plnloc(0:jcap+1)
+  real(r_kind) fp(2,2),fc(2,2),fm(2,2)
+
+  pcm_ns_temp=pcm_ns
+  pcm_hat=zero
+  do mm=m_0,m_1
+    do ipair=1,2
+      m=mmode_list(ipair,mm)
+      ics=1+m*(2*jcap+3-m)/2
+
+      do n=m,jcap
+        spcp(1,n)=zero
+        spcp(2,n)=zero
+        spcc(1,n)=zero
+        spcc(2,n)=zero
+        spcm(1,n)=zero
+        spcm(2,n)=zero
+      end do
+
+!  adjoint of set pole values
+
+      if(m.eq.0) then
+        pcm_ns_temp(1,1,     2,ipair,mm)=pcm_ns_temp(1,1,   1,ipair,mm)+pcm_ns_temp(1,1,     2,ipair,mm)
+        pcm_ns_temp(1,1,nlat-1,ipair,mm)=pcm_ns_temp(1,1,nlat,ipair,mm)+pcm_ns_temp(1,1,nlat-1,ipair,mm)
+        pcm_ns_temp(2,1,     2,ipair,mm)=pcm_ns_temp(2,1,   1,ipair,mm)+pcm_ns_temp(2,1,     2,ipair,mm)
+        pcm_ns_temp(2,1,nlat-1,ipair,mm)=pcm_ns_temp(2,1,nlat,ipair,mm)+pcm_ns_temp(2,1,nlat-1,ipair,mm)
+        pcm_ns_temp(3,1,     2,ipair,mm)=pcm_ns_temp(3,1,   1,ipair,mm)+pcm_ns_temp(3,1,     2,ipair,mm)
+        pcm_ns_temp(3,1,nlat-1,ipair,mm)=pcm_ns_temp(3,1,nlat,ipair,mm)+pcm_ns_temp(3,1,nlat-1,ipair,mm)
+      end if
+
+      do j=jb,je
+        jsouth=1+j
+        jnorth=nlat-j
+
+!       adjoint of scatter back to output pairs of lats
+
+        fp(1,1)=pcm_ns_temp(1,1,jnorth,ipair,mm)/wlat(j)
+        fp(2,1)=pcm_ns_temp(1,2,jnorth,ipair,mm)/wlat(j)
+        fp(1,2)=pcm_ns_temp(1,1,jsouth,ipair,mm)/wlat(j)
+        fp(2,2)=pcm_ns_temp(1,2,jsouth,ipair,mm)/wlat(j)
+        fc(1,1)=pcm_ns_temp(2,1,jnorth,ipair,mm)/wlat(j)
+        fc(2,1)=pcm_ns_temp(2,2,jnorth,ipair,mm)/wlat(j)
+        fc(1,2)=pcm_ns_temp(2,1,jsouth,ipair,mm)/wlat(j)
+        fc(2,2)=pcm_ns_temp(2,2,jsouth,ipair,mm)/wlat(j)
+        fm(1,1)=pcm_ns_temp(3,1,jnorth,ipair,mm)/wlat(j)
+        fm(2,1)=pcm_ns_temp(3,2,jnorth,ipair,mm)/wlat(j)
+        fm(1,2)=pcm_ns_temp(3,1,jsouth,ipair,mm)/wlat(j)
+        fm(2,2)=pcm_ns_temp(3,2,jsouth,ipair,mm)/wlat(j)
+
+!           create plnloc
+
+        do n=m,jcap
+          plnloc(n)=pln(ics+n-m,j)
+        end do
+        plnloc(jcap+1)=plntop(m+1,j)
+
+!          adjoint of obtain f
+
+        call spanaly_ns(0,jcap,m,wlat(j),clat(j),plnloc(m),0,fp,spcp(1,m))
+        call spanaly_ns(0,jcap,m,wlat(j),clat(j),plnloc(m),0,fc,spcc(1,m))
+        call spanaly_ns(0,jcap,m,wlat(j),clat(j),plnloc(m),0,fm,spcm(1,m))
+
+      end do
+
+!     adjoint of gather up spcp, spcc, spcm
+
+      i=0
+      do n=m,jcap
+        i=i+1
+        pcm_hat(1,1,i,ipair,mm)=spcp(1,n)
+        pcm_hat(1,2,i,ipair,mm)=spcp(2,n)
+        pcm_hat(2,1,i,ipair,mm)=spcc(1,n)
+        pcm_hat(2,2,i,ipair,mm)=spcc(2,n)
+        pcm_hat(3,1,i,ipair,mm)=spcm(1,n)
+        pcm_hat(3,2,i,ipair,mm)=spcm(2,n)
+      end do
+
+    end do
+
+  end do
+
+end subroutine inmi_nspcm_hat2pcm_ad
+
 subroutine inmi_nsuvm2zdm_ad(uvm_ns,zdm_hat,mype)
 
   use kinds, only: r_kind,i_kind
-  use mod_vtrans, only: nvmodes_keep
   use gridmod, only: nlat
-  use mpimod, only: npe,mpi_comm_world,ierror
-  use specmod, only: jcap,jb,je,iromb,pln,plntop,enn1,elonn1,eon,eontop,clat,wlat
+  use specmod, only: jcap,jb,je,pln,plntop,enn1,elonn1,eon,eontop,clat,wlat
   implicit none
 
   integer(i_kind),intent(in)::mype
