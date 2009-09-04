@@ -68,7 +68,8 @@ module obsmod
 !   2009-01-09  gayno    - add variable dsfcalc
 !   2009-02-02  kleist   - add variables for synthetic tc-mslp observations
 !   2009-03-05  meunier  - add lagrangean observation type
-
+!   2009-07-09  park,purser,pondeca - add logical variable hilbert_curve for
+!                                     cross-validation in 2dvar
 ! 
 ! Subroutines Included:
 !   sub init_obsmod_dflts   - initialize obs related variables to default values
@@ -179,6 +180,8 @@ module obsmod
 !   def offtime_data - logical, if .true., then allow use of obs files with ref time
 !                      different from analysis time.
 !
+!   def hilbert_curve - logical, if .true., then generate hilbert curve based
+!                      cross-validation datasets in 2dvar mode.
 !
 !$$$ end documentation block
 
@@ -603,10 +606,8 @@ module obsmod
                                       !  ratio of error variances squared (nchan)
      real(r_kind)    :: time          !  observation time in sec     
      real(r_kind)    :: wij(4)        !  horizontal interpolation weights
-     real(r_kind),dimension(:),pointer :: pred1 => NULL()
-                                      !  predictors (not channel dependent)(npred-2)
-     real(r_kind),dimension(:),pointer :: pred2 => NULL()
-                                      !  predictors (channel dependent) (nchan)
+     real(r_kind),dimension(:,:),pointer :: pred => NULL()
+                                      !  predictors (npred,nchan)
      real(r_kind),dimension(:,:),pointer :: dtb_dvar => NULL()
                                       !  error variances squared (nsig3p3,nchan)
      integer(i_kind),dimension(:),pointer :: icx  => NULL()
@@ -791,6 +792,7 @@ module obsmod
   logical lobserver,l_do_adjoint
   logical,dimension(0:50):: write_diag
   logical offtime_data
+  logical hilbert_curve
 
 contains
 
@@ -936,6 +938,8 @@ contains
     cobstype(i_rad_ob_type)="radiance            " ! rad_ob_type
     cobstype(i_tcp_ob_type)="tcp (tropic cyclone)" ! tcp_ob_type
     cobstype(i_lag_ob_type)="lagrangian tracer   " ! lag_ob_type
+
+    hilbert_curve=.false.
 
     return
   end subroutine init_obsmod_dflts
@@ -1326,8 +1330,8 @@ contains
       do while (associated(radtail(ii)%head))
         radhead(ii)%head => radtail(ii)%head%llpoint
         deallocate(radtail(ii)%head%res,radtail(ii)%head%err2, &
-                   radtail(ii)%head%raterr2,radtail(ii)%head%pred1, &
-                   radtail(ii)%head%pred2,radtail(ii)%head%dtb_dvar, &
+                   radtail(ii)%head%raterr2,radtail(ii)%head%pred, &
+                   radtail(ii)%head%dtb_dvar, &
                    radtail(ii)%head%icx,stat=istatus)
         if (istatus/=0) write(6,*)'DESTROYOBS:  deallocate error for rad arrays, istatus=',istatus
         deallocate(radtail(ii)%head,stat=istatus)

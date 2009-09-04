@@ -1,4 +1,31 @@
 ------------------------------------------------------------------------
+r4836 | Michael.Lueken@noaa.gov | 2009-09-03 11:19:13 -0600 (Thu, 03 Sep 2009) | 2 lines
+
+Trunk: merged dparrish2 branch r4669:4835 to trunk
+
+------------------------------------------------------------------------
+r4808 | Michael.Lueken@noaa.gov | 2009-09-02 11:36:15 -0600 (Wed, 02 Sep 2009) | 2 lines
+
+Trunk: merged mpondeca2 branch r4782:4803 to trunk.  Removed old RTMA fix files and updated regression_RTMA.sh and regression_RTMA_nc.sh.
+
+------------------------------------------------------------------------
+r4777 | Michael.Lueken@noaa.gov | 2009-08-28 13:13:31 -0600 (Fri, 28 Aug 2009) | 2 lines
+
+Trunk: added missing bacio library routines from dparrish branch to remove the dependency for a specific version of bacio library
+
+------------------------------------------------------------------------
+r4770 | john.derber@noaa.gov | 2009-08-28 08:19:50 -0600 (Fri, 28 Aug 2009) | 9 lines
+
+Trunk: Enables ability to turn off bias correction channel by channel.
+   iuse_rad() = 2 angle bias correction only
+   iuse_rad() = 3 airmass bias correction only
+   iuse_rad() = 4 no bias correction
+
+Also ensures that all processors are used an equal number of times in read_obs
+
+
+
+------------------------------------------------------------------------
 r4760 | Michael.Lueken@noaa.gov | 2009-08-27 10:33:33 -0600 (Thu, 27 Aug 2009) | 2 lines
 
 Trunk: changed location of util directory for test*sh and one*sh run scripts from /global/save/wx20rt/gsi_anl to/gloabl/noscrub/wx20rt/gsi_anl
