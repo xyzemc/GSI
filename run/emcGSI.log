@@ -1,4 +1,19 @@
 ------------------------------------------------------------------------
+r5007 | Michael.Lueken@noaa.gov | 2009-09-18 13:29:24 -0600 (Fri, 18 Sep 2009) | 2 lines
+
+Trunk: Incorporate R Treadon r4848:5006 to the trunk.  These changes are to correct issues found in the GSI run time output.  setuppcp.f90 was modified so that it sets varinv to zero if iusep < 1.  read_airs.f90 was modified by moving nread counter to before the surface file based QC.
+
+------------------------------------------------------------------------
+r5005 | Michael.Lueken@noaa.gov | 2009-09-18 12:47:18 -0600 (Fri, 18 Sep 2009) | 2 lines
+
+Trunk: Incorporated M Pondeca's r4790:5003 change to the trunk.  This change corrected a logical variable that was being defined in the first read of the prepbufr file, rtaher than the second read.
+
+------------------------------------------------------------------------
+r4916 | Michael.Lueken@noaa.gov | 2009-09-15 11:25:48 -0600 (Tue, 15 Sep 2009) | 2 lines
+
+Trunk: Incorporate changes from R Treadon r4898:4912 to the trunk.  This change has updated the fix files to the fall GFS/GSI package and removed mention of wx20rt in the run scripts.  Users will need to rerun their controls before running regression tests using this revision, since the fix file change leads to different results for both global and regional applications (any configuration assimilating radiances).
+
+------------------------------------------------------------------------
 r4886 | john.derber@noaa.gov | 2009-09-10 11:48:43 -0600 (Thu, 10 Sep 2009) | 5 lines
 
 Trunk:  Fix bugs in calls to various routines.  Passed regression test for all
