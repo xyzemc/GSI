@@ -1,4 +1,11 @@
 ------------------------------------------------------------------------
+r5049 | john.derber@noaa.gov | 2009-09-24 06:52:31 -0600 (Thu, 24 Sep 2009) | 4 lines
+
+Trunk:  Enable parallel read for AVHRR and GOES_IMG.  Also fix 2 small bugs in setuprad and control2model
+
+
+
+------------------------------------------------------------------------
 r5007 | Michael.Lueken@noaa.gov | 2009-09-18 13:29:24 -0600 (Fri, 18 Sep 2009) | 2 lines
 
 Trunk: Incorporate R Treadon r4848:5006 to the trunk.  These changes are to correct issues found in the GSI run time output.  setuppcp.f90 was modified so that it sets varinv to zero if iusep < 1.  read_airs.f90 was modified by moving nread counter to before the surface file based QC.
