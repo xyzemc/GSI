@@ -1,4 +1,9 @@
 ------------------------------------------------------------------------
+r5140 | Michael.Lueken@noaa.gov | 2009-10-05 06:08:14 -0600 (Mon, 05 Oct 2009) | 2 lines
+
+Trunk: Incorporated M Lueken's changes (r5056:5139) to the trunk.  These changes are to the regression test scripts only and include adding machine="vapor" to regression_var.sh to allow Vapor users to uncomment a line in the regression_var.sh to have the path to the observation files on Vapor.  Also, removed group, class, and account_no from each separate regression test loadleveler block and placed at the begging of each script.  This will allow users to costumize regression test runs and only need to change these commands once per script.
+
+------------------------------------------------------------------------
 r5049 | john.derber@noaa.gov | 2009-09-24 06:52:31 -0600 (Thu, 24 Sep 2009) | 4 lines
 
 Trunk:  Enable parallel read for AVHRR and GOES_IMG.  Also fix 2 small bugs in setuprad and control2model
