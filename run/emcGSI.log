@@ -1,4 +1,39 @@
 ------------------------------------------------------------------------
+r5360 | john.derber@noaa.gov | 2009-10-22 12:44:11 -0600 (Thu, 22 Oct 2009) | 4 lines
+
+Trunk: Fix bug in regional strong constraint.  Only impacts strong constraint for regional.
+
+
+
+------------------------------------------------------------------------
+r5329 | Michael.Lueken@noaa.gov | 2009-10-20 13:14:49 -0600 (Tue, 20 Oct 2009) | 2 lines
+
+Trunk: incorporated M Lueken's r5206:5324 changes to the trunk. These changes included: cleaning up files added during revision 4808 (r4808), bringing them in line with the CRTM code management policy. This included replacing .ne.,.eq.,.gt.,.ge.,.lt.,.le. with /=,==,>,>=,<, and <=, respectively. Also, modules were given the default of private, with subroutines and passed variables given public. Note that some of these routines underwent major changes, so keep an eye out for possible conflicts during the merge! All regression tests passed as well.
+
+------------------------------------------------------------------------
+r5196 | john.derber@noaa.gov | 2009-10-13 13:21:48 -0600 (Tue, 13 Oct 2009) | 4 lines
+
+Trunk:  Remove possibility of error when subtypes are used.
+
+
+
+------------------------------------------------------------------------
+r5186 | john.derber@noaa.gov | 2009-10-13 10:23:21 -0600 (Tue, 13 Oct 2009) | 13 lines
+
+Trunk:  This change makes several changes.  It improves the round-off for the radiance stepsize, 
+includes ambiguous vector quality control for the ASCAT data and moves the height above the 
+ocean for buoys from 20 to 10m.  The improvement in the round-off creates round-off differences. 
+The inclusion of the quality control for ASCAT data makes no difference unless ASCAT data is used.
+Moving the height above the ocean to 10m will change results.  Note that 10m is just closer than 20m.  
+In the long run, the actual height above the ocean for each station should be used.
+
+There is little change in memory and CPU usage.
+The change was tested using the regression test and a short parallel run.  The results are different, but 
+as expected.
+
+
+
+------------------------------------------------------------------------
 r5140 | Michael.Lueken@noaa.gov | 2009-10-05 06:08:14 -0600 (Mon, 05 Oct 2009) | 2 lines
 
 Trunk: Incorporated M Lueken's changes (r5056:5139) to the trunk.  These changes are to the regression test scripts only and include adding machine="vapor" to regression_var.sh to allow Vapor users to uncomment a line in the regression_var.sh to have the path to the observation files on Vapor.  Also, removed group, class, and account_no from each separate regression test loadleveler block and placed at the begging of each script.  This will allow users to costumize regression test runs and only need to change these commands once per script.
