@@ -1,4 +1,19 @@
 ------------------------------------------------------------------------
+r5569 | Michael.Lueken@noaa.gov | 2009-11-03 13:20:04 -0700 (Tue, 03 Nov 2009) | 2 lines
+
+Trunk: Incorporated M Lueken's changes @5568 (r5568) to the trunk. The code cleanup continued, encompassing intall.f90 through mod_vtrans.F90. Three subroutines were also removed = m_ssu_eff_cell_pres.f90, smooth121.f90, and intrp3.f90. Finally, three more routines were corrected, removing double declarations in stpcalc.f90, raflib.f90, and anberror.f90.  All regression tests were run and completed successfully.
+
+------------------------------------------------------------------------
+r5516 | Michael.Lueken@noaa.gov | 2009-10-30 07:21:13 -0600 (Fri, 30 Oct 2009) | 2 lines
+
+Trunk: Incorporated M Lueken's changes @5515 (r5515) to the trunk.  This change includes bringing subroutines gsi_4dvar.f90 through init_jcdfi.f90 into compliance with the CRTM code management policy.  Further, the automatic statements in nemsio_module.f90 were removed to allow the code to compile on compilers other than IBM AIX.  To allow the code to still compile in debug mode, the debug option -qsave=all was removed from Makefile.conf.  All regression tests were run and successfully passed.
+
+------------------------------------------------------------------------
+r5459 | Michael.Lueken@noaa.gov | 2009-10-27 13:27:30 -0600 (Tue, 27 Oct 2009) | 2 lines
+
+Trunk: Incorporated M Lueken's changes r5361:5458 to the trunk.  This change continues bringing the GSI into compliance with the CRTM's code management policy.  Subroutines abor1.f90 through gscond_ad.f90 were corrected in this revision range.  Changes include replacing .eq., etc. with ==, etc., adding private/public, and making changes to the indentation of the code.  All regression tests were run and successfully passed.
+
+------------------------------------------------------------------------
 r5360 | john.derber@noaa.gov | 2009-10-22 12:44:11 -0600 (Thu, 22 Oct 2009) | 4 lines
 
 Trunk: Fix bug in regional strong constraint.  Only impacts strong constraint for regional.
