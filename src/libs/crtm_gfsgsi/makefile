@@ -3,15 +3,21 @@ SHELL=/bin/sh
 LIB = ../../../lib/libcrtm_gfsgsi.a
 
 include make.filelist
+ 
+.SUFFIXES: .f90 .o
+
+.f90.o:
+##	$(RM) $@ $*.mod
+	$(F90) $(FFLAGS) -c $<
+
 
 all:	$(LIB)
 
 $(LIB):	$(OBJ_FILES)
 	$(AR) -ruv $(LIB) $(OBJ_FILES)
 
-
-.f.a:
-	$(FC) -c $(FFLAGS) $<
+.f90.a:
+	$(F90) -c $(FFLAGS) $<
 #	ar -ruv $(AFLAGS) $@ $*.o
 #	rm -f $*.o
 

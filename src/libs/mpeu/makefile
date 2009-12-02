@@ -47,9 +47,17 @@ $(LIB):	$(OBJS)
 	echo $(F90)
 	$(AR) -ruv $(LIB) $(OBJS)
 
+.SUFFIXES :
+.SUFFIXES : .F90 .F .f90 .f .a .c .o
 
-.f90.a:
-	$(F90) -c $(FFLAGS) $<
+.F.o:
+	$(F90) $(FFLAGS) -c $<
+
+.F90.o:
+	$(F90) $(FFLAGS) -c $<
+
+.f90.o:
+	$(F90) $(FFLAGS) -c $<
 #	ar -ruv $(AFLAGS) $@ $*.o
 #	rm -f $*.o
 
