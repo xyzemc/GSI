@@ -728,6 +728,9 @@
      baldiag_inc =.false.
   end if
 
+! Turn off uv option if hybrid/ensemble options is false for purposes 
+! of TLNMC 
+  if (.not.l_hyb_ens) uv_hyb_ens=.false.
 
 ! Turn on derivatives if using dynamic constraint
 ! For now if wrf mass or 2dvar no dynamic constraint
