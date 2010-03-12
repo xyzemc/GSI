@@ -16,6 +16,7 @@
 #@ node_resources=ConsumableMemory(110 GB)
 #@ wall_clock_limit = 0:15:00
 #@ notification=error
+#@ restart=no
 #@ queue
 
 #@ step_name=gsi_nmm_binary_update2
@@ -27,6 +28,7 @@
 #@ node_resources=ConsumableMemory(110 GB)
 #@ wall_clock_limit = 0:15:00
 #@ notification=error
+#@ restart=no
 #@ dependency=(gsi_nmm_binary_update==0)
 #@ queue
 
@@ -39,6 +41,7 @@
 #@ node_resources=ConsumableMemory(110 GB)
 #@ wall_clock_limit = 0:15:00
 #@ notification=error
+#@ restart=no
 #@ dependency=(gsi_nmm_binary_update2==0)
 #@ queue
 
@@ -51,6 +54,7 @@
 #@ node_resources=ConsumableMemory(110 GB)
 #@ wall_clock_limit = 0:15:00
 #@ notification=error
+#@ restart=no
 #@ dependency=(gsi_nmm_binary_benchmark==0)
 #@ queue
 
@@ -59,6 +63,7 @@
 #@ resources = consumablecpus(1) consumablememory(2000 MB)
 #@ wall_clock_limit = 00:10:00
 #@ notification=error
+#@ restart=no
 #@ dependency=(gsi_nmm_binary_benchmark2==0)
 #@ queue
 
@@ -74,8 +79,8 @@ export MP_SHARED_MEMORY=yes
 export MEMORY_AFFINITY=MCM
 ##export BIND_TASKS=yes
 export MP_PULSE=0
-export MP_BULK_MIN_MSG_SIZE=10k
-export MP_USE_BULK_XFER=yes
+##export MP_BULK_MIN_MSG_SIZE=10k
+##export MP_USE_BULK_XFER=yes
 
 # Set environment variables for threads
 export AIXTHREAD_GUARDPAGES=4
@@ -96,7 +101,7 @@ export MP_LABELIO=yes
 ##export MP_COREFILE_FORMAT=lite
 
 # Set analysis date
-adate=$adate_regional
+adate=$adate_regional_nmm_binary
 
 # Set guess/analysis (i/o) file format.  Two
 # option are available:  binary or netcdf
@@ -204,12 +209,12 @@ fi
 emiscoef=$fix_file/crtm_gfsgsi/EmisCoeff/Big_Endian/EmisCoeff.bin
 aercoef=$fix_file/crtm_gfsgsi/AerosolCoeff/Big_Endian/AerosolCoeff.bin
 cldcoef=$fix_file/crtm_gfsgsi/CloudCoeff/Big_Endian/CloudCoeff.bin
-satinfo=$fix_file/global_satinfo.txt
-satangl=$fix_file/global_satangbias.txt
-pcpinfo=$fix_file/global_pcpinfo.txt
-ozinfo=$fix_file/global_ozinfo.txt
+satinfo=$fix_file/nam_regional_satinfo.txt
+satangl=$fix_file/nam_global_satangbias.txt
+pcpinfo=$fix_file/nam_global_pcpinfo.txt
+ozinfo=$fix_file/nam_global_ozinfo.txt
 errtable=$fix_file/nam_errtable.r3dv
-convinfo=$fix_file/global_convinfo.txt
+convinfo=$fix_file/nam_regional_convinfo_reg_test.txt
 mesonetuselist=$fix_file/nam_mesonet_uselist.txt
 
 
@@ -256,6 +261,7 @@ done
 
 # Copy observational data to $tmpdir
 $ncp $datobs/${prefixo}.prepbufr.tm12   ./prepbufr
+$ncp $datobs/${prefixo}.gpsro.$suffix   ./gpsrobufr
 $ncp $datobs/${prefixo}.1bhrs3.$suffix  ./hirs3bufr
 $ncp $datobs/${prefixo}.1bhrs4.$suffix  ./hirs4bufr
 $ncp $datobs/${prefixo}.1bamua.$suffix  ./amsuabufr
@@ -271,11 +277,11 @@ $ncp $datobs/${prefixo}.nexrad.$suffix  ./l2rwbufr
 #  *** NOTE:  The regional gsi analysis is written to (over)
 #             the input guess field file (wrf_inout)
 #
-$ncp $datobs/${prefixa}.satbias.tm03      ./satbias_in
-$ncp $datobs/${prefixa}.satang.tm03        ./satbias_angle
+$ncp $datobs/${prefixo}.satbias.tm12      ./satbias_in
+$ncp $datobs/${prefixo}.satang.tm12        ./satbias_angle
 ##$ncp $datges/${prefixa}.wrfrst_d01.tm12    ./wrf_inout
 if [[ "$io_format" = "binary" ]]; then
-   $ncp $datges/${prefixa}.wrfrst_d01.tm12    ./wrf_inout
+   $ncp $datges/${prefixo}.wrfinput_d01.init    ./wrf_inout
 elif [[ "$io_format" = "netcdf" ]]; then
    $ncp $datges/wrfinput_d01_nmm_netcdf       ./wrf_inout
 fi
@@ -350,8 +356,8 @@ export MP_SHARED_MEMORY=yes
 export MEMORY_AFFINITY=MCM
 ##export BIND_TASKS=yes
 export MP_PULSE=0
-export MP_BULK_MIN_MSG_SIZE=10k
-export MP_USE_BULK_XFER=yes
+##export MP_BULK_MIN_MSG_SIZE=10k
+##export MP_USE_BULK_XFER=yes
 
 # Set environment variables for threads
 export AIXTHREAD_GUARDPAGES=4
@@ -372,7 +378,7 @@ export MP_LABELIO=yes
 ##export MP_COREFILE_FORMAT=lite
 
 # Set analysis date
-adate=$adate_regional
+adate=$adate_regional_nmm_binary
 
 # Set guess/analysis (i/o) file format.  Two
 # option are available:  binary or netcdf
@@ -480,12 +486,12 @@ fi
 emiscoef=$fix_file/crtm_gfsgsi/EmisCoeff/Big_Endian/EmisCoeff.bin
 aercoef=$fix_file/crtm_gfsgsi/AerosolCoeff/Big_Endian/AerosolCoeff.bin
 cldcoef=$fix_file/crtm_gfsgsi/CloudCoeff/Big_Endian/CloudCoeff.bin
-satinfo=$fix_file/global_satinfo.txt
-satangl=$fix_file/global_satangbias.txt
-pcpinfo=$fix_file/global_pcpinfo.txt
-ozinfo=$fix_file/global_ozinfo.txt
+satinfo=$fix_file/nam_regional_satinfo.txt
+satangl=$fix_file/nam_global_satangbias.txt
+pcpinfo=$fix_file/nam_global_pcpinfo.txt
+ozinfo=$fix_file/nam_global_ozinfo.txt
 errtable=$fix_file/nam_errtable.r3dv
-convinfo=$fix_file/global_convinfo.txt
+convinfo=$fix_file/nam_regional_convinfo_reg_test.txt
 mesonetuselist=$fix_file/nam_mesonet_uselist.txt
 
 
@@ -532,6 +538,7 @@ done
 
 # Copy observational data to $tmpdir
 $ncp $datobs/${prefixo}.prepbufr.tm12   ./prepbufr
+$ncp $datobs/${prefixo}.gpsro.$suffix   ./gpsrobufr
 $ncp $datobs/${prefixo}.1bhrs3.$suffix  ./hirs3bufr
 $ncp $datobs/${prefixo}.1bhrs4.$suffix  ./hirs4bufr
 $ncp $datobs/${prefixo}.1bamua.$suffix  ./amsuabufr
@@ -547,11 +554,11 @@ $ncp $datobs/${prefixo}.nexrad.$suffix  ./l2rwbufr
 #  *** NOTE:  The regional gsi analysis is written to (over)
 #             the input guess field file (wrf_inout)
 #
-$ncp $datobs/${prefixa}.satbias.tm03      ./satbias_in
-$ncp $datobs/${prefixa}.satang.tm03        ./satbias_angle
+$ncp $datobs/${prefixo}.satbias.tm12      ./satbias_in
+$ncp $datobs/${prefixo}.satang.tm12        ./satbias_angle
 ##$ncp $datges/${prefixa}.wrfrst_d01.tm12    ./wrf_inout
 if [[ "$io_format" = "binary" ]]; then
-   $ncp $datges/${prefixa}.wrfrst_d01.tm12    ./wrf_inout
+   $ncp $datges/${prefixo}.wrfinput_d01.init    ./wrf_inout
 elif [[ "$io_format" = "netcdf" ]]; then
    $ncp $datges/wrfinput_d01_nmm_netcdf       ./wrf_inout
 fi
@@ -626,8 +633,8 @@ export MP_SHARED_MEMORY=yes
 export MEMORY_AFFINITY=MCM
 ##export BIND_TASKS=yes
 export MP_PULSE=0
-export MP_BULK_MIN_MSG_SIZE=10k
-export MP_USE_BULK_XFER=yes
+##export MP_BULK_MIN_MSG_SIZE=10k
+##export MP_USE_BULK_XFER=yes
 
 # Set environment variables for threads
 export AIXTHREAD_GUARDPAGES=4
@@ -648,7 +655,7 @@ export MP_LABELIO=yes
 ##export MP_COREFILE_FORMAT=lite
 
 # Set analysis date
-adate=$adate_regional
+adate=$adate_regional_nmm_binary
 
 # Set guess/analysis (i/o) file format.  Two
 # option are available:  binary or netcdf
@@ -757,12 +764,12 @@ fi
 emiscoef=$fix_file/crtm_gfsgsi/EmisCoeff/Big_Endian/EmisCoeff.bin
 aercoef=$fix_file/crtm_gfsgsi/AerosolCoeff/Big_Endian/AerosolCoeff.bin
 cldcoef=$fix_file/crtm_gfsgsi/CloudCoeff/Big_Endian/CloudCoeff.bin
-satinfo=$fix_file/global_satinfo.txt
-satangl=$fix_file/global_satangbias.txt
-pcpinfo=$fix_file/global_pcpinfo.txt
-ozinfo=$fix_file/global_ozinfo.txt
+satinfo=$fix_file/nam_regional_satinfo.txt
+satangl=$fix_file/nam_global_satangbias.txt
+pcpinfo=$fix_file/nam_global_pcpinfo.txt
+ozinfo=$fix_file/nam_global_ozinfo.txt
 errtable=$fix_file/nam_errtable.r3dv
-convinfo=$fix_file/global_convinfo.txt
+convinfo=$fix_file/nam_regional_convinfo_reg_test.txt
 mesonetuselist=$fix_file/nam_mesonet_uselist.txt
 
 # Only need this file for single obs test
@@ -807,6 +814,7 @@ done
 
 # Copy observational data to $tmpdir
 $ncp $datobs/${prefixo}.prepbufr.tm12   ./prepbufr
+$ncp $datobs/${prefixo}.gpsro.$suffix   ./gpsrobufr
 $ncp $datobs/${prefixo}.1bhrs3.$suffix  ./hirs3bufr
 $ncp $datobs/${prefixo}.1bhrs4.$suffix  ./hirs4bufr
 $ncp $datobs/${prefixo}.1bamua.$suffix  ./amsuabufr
@@ -822,11 +830,11 @@ $ncp $datobs/${prefixo}.nexrad.$suffix  ./l2rwbufr
 #  *** NOTE:  The regional gsi analysis is written to (over)
 #             the input guess field file (wrf_inout)
 #
-$ncp $datobs/${prefixa}.satbias.tm03      ./satbias_in
-$ncp $datobs/${prefixa}.satang.tm03        ./satbias_angle
+$ncp $datobs/${prefixo}.satbias.tm12      ./satbias_in
+$ncp $datobs/${prefixo}.satang.tm12        ./satbias_angle
 ##$ncp $datges/${prefixa}.wrfrst_d01.tm12    ./wrf_inout
 if [[ "$io_format" = "binary" ]]; then
-   $ncp $datges/${prefixa}.wrfrst_d01.tm12    ./wrf_inout
+   $ncp $datges/${prefixo}.wrfinput_d01.init    ./wrf_inout
 elif [[ "$io_format" = "netcdf" ]]; then
    $ncp $datges/wrfinput_d01_nmm_netcdf       ./wrf_inout
 fi
@@ -907,8 +915,8 @@ export MP_SHARED_MEMORY=yes
 export MEMORY_AFFINITY=MCM
 ##export BIND_TASKS=yes
 export MP_PULSE=0
-export MP_BULK_MIN_MSG_SIZE=10k
-export MP_USE_BULK_XFER=yes
+##export MP_BULK_MIN_MSG_SIZE=10k
+##export MP_USE_BULK_XFER=yes
 
 # Set environment variables for threads
 export AIXTHREAD_GUARDPAGES=4
@@ -929,7 +937,7 @@ export MP_LABELIO=yes
 ##export MP_COREFILE_FORMAT=lite
 
 # Set analysis date
-adate=$adate_regional
+adate=$adate_regional_nmm_binary
 
 # Set guess/analysis (i/o) file format.  Two
 # option are available:  binary or netcdf
@@ -1037,12 +1045,12 @@ fi
 emiscoef=$fix_file/crtm_gfsgsi/EmisCoeff/Big_Endian/EmisCoeff.bin
 aercoef=$fix_file/crtm_gfsgsi/AerosolCoeff/Big_Endian/AerosolCoeff.bin
 cldcoef=$fix_file/crtm_gfsgsi/CloudCoeff/Big_Endian/CloudCoeff.bin
-satinfo=$fix_file/global_satinfo.txt
-satangl=$fix_file/global_satangbias.txt
-pcpinfo=$fix_file/global_pcpinfo.txt
-ozinfo=$fix_file/global_ozinfo.txt
+satinfo=$fix_file/nam_regional_satinfo.txt
+satangl=$fix_file/nam_global_satangbias.txt
+pcpinfo=$fix_file/nam_global_pcpinfo.txt
+ozinfo=$fix_file/nam_global_ozinfo.txt
 errtable=$fix_file/nam_errtable.r3dv
-convinfo=$fix_file/global_convinfo.txt
+convinfo=$fix_file/nam_regional_convinfo_reg_test.txt
 mesonetuselist=$fix_file/nam_mesonet_uselist.txt
 
 # Only need this file for single obs test
@@ -1087,6 +1095,7 @@ done
 
 # Copy observational data to $tmpdir
 $ncp $datobs/${prefixo}.prepbufr.tm12   ./prepbufr
+$ncp $datobs/${prefixo}.gpsro.$suffix   ./gpsrobufr
 $ncp $datobs/${prefixo}.1bhrs3.$suffix  ./hirs3bufr
 $ncp $datobs/${prefixo}.1bhrs4.$suffix  ./hirs4bufr
 $ncp $datobs/${prefixo}.1bamua.$suffix  ./amsuabufr
@@ -1102,11 +1111,11 @@ $ncp $datobs/${prefixo}.nexrad.$suffix  ./l2rwbufr
 #  *** NOTE:  The regional gsi analysis is written to (over)
 #             the input guess field file (wrf_inout)
 #
-$ncp $datobs/${prefixa}.satbias.tm03      ./satbias_in
-$ncp $datobs/${prefixa}.satang.tm03        ./satbias_angle
+$ncp $datobs/${prefixo}.satbias.tm12      ./satbias_in
+$ncp $datobs/${prefixo}.satang.tm12        ./satbias_angle
 ##$ncp $datges/${prefixa}.wrfrst_d01.tm12    ./wrf_inout
 if [[ "$io_format" = "binary" ]]; then
-   $ncp $datges/${prefixa}.wrfrst_d01.tm12    ./wrf_inout
+   $ncp $datges/${prefixo}.wrfinput_d01.init    ./wrf_inout
 elif [[ "$io_format" = "netcdf" ]]; then
    $ncp $datges/wrfinput_d01_nmm_netcdf       ./wrf_inout
 fi
@@ -1399,35 +1408,6 @@ fi
 if cmp -s wrf_inout.${exp1} wrf_inout.${exp2} 
 then
    echo 'The results between the two runs ('${exp1}' and '${exp2}') are reproducible'
-   echo 'since the corresponding results are identical.'
-   echo
-fi
-
-} >> $output
-
-# Next, reproducibility between a 1 node and 2 node experiment
-
-{
-
-if [[ $(grep -c 'penalty,grad ,a,b' penalty.${exp1}-${exp3}.txt) = 0 ]]; then
-   echo 'The results between the two runs ('${exp1}' and '${exp3}') are reproducible'
-   echo 'since the corresponding penalties and gradients are identical with '$(grep -c 'penalty,grad ,a,b' penalty.${exp1}-${exp3}.txt)' lines different.'
-   echo
-else
-   echo 'The results between the two runs are nonreproducible,'
-   echo 'thus the regression test has failed for '${exp1}' and '${exp3}' analyses with '$(grep -c 'penalty,grad ,a,b' penalty.${exp1}-${exp3}.txt)' lines different.'
-   echo
-fi
-
-} >> $output
-
-# Next, check reproducibility of results between a 1 node branch and 2 node trunk experiment
-
-{
-
-if cmp -s wrf_inout.${exp1} wrf_inout.${exp3} 
-then
-   echo 'The results between the two runs ('${exp1}' and '${exp3}') are reproducible'
    echo 'since the corresponding results are identical.'
    echo
 fi

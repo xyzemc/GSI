@@ -16,6 +16,7 @@
 #@ account_no = RDAS-MTN
 #@ wall_clock_limit = 3:00:00
 #@ notification=error
+#@ restart=no
 #@ queue
 
 . regression_var.sh
@@ -27,8 +28,8 @@ export MP_SHARED_MEMORY=yes
 export MEMORY_AFFINITY=MCM
 ##export BIND_TASKS=yes
 export MP_PULSE=0
-export MP_BULK_MIN_MSG_SIZE=10k
-export MP_USE_BULK_XFER=yes
+##export MP_BULK_MIN_MSG_SIZE=10k
+##export MP_USE_BULK_XFER=yes
 
 # Set environment variables for threads
 export AIXTHREAD_GUARDPAGES=4
@@ -49,7 +50,7 @@ export MP_LABELIO=yes
 ##export MP_COREFILE_FORMAT=lite
 
 # Set analysis date
-#adate=$adate_regional
+adate=$adate_regional_nems_nmmb
 
 # Set experiment name
 exp=$exp1_nems_nmmb_sub_2node
@@ -112,12 +113,12 @@ berror=$fix_file/nam_glb_berror.f77
 emiscoef=$fix_file/crtm_gfsgsi/EmisCoeff/Big_Endian/EmisCoeff.bin
 aercoef=$fix_file/crtm_gfsgsi/AerosolCoeff/Big_Endian/AerosolCoeff.bin
 cldcoef=$fix_file/crtm_gfsgsi/CloudCoeff/Big_Endian/CloudCoeff.bin
-satinfo=$fix_file/global_satinfo.txt
-satangl=$fix_file/global_satangbias.txt
-pcpinfo=$fix_file/global_pcpinfo.txt
-ozinfo=$fix_file/global_ozinfo.txt
+satinfo=$fix_file/nam_regional_satinfo.txt
+satangl=$fix_file/nam_global_satangbias.txt
+pcpinfo=$fix_file/nam_global_pcpinfo.txt
+ozinfo=$fix_file/nam_global_ozinfo.txt
 errtable=$fix_file/nam_errtable.r3dv
-convinfo=$fix_file/global_convinfo.txt
+convinfo=$fix_file/nam_regional_convinfo.txt
 mesonetuselist=$fix_file/nam_mesonet_uselist.txt
 
 # Copy executable and fixed files to $tmpdir
