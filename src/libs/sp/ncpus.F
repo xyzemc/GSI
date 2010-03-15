@@ -12,6 +12,7 @@ C PROGRAM HISTORY LOG:
 C   94-08-19  IREDELL
 C   98-11-09  VUONG     ADD DOC BLOCK AND REMOVE CRAY REFERENCES
 C 1998-12-18  IREDELL   IBM SMP VERSION
+C 2009-12-27  DSTARK    updated the IBM specific version to function wo ESSL lib.
 C
 C USAGE:    NC=NCPUS()
 C   OUTPUT ARGUMENTS:
@@ -25,6 +26,14 @@ C   LANGUAGE: FORTRAN
 C
 C$$$
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#if IBM4 || IBM8
       NCPUS=NUM_PARTHDS()
+c     USE OMP_LIB
+c     NCPUS=OMP_GET_NUM_THREADS()
+#endif
+#if LINUX
+      NCPUS=1
+#endif
       RETURN
       END

@@ -1,6 +1,6 @@
 C-----------------------------------------------------------------------
       SUBROUTINE SPLAT(IDRT,JMAX,SLAT,WLAT)
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
+C     SUBPROGRAM DOCUMENTATION BLOCK
 C
 C SUBPROGRAM:  SPLAT      COMPUTE LATITUDE FUNCTIONS
 C   PRGMMR: IREDELL       ORG: W/NMC23       DATE: 96-02-20
@@ -25,7 +25,9 @@ C   96-02-20  IREDELL
 C   97-10-20  IREDELL  ADJUST PRECISION
 C   98-06-11  IREDELL  GENERALIZE PRECISION USING FORTRAN 90 INTRINSIC
 C 1998-12-03  IREDELL  GENERALIZE PRECISION FURTHER
-C 1998-12-03  IREDELL  USE BLAS CALLS
+C 1998-12-03  IREDELL  USES AIX ESSL BLAS CALLS
+C 2009-12-27  DSTARK   updated to switch between ESSL calls on an AIX
+C                      platform, and Numerical Recipies calls elsewise.
 C
 C USAGE:    CALL SPLAT(IDRT,JMAX,SLAT,WLAT)
 C
@@ -41,13 +43,15 @@ C     SLAT     - REAL (JMAX) SINES OF LATITUDE.
 C     WLAT     - REAL (JMAX) GAUSSIAN WEIGHTS.
 C
 C SUBPROGRAMS CALLED:
-C   DGEF         MATRIX FACTORIZATION
-C   DGES         MATRIX SOLVER
+C   DGEF         MATRIX FACTORIZATION - ESSL
+C   DGES         MATRIX SOLVER - ESSL
+C   LUDCMP       LU factorization - numerical recipies
+C   LUBKSB       Matrix solver - numerical recipies
 C
 C ATTRIBUTES:
 C   LANGUAGE: FORTRAN 90
 C
-C$$$
+C
       REAL SLAT(JMAX),WLAT(JMAX)
       INTEGER,PARAMETER:: KD=SELECTED_REAL_KIND(15,45)
       REAL(KIND=KD):: PK(JMAX/2),PKM1(JMAX/2),PKM2(JMAX/2)
@@ -137,8 +141,14 @@ C  EQUALLY-SPACED LATITUDES INCLUDING POLES
         DO JS=1,JHO
           BWORK(JS)=-D1/(4*(JS-1)**2-1)
         ENDDO
-!mhu        CALL DGEF(AWORK,JHE,JHO,IPVT)
-!mhu        CALL DGES(AWORK,JHE,JHO,IPVT,BWORK,J0)
+#if IBM4 || IBM8
+        CALL DGEF(AWORK,JHE,JHO,IPVT)
+        CALL DGES(AWORK,JHE,JHO,IPVT,BWORK,J0)
+#endif
+#if LINUX
+        call ludcmp(awork,jho,jhe,ipvt)
+        call lubksb(awork,jho,jhe,ipvt,bwork)
+#endif
         WLAT(1)=0.
         DO J=1,JHO
           WLAT(J+1)=BWORK(J)
@@ -171,8 +181,14 @@ C  EQUALLY-SPACED LATITUDES EXCLUDING POLES
         DO JS=1,JHO
           BWORK(JS)=-D1/(4*(JS-1)**2-1)
         ENDDO
-!mhu        CALL DGEF(AWORK,JHE,JHO,IPVT)
-!mhu        CALL DGES(AWORK,JHE,JHO,IPVT,BWORK,J0)
+#if IBM4 || IBM8
+        CALL DGEF(AWORK,JHE,JHO,IPVT)
+        CALL DGES(AWORK,JHE,JHO,IPVT,BWORK,J0)
+#endif
+#if LINUX
+        call ludcmp(awork,jho,jhe,ipvt,d)
+        call lubksb(awork,jho,jhe,ipvt,bwork)
+#endif
         WLAT(1)=0.
         DO J=1,JHO
           WLAT(J)=BWORK(J)
@@ -188,5 +204,104 @@ CDIR$ IVDEP
         ENDIF
       ENDIF
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      RETURN
+      END
+
+c----------------------------------------------------------------------
+c From Numerical Recipes
+c added two Numerical Recipes routines for matrix inversion
+c LUBKSB - solves a system of linear equations, follows call to LUDCMP
+c LUDCMP - replaces an NxN matrix a with the LU decomposition
+c----------------------------------------------------------------------
+
+      SUBROUTINE LUBKSB(A,N,NP,INDX,B)
+      REAL(8) A(NP,NP),B(N)
+      INTEGER(4) INDX(N)
+      II=0  
+      DO 12 I=1,N
+        LL=INDX(I)
+        SUM=B(LL)
+        B(LL)=B(I)
+        IF (II.NE.0)THEN
+          DO 11 J=II,I-1
+            SUM=SUM-A(I,J)*B(J)
+11        CONTINUE
+        ELSE IF (SUM.NE.0.) THEN
+          II=I
+        ENDIF
+        B(I)=SUM
+12    CONTINUE
+      DO 14 I=N,1,-1  
+        SUM=B(I)
+        IF(I.LT.N)THEN
+          DO 13 J=I+1,N
+            SUM=SUM-A(I,J)*B(J)
+13        CONTINUE
+        ENDIF
+        B(I)=SUM/A(I,I)
+14    CONTINUE
+      RETURN
+      END
+
+
+      SUBROUTINE LUDCMP(A,N,NP,INDX)
+      PARAMETER (NMAX=100,TINY=1.0E-20)
+      REAL(8) A(NP,NP),VV(NMAX),D
+      INTEGER(4) INDX(N)
+      D=1.  
+      DO 12 I=1,N
+        AAMAX=0.
+        DO 11 J=1,N
+          IF (ABS(A(I,J)).GT.AAMAX) AAMAX=ABS(A(I,J))
+11      CONTINUE
+        IF (AAMAX.EQ.0.) PAUSE 'SINGULAR MATRIX.'
+        VV(I)=1./AAMAX
+12    CONTINUE
+      DO 19 J=1,N
+        IF (J.GT.1) THEN
+          DO 14 I=1,J-1
+            SUM=A(I,J)
+            IF (I.GT.1)THEN
+              DO 13 K=1,I-1
+                SUM=SUM-A(I,K)*A(K,J)
+13            CONTINUE
+              A(I,J)=SUM
+            ENDIF
+14        CONTINUE
+        ENDIF
+        AAMAX=0.
+        DO 16 I=J,N
+          SUM=A(I,J)
+          IF (J.GT.1)THEN
+            DO 15 K=1,J-1
+              SUM=SUM-A(I,K)*A(K,J)
+15          CONTINUE  
+            A(I,J)=SUM
+          ENDIF
+          DUM=VV(I)*ABS(SUM)
+          IF (DUM.GE.AAMAX) THEN
+            IMAX=I
+            AAMAX=DUM
+          ENDIF
+16      CONTINUE
+        IF (J.NE.IMAX)THEN
+          DO 17 K=1,N
+            DUM=A(IMAX,K)
+            A(IMAX,K)=A(J,K)
+            A(J,K)=DUM
+17        CONTINUE
+          D=-D
+          VV(IMAX)=VV(J)
+        ENDIF
+        INDX(J)=IMAX
+        IF(J.NE.N)THEN
+          IF(A(J,J).EQ.0.)A(J,J)=TINY
+          DUM=1./A(J,J)
+          DO 18 I=J+1,N
+            A(I,J)=A(I,J)*DUM
+18        CONTINUE
+        ENDIF
+19    CONTINUE
+      IF(A(N,N).EQ.0.)A(N,N)=TINY
       RETURN
       END
