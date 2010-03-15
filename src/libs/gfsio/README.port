@@ -1,0 +1,5 @@
+
+gfsio_module.F
+Include LU decomp routines as replacements for xlf essl dgef/dges.
+ LUDCMP       LU factorization - numerical recipies
+ LUBKSB       Matrix solver - numerical recipies
