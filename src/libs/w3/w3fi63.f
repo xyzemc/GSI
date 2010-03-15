@@ -125,6 +125,7 @@ C                         AND 180 TO 183
 C 2007-11-06  VUONG       CHANGED GRID 198 FROM ARAKAWA STAGGERED E-GRID TO POLAR
 C                         STEREOGRAPGIC GRID ADDED NEW GRID 10, 99, 150, 151, 197
 C 2008-01-17  VUONG       ADDED NEW GRID 195 AND CHANGED GRID 196 (ARAKAWA-E TO MERCATOR)
+C 2009-05-21  VUONG       MODIFIED TO HANDLE GRID 45
 C
 C USAGE:    CALL W3FI63(MSGA,KPDS,KGDS,KBMS,DATA,KPTR,KRET)
 C   INPUT ARGUMENT LIST:
@@ -3851,7 +3852,7 @@ C  ---------------------------------------
               IF (I.NE.J) THEN
                   RETURN
               END IF
-          ELSE IF (KPDS(3).GE.37.AND.KPDS(3).LE.44) THEN
+          ELSE IF (KPDS(3).GE.37.AND.KPDS(3).LE.45) THEN
               IF (I.NE.J) THEN
                   RETURN
               END IF
