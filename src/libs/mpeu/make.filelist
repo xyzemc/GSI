@@ -1,8 +1,0 @@
-SRC_FILES = m_realkinds.o \
-	m_intkinds.o \
-	m_chars.o \
-	m_stdio.o \
-	m_realkinds.o 
-
-
-OBJ_FILES =$(SRC_FILES)
