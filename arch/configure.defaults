@@ -1,5 +1,5 @@
 ###########################################################
-#ARCH	AIX  #dmpar 
+#ARCH	AIX 64-bit  #dmpar 
 #
 
 COREDIR = CONFIGURE_CORE_PATH
@@ -10,9 +10,11 @@ SFC=xlf_r
 SF90=xlf90  -qfree
 SCC=xlc_r
 INC_FLAGS = -qmoddir=$(INC_DIR) -I $(INC_DIR)
-FFLAGS=-O -g $(INC_FLAGS) -qnosave -qarch=auto -qflttrap=zerodivide:enable -qsigtrap -C -qinitauto=FF911299 -q64 -C -qfullpath
+FFLAGS=-O -g $(INC_FLAGS) -qnosave -qarch=auto -qflttrap=zerodivide:enable -qsigtrap -C -qinitauto=FF911299 -q64 -C -qfullpath -DIBM4
+FFLAGS_DOUBLE  =   -qintsize=4 -qrealsize=8
+FFLAGS_SINGLE  =   -qintsize=4 -qrealsize=4
 CPP             =      cpp 
-CPPFLAGS       =      -C -P -D$(BYTE_ORDER) -DWRF -I/usr/lpp/ppe.poe/include/thread
+CPPFLAGS       =      -C -P -D$(BYTE_ORDER) -DWRF -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
 
 DM_FC=mpxlf_r  
 DM_F90=mpxlf90_r  -qfree
@@ -23,7 +25,46 @@ F90             =       CONFIGURE_F90
 CC              =       CONFIGURE_CC
 
 CFLAGS= -I ./ -DFortranByte=char -DFortranInt=int -DFortranLlong='long long' -DIBM4 -DVERBOSE -q64 -C -qfullpath
+CFLAGS2= -I ./ -DFortranByte=char -DFortranInt=int -DFortranLlong='long long' -DIBM4 -DVERBOSE -q64 -C -qfullpath
 
+MYLIBsys          = -lessl_r -lmass -bdatapsize:64K -bstackpsize:64K
+NETCDFLIBS_2= 
+
+###########################################################
+#ARCH	AIX 32-bit #dmpar 
+#
+ARFLAGS  =  -x32
+AFLAGS   =  -x32
+
+COREDIR = CONFIGURE_CORE_PATH
+INC_DIR = $(COREDIR)/include
+WRF = 1
+BYTE_ORDER=BIG_ENDIAN
+SFC=xlf_r  -q32
+SF90=xlf90  -qfree -q32
+SCC=xlc_r  -q32
+INC_FLAGS = -qmoddir=$(INC_DIR) -I $(INC_DIR) -q32
+FFLAGS=-O -g $(INC_FLAGS) -qnosave -qarch=auto -qflttrap=zerodivide:enable -qsigtrap -C -qinitauto=FF911299 -q32 -C -qfullpath -DIBM4
+FFLAGS_DOUBLE  =   -qintsize=4 -qrealsize=8
+FFLAGS_SINGLE  =   -qintsize=4 -qrealsize=4
+CPP             =      cpp 
+CPPFLAGS       =      -C -P -D$(BYTE_ORDER) -DWRF -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
+
+DM_FC=mpxlf_r  
+DM_F90=mpxlf90_r  -qfree
+DM_CC=mpxlc_r
+
+FC              =       CONFIGURE_FC
+F90             =       CONFIGURE_F90
+CC              =       CONFIGURE_CC
+
+CFLAGS= -I ./ -DFortranByte=char -DFortranInt=int -DFortranLlong='long long' -DIBM4 -DVERBOSE -q32 -C -qfullpath
+CFLAGS2= -I ./ -DFortranByte=char -DFortranInt=int -DFortranLlong='long long' -DIBM4 -DVERBOSE -q32 -C -qfullpath
+
+MYLIBsys          = -lessl_r -lmass -bdatapsize:64K -bstackpsize:64K
+NETCDFLIBS_2= 
+
+###########################################################
 ###########################################################
 #ARCH	Linux i486 i586 i686, PGI compiler #dmpar  
 #
@@ -35,8 +76,10 @@ BYTE_ORDER=LITTLE_ENDIAN
 SFC=pgf90
 SF90=pgf90 -Mfree -C 
 SCC=pgcc
-INC_FLAGS = -qmoddir=$(INC_DIR) -I $(INC_DIR)
-FFLAGS=-O0 -g $(INC_FLAGS) -Kieee -pc 32 -Ktrap=fp -C -byteswapio $(LDFLAGS)
+INC_FLAGS = -module $(INC_DIR) -I $(INC_DIR)
+FFLAGS=-O0 -g -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) -Kieee -pc 32 -Ktrap=fp -C -byteswapio $(LDFLAGS) -DLINUX
+FFLAGS_DOUBLE  =   -i4 -r8
+FFLAGS_SINGLE  =   -i4 -r4
 CPP             =      /lib/cpp 
 CPPFLAGS       =      -C -P -D$(BYTE_ORDER) -DWRF
 
@@ -48,7 +91,11 @@ FC              =       CONFIGURE_FC
 F90             =       CONFIGURE_F90
 CC              =       CONFIGURE_CC
 
-CFLAGS=-O0 -DLINUX
+CFLAGS=-O0 -DLINUX -DUNDERSCORE
+CFLAGS2=-DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
+
+MYLIBsys          =   -llapack -lblas
+NETCDFLIBS_2= -rpath,CONFIGURE_NETCDF_PATH/lib
 
 ###########################################################
 #ARCH	Linux x86_64, PGI compiler # dmpar 
@@ -61,8 +108,10 @@ BYTE_ORDER=LITTLE_ENDIAN
 SFC=pgf90
 SF90=pgf90 -Mfree -C 
 SCC=pgcc
-INC_FLAGS = -qmoddir=$(INC_DIR) -I $(INC_DIR)
-INC_FLAGS) -Kieee -pc 64 -Ktrap=fp -C -byteswapio $(LDFLAGS)
+INC_FLAGS = -module $(INC_DIR) -I $(INC_DIR)
+FFLAGS=-O0 -g -Kieee -pc 64 -Ktrap=fp -C -byteswapio -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX
+FFLAGS_DOUBLE  =   -i4 -r8
+FFLAGS_SINGLE  =   -i4 -r4
 CPP             =      /lib/cpp 
 CPPFLAGS       =      -C -P -D$(BYTE_ORDER) -DWRF
 
@@ -74,8 +123,12 @@ FC              =       CONFIGURE_FC
 F90             =       CONFIGURE_F90
 CC              =       CONFIGURE_CC
 
-CFLAGS=-O0 -DLINUX
+CFLAGS=-O0 -DLINUX -DUNDERSCORE
+CFLAGS2=-DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
 
+
+MYLIBsys          =  -llapack -lblas
+NETCDFLIBS_2= -rpath,CONFIGURE_NETCDF_PATH/lib
 
 ###########################################################
 #ARCH	Linux i486 i586 i686, Intel compiler	# dmpar 
@@ -89,20 +142,25 @@ SFC=ifort
 SF90=ifort -free
 SCC=icc
 INC_FLAGS = -module $(INC_DIR) -I $(INC_DIR)
-FFLAGS=-O3 -xT $(INC_FLAGS) -fp-model precise -assume byterecl -convert big_endian -fpe0 -g -traceback $(LDFLAGS)
+FFLAGS=-O3 -xW $(INC_FLAGS) -fp-model precise -assume byterecl -convert big_endian -fpe0 -g -traceback $(LDFLAGS) -DLINUX
+FFLAGS_DOUBLE  =   -i4 -r8
+FFLAGS_SINGLE  =   -i4 -r4
 CPP             =      /lib/cpp 
 CPPFLAGS       =      -C -P -D$(BYTE_ORDER) -DWRF
 
 DM_FC=ifort
-DM_F90=ifort -free
-DM_CC=icc
+DM_F90=mpif90 -free
+DM_CC=cc
 
 FC              =       CONFIGURE_FC
 F90             =       CONFIGURE_F90
 CC              =       CONFIGURE_CC
 
-CFLAGS=-O0 -DLINUX
+CFLAGS=-O0 -DLINUX -DUNDERSCORE
+CFLAGS2=-DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
 
+MYLIBsys          = -L$(LAPACK_PATH) -lmkl_lapack -lmkl_em64t -lguide -lpthread -lm
+NETCDFLIBS_2= 
 
 ###########################################################
 #ARCH	Linux x86_64, Intel compiler	# dmpar 
@@ -116,72 +174,25 @@ SFC=ifort
 SF90=ifort -free
 SCC=icc
 INC_FLAGS = -module $(INC_DIR) -I $(INC_DIR)
-FFLAGS=-O3 -xT $(INC_FLAGS) -fp-model precise -assume byterecl -convert big_endian -fpe0 -g -traceback $(LDFLAGS)
+FFLAGS=-O3 -xW $(INC_FLAGS) -fp-model precise -assume byterecl -convert big_endian -fpe0 -g -traceback $(LDFLAGS) -DLINUX
+FFLAGS_DOUBLE  =   -i4 -r8
+FFLAGS_SINGLE  =   -i4 -r4
 CPP             =      /lib/cpp 
 CPPFLAGS       =      -C -P -D$(BYTE_ORDER) -DWRF
 
 DM_FC=ifort
-DM_F90=ifort -free
-DM_CC=icc
+DM_F90=mpif90 -free
+DM_CC=cc
 
 FC              =       CONFIGURE_FC
 F90             =       CONFIGURE_F90
 CC              =       CONFIGURE_CC
 
-CFLAGS=-O0 -DLINUX
+CFLAGS=-O0 -DLINUX -DUNDERSCORE
+CFLAGS2=-DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
 
-###########################################################
-#ARCH	Linux i486 i586 i686, gfortran compiler # dmpar 
-#
-LDFLAGS         =      -Wl,-noinhibit-exec
-
-COREDIR = CONFIGURE_CORE_PATH
-INC_DIR = $(COREDIR)/include
-BYTE_ORDER=LITTLE_ENDIAN
-SFC=gfortran
-SF90=gfortran -ffree-form
-SCC=gcc
-INC_FLAGS = -qmoddir=$(INC_DIR) -I $(INC_DIR)
-FFLAGS=$(INC_FLAGS) -fconvert=big-endian -fno-second-underscore -fno-range-check -frecord-marker=4 $(LDFLAGS)
-CPP             =      /lib/cpp 
-CPPFLAGS       =      -C -P -D$(BYTE_ORDER) -DWRF
-
-DM_FC=gfortran
-DM_F90=gfortran -ffree-form
-DM_CC=gcc
-
-FC              =       CONFIGURE_FC
-F90             =       CONFIGURE_F90
-CC              =       CONFIGURE_CC
-
-CFLAGS=-O0 -DLINUX -D_OPENMP
-
-###########################################################
-#ARCH	Linux x86_64, gfortran compiler # dmpar 
-#
-LDFLAGS       =      -Wl,-noinhibit-exec
-
-COREDIR = CONFIGURE_CORE_PATH
-INC_DIR = $(COREDIR)/include
-BYTE_ORDER=LITTLE_ENDIAN
-SFC=gfortran
-SF90=gfortran -ffree-form
-SCC=gcc
-INC_FLAGS = -qmoddir=$(INC_DIR) -I $(INC_DIR)
-FFLAGS=$(INC_FLAGS) -fconvert=big-endian -fno-second-underscore -fno-range-check $(LDFLAGS)
-CPP             =      /lib/cpp 
-CPPFLAGS       =      -C -P -D$(BYTE_ORDER) -DWRF
-
-DM_FC=gfortran
-DM_F90=gfortran -ffree-form
-DM_CC=gcc
-
-FC              =       CONFIGURE_FC
-F90             =       CONFIGURE_F90
-CC              =       CONFIGURE_CC
-
-CFLAGS=-O0 -DLINUX -D_OPENMP
-
+MYLIBsys          = -L$(LAPACK_PATH) -lmkl_lapack -lmkl_em64t -lguide -lpthread -lm
+NETCDFLIBS_2= 
 
 ##################################################################
 #ARCH	NULL

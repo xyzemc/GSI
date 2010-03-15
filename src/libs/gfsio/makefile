@@ -1,32 +1,25 @@
 SHELL=/bin/sh
-
+include ../../../configure.gsi
 LIB = ../../../lib/libgfsio.a
 
-.SUFFIXES: .f90 .o
 
-.f90.o:
-##	$(RM) $@ $*.mod
-	$(F90) $(FFLAGS) -c $<
+OBJS = bafrio.o
 
-$(LIB): gfsio_module.o bafrio.o
-	$(AR) -ruv $(LIB) gfsio_module.o bafrio.o
+OBJS1 = gfsio_module.o
+
+SRC_F77 = $(OBJS:.o=.f)
+
+SRC_F = $(OBJS1:.o=.F)
 
 
-.f90.a:
-	$(F90) -c -qfree  $(FFLAGS) $<
-	ar -ruv $(AFLAGS) $@ $*.o
-	rm -f $*.o
 
-.f.a:
-	$(F90) -c -qfree  $(FFLAGS) $<
-	ar -ruv $(AFLAGS) $@ $*.o
-	rm -f $*.o
+$(LIB): $(OBJS)
+	$(F90) $(FFLAGS) -c $(SRC_F)
+	$(AR) -ruv $(AFLAGS) $(LIB) $(OBJS) $(OBJS1)
 
-.c.a:
-	$(CC) -c $(CFLAGS) $<
-	ar -ruv  $(AFLAGS) $@ $*.o
-	rm -f $*.o
+.f.o:
+	$(FC) $(FFLAGS) -c $(SRC_F77)
 
 clean:
-	rm -f *.o *.mod $(LIB)
+	$(RM) $(OBJS) $(OBJS1) *.mod $(LIB)
 

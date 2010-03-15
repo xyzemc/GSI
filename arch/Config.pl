@@ -12,11 +12,13 @@ $sw_os = "ARCH" ;           # ARCH will match any
 $sw_mach = "ARCH" ;         # ARCH will match any
 $sw_dmparallel = "" ;
 $sw_ompparallel = "" ;
+$sw_sfc = "" ;
 $sw_fc = "\$(SFC)" ;
 $sw_cc = "\$(SCC)" ;
 $sw_f90 = "\$(SF90)" ;
 $sw_usenetcdff = "" ;    # for 3.6.2 and greater, the fortran bindings might be in a separate lib file
-
+$iflinux = '';
+$ifintel = '';
 
 while ( substr( $ARGV[0], 0, 1 ) eq "-" )
  {
@@ -152,6 +154,9 @@ while ( <CONFIGURE_DEFAULTS> )
       $sw_ompparallel = "" ;
       $sw_dmparallel = "" ;
       $validresponse = 0 ;
+# search x for Linux and Intel, if found set flag
+      if ( $x =~ /Linux/ ) { $iflinux = 1 };
+      if ( $x =~ /Intel/ ) { $ifintel = 1 };
 
       if ( $paropt eq 'dmpar' ) 
       {
@@ -168,6 +173,73 @@ while ( <CONFIGURE_DEFAULTS> )
 }
 close CONFIGURE_DEFAULTS ;
 
+# test Intel with Linux build, requires explicit path to LAPACK libs
+$LAPACK_PATH = $ENV{LAPACK_PATH};
+if ( $iflinux  )
+{ 
+   if ( $ifintel ) 
+   {
+      if ( !$LAPACK_PATH )
+      {
+        printf "The LAPACK math library is required to compile GSI with Intel. This is";
+        printf " required \nwhen building with Intel ifort. The library path variable ";
+        printf "\$LAPACK_PATH has not \nbeen set. Typically the required path is ";
+        printf " something like; \n"; 
+        printf "     .../intel/mkl72/lib/em64t on NCAR systems or \n";
+        printf "     .../intel/mkl/8.1.1/lib/em64t on NOAA systems. \n";
+        printf "Please set the path, and rerun the configure script. \n";
+        printf "Configuration unsuccessful. \n" ;
+        printf "----------------------------------------------------------";
+        printf "--------------\n" ;
+        die;
+      }
+      else
+      { 
+         # is LAPACK_PATH set to a valid directory? If so, check that the two
+         # libraries libmkl_lapack.a and libmkl_em64t.a exist there.
+         if( -x $LAPACK_PATH )
+         {
+            unless ( -e $LAPACK_PATH . "/libmkl_lapack.a" ) {
+              printf "The LAPACK library libmkl_lapack.a was not found in ";
+              printf "the directory \$LAPACK_PATH. \n";
+              printf "Typically the path is something like; \n"; 
+              printf "     .../intel/mkl72/lib/em64t on NCAR systems or \n";
+              printf "     .../intel/mkl/8.1.1/lib/em64t on NOAA systems. \n";
+              printf "Please reset the path, and rerun the configure script. \n";
+              printf "Configuration unsuccessful. \n" ;
+              printf "----------------------------------------------------------";
+              printf "--------------\n" ;
+              die;
+            }
+            unless ( -e $LAPACK_PATH . "/libmkl_em64t.a" ) {
+              printf "The LAPACK library libmkl_em64t.a was not found in ";
+              printf "the directory \$LAPACK_PATH. \n";
+              printf "Typically the path is something like; \n"; 
+              printf "     .../intel/mkl72/lib/em64t on NCAR systems or \n";
+              printf "     .../intel/mkl/8.1.1/lib/em64t on NOAA systems. \n";
+              printf "Please reset the path, and rerun the configure script. \n";
+              printf "Configuration unsuccessful. \n" ;
+              printf "----------------------------------------------------------";
+              printf "--------------\n" ;
+              die;
+            }
+         }
+         else
+         {
+           printf "The library path variable \$LAPACK_PATH is not set to a";
+           printf " valid path. The \ncurrent path does not exist. ";
+           printf "Typically the path is something like; \n"; 
+           printf "     .../intel/mkl72/lib/em64t on NCAR systems or \n";
+           printf "     .../intel/mkl/8.1.1/lib/em64t on NOAA systems. \n";
+           printf "Please reset the path, and rerun the configure script. \n";
+           printf "Configuration unsuccessful. \n" ;
+           printf "----------------------------------------------------------";
+           printf "--------------\n" ;
+           die;
+         }
+      }
+   }
+}
 
 open CONFIGURE_GSI, "> configure.gsi" or die "cannot append configure.gsi" ;
 open ARCH_PREAMBLE, "< arch/preamble" or die "cannot open arch/preamble" ;

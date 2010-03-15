@@ -12,33 +12,29 @@ WRF_INCLUDE  = -I$(WRF_DIR)/frame
 
 WRF_LIB         =       $(WRF_DIR)/frame/module_internal_header_util.o \
                         $(WRF_DIR)/frame/pack_utils.o \
-                        $(WRF_DIR)/frame/wrf_debug.o \
-                        $(WRF_DIR)/frame/module_wrf_error.o \
+                        $(WRF_DIR)/frame/module_machine.o \
                         -L$(WRF_DIR)/external/io_int -lwrfio_int \
                         $(WRF_DIR)/main/libwrflib.a \
-                        -L$(WRF_DIR)/external/fftpack/fftpack5 -lfftpack \
-                        -L$(WRF_DIR)/external/io_netcdf -lwrfio_nf \
-                        -L$(WRF_DIR)/external/RSL_LITE -lrsl_lite \
-                        -L$(WRF_DIR)/external/io_grib1 -lio_grib1 \
-                        -L$(WRF_DIR)/external/io_grib_share -lio_grib_share \
-                        -L$(WRF_DIR)/external/esmf_time_f90 -lesmf_time \
-                        -L$(WRF_DIR)/external/io_netcdf -lwrfio_nf 
+                        -L$(WRF_DIR)/external/io_int -lwrfio_int \
+                        -L$(WRF_DIR)/external/io_netcdf -lwrfio_nf
+
 
 WRF_LIB2        =       CONFIGURE_GRIB2_LIBS
 NETCDFPATH      =    CONFIGURE_NETCDF_PATH
-NETCDFLIBS      =    CONFIGURE_NETCDF_LIBS
+NETCDFLIBS      =    CONFIGURE_NETCDF_LIBS $(NETCDFLIBS_2)
 WRF_DIR         =    CONFIGURE_WRF_PATH
+SED_FTN = $(WRF_DIR)/tools/standard.exe
 
 
 
 .IGNORE:
-.SUFFIXES: .c .f .F .F90 .o
+.SUFFIXES: .c .f .F .F90 .f90 .o
 
 #	There is probably no reason to modify these rules
 
 .c.o:
 	$(RM) $@
-	$(CC) $(CFLAGS) -c $<	
+	$(CC) $(CFLAGS2) -c $<	
 
 .f.o:
 	$(RM) $@ $*.mod
@@ -55,3 +51,7 @@ WRF_DIR         =    CONFIGURE_WRF_PATH
 	$(CPP) $(CPPFLAGS) $(FDEFS)  $< > $*.f90
 	$(F90) $(FFLAGS) -c $*.f90 
 	$(RM) $*.f90
+
+.f90.o:
+	$(RM) $@ $*.mod
+	$(F90) $(FFLAGS) -c $< 
