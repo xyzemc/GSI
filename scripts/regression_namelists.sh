@@ -117,6 +117,10 @@ export global_T62_namelist="
   &SUPEROB_RADAR
    $SUPERRAD
  /
+ &RAPIDREFRESH_CLDSURF
+   l_cloud_analysis=.false.,
+   dfi_radar_latent_heat_time_period=30.0,
+ /
  &SINGLEOB_TEST
    maginnov=0.1,magoberr=0.1,oneob_type='t',
    oblat=45.,oblon=180.,obpres=1000.,obdattim=${adate},
@@ -174,6 +178,10 @@ export RTMA_namelist="
    dfile(05)='prepbufr',  dtype(05)='spd', dplat(05)=' ', dsis(05)='spd', dval(05)=1.0,  dthin(05)=0,
  /
  &SUPEROB_RADAR
+ /
+ &RAPIDREFRESH_CLDSURF
+   l_cloud_analysis=.false.,
+   dfi_radar_latent_heat_time_period=30.0,
  /
  &SINGLEOB_TEST
    maginnov=0.1,magoberr=0.1,oneob_type='t',
@@ -287,6 +295,10 @@ export arw_binary_namelist="
    del_azimuth=5.,del_elev=.25,del_range=5000.,del_time=.5,elev_angle_max=5.,minnum=50,range_max=100000.,
    l2superob_only=.false.,
  /
+ &RAPIDREFRESH_CLDSURF
+   l_cloud_analysis=.false.,
+   dfi_radar_latent_heat_time_period=30.0,
+ /
  &SINGLEOB_TEST
    maginnov=0.1,magoberr=0.1,oneob_type='t',
    oblat=45.,oblon=270.,obpres=850.,obdattim=${adate},
@@ -398,6 +410,10 @@ export arw_netcdf_namelist="
  &SUPEROB_RADAR
    del_azimuth=5.,del_elev=.25,del_range=5000.,del_time=.5,elev_angle_max=5.,minnum=50,range_max=100000.,
    l2superob_only=.false.,
+ /
+ &RAPIDREFRESH_CLDSURF
+   l_cloud_analysis=.false.,
+   dfi_radar_latent_heat_time_period=30.0,
  /
  &SINGLEOB_TEST
    maginnov=0.1,magoberr=0.1,oneob_type='t',
@@ -511,6 +527,10 @@ export nmm_binary_namelist="
    del_azimuth=5.,del_elev=.25,del_range=5000.,del_time=.5,elev_angle_max=5.,minnum=50,range_max=100000.,
    l2superob_only=.false.,
  /
+ &RAPIDREFRESH_CLDSURF
+   l_cloud_analysis=.false.,
+   dfi_radar_latent_heat_time_period=30.0,
+ /
  &SINGLEOB_TEST
    maginnov=0.1,magoberr=0.1,oneob_type='t',
    oblat=45.,oblon=270.,obpres=850.,obdattim=${adate},
@@ -622,6 +642,10 @@ export nmm_netcdf_namelist="
  &SUPEROB_RADAR
    del_azimuth=5.,del_elev=.25,del_range=5000.,del_time=.5,elev_angle_max=5.,minnum=50,range_max=100000.,
    l2superob_only=.false.,
+ /
+ &RAPIDREFRESH_CLDSURF
+   l_cloud_analysis=.false.,
+   dfi_radar_latent_heat_time_period=30.0,
  /
  &SINGLEOB_TEST
    maginnov=0.1,magoberr=0.1,oneob_type='t',
@@ -741,6 +765,10 @@ export nems_nmmb_namelist="
    l2superob_only=.false.,
  /
  &LAG_DATA
+ /
+ &RAPIDREFRESH_CLDSURF
+   l_cloud_analysis=.false.,
+   dfi_radar_latent_heat_time_period=30.0,
  /
  &SINGLEOB_TEST
    maginnov=0.1,magoberr=0.1,oneob_type='t',
