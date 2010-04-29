@@ -1,6 +1,6 @@
 SHELL=/bin/sh
 
-SUBDIRS = bufr sp gfsio sfcio sigio w3
+SUBDIRS = bufr crtm_jcsda_2.0 sp gfsio sfcio sigio w3
 
 all: $(SUBDIRS)
 	@for dir in $(SUBDIRS); do \
