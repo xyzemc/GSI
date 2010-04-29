@@ -142,7 +142,7 @@ SFC=ifort
 SF90=ifort -free
 SCC=icc
 INC_FLAGS = -module $(INC_DIR) -I $(INC_DIR)
-FFLAGS=-O3 -xW $(INC_FLAGS) -fp-model precise -assume byterecl -convert big_endian -fpe0 -g -traceback $(LDFLAGS) -DLINUX
+FFLAGS=-O3 -xW $(INC_FLAGS) -fp-model precise -assume byterecl -fpe0 -g -traceback $(LDFLAGS) -DLINUX
 FFLAGS_DOUBLE  =   -i4 -r8
 FFLAGS_SINGLE  =   -i4 -r4
 CPP             =      /lib/cpp 
@@ -174,7 +174,7 @@ SFC=ifort
 SF90=ifort -free
 SCC=icc
 INC_FLAGS = -module $(INC_DIR) -I $(INC_DIR)
-FFLAGS=-O3 -xW $(INC_FLAGS) -fp-model precise -assume byterecl -convert big_endian -fpe0 -g -traceback $(LDFLAGS) -DLINUX
+FFLAGS=-O3 -xW $(INC_FLAGS) -fp-model precise -assume byterecl -fpe0 -g -traceback $(LDFLAGS) -DLINUX
 FFLAGS_DOUBLE  =   -i4 -r8
 FFLAGS_SINGLE  =   -i4 -r4
 CPP             =      /lib/cpp 
@@ -193,6 +193,111 @@ CFLAGS2=-DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='lon
 
 MYLIBsys          = -L$(LAPACK_PATH) -lmkl_lapack -lmkl_em64t -lguide -lpthread -lm
 NETCDFLIBS_2= 
+
+###########################################################
+#ARCH    Linux SGI Altix, ifort compiler with icc 9.x,10.x #dmpar
+#
+#        By default, some files are compiled without optimizations to
+#        speed up compilation. Removing respective makefile rules in the
+#        end of this file will result in longer compilation time, and,
+#        possibly Out Of Memory messages, but might produce binaries
+#        which are substantially faster.
+#
+#        If you get Out Of Memory messages, there are several options:
+#          1. Check your memory limits (ulimit -a), possibly increasing
+#             swap partitions size.
+#          2. Remove any debugging flags (-g, -check, -traceback).
+#          3. Force the problematic file to be compiled with lower
+#             optimization (see examples at the end of this file),
+#             try the -no-ip compiler flag.
+#
+#        Please visit http://www.intel.com/support/performancetools/sb/cs-028607.htm
+#        for latest info on how to build WRF with Intel compilers.
+#
+#
+#        The default configuration is aimed at accuracy. To improve speed
+#        with only negligible effect on floating point accuracy,
+#        consider removing "-fp-model precise" from FCBASEOPTS.  If
+#        you are using an ifort 9.1.x compiler or earlier, consider
+#        uncommenting the version of the FCBASEOPTS settings that uses
+#        the -IPF-fp-relaxed option.  To further improve performance,
+#        add processor-specific options to FCOPTIM (see ifort manpage).
+#
+#        If you can tolerate a longer build, change the setting of
+#        FCNOOPT to -O1, for slightly faster performance.
+#
+#        If your SGI MPI library is not installed in the default
+#        locations (/usr/bin, /usr/include, /usr/lib), set MPI_HOME
+#        to be the path to the directory where the SGI MPI bin,
+#        include and lib directories are, and change the DM_FC,
+#        DM_CC and LIB_LOCAL settings as follows:
+#        DM_FC = $(SFC) -I$(MPI_HOME)/include
+#        DM_CC = $(SFC) -I$(MPI_HOME)/include
+#        LIB_LOCAL = -L$(MPI_HOME)/lib -lmpi
+
+
+LDFLAGS         =     -Wl,-noinhibit-exec
+
+COREDIR = CONFIGURE_CORE_PATH
+INC_DIR = $(COREDIR)/include
+BYTE_ORDER=LITTLE_ENDIAN
+SFC=ifort
+SF90=ifort -free
+SCC=icc
+INC_FLAGS = -module $(INC_DIR) -I $(INC_DIR)
+BYTESWAPIO      =  
+FFLAGS=-O3 -ftz -align all -fno-alias $(INC_FLAGS) -fp-model precise -assume byterecl $(BYTESWAPIO) -fpe0 -g -traceback $(LDFLAGS) -DLINUX
+FFLAGS_DOUBLE   =   -i4 -r8
+FFLAGS_SINGLE   =   -i4 -r4
+CPP             =      /lib/cpp
+CPPFLAGS        =      -C -P -D$(BYTE_ORDER) -DWRF
+
+DM_FC=ifort
+DM_F90=ifort -free
+DM_CC=cc
+
+
+FC              =       CONFIGURE_FC
+F90             =       CONFIGURE_F90
+CC              =       CONFIGURE_CC
+
+CFLAGS=-O0 -DLINUX -DUNDERSCORE
+CFLAGS2=-DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
+
+MYLIBsys          = -L$(LAPACK_PATH) -lmkl_lapack -lmkl -lguide -lpthread -lm  -L/usr/lib -lmpi
+NETCDFLIBS_2=
+
+###########################################################
+#ARCH   Darwin (MACOS), PGI compiler    # dmpar
+#
+ARFLAGS         =
+
+LDFLAGS         = 
+
+COREDIR = CONFIGURE_CORE_PATH
+INC_DIR = $(COREDIR)/include
+BYTE_ORDER=LITTLE_ENDIAN
+SFC=pgf90
+SF90=pgf90 -Mfree -C
+SCC=pgcc
+INC_FLAGS = -I $(INC_DIR) -module $(INC_DIR)
+FFLAGS= $(INC_FLAGS) -DLINUX -DMACOS -byteswapio
+CPP             =      cpp
+CPPFLAGS       =      -C -P -D$(BYTE_ORDER) -DWRF -DMACOS
+
+DM_FC=mpif90 -f90=pgf90
+DM_F90=mpif90 -Mfree -f90=pgf90
+DM_CC=mpicc
+
+FC              =       CONFIGURE_FC
+F90             =       CONFIGURE_F90
+CC              =       CONFIGURE_CC
+
+CFLAGS=-O0 -DLINUX -DMACOS -DUNDERSCORE
+CFLAGS2=-DLINUX -DMACOS -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
+
+MYLIBsys        = -L/usr/lib -llapack -lblas
+NETCDFLIBS_2=
 
 ##################################################################
 #ARCH	NULL

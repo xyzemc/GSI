@@ -205,11 +205,13 @@ if ( $iflinux  )
               printf "Typically the path is something like; \n"; 
               printf "     .../intel/mkl72/lib/em64t on NCAR systems or \n";
               printf "     .../intel/mkl/8.1.1/lib/em64t on NOAA systems. \n";
-              printf "Please reset the path, and rerun the configure script. \n";
+              printf "Please reset the path if it is not correct and rerun the configure\n";
+              printf "script. If the path is correct, your version of the libraries \n";
+              printf "may be differently named. Edit the variable MYLIBsys in \n";
+              printf "configure.gsi to reflect the correct names. \n";
               printf "Configuration unsuccessful. \n" ;
               printf "----------------------------------------------------------";
               printf "--------------\n" ;
-              die;
             }
             unless ( -e $LAPACK_PATH . "/libmkl_em64t.a" ) {
               printf "The LAPACK library libmkl_em64t.a was not found in ";
@@ -217,11 +219,13 @@ if ( $iflinux  )
               printf "Typically the path is something like; \n"; 
               printf "     .../intel/mkl72/lib/em64t on NCAR systems or \n";
               printf "     .../intel/mkl/8.1.1/lib/em64t on NOAA systems. \n";
-              printf "Please reset the path, and rerun the configure script. \n";
+              printf "Please reset the path if it is not correct and rerun the configure\n";
+              printf "script. If the path is correct, your version of the libraries \n";
+              printf "may be differently named. Edit the variable MYLIBsys in \n";
+              printf "configure.gsi to reflect the correct names. \n";
               printf "Configuration unsuccessful. \n" ;
               printf "----------------------------------------------------------";
               printf "--------------\n" ;
-              die;
             }
          }
          else

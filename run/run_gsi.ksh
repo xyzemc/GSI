@@ -1,43 +1,105 @@
 #!/bin/ksh
 #####################################################
-# machine set up (users should change this part
+# machine set up (users should change this part)
 #####################################################
+#
 
+#
+# GSIPROC = processor number used for GSI analysis
+#------------------------------------------------
+  GSIPROC=1
+  ARCH='LINUX_Intel' 
+# Supported configurations:
+            #  IBM_LSF, 
+            # LINUX_Intel, LINUX_Intel_PBS, 
+            # LINUX_PGI,   LINUX_PGI_PBS, 
+            # DARWIN_PGI  
 #
 #####################################################
 # case set up (users should change this part)
 #####################################################
 #
 # ANAL_TIME= analysis time  (YYYYMMDDHH)
-# WORK_ROOT= working direcotry, where GSI runs
+# WORK_ROOT= working directory, where GSI runs
+# PREPBURF = path of PreBUFR conventional obs
 # BK_FILE  = path and name of background file
 # OBS_ROOT = path of observations files
 # FIX_ROOT = path of fix files
 # GSI_EXE  = path and name of the gsi executable 
-#------------------------------------------------
   ANAL_TIME=2008051112
-  WORK_ROOT=/d1/mhu/gsi/case
-  BK_FILE=/d1/mhu/gsi/case/2008051112/bkARW/wrfout_d01_2008-05-11_12:00:00
-  OBS_ROOT=/d1/mhu/gsi/case
-  PREPBUFR=/d1/mhu/gsi/tutorialcases/data/newgblav.gdas1.t12z.prepbufr.nr
-  FIX_ROOT=/home/mhu/GSI/comGSI/test/release_V2/fix
-  GSI_EXE=/home/mhu/GSI/comGSI/test/release_V2/run/gsi.exe
+  WORK_ROOT=./run_${ANAL_TIME}_arw_1
+  PREPBUFR=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs/newgblav.20080511.ruc2a.t12z.prepbufr
+##  BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkNMM/wrfinput_d01_2008-05-11_12:00:00
+  BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkARW/wrfout_d01_2008-05-11_12:00:00
+  OBS_ROOT=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs
+  FIX_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/comGSI_v2/fix
+  GSI_EXE=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/comGSI_v2/run/gsi.exe
+#------------------------------------------------
 #------------------------------------------------
 # bk_core= which WRF core is used as background (NMM or ARW)
 # bkcv_option= which background error covariance and parameter will be used 
 #              (GLOBAL or NAM)
-# GSIPROC = processor number used for GSI analysis
-# BYTE_ORDER= set up the order of bite for reading CRTM coefficient
-#          Linux pgi = Big_Endian
-#          IBM = Little_Endian
-#          linux ifort =  Little_Endian 
-#------------------------------------------------
   bk_core=ARW
   bkcv_option=NAM
-  GSIPROC=1
-  BYTE_ORDER=Big_Endian
 #
 #
+#####################################################
+# Users should NOT change script after this point
+#####################################################
+#
+case $ARCH in 
+   'IBM_LSF')
+      ###### IBM LSF (Load Sharing Facility)
+      BYTE_ORDER=Big_Endian
+      RUN_COMMAND="mpirun.lsf " ;;
+
+   'LINUX_Intel')
+      BYTE_ORDER=Little_Endian
+      if [ $GSIPROC = 1 ]; then
+         #### Linux workstation - single processor
+         RUN_COMMAND=""
+      else
+         ###### Linux workstation -  mpi run
+        RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile ~/mach "
+      fi ;;
+
+   'LINUX_Intel_PBS')
+      BYTE_ORDER=Little_Endian
+      #### Linux cluster PBS (Portable Batch System)
+      RUN_COMMAND="mpirun -np ${GSIPROC} " ;;
+
+   'LINUX_PGI')
+      BYTE_ORDER=Big_Endian
+      if [ $GSIPROC = 1 ]; then
+         #### Linux workstation - single processor
+         RUN_COMMAND=""
+      else
+         ###### Linux workstation -  mpi run
+         RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile ~/mach "
+      fi ;;
+
+   'LINUX_PGI_PBS')
+      BYTE_ORDER=Big_Endian
+      ###### Linux cluster PBS (Portable Batch System)
+      RUN_COMMAND="mpirun -np ${GSIPROC} " ;;
+
+   'DARWIN_PGI')
+      ### Mac - mpi run
+      BYTE_ORDER=Big_Endian
+      if [ $GSIPROC = 1 ]; then
+         #### Linux workstation - single processor
+         RUN_COMMAND=""
+      else
+         ###### Linux workstation -  mpi run
+         RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile ~/mach "
+      fi ;;
+
+   * )
+     print "error: $ARCH is not a supported platform configuration."
+     exit 1 ;;
+esac
+
+
 ##################################################################################
 # Check GSI needed environment variables are defined and exist
 #
@@ -118,24 +180,9 @@ cp ${BK_FILE} ./wrf_inout
 ln -s ${PREPBUFR} ./prepbufr
 
 # Link to the radiance data
-touch amsuabufr
-touch amsubbufr
-touch hirs3bufr
-touch hirs4bufr
-touch mhsbufr
-touch airsbufr
-touch tmibufr
-touch sbuvbufr
-touch amsrebufr
-touch ssmibufr
-touch ssmisbufr
-touch ssmitbufr
-touch l2rwbufr
-touch gpsbufr
-touch gimgrbufr
-touch hirs2bufr
-touch gsndrbufr
-touch gsnd1bufr
+# ln -s ${OBS_ROOT}/ndas.t12z.1bamua.tm12.bufr_d_le amsuabufr
+# ln -s ${OBS_ROOT}/ndas.t12z.1bhrs4.tm12.bufr_d_le hirs4bufr
+# ln -s ${OBS_ROOT}/ndas.t12z.1bmhs.tm12.bufr_d_le mhsbufr
 
 #
 ##################################################################################
@@ -157,23 +204,27 @@ touch gsnd1bufr
 
 if [ ${bkcv_option} = GLOBAL ] ; then
   echo ' Use global background error covariance'
-  BERROR=${FIX_ROOT}/nam_glb_berror.f77
-  SATANGL=${FIX_ROOT}/global_satangbias.txt
-  SATINFO=${FIX_ROOT}/global_satinfo.txt
+  if [ ${BYTE_ORDER} = Little_Endian ] ; then
+    BERROR=${FIX_ROOT}/nam_glb_berror.f77_Little_Endian
+  else
+    BERROR=${FIX_ROOT}/nam_glb_berror.f77
+  fi
   OBERROR=${FIX_ROOT}/prepobs_errtable.global
-  CONVINFO=${FIX_ROOT}/global_convinfo.txt
-  OZINFO=${FIX_ROOT}/global_ozinfo.txt
-  PCPINFO=${FIX_ROOT}/global_pcpinfo.txt
 else
   echo ' Use NAM background error covariance'
-  SATANGL=${FIX_ROOT}/global_satangbias.txt
-  SATINFO=${FIX_ROOT}/global_satinfo.txt
-  BERROR=${FIX_ROOT}/nam_nmmstat_na
+  if [ ${BYTE_ORDER} = Little_Endian ] ; then
+    BERROR=${FIX_ROOT}/nam_nmmstat_na_Little_Endian
+  else
+    BERROR=${FIX_ROOT}/nam_nmmstat_na
+  fi
   OBERROR=${FIX_ROOT}/nam_errtable.r3dv
-  CONVINFO=${FIX_ROOT}/global_convinfo.txt
-  OZINFO=${FIX_ROOT}/global_ozinfo.txt
-  PCPINFO=${FIX_ROOT}/global_pcpinfo.txt
 fi
+
+SATANGL=${FIX_ROOT}/global_satangbias.txt
+SATINFO=${FIX_ROOT}/global_satinfo.txt
+CONVINFO=${FIX_ROOT}/global_convinfo.txt
+OZINFO=${FIX_ROOT}/global_ozinfo.txt
+PCPINFO=${FIX_ROOT}/global_pcpinfo.txt
 
 RTMFIX=${FIX_ROOT}/crtm_gfsgsi
 RTMEMIS=${RTMFIX}/EmisCoeff/${BYTE_ORDER}/EmisCoeff.bin
@@ -192,21 +243,21 @@ RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
  cp $PCPINFO  pcpinfo
  cp $OBERROR  errtable
 # 
-#    # CRTM Spectral and Transmittance coefficients
-    nsatsen=`cat satinfo | wc -l`
-    isatsen=1
-    while [[ $isatsen -le $nsatsen ]]; do
-       flag=`head -n $isatsen satinfo | tail -1 | cut -c1-1`
-       if [[ "$flag" != "!" ]]; then
-          satsen=`head -n $isatsen satinfo | tail -1 | cut -f 2 -d" "`
-          spccoeff=${satsen}.SpcCoeff.bin
-          if  [[ ! -s $spccoeff ]]; then
-             cp $RTMFIX/SpcCoeff/${BYTE_ORDER}/$spccoeff $spccoeff
-             cp $RTMFIX/TauCoeff/${BYTE_ORDER}/${satsen}.TauCoeff.bin ${satsen}.TauCoeff.bin
-          fi
+## CRTM Spectral and Transmittance coefficients
+ nsatsen=`cat satinfo | wc -l`
+ isatsen=1
+ while [[ $isatsen -le $nsatsen ]]; do
+    flag=`head -n $isatsen satinfo | tail -1 | cut -c1-1`
+    if [[ "$flag" != "!" ]]; then
+       satsen=`head -n $isatsen satinfo | tail -1 | cut -f 2 -d" "`
+       spccoeff=${satsen}.SpcCoeff.bin
+       if  [[ ! -s $spccoeff ]]; then
+          cp $RTMFIX/SpcCoeff/${BYTE_ORDER}/$spccoeff $spccoeff
+          cp $RTMFIX/TauCoeff/${BYTE_ORDER}/${satsen}.TauCoeff.bin ${satsen}.TauCoeff.bin
        fi
-       isatsen=` expr $isatsen + 1 `
-    done
+    fi
+    isatsen=` expr $isatsen + 1 `
+ done
 
 # Only need this file for single obs test
  bufrtable=${FIX_ROOT}/prepobs_prep.bufrtable
@@ -360,48 +411,32 @@ EOF
 
 #
 ###################################################
-#  run set up (users should change this part)
+#  run  GSI 
 ###################################################
 
-###### IBM LSF (Load Sharing Facility)
-# mpirun.lsf  ${workdir}/gsi.exe < gsiparm.anl > stdout 
+case $ARCH in
+   'IBM_LSF')
+      ${RUN_COMMAND} ./gsi.exe < gsiparm.anl > stdout 2>&1  ;;
 
-###### Linux workstation -  mpi run
-# mpirun -np ${GSIPROC} -machinefile ~/mach gsi.exe < gsiparm.anl > stdout 2>&1  
-#### Linux workstation - single processor
-./gsi.exe < gsiparm.anl > stdout 2>&1 
-
-#### Linux cluster PBS (Portable Batch System)
-#  mpirun.smart -np ${GSIPROC} gsi.exe < gsiparm.anl > stdout 2>&1 
+   * )
+      ${RUN_COMMAND} ./gsi.exe > stdout 2>&1  ;;
+esac
 
 ##################################################################
 #  run time error check
+##################################################################
 error=$?
 
 if [ ${error} -ne 0 ]; then
   echo "ERROR: ${GSI} crashed  Exit status=${error}"
   exit ${error}
 fi
-
-# Look for successful completion messages in rsl files
-nsuccess=`tail -l stdout | awk '/PROGRAM GSI_ANL HAS ENDED/' | wc -l`
-ntotal=1 
-echo "Found ${nsuccess} of ${ntotal} completion messages"
-if [ ${nsuccess} -ne ${ntotal} ]; then
-   echo "ERROR: ${GSI} did not complete sucessfully  Exit status=${error}"
-   if [ ${error} -ne 0 ]; then
-     exit ${error}
-   else
-     exit 1
-   fi
-fi
-
 #
 ##################################################################
 #
 #   GSI updating satbias_in
 #
-cp ./satbias_out ${FIX_ROOT}/ndas.t06z.satbias.tm03
+# cp ./satbias_out ${FIX_ROOT}/ndas.t06z.satbias.tm03
 
 # Copy the output to more understandable names
 cp stdout      stdout.anl.${ANAL_TIME}
@@ -434,6 +469,10 @@ esac
 
 #  Collect diagnostic files for obs types (groups) below
    listall="conv amsua_n17"
+
+#  listall="amsua_metop-a mhs_metop-a hirs4_metop-a hirs2_n14 msu_n14 \
+#         sndr_g08 sndr_g10 sndr_g12 sndr_g08_prep sndr_g10_prep sndr_g12_prep \
+#         ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16"
    for type in $listall; do
       count=`ls pe*${type}_${loop}* | wc -l`
       if [[ $count -gt 0 ]]; then
