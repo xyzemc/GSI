@@ -2,8 +2,7 @@ SHELL=/bin/sh
  
 include ../../../configure.gsi
 
-# LIB = ../../../lib/libcrtm_gfsgsi.a
-LIB = libcrtm_gfsgsi.a
+LIB = ../../../lib/libcrtm_gfsgsi.a
 
 include make.filelist
  
