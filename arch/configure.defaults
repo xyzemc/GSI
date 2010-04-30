@@ -68,7 +68,7 @@ NETCDFLIBS_2=
 ###########################################################
 #ARCH	Linux i486 i586 i686, PGI compiler #dmpar  
 #
-ARFLAGS        =   -crvs
+ARFLAGS        =   -ruv
 LDFLAGS        =   -Wl,-noinhibit-exec 
 
 COREDIR        =   CONFIGURE_CORE_PATH
@@ -77,13 +77,12 @@ BYTE_ORDER     =   LITTLE_ENDIAN
 SFC            =   pgf90
 SF90           =   pgf90 -Mfree -C 
 SCC            =   pgcc
-#INC_FLAGS      =   -module $(INC_DIR) -I $(INC_DIR)
-INC_FLAGS      =   -I $(INC_DIR)
+INC_FLAGS      =   -module $(INC_DIR) -I $(INC_DIR)
 FFLAGS         =   -O0 -g -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) -Kieee -pc 32 -Ktrap=fp -C -byteswapio $(LDFLAGS) -DLINUX
 FFLAGS_DOUBLE  =   -i4 -r8
 FFLAGS_SINGLE  =   -i4 -r4
-CPP            =      /lib/cpp 
-CPPFLAGS       =      -C -P -D$(BYTE_ORDER) -DWRF
+CPP            =   /lib/cpp 
+CPPFLAGS       =   -C -P -D$(BYTE_ORDER) -DWRF
 DM_FC          =   mpif90 -f90=pgf90
 DM_F90         =   mpif90 -Mfree -f90=pgf90
 DM_CC          =   mpicc 
@@ -102,7 +101,7 @@ NETCDFLIBS_2   =   -rpath,CONFIGURE_NETCDF_PATH/lib
 ###########################################################
 #ARCH	Linux x86_64, PGI compiler # dmpar 
 #
-ARFLAGS        =   -crvs
+ARFLAGS        =   -ruv
 LDFLAGS        =   -Wl,-noinhibit-exec 
 
 COREDIR        =   CONFIGURE_CORE_PATH
@@ -111,8 +110,7 @@ BYTE_ORDER     =   LITTLE_ENDIAN
 SFC            =   pgf90
 SF90           =   pgf90 -Mfree -C 
 SCC            =   pgcc
-#INC_FLAGS      =   -module $(INC_DIR) -I $(INC_DIR)
-INC_FLAGS      =   -I $(INC_DIR)
+INC_FLAGS      =   -module $(INC_DIR) -I $(INC_DIR)
 FFLAGS         =   -O0 -g -Kieee -pc 64 -Ktrap=fp -C -byteswapio -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX
 FFLAGS_DOUBLE  =   -i4 -r8
 FFLAGS_SINGLE  =   -i4 -r4
