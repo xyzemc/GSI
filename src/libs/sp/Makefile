@@ -1,5 +1,7 @@
 SHELL=/bin/sh
+
 include ../../../configure.gsi
+
 LIB = ../../../lib/libsp.a 
 
 
@@ -21,7 +23,7 @@ SRC_F = $(OBJS1:.o=.F)
 
 $(LIB): $(OBJS)
 	$(FC) $(FFLAGS) $(FFLAGS_DOUBLE) -c $(SRC_F) $(SRC_F77)
-	$(AR) -ruv $(AFLAGS) $(LIB) $(OBJS) $(OBJS1)
+	$(AR) $(ARFLAGS) $(LIB) $(OBJS) $(OBJS1)
 
 clean:
 	$(RM) $(OBJS) $(OBJS1) *.mod $(LIB)
