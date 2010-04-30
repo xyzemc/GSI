@@ -1,6 +1,6 @@
 SHELL=/bin/sh
 
-RM = rm
+include ../../../configure.gsi
 
 LIB = ../../../lib/libbufr.a
 
@@ -39,7 +39,7 @@ all:	$(PRM) $(LIB)
 
 
 $(LIB):	$(OBJS)
-	$(AR) -ruv $(LIB) $(OBJS)
+	$(AR) $(ARFLAGS) $(LIB) $(OBJS)
 
 bufrlib.prm: bufrlib.PRM
 	$(CPP) $(CPPFLAGS) bufrlib.PRM bufrlib.prm
@@ -48,28 +48,20 @@ bufrlib.prm: bufrlib.PRM
 .SUFFIXES : .F .f .a .c .o
 
 .F.o:
-##	$(RM) $@
 	$(SED_FTN) $*.F > $*.b 
-#	$(CPP) $(CPPFLAGS) $*.b  > $@
 	$(CPP) $(CPPFLAGS) $*.b  > $*.f
 	$(RM) $*.b
-#	$(FC) -c $(FFLAGS) $*.f
 	$(FC) -c $*.f
 	$(RM) $*.f
 
 .f.o:
 	$(FC) -c  $<
-##	$(FC) -c $(FFLAGS) $<
-##	ar -ruv $(AFLAGS) $@ $*.o
-##	rm -f $*.o
 
 .c.o:
 	$(CC) -c  $(CFLAGS) $<
-##	ar -ruv  $(AFLAGS) $@ $*.o
-##	rm -f $*.o
 
 clean:
-	rm -f *.o *.mod $(LIB) *.b bufrlib.prm
+	$(RM) *.o *.mod $(LIB) *.b bufrlib.prm
 
 # DEPENDENCIES : only dependencies after this line (don't remove the word DEPENDENCIES)
 
