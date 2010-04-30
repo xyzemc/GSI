@@ -91,7 +91,7 @@ FC             =   CONFIGURE_FC
 F90            =   CONFIGURE_F90
 CC             =   CONFIGURE_CC
 
-CFLAGSn        =   -O0 -DLINUX -DUNDERSCORE
+CFLAGS         =   -O0 -DLINUX -DUNDERSCORE
 CFLAGS2        =   -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
 
 
@@ -124,7 +124,7 @@ FC             =   CONFIGURE_FC
 F90            =   CONFIGURE_F90
 CC             =   CONFIGURE_CC
 
-CFLAGSn        =   -O0 -DLINUX -DUNDERSCORE
+CFLAGS         =   -O0 -DLINUX -DUNDERSCORE
 CFLAGS2        =   -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
 
 
