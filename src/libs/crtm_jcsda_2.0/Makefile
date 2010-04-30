@@ -2,7 +2,7 @@ SHELL=/bin/sh
  
 include ../../../configure.gsi
 
-LIB = ../../../lib/libcrtm_gfsgsi.a
+LIB = ../../../lib/libCRTM.a
 
 include make.filelist
  
