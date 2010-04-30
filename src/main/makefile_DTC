@@ -413,12 +413,21 @@ $(LIB):	 $(OBJS)
 #	$(LD) $(LDFLAGS) -o $@ gsimain.o $(OBJS) $(LIBS)
 
 gsi.exe:  $(OBJS) $(LIB) gsimain.o
-	$(F90) $(LDFLAGS) -o gsi.exe gsimain.o libgsi.a $(LIBcrtm) $(LIBsfcio) $(LIBsigio) $(LIBrrcld) $(LIBw3) $(LIBbacio) $(LIBbufr) $(LIBgfsio) $(LIBsp) $(LIBmpeu) $(LIBwrf) $(LIBnetcdf) $(LIBsys) 
+	$(F90) $(LDFLAGS) -o gsi.exe gsimain.o libgsi.a $(LIBcrtm) $(LIBsfcio) $(LIBsigio) $(LIBw3) $(LIBbacio) $(LIBbufr) $(LIBsp) $(LIBgfsio) $(LIBmpeu) $(LIBwrf) $(LIBnetcdf) $(LIBsys) 
 	cp gsi.exe $(COREBIN)
 
 # DEPENDENCIES : only dependencies after this line (don't remove the word DEPENDENCIES)
 
 include Makefile.dependency
+
+.SUFFIXES : .F90 .o
+
+.F90.o:
+	$(SED_FTN) $*.F90 > $*.b
+	$(CPP) $(CPPFLAGS) $*.b  > $*.f90
+	$(RM) $*.b
+	$(F90) -c $(FFLAGS) $*.f90
+	$(RM) $*.f90
 
 clean:
 	rm -f *.o *.exe $(LIB)
