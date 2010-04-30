@@ -68,67 +68,70 @@ NETCDFLIBS_2=
 ###########################################################
 #ARCH	Linux i486 i586 i686, PGI compiler #dmpar  
 #
-LDFLAGS         =     -Wl,-noinhibit-exec 
+ARFLAGS        =   -crvs
+LDFLAGS        =   -Wl,-noinhibit-exec 
 
-COREDIR = CONFIGURE_CORE_PATH
-INC_DIR = $(COREDIR)/include
-BYTE_ORDER=LITTLE_ENDIAN
-SFC=pgf90
-SF90=pgf90 -Mfree -C 
-SCC=pgcc
-INC_FLAGS = -module $(INC_DIR) -I $(INC_DIR)
-FFLAGS=-O0 -g -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) -Kieee -pc 32 -Ktrap=fp -C -byteswapio $(LDFLAGS) -DLINUX
+COREDIR        =   CONFIGURE_CORE_PATH
+INC_DIR        =   $(COREDIR)/include
+BYTE_ORDER     =   LITTLE_ENDIAN
+SFC            =   pgf90
+SF90           =   pgf90 -Mfree -C 
+SCC            =   pgcc
+#INC_FLAGS      =   -module $(INC_DIR) -I $(INC_DIR)
+INC_FLAGS      =   -I $(INC_DIR)
+FFLAGS         =   -O0 -g -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) -Kieee -pc 32 -Ktrap=fp -C -byteswapio $(LDFLAGS) -DLINUX
 FFLAGS_DOUBLE  =   -i4 -r8
 FFLAGS_SINGLE  =   -i4 -r4
-CPP             =      /lib/cpp 
+CPP            =      /lib/cpp 
 CPPFLAGS       =      -C -P -D$(BYTE_ORDER) -DWRF
+DM_FC          =   mpif90 -f90=pgf90
+DM_F90         =   mpif90 -Mfree -f90=pgf90
+DM_CC          =   mpicc 
 
-DM_FC=mpif90 -f90=pgf90
-DM_F90=mpif90 -Mfree -f90=pgf90
-DM_CC=mpicc 
+FC             =   CONFIGURE_FC
+F90            =   CONFIGURE_F90
+CC             =   CONFIGURE_CC
 
-FC              =       CONFIGURE_FC
-F90             =       CONFIGURE_F90
-CC              =       CONFIGURE_CC
+CFLAGSn        =   -O0 -DLINUX -DUNDERSCORE
+CFLAGS2        =   -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
 
-CFLAGS=-O0 -DLINUX -DUNDERSCORE
-CFLAGS2=-DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
 
-MYLIBsys          =   -llapack -lblas
-NETCDFLIBS_2= -rpath,CONFIGURE_NETCDF_PATH/lib
+MYLIBsys       =   -llapack -lblas
+NETCDFLIBS_2   =   -rpath,CONFIGURE_NETCDF_PATH/lib
 
 ###########################################################
 #ARCH	Linux x86_64, PGI compiler # dmpar 
 #
-LDFLAGS         =     -Wl,-noinhibit-exec 
+ARFLAGS        =   -crvs
+LDFLAGS        =   -Wl,-noinhibit-exec 
 
-COREDIR = CONFIGURE_CORE_PATH
-INC_DIR = $(COREDIR)/include
-BYTE_ORDER=LITTLE_ENDIAN
-SFC=pgf90
-SF90=pgf90 -Mfree -C 
-SCC=pgcc
-INC_FLAGS = -module $(INC_DIR) -I $(INC_DIR)
-FFLAGS=-O0 -g -Kieee -pc 64 -Ktrap=fp -C -byteswapio -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX
+COREDIR        =   CONFIGURE_CORE_PATH
+INC_DIR        =   $(COREDIR)/include
+BYTE_ORDER     =   LITTLE_ENDIAN
+SFC            =   pgf90
+SF90           =   pgf90 -Mfree -C 
+SCC            =   pgcc
+#INC_FLAGS      =   -module $(INC_DIR) -I $(INC_DIR)
+INC_FLAGS      =   -I $(INC_DIR)
+FFLAGS         =   -O0 -g -Kieee -pc 64 -Ktrap=fp -C -byteswapio -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX
 FFLAGS_DOUBLE  =   -i4 -r8
 FFLAGS_SINGLE  =   -i4 -r4
-CPP             =      /lib/cpp 
+CPP            =      /lib/cpp 
 CPPFLAGS       =      -C -P -D$(BYTE_ORDER) -DWRF
+DM_FC          =   mpif90 -f90=pgf90
+DM_F90         =   mpif90 -Mfree -f90=pgf90
+DM_CC          =   mpicc 
 
-DM_FC=mpif90 -f90=pgf90
-DM_F90=mpif90 -Mfree -f90=pgf90
-DM_CC=mpicc 
+FC             =   CONFIGURE_FC
+F90            =   CONFIGURE_F90
+CC             =   CONFIGURE_CC
 
-FC              =       CONFIGURE_FC
-F90             =       CONFIGURE_F90
-CC              =       CONFIGURE_CC
-
-CFLAGS=-O0 -DLINUX -DUNDERSCORE
-CFLAGS2=-DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
+CFLAGSn        =   -O0 -DLINUX -DUNDERSCORE
+CFLAGS2        =   -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
 
 
-MYLIBsys          =  -llapack -lblas
-NETCDFLIBS_2= -rpath,CONFIGURE_NETCDF_PATH/lib
+MYLIBsys       =   -llapack -lblas
+NETCDFLIBS_2   =   -rpath,CONFIGURE_NETCDF_PATH/lib
 
 ###########################################################
 #ARCH	Linux i486 i586 i686, Intel compiler	# dmpar 
