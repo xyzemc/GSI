@@ -1,7 +1,8 @@
 SHELL=/bin/sh
-include ../../../configure.gsi
-LIB = ../../../lib/libgfsio.a
 
+include ../../../configure.gsi
+
+LIB = ../../../lib/libgfsio.a
 
 OBJS = bafrio.o
 
@@ -15,7 +16,7 @@ SRC_F = $(OBJS1:.o=.F)
 
 $(LIB): $(OBJS)
 	$(F90) $(FFLAGS) -c $(SRC_F)
-	$(AR) -ruv $(AFLAGS) $(LIB) $(OBJS) $(OBJS1)
+	$(AR) $(ARFLAGS) $(LIB) $(OBJS) $(OBJS1)
 
 .f.o:
 	$(FC) $(FFLAGS) -c $(SRC_F77)
