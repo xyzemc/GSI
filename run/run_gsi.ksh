@@ -3,12 +3,11 @@
 # machine set up (users should change this part)
 #####################################################
 #
-
 #
 # GSIPROC = processor number used for GSI analysis
 #------------------------------------------------
-  GSIPROC=1
-  ARCH='LINUX_Intel' 
+  GSIPROC=4
+  ARCH='LINUX_Intel_PBS' 
 # Supported configurations:
             #  IBM_LSF, 
             # LINUX_Intel, LINUX_Intel_PBS, 
@@ -27,13 +26,14 @@
 # FIX_ROOT = path of fix files
 # GSI_EXE  = path and name of the gsi executable 
   ANAL_TIME=2008051112
-  WORK_ROOT=./run_${ANAL_TIME}_arw_1
+  WORK_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk/run/run_${ANAL_TIME}
   PREPBUFR=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs/newgblav.20080511.ruc2a.t12z.prepbufr
 ##  BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkNMM/wrfinput_d01_2008-05-11_12:00:00
   BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkARW/wrfout_d01_2008-05-11_12:00:00
   OBS_ROOT=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs
-  FIX_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/comGSI_v2/fix
-  GSI_EXE=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/comGSI_v2/run/gsi.exe
+  FIX_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk/fix
+  GSI_EXE=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk/run/gsi.exe
+
 #------------------------------------------------
 #------------------------------------------------
 # bk_core= which WRF core is used as background (NMM or ARW)
@@ -205,17 +205,17 @@ ln -s ${PREPBUFR} ./prepbufr
 if [ ${bkcv_option} = GLOBAL ] ; then
   echo ' Use global background error covariance'
   if [ ${BYTE_ORDER} = Little_Endian ] ; then
-    BERROR=${FIX_ROOT}/nam_glb_berror.f77_Little_Endian
+    BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv_Little_Endian
   else
-    BERROR=${FIX_ROOT}/nam_glb_berror.f77
+    BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv
   fi
   OBERROR=${FIX_ROOT}/prepobs_errtable.global
 else
   echo ' Use NAM background error covariance'
   if [ ${BYTE_ORDER} = Little_Endian ] ; then
-    BERROR=${FIX_ROOT}/nam_nmmstat_na_Little_Endian
+    BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv_Little_Endian
   else
-    BERROR=${FIX_ROOT}/nam_nmmstat_na
+    BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv
   fi
   OBERROR=${FIX_ROOT}/nam_errtable.r3dv
 fi
@@ -226,12 +226,18 @@ CONVINFO=${FIX_ROOT}/global_convinfo.txt
 OZINFO=${FIX_ROOT}/global_ozinfo.txt
 PCPINFO=${FIX_ROOT}/global_pcpinfo.txt
 
-RTMFIX=${FIX_ROOT}/crtm_gfsgsi
+RTMFIX=${FIX_ROOT}/CRTM_Coefficients
 RTMEMIS=${RTMFIX}/EmisCoeff/${BYTE_ORDER}/EmisCoeff.bin
 RTMAERO=${RTMFIX}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
 RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
+if [ ${bk_core} = NMM ] ; then
+  ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf
+else
+  ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf
+fi
 
 #  copy Fixed fields to working directory
+ cp $ANAVINFO anavinfo
  cp $BERROR   berror_stats
  cp $SATANGL  satbias_angle
  cp $SATINFO  satinfo
@@ -400,6 +406,12 @@ cat << EOF > gsiparm.anl
    l2superob_only=.false.,
  /
  &LAG_DATA
+ /
+ &HYBRID_ENSEMBLE
+   l_hyb_ens=.false.,
+ /
+ &RAPIDREFRESH_CLDSURF
+   l_cloud_analysis=.false.,
  /
  &SINGLEOB_TEST
    maginnov=1.0,magoberr=0.8,oneob_type='t',
