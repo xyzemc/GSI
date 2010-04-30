@@ -1,5 +1,7 @@
 SHELL=/bin/sh
 
+include ../../configure.gsi
+
 SUBDIRS = bufr crtm_jcsda_2.0 sp gfsio sfcio sigio w3
 
 all: $(SUBDIRS)
