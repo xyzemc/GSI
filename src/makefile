@@ -1,6 +1,6 @@
 SHELL=/bin/sh
 
-SUBDIRS = libs main
+SUBDIRS = libs
 
 all: $(SUBDIRS)
 	@for dir in $(SUBDIRS); do \
