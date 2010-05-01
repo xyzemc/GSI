@@ -42,7 +42,7 @@ void start_()
 }
 #endif
 #if IBM4 || IBM8
-// #include <sys/proc.h>   
+/* #include <sys/proc.h>   */
 
 /* #include "trace_mpif.h" */
 
