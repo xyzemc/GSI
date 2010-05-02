@@ -139,6 +139,7 @@ LIBsys          = $(MYLIBsys)
         get_derivatives2.o \
         get_gefs_ensperts_dualres.o \
         get_semimp_mats.o \
+        getsiga.o \
         getprs.o \
         getuv.o \
         getvvel.o \
@@ -199,6 +200,9 @@ LIBsys          = $(MYLIBsys)
         m_berror_stats.o \
         m_berror_stats_reg.o \
         m_dgeevx.o \
+        m_dtime.o \
+        m_obdiag.o \
+        m_rhs.o \
         m_gsiBiases.o \
         m_stats.o \
         m_tick.o \
