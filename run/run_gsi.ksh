@@ -7,11 +7,11 @@
 # GSIPROC = processor number used for GSI analysis
 #------------------------------------------------
   GSIPROC=4
-  ARCH='LINUX_Intel_PBS' 
+  ARCH='LINUX_PGI' 
 # Supported configurations:
-            #  IBM_LSF, 
-            # LINUX_Intel, LINUX_Intel_PBS, 
-            # LINUX_PGI,   LINUX_PGI_PBS, 
+            # IBM_LSF, 
+            # LINUX_Intel, LINUX_Intel_LSF, LINUX_Intel_PBS, 
+            # LINUX_PGI, LINUX_PGI_LSF, LINUX_PGI_PBS, 
             # DARWIN_PGI  
 #
 #####################################################
@@ -28,7 +28,6 @@
   ANAL_TIME=2008051112
   WORK_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk/run/run_${ANAL_TIME}
   PREPBUFR=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs/newgblav.20080511.ruc2a.t12z.prepbufr
-##  BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkNMM/wrfinput_d01_2008-05-11_12:00:00
   BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkARW/wrfout_d01_2008-05-11_12:00:00
   OBS_ROOT=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs
   FIX_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk/fix
@@ -63,13 +62,18 @@ case $ARCH in
         RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile ~/mach "
       fi ;;
 
+   'LINUX_Intel_LSF')
+      ###### LINUX LSF (Load Sharing Facility)
+      BYTE_ORDER=Little_Endian
+      RUN_COMMAND="mpirun.lsf " ;;
+
    'LINUX_Intel_PBS')
       BYTE_ORDER=Little_Endian
       #### Linux cluster PBS (Portable Batch System)
       RUN_COMMAND="mpirun -np ${GSIPROC} " ;;
 
    'LINUX_PGI')
-      BYTE_ORDER=Big_Endian
+      BYTE_ORDER=Little_Endian
       if [ $GSIPROC = 1 ]; then
          #### Linux workstation - single processor
          RUN_COMMAND=""
@@ -78,14 +82,19 @@ case $ARCH in
          RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile ~/mach "
       fi ;;
 
+   'LINUX_PGI_LSF')
+      ###### LINUX LSF (Load Sharing Facility)
+      BYTE_ORDER=Little_Endian
+      RUN_COMMAND="mpirun.lsf " ;;
+
    'LINUX_PGI_PBS')
-      BYTE_ORDER=Big_Endian
+      BYTE_ORDER=Little_Endian
       ###### Linux cluster PBS (Portable Batch System)
       RUN_COMMAND="mpirun -np ${GSIPROC} " ;;
 
    'DARWIN_PGI')
       ### Mac - mpi run
-      BYTE_ORDER=Big_Endian
+      BYTE_ORDER=Little_Endian
       if [ $GSIPROC = 1 ]; then
          #### Linux workstation - single processor
          RUN_COMMAND=""
