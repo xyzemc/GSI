@@ -6,13 +6,13 @@
 #
 # GSIPROC = processor number used for GSI analysis
 #------------------------------------------------
-  GSIPROC=4
+  GSIPROC=1
   ARCH='LINUX_PGI' 
 # Supported configurations:
-            # IBM_LSF, 
-            # LINUX_Intel, LINUX_Intel_LSF, LINUX_Intel_PBS, 
-            # LINUX_PGI, LINUX_PGI_LSF, LINUX_PGI_PBS, 
-            # DARWIN_PGI  
+            # IBM_LSF,
+            # LINUX_Intel, LINUX_Intel_LSF, LINUX_Intel_PBS,
+            # LINUX_PGI, LINUX_PGI_LSF, LINUX_PGI_PBS,
+            # DARWIN_PGI
 #
 #####################################################
 # case set up (users should change this part)
@@ -34,7 +34,6 @@
   GSI_EXE=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk/run/gsi.exe
 
 #------------------------------------------------
-#------------------------------------------------
 # bk_core= which WRF core is used as background (NMM or ARW)
 # bkcv_option= which background error covariance and parameter will be used 
 #              (GLOBAL or NAM)
@@ -46,7 +45,7 @@
 # Users should NOT change script after this point
 #####################################################
 #
-case $ARCH in 
+case $ARCH in
    'IBM_LSF')
       ###### IBM LSF (Load Sharing Facility)
       BYTE_ORDER=Big_Endian
@@ -96,10 +95,10 @@ case $ARCH in
       ### Mac - mpi run
       BYTE_ORDER=Little_Endian
       if [ $GSIPROC = 1 ]; then
-         #### Linux workstation - single processor
+         #### Mac workstation - single processor
          RUN_COMMAND=""
       else
-         ###### Linux workstation -  mpi run
+         ###### Mac workstation -  mpi run
          RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile ~/mach "
       fi ;;
 
@@ -229,6 +228,12 @@ else
   OBERROR=${FIX_ROOT}/nam_errtable.r3dv
 fi
 
+if [ ${bk_core} = NMM ] ; then
+  ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf
+else
+  ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf
+fi
+
 SATANGL=${FIX_ROOT}/global_satangbias.txt
 SATINFO=${FIX_ROOT}/global_satinfo.txt
 CONVINFO=${FIX_ROOT}/global_convinfo.txt
@@ -239,11 +244,6 @@ RTMFIX=${FIX_ROOT}/CRTM_Coefficients
 RTMEMIS=${RTMFIX}/EmisCoeff/${BYTE_ORDER}/EmisCoeff.bin
 RTMAERO=${RTMFIX}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
 RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
-if [ ${bk_core} = NMM ] ; then
-  ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf
-else
-  ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf
-fi
 
 #  copy Fixed fields to working directory
  cp $ANAVINFO anavinfo
@@ -257,7 +257,7 @@ fi
  cp $OZINFO   ozinfo
  cp $PCPINFO  pcpinfo
  cp $OBERROR  errtable
-# 
+#
 ## CRTM Spectral and Transmittance coefficients
  nsatsen=`cat satinfo | wc -l`
  isatsen=1
@@ -432,7 +432,7 @@ EOF
 
 #
 ###################################################
-#  run  GSI 
+#  run  GSI
 ###################################################
 
 case $ARCH in
@@ -489,13 +489,22 @@ case $loop in
 esac
 
 #  Collect diagnostic files for obs types (groups) below
-   listall="conv amsua_n17"
-
-#  listall="amsua_metop-a mhs_metop-a hirs4_metop-a hirs2_n14 msu_n14 \
-#         sndr_g08 sndr_g10 sndr_g12 sndr_g08_prep sndr_g10_prep sndr_g12_prep \
-#         ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16"
+   listall="conv amsua_metop-a mhs_metop-a hirs4_metop-a hirs2_n14 msu_n14 \
+          sndr_g08 sndr_g10 sndr_g12 sndr_g08_prep sndr_g10_prep sndr_g12_prep \
+          sndrd1_g08 sndrd2_g08 sndrd3_g08 sndrd4_g08 sndrd1_g10 sndrd2_g10 \
+          sndrd3_g10 sndrd4_g10 sndrd1_g12 sndrd2_g12 sndrd3_g12 sndrd4_g12 \
+          hirs3_n15 hirs3_n16 hirs3_n17 amsua_n15 amsua_n16 amsua_n17 \
+          amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua \
+          goes_img_g08 goes_img_g10 goes_img_g11 goes_img_g12 \
+          pcp_ssmi_dmsp pcp_tmi_trmm sbuv2_n16 sbuv2_n17 sbuv2_n18 \
+          omi_aura ssmi_f13 ssmi_f14 ssmi_f15 hirs4_n18 amsua_n18 mhs_n18 \
+          amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 \
+          ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16"
    for type in $listall; do
-      count=`ls pe*${type}_${loop}* | wc -l`
+      count=0
+      if [[ -f pe0000.${type}_${loop} ]]; then
+         count=`ls pe*${type}_${loop}* | wc -l`
+      fi
       if [[ $count -gt 0 ]]; then
          cat pe*${type}_${loop}* > diag_${type}_${string}.${ANAL_TIME}
       fi

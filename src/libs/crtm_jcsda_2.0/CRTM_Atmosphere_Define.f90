@@ -645,10 +645,10 @@ CONTAINS
     atm_out%Absorber(na+1:nt,:)   = atm%Absorber(1:no,:)
     ! ...Cloud components
     IF ( atm%n_Clouds > 0 ) &
-      atm_out%Cloud = CRTM_Cloud_AddLayerCopy( atm%Cloud, atm_out%n_Added_Layers )
+      atm_out%Cloud(1) = CRTM_Cloud_AddLayerCopy( atm%Cloud(1), atm_out%n_Added_Layers )
     ! ...Aerosol components
     IF ( atm%n_Aerosols > 0 ) &
-      atm_out%Aerosol = CRTM_Aerosol_AddLayerCopy( atm%Aerosol, atm_out%n_Added_Layers )
+      atm_out%Aerosol(1) = CRTM_Aerosol_AddLayerCopy( atm%Aerosol(1), atm_out%n_Added_Layers )
   
   END FUNCTION CRTM_Atmosphere_AddLayerCopy 
                                

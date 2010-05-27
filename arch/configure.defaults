@@ -79,7 +79,7 @@ SFC            =   pgf90
 SF90           =   pgf90 -Mfree -C 
 SCC            =   pgcc
 INC_FLAGS      =   -module $(INC_DIR) -I $(INC_DIR)
-FFLAGS         =   -O0 -g -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) -Kieee -pc 32 -Ktrap=fp -C -byteswapio $(LDFLAGS) -DLINUX
+FFLAGS         =   -O0 -g -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) -Kieee -pc 32 -Ktrap=fp -C  $(LDFLAGS) -DLINUX
 FFLAGS_DOUBLE  =   -i4 -r8
 FFLAGS_SINGLE  =   -i4 -r4
 CPP            =   /lib/cpp 
@@ -112,7 +112,7 @@ SFC            =   pgf90
 SF90           =   pgf90 -Mfree -C 
 SCC            =   pgcc
 INC_FLAGS      =   -module $(INC_DIR) -I $(INC_DIR)
-FFLAGS         =   -O0 -g -Kieee -pc 64 -Ktrap=fp -C -byteswapio -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX
+FFLAGS         =   -O0 -g -Kieee -pc 64 -Ktrap=fp -C -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX
 FFLAGS_DOUBLE  =   -i4 -r8
 FFLAGS_SINGLE  =   -i4 -r4
 CPP            =   /lib/cpp 
@@ -285,7 +285,7 @@ SFC            =   pgf90
 SF90           =   pgf90 -Mfree -C
 SCC            =   pgcc
 INC_FLAGS      =   -I $(INC_DIR) -module $(INC_DIR)
-FFLAGS         =   $(INC_FLAGS) -DLINUX -DMACOS -byteswapio
+FFLAGS         =   $(INC_FLAGS) -DLINUX -DMACOS
 CPP            =   cpp
 CPPFLAGS       =   -C -P -D$(BYTE_ORDER) -DWRF -DMACOS
 
