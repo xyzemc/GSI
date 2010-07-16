@@ -76,6 +76,7 @@ LIBsys          = $(MYLIBsys)
   OBJS	= \
         abor1.o \
         adjtest.o \
+        aeroinfo.o \
         anberror.o \
         anbkerror.o \
         aniso_ens_util.o \
@@ -144,7 +145,6 @@ LIBsys          = $(MYLIBsys)
         getuv.o \
         getvvel.o \
         glbsoi.o \
-        global_mean.o \
         grtest.o \
         grdcrd.o \
         grid2sub.o \
@@ -259,6 +259,7 @@ LIBsys          = $(MYLIBsys)
         radinfo.o \
         raflib.o \
         rdgrbsst.o \
+        read_aerosol.o \
         read_airs.o \
         read_amsre.o \
         read_avhrr.o \
