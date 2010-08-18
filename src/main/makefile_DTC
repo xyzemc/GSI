@@ -217,7 +217,6 @@ LIBsys          = $(MYLIBsys)
         mpeu_mpif.o \
         mpeu_util.o \
         missing_routines.o \
-	mod_inmi.o \
         mod_nmmb_to_a.o \
 	mod_strong.o \
 	mod_vtrans.o \
@@ -409,7 +408,8 @@ LIBsys          = $(MYLIBsys)
 	wrwrfmassa.o \
 	wrwrfnmma.o \
         xhat_vordivmod.o \
-	zrnmi_mod.o
+	zrnmi_mod.o \
+        blockIO.o
 
 # ----
 
