@@ -326,7 +326,6 @@ cat << EOF > gsiparm.anl
    filled_grid=.false.,half_grid=.true.,netcdf=.true.,
  /
  &BKGERR
-   as=${as_op}
    vs=${vs_op}
    hzscl=${hzscl_op}
    bw=0.,fstat=.true.,
