@@ -60,6 +60,7 @@ subroutine fill_mass_grid2t(gin,nx,ny,gout,iorder)
   
 end subroutine fill_mass_grid2t
 
+
 subroutine fill_mass_grid2u(gin,nx,ny,gout,iorder)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -140,6 +141,7 @@ subroutine fill_mass_grid2u(gin,nx,ny,gout,iorder)
   endif
 
 end subroutine fill_mass_grid2u
+
 
 subroutine fill_mass_grid2v(gin,nx,ny,gout,iorder)
 !$$$  subprogram documentation block
