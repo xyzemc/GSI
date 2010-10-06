@@ -117,6 +117,22 @@ export global_T62_namelist="
   &SUPEROB_RADAR
    $SUPERRAD
  /
+ &LAG_DATA
+ /
+ &HYBRID_ENSEMBLE
+   l_hyb_ens=${HYBENS_GLOBAL},
+   n_ens=${ENSEMBLE_SIZE_GLOBAL},
+   uv_hyb_ens=${HYBENS_UV_GLOBAL},
+   beta1_inv=${BETA1_INV_GLOBAL},
+   s_ens_h=${HYBENS_HOR_SCALE_GLOBAL},
+   s_ens_v=${HYBENS_VER_SCALE_GLOBAL},
+   generate_ens=${GENERATE_ENS_GLOBAL},
+   aniso_a_en=${HYBENS_ANISO_GLOBAL},
+   nlon_ens=${LONA},
+   nlat_ens=${NLAT},
+   jcap_ens=${JCAP},
+   jcap_ens_test=${JCAP},
+ /
  &RAPIDREFRESH_CLDSURF
    l_cloud_analysis=.false.,
    dfi_radar_latent_heat_time_period=30.0,
@@ -126,8 +142,6 @@ export global_T62_namelist="
    oblat=45.,oblon=180.,obpres=1000.,obdattim=${adate},
    obhourset=0.,
    $SINGLEOB
- /
- &LAG_DATA
  /"
 
 # Define namelist for global run (lanczos minimization)
@@ -312,6 +326,10 @@ export RTMA_namelist="
  /
  &SUPEROB_RADAR
  /
+ &LAG_DATA
+ /
+ &HYBRID_ENSEMBLE
+ /
  &RAPIDREFRESH_CLDSURF
    l_cloud_analysis=.false.,
    dfi_radar_latent_heat_time_period=30.0,
@@ -320,8 +338,6 @@ export RTMA_namelist="
    maginnov=0.1,magoberr=0.1,oneob_type='t',
    oblat=36.,oblon=260.,obpres=1000.,obdattim=${adate},
    obhourset=0.,
- /
- &LAG_DATA
  /"
 
 # Define namelist for arw binary run
@@ -428,6 +444,22 @@ export arw_binary_namelist="
    del_azimuth=5.,del_elev=.25,del_range=5000.,del_time=.5,elev_angle_max=5.,minnum=50,range_max=100000.,
    l2superob_only=.false.,
  /
+ &LAG_DATA
+ /
+ &HYBRID_ENSEMBLE
+   l_hyb_ens=${HYBENS_REGIONAL},
+   n_ens=${ENSEMBLE_SIZE_REGIONAL},
+   uv_hyb_ens=${HYBENS_UV_REGIONAL},
+   beta1_inv=${BETA1_INV_REGIONAL},
+   s_ens_h=${HYBENS_HOR_SCALE_REGIONAL},
+   s_ens_v=${HYBENS_VER_SCALE_REGIONAL},
+   generate_ens=${GENERATE_ENS_REGIONAL},
+   aniso_a_en=${HYBENS_ANISO_REGIONAL},
+   nlon_ens=${NLON_ENS_REGIONAL},
+   nlat_ens=${NLAT_ENS_REGIONAL},
+   jcap_ens=${JCAP_ENS_REGIONAL},
+   jcap_ens_test=${JCAP_ENS_TEST_REGIONAL},
+ /
  &RAPIDREFRESH_CLDSURF
    l_cloud_analysis=.false.,
    dfi_radar_latent_heat_time_period=30.0,
@@ -436,8 +468,6 @@ export arw_binary_namelist="
    maginnov=0.1,magoberr=0.1,oneob_type='t',
    oblat=45.,oblon=270.,obpres=850.,obdattim=${adate},
    obhourset=0.,
- /
- &LAG_DATA
  /"
 
 # Define namelist for arw netcdf run
@@ -544,6 +574,22 @@ export arw_netcdf_namelist="
    del_azimuth=5.,del_elev=.25,del_range=5000.,del_time=.5,elev_angle_max=5.,minnum=50,range_max=100000.,
    l2superob_only=.false.,
  /
+ &LAG_DATA
+ /
+ &HYBRID_ENSEMBLE
+   l_hyb_ens=${HYBENS_REGIONAL},
+   n_ens=${ENSEMBLE_SIZE_REGIONAL},
+   uv_hyb_ens=${HYBENS_UV_REGIONAL},
+   beta1_inv=${BETA1_INV_REGIONAL},
+   s_ens_h=${HYBENS_HOR_SCALE_REGIONAL},
+   s_ens_v=${HYBENS_VER_SCALE_REGIONAL},
+   generate_ens=${GENERATE_ENS_REGIONAL},
+   aniso_a_en=${HYBENS_ANISO_REGIONAL},
+   nlon_ens=${NLON_ENS_REGIONAL},
+   nlat_ens=${NLAT_ENS_REGIONAL},
+   jcap_ens=${JCAP_ENS_REGIONAL},
+   jcap_ens_test=${JCAP_ENS_TEST_REGIONAL},
+ /
  &RAPIDREFRESH_CLDSURF
    l_cloud_analysis=.false.,
    dfi_radar_latent_heat_time_period=30.0,
@@ -552,8 +598,6 @@ export arw_netcdf_namelist="
    maginnov=0.1,magoberr=0.1,oneob_type='t',
    oblat=45.,oblon=270.,obpres=850.,obdattim=${adate},
    obhourset=0.,
- /
- &LAG_DATA
  /"
 
 # Define namelist for nmm binary run
@@ -660,6 +704,22 @@ export nmm_binary_namelist="
    del_azimuth=5.,del_elev=.25,del_range=5000.,del_time=.5,elev_angle_max=5.,minnum=50,range_max=100000.,
    l2superob_only=.false.,
  /
+ &LAG_DATA
+ /
+ &HYBRID_ENSEMBLE
+   l_hyb_ens=${HYBENS_REGIONAL},
+   n_ens=${ENSEMBLE_SIZE_REGIONAL},
+   uv_hyb_ens=${HYBENS_UV_REGIONAL},
+   beta1_inv=${BETA1_INV_REGIONAL},
+   s_ens_h=${HYBENS_HOR_SCALE_REGIONAL},
+   s_ens_v=${HYBENS_VER_SCALE_REGIONAL},
+   generate_ens=${GENERATE_ENS_REGIONAL},
+   aniso_a_en=${HYBENS_ANISO_REGIONAL},
+   nlon_ens=${NLON_ENS_REGIONAL},
+   nlat_ens=${NLAT_ENS_REGIONAL},
+   jcap_ens=${JCAP_ENS_REGIONAL},
+   jcap_ens_test=${JCAP_ENS_TEST_REGIONAL},
+ /
  &RAPIDREFRESH_CLDSURF
    l_cloud_analysis=.false.,
    dfi_radar_latent_heat_time_period=30.0,
@@ -668,8 +728,6 @@ export nmm_binary_namelist="
    maginnov=0.1,magoberr=0.1,oneob_type='t',
    oblat=45.,oblon=270.,obpres=850.,obdattim=${adate},
    obhourset=0.,
- /
- &LAG_DATA
  /"
 
 # Define namelist for nmm netcdf run
@@ -776,6 +834,22 @@ export nmm_netcdf_namelist="
    del_azimuth=5.,del_elev=.25,del_range=5000.,del_time=.5,elev_angle_max=5.,minnum=50,range_max=100000.,
    l2superob_only=.false.,
  /
+ &LAG_DATA
+ /
+ &HYBRID_ENSEMBLE
+   l_hyb_ens=${HYBENS_REGIONAL},
+   n_ens=${ENSEMBLE_SIZE_REGIONAL},
+   uv_hyb_ens=${HYBENS_UV_REGIONAL},
+   beta1_inv=${BETA1_INV_REGIONAL},
+   s_ens_h=${HYBENS_HOR_SCALE_REGIONAL},
+   s_ens_v=${HYBENS_VER_SCALE_REGIONAL},
+   generate_ens=${GENERATE_ENS_REGIONAL},
+   aniso_a_en=${HYBENS_ANISO_REGIONAL},
+   nlon_ens=${NLON_ENS_REGIONAL},
+   nlat_ens=${NLAT_ENS_REGIONAL},
+   jcap_ens=${JCAP_ENS_REGIONAL},
+   jcap_ens_test=${JCAP_ENS_TEST_REGIONAL},
+ /
  &RAPIDREFRESH_CLDSURF
    l_cloud_analysis=.false.,
    dfi_radar_latent_heat_time_period=30.0,
@@ -784,8 +858,6 @@ export nmm_netcdf_namelist="
    maginnov=0.1,magoberr=0.1,oneob_type='t',
    oblat=45.,oblon=270.,obpres=850.,obdattim=${adate},
    obhourset=0.,
- /
- &LAG_DATA
  /"
 
 # Define namelist for nems nmmb run
@@ -899,6 +971,20 @@ export nems_nmmb_namelist="
    l2superob_only=.false.,
  /
  &LAG_DATA
+ /
+ &HYBRID_ENSEMBLE
+   l_hyb_ens=${HYBENS_REGIONAL},
+   n_ens=${ENSEMBLE_SIZE_REGIONAL},
+   uv_hyb_ens=${HYBENS_UV_REGIONAL},
+   beta1_inv=${BETA1_INV_REGIONAL},
+   s_ens_h=${HYBENS_HOR_SCALE_REGIONAL},
+   s_ens_v=${HYBENS_VER_SCALE_REGIONAL},
+   generate_ens=${GENERATE_ENS_REGIONAL},
+   aniso_a_en=${HYBENS_ANISO_REGIONAL},
+   nlon_ens=${NLON_ENS_REGIONAL},
+   nlat_ens=${NLAT_ENS_REGIONAL},
+   jcap_ens=${JCAP_ENS_REGIONAL},
+   jcap_ens_test=${JCAP_ENS_TEST_REGIONAL},
  /
  &RAPIDREFRESH_CLDSURF
    l_cloud_analysis=.false.,
