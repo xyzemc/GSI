@@ -1,27 +1,21 @@
 SHELL=/bin/sh
-
 include ../../../configure.gsi
+LIB = ../../../lib/libsigio_i4r4.a
 
-LIB = ../../../lib/libsigio.a
+OBJ_F77 = bafrio.o
+SRC_F77 = $(OBJ_F77:.o=.f)
+OBJ = sigio_module.o sigio_r_module.o
+SRC = $(OBJ:.o=.f90)
 
-$(LIB): $(LIB)(sigio_module.o sigio_r_module.o bafrio.o)
+$(LIB): $(OBJ) $(OBJ_F77)
+	$(CP) *.mod ../../../include
+	$(AR) -ruv $(ARFLAGS_SIGIO) $(LIB) $(OBJ) $(OBJ_F77)
 
+.f.o:
+	$(SFC) $(FFLAGS_SIGIO) -c $(SRC_F77)
 
-$(LIB)(bafrio.o):       bafrio.f
-	$(FC) -c $(FFLAGS) $<
-	$(AR) $(ARFLAGS) $@ $*.o
-	rm -f $*.o
-
-.f.a:
-	$(F90) -c $(FFLAGS) $<
-	$(AR) $(ARFLAGS) $@ $*.o
-	$(RM) $*.o
-
-.c.a:
-	$(CC) -c $(CFLAGS) $<
-	$(AR) $(ARFLAGS) $@ $*.o
-	$(RM) $*.o
+.f90.o:
+	$(SF90) $(FFLAGS_SIGIO) -c $(SRC)
 
 clean:
-	$(RM) *.o *.mod $(LIB)
-
+	$(RM) $(OBJ) $(OBJ_F77) $(LIB) *.mod

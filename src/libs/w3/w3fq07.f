@@ -258,8 +258,10 @@ C
            ENDIF
            WRITE(6,FMT='('' W3FQ07: READING CARD FROM UNIT '',
      1           I4)') CARDFIL
-              READ(CARDFIL,FMT='(80A1),END=940)')
+              READ(CARDFIL,FMT='(80A1)',END=940)
      1         (LPARM(I:I),I=1,NUMBYT)
+C fixed end statement in read. 
+C             READ(CARDFIL,FMT='(80A1),END=940)')
 C   
            WRITE(6,FMT='('' W3FQ07: PARM='',
      1           A)')LPARM(1:NUMBYT)

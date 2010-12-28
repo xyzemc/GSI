@@ -1,8 +1,7 @@
 SHELL=/bin/sh
 
 include ../../../configure.gsi
-
-LIB = ../../../lib/libbufr.a
+LIB = ../../../lib/libbufr_i4r8.a
 
 OBJS = addate.o adn30.o \
 	bfrini.o bort.o bort2.o \
@@ -39,29 +38,28 @@ all:	$(PRM) $(LIB)
 
 
 $(LIB):	$(OBJS)
-	$(AR) $(ARFLAGS) $(LIB) $(OBJS)
+	$(AR) -ruv $(LIB) $(OBJS)
 
 bufrlib.prm: bufrlib.PRM
-	$(CPP) $(CPPFLAGS) bufrlib.PRM bufrlib.prm
+	$(CPP) $(CPP_FLAGS) bufrlib.PRM bufrlib.prm
 
 .SUFFIXES :
 .SUFFIXES : .F .f .a .c .o
 
 .F.o:
 	$(SED_FTN) $*.F > $*.b 
-	$(CPP) $(CPPFLAGS) $*.b  > $*.f
-	$(RM) $*.b
-	$(FC) -c $*.f
-	$(RM) $*.f
+	$(CPP) $(CPP_FLAGS) $(CPP_F90FLAGS) $*.b  > $*.f
+	$(SFC) -c $(FFLAGS_BUFR) $*.f
+	$(RM) $*.f $*.b
 
 .f.o:
-	$(FC) -c  $<
+	$(SFC) -c $(FFLAGS_BUFR)  $<
 
 .c.o:
-	$(CC) -c  $(CFLAGS) $<
+	$(SCC) -c  $(CFLAGS_BUFR) $<
 
 clean:
-	$(RM) *.o *.mod $(LIB) *.b bufrlib.prm
+	rm -f *.o *.mod $(LIB) *.b bufrlib.prm
 
 # DEPENDENCIES : only dependencies after this line (don't remove the word DEPENDENCIES)
 

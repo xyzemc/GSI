@@ -1,22 +1,17 @@
 SHELL=/bin/sh
-
 include ../../../configure.gsi
+LIB = ../../../lib/libsfcio_i4r4.a
 
-LIB = ../../../lib/libsfcio.a
+OBJ = sfcio_module.o
+SRC = $(OBJ:.o=.f90)
 
-$(LIB): $(LIB)(sfcio_module.o )
+$(LIB): $(OBJ)
+	$(CP) sfcio_module.mod ../../../include/sfcio_module.mod
+	$(AR) -ruv $(ARFLAGS_SFCIO) $(LIB) $(OBJ)
 
-
-.f.a:
-	$(F90) -c $(FFLAGS) $<
-	$(AR) $(ARFLAGS) $@ $*.o
-	$(RM) $*.o
-
-.c.a:
-	$(CC) -c $(CFLAGS) $<
-	$(AR) $(ARFLAGS) $(AFLAGS) $@ $*.o
-	$(RM) $*.o
+.f90.o:
+	$(SF90) $(FFLAGS_SFCIO) -c $(SRC)
 
 clean:
-	$(RM) *.o *.mod $(LIB)
+	$(RM) $(OBJ) $(LIB) *.mod ../../../include/sfcio_module.mod
 

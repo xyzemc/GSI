@@ -137,19 +137,20 @@ C .... DK: Can the below ever happen since upper loop bounds is NBYTW
          IORD(I) = J
       ENDDO
 
-C SET THE NOREVERSE FLAG - 0=NOREVERSE;1=REVERSE
-C ----------------------------------------------
+C
+C  SET THE NOREVERSE FLAG - 0=NOREVERSE;1=REVERSE
+C  ----------------------------------------------
 
-C i.e. set NREV = 0 if the machine is "big-endian"
-C set NREV = 1 if the machine is "little-endian"
+C     i.e. set NREV = 0 if the machine is "big-endian"
+C          set NREV = 1 if the machine is "little-endian"
 
-
-
-
-
+#ifdef BIG_ENDIAN
+      NREV = 0
+      CNDIAN = '  BIG '
+#else
       NREV = 1
       CNDIAN = 'LITTLE'
-
+#endif
 
 C SETUP AN ASCII/EBCDIC TRANSLATOR AND DETERMINE WHICH IS NATIVE
 C --------------------------------------------------------------

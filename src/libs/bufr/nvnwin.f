@@ -81,7 +81,9 @@ c  .... DK: Shouldn't this be before RETURN above?
       NVNWIN = 0
 
       DO I=1,NMAX
-      INVN(I) = BMISS
+c     INVN(I) = BMISS
+C     BMISS overflows a integer*4
+      INVN(I) = 1E9
       ENDDO
 
 C  SEARCH BETWEEN INV1 AND INV2
@@ -90,6 +92,7 @@ C  ----------------------------
       DO N=INV1,INV2
       IF(INV(N,LUN).EQ.NODE) THEN
          NVNWIN = NVNWIN+1
+         IF(NVNWIN.GT.NMAX) GOTO 900
          INVN(NVNWIN) = N
       ENDIF
       ENDDO

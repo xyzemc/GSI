@@ -61,7 +61,7 @@ while ( substr( $ARGV[0], 0, 1 ) eq "-" )
 # parse the configure.defaults file
 
 $validresponse = 0 ;
-@platforms = qw ( serial dmpar ) ;
+@platforms = qw ( serial dmpar,debug dmpar,optimize ) ;
 $JASPTERLIB = "";
 $JASPERLIB  =  $ENV{JASPERLIB};
 if ($JASPERLIB) {
@@ -118,6 +118,7 @@ $optchoice = $response ;
 open CONFIGURE_DEFAULTS, "< ./arch/configure.defaults" 
       or die "Cannot open ./arch/configure.defaults for reading" ;
 $latchon = 0 ;
+
 while ( <CONFIGURE_DEFAULTS> )
 {
   if ( substr( $_, 0, 5 ) eq "#ARCH" && $latchon == 1 )
@@ -158,7 +159,7 @@ while ( <CONFIGURE_DEFAULTS> )
       if ( $x =~ /Linux/ ) { $iflinux = 1 };
       if ( $x =~ /Intel/ ) { $ifintel = 1 };
 
-      if ( $paropt eq 'dmpar' ) 
+      if ( ($paropt eq 'dmpar,debug') || ($paropt eq 'dmpar,optimize') ) 
       {
         $sw_dmparallel = "RSL_LITE" ;
         $sw_dmparallelflag = "-DDM_PARALLEL" ;
@@ -186,7 +187,7 @@ if ( $iflinux  )
         printf "\$LAPACK_PATH has not \nbeen set. Typically the required path is ";
         printf " something like; \n"; 
         printf "     .../intel/mkl72/lib/em64t on NCAR systems or \n";
-        printf "     .../intel/mkl/8.1.1/lib/em64t on NOAA systems. \n";
+        printf "     given by the path variable \$MKL on NOAA systems. \n";
         printf "Please set the path, and rerun the configure script. \n";
         printf "Configuration unsuccessful. \n" ;
         printf "----------------------------------------------------------";
@@ -199,12 +200,10 @@ if ( $iflinux  )
          # libraries libmkl_lapack.a and libmkl_em64t.a exist there.
          if( -x $LAPACK_PATH )
          {
-            unless ( -e $LAPACK_PATH . "/libmkl_lapack.a" ) {
-              printf "The LAPACK library libmkl_lapack.a was not found in ";
+            unless ( -e $LAPACK_PATH . "/libmkl_lapack.so" || -e $LAPACK_PATH . "/libmkl_lapack.a" ) {
+              printf "The LAPACK library libmkl_lapack was not found in ";
               printf "the directory \$LAPACK_PATH. \n";
-              printf "Typically the path is something like; \n"; 
-              printf "     .../intel/mkl72/lib/em64t on NCAR systems or \n";
-              printf "     .../intel/mkl/8.1.1/lib/em64t on NOAA systems. \n";
+              printf "Check the contents of the path for the lapack library \n";
               printf "Please reset the path if it is not correct and rerun the configure\n";
               printf "script. If the path is correct, your version of the libraries \n";
               printf "may be differently named. Edit the variable MYLIBsys in \n";
@@ -213,12 +212,34 @@ if ( $iflinux  )
               printf "----------------------------------------------------------";
               printf "--------------\n" ;
             }
-            unless ( -e $LAPACK_PATH . "/libmkl_em64t.a" ) {
-              printf "The LAPACK library libmkl_em64t.a was not found in ";
+            unless ( -e $LAPACK_PATH . "/libmkl_intel_lp64.a" ) {
+              printf "The LAPACK library libmkl_intel_lp64 was not found in ";
               printf "the directory \$LAPACK_PATH. \n";
-              printf "Typically the path is something like; \n"; 
-              printf "     .../intel/mkl72/lib/em64t on NCAR systems or \n";
-              printf "     .../intel/mkl/8.1.1/lib/em64t on NOAA systems. \n";
+              printf "Check the contents of the path for the library \n";
+              printf "Please reset the path if it is not correct and rerun the configure\n";
+              printf "script. If the path is correct, your version of the libraries \n";
+              printf "may be differently named. Edit the variable MYLIBsys in \n";
+              printf "configure.gsi to reflect the correct names. \n";
+              printf "Configuration unsuccessful. \n" ;
+              printf "----------------------------------------------------------";
+              printf "--------------\n" ;
+            }
+            unless ( -e $LAPACK_PATH . "/libmkl_core.a" ) {
+              printf "The LAPACK library libmkl_core was not found in ";
+              printf "the directory \$LAPACK_PATH. \n";
+              printf "Check the contents of the path for the library \n";
+              printf "Please reset the path if it is not correct and rerun the configure\n";
+              printf "script. If the path is correct, your version of the libraries \n";
+              printf "may be differently named. Edit the variable MYLIBsys in \n";
+              printf "configure.gsi to reflect the correct names. \n";
+              printf "Configuration unsuccessful. \n" ;
+              printf "----------------------------------------------------------";
+              printf "--------------\n" ;
+            }
+            unless ( -e $LAPACK_PATH . "/libmkl_intel_thread.a" ) {
+              printf "The LAPACK library libmkl_intel_thread was not found in ";
+              printf "the directory \$LAPACK_PATH. \n";
+              printf "Check the contents of the path for the library \n";
               printf "Please reset the path if it is not correct and rerun the configure\n";
               printf "script. If the path is correct, your version of the libraries \n";
               printf "may be differently named. Edit the variable MYLIBsys in \n";
@@ -259,6 +280,11 @@ close ARCH_PREAMBLE ;
 printf CONFIGURE_GSI "# Settings for %s", $optstr[$optchoice] ;
 print CONFIGURE_GSI @machopts  ;
 open ARCH_POSTAMBLE, "< arch/postamble" or die "cannot open arch/postamble" ;
+$HWRF = $ENV{HWRF};
+if ($HWRF) {
+close ARCH_POSTAMBLE ;
+open ARCH_POSTAMBLE, "< arch/postamble.hwrf" or die "cannot open arch/postamble.hwrf" ;
+}
 while ( <ARCH_POSTAMBLE> ) { 
     $_ =~ s/CONFIGURE_NETCDF_PATH/$sw_netcdf_path/g ;
     $_ =~ s/CONFIGURE_NETCDF_LIBS/$sw_usenetcdff -lnetcdf/g ;

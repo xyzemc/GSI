@@ -24,18 +24,18 @@ EXE_FILE = gsi.exe
 # ---------
 ## LIBmpeu   = -L$(CORELIB) -lmpeu
 LIBmpeu   = 
-LIBbufr   = -L$(CORELIB) -lbufr
-LIBw3     = -L$(CORELIB) -lw3
-LIBsp     = -L$(CORELIB) -lsp
+LIBbufr   = -L$(CORELIB) -lbufr_i4r8
+LIBw3     = -L$(CORELIB) -lw3_i4r8
+LIBsp     = -L$(CORELIB) -lsp_i4r8
 LIBbacio  = -L$(CORELIB) -lbacio
 LIBrrcld  = -L$(CORELIB) -lgsdcloud
-LIBsfcio  = -L$(CORELIB) -lsfcio
-LIBsigio  = -L$(CORELIB) -lsigio
+LIBsfcio  = -L$(CORELIB) -lsfcio_i4r4
+LIBsigio  = -L$(CORELIB) -lsigio_i4r4
 ## LIBcrtm   = -L$(CORELIB) -lcrtm_gfsgsi
-LIBcrtm   = -L$(CORELIB) -lCRTM
+LIBcrtm   = -L$(CORELIB) -lcrtm
 LIBtransf = -L$(CORELIB) -ltransf
 LIBhermes = -L$(CORELIB) -lhermes
-LIBgfsio  = -L$(CORELIB) -lgfsio
+LIBgfsio  = -L$(CORELIB) -lgfsio_i4r4
 
 # --------------------------
 # Default Baselibs Libraries
