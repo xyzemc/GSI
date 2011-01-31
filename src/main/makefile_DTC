@@ -24,18 +24,18 @@ EXE_FILE = gsi.exe
 # ---------
 ## LIBmpeu   = -L$(CORELIB) -lmpeu
 LIBmpeu   = 
-LIBbufr   = -L$(CORELIB) -lbufr_i4r8
-LIBw3     = -L$(CORELIB) -lw3_i4r8
-LIBsp     = -L$(CORELIB) -lsp_i4r8
-LIBbacio  = -L$(CORELIB) -lbacio
+LIBbufr   = -L$(CORELIB) -lbufr
+LIBw3     = -L$(CORELIB) -lw3
+LIBsp     = -L$(CORELIB) -lsp
+LIBbacio  = 
 LIBrrcld  = -L$(CORELIB) -lgsdcloud
-LIBsfcio  = -L$(CORELIB) -lsfcio_i4r4
-LIBsigio  = -L$(CORELIB) -lsigio_i4r4
+LIBsfcio  = -L$(CORELIB) -lsfcio
+LIBsigio  = -L$(CORELIB) -lsigio
 ## LIBcrtm   = -L$(CORELIB) -lcrtm_gfsgsi
-LIBcrtm   = -L$(CORELIB) -lcrtm
+LIBcrtm   = -L$(CORELIB) -lCRTM
 LIBtransf = -L$(CORELIB) -ltransf
 LIBhermes = -L$(CORELIB) -lhermes
-LIBgfsio  = -L$(CORELIB) -lgfsio_i4r4
+LIBgfsio  = -L$(CORELIB) -lgfsio
 
 # --------------------------
 # Default Baselibs Libraries
@@ -100,7 +100,9 @@ LIBsys          = $(MYLIBsys)
 	calctends_tl.o \
 	calctends_no_ad.o \
 	calctends_no_tl.o \
+        chemmod.o \
         clw_mod.o \
+        cmaq_routines.o \
         coinfo.o \
 	combine_radobs.o \
 	compact_diffs.o \
@@ -114,7 +116,6 @@ LIBsys          = $(MYLIBsys)
 	converr.o \
 	convinfo.o \
 	convthin.o \
-        crtm_interface.o \
         cvsection.o \
 	deter_subdomain.o \
 	dtast.o \
@@ -145,7 +146,6 @@ LIBsys          = $(MYLIBsys)
 	getsiga.o \
 	getuv.o \
 	getvvel.o \
-        get_wrf_mass_ensperts_netcdf.o \
 	glbsoi.o \
         grtest.o \
 	grdcrd.o \
@@ -165,7 +165,8 @@ LIBsys          = $(MYLIBsys)
 	guess_grids.o \
 	half_nmm_grid2.o \
 	hilbert_curve.o \
-        hybrid_ensemble_isotropic.o \
+        hybrid_ensemble_isotropic_global.o \
+        hybrid_ensemble_isotropic_regional.o \
         hybrid_ensemble_parameters.o \
         inc2guess.o \
 	init_commvars.o \
@@ -181,6 +182,7 @@ LIBsys          = $(MYLIBsys)
 	intlimq.o \
 	intoz.o \
 	intpcp.o \
+        intpm2_5.o \
 	intps.o \
 	intpw.o \
 	intq.o \
@@ -188,6 +190,7 @@ LIBsys          = $(MYLIBsys)
 	intrp2a.o \
 	intrp3co.o \
 	intrp3oz.o \
+	intrppx.o \
 	intrw.o \
 	intspd.o \
 	intsrw.o \
@@ -218,6 +221,7 @@ LIBsys          = $(MYLIBsys)
         mpeu_mpif.o \
         mpeu_util.o \
         missing_routines.o \
+	mod_inmi.o \
         mod_nmmb_to_a.o \
 	mod_strong.o \
 	mod_vtrans.o \
@@ -263,6 +267,7 @@ LIBsys          = $(MYLIBsys)
 	psichi2uvt_reg.o \
 	q_diag.o \
 	qcmod.o \
+	qcssmi.o \
         qnewton.o \
         qnewton3.o \
 	radinfo.o \
@@ -272,6 +277,7 @@ LIBsys          = $(MYLIBsys)
         read_aerosol.o \
 	read_airs.o \
 	read_amsre.o \
+        read_anowbufr.o \
 	read_avhrr.o \
 	read_avhrr_navy.o \
 	read_bufrtovs.o \
@@ -308,6 +314,9 @@ LIBsys          = $(MYLIBsys)
 	read_wrf_nmm_guess.o \
 	regional_io.o \
         reorg_metar_cloud.o \
+	ret_ssmis.o \
+	retrieval_amsre.o \
+	retrieval_mi.o \
 	rfdpar.o \
 	rsearch.o \
         rtlnmc_version3.o \
@@ -319,6 +328,7 @@ LIBsys          = $(MYLIBsys)
         setuplag.o \
 	setupoz.o \
 	setuppcp.o \
+        setuppm2_5.o \
 	setupps.o \
 	setuppw.o \
 	setupq.o \
@@ -361,6 +371,7 @@ LIBsys          = $(MYLIBsys)
 	stplimq.o \
 	stpoz.o \
 	stppcp.o \
+        stppm2_5.o \
 	stpps.o \
 	stppw.o \
 	stpq.o \
@@ -408,8 +419,7 @@ LIBsys          = $(MYLIBsys)
 	wrwrfmassa.o \
 	wrwrfnmma.o \
         xhat_vordivmod.o \
-	zrnmi_mod.o \
-        blockIO.o
+	zrnmi_mod.o
 
 # ----
 
