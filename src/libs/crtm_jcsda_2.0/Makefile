@@ -25,4 +25,5 @@ clean:
 
 include make.dependencies
 
-
+clean:
+	rm -f *.o *.mod $(LIB)

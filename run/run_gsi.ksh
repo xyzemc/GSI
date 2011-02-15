@@ -26,12 +26,13 @@
 # FIX_ROOT = path of fix files
 # GSI_EXE  = path and name of the gsi executable 
   ANAL_TIME=2008051112
-  WORK_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk/run/run_${ANAL_TIME}
+  WORK_ROOT=./gsiprd_${ANAL_TIME}_arw
   PREPBUFR=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs/newgblav.20080511.ruc2a.t12z.prepbufr
   BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkARW/wrfout_d01_2008-05-11_12:00:00
+##  BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkNMM/wrfinput_d01_2008-05-11_12:00:00
   OBS_ROOT=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs
-  FIX_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk/fix
-  GSI_EXE=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk/run/gsi.exe
+  FIX_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk_r580/fix
+  GSI_EXE=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk_r580/run/gsi.exe
 
 #------------------------------------------------
 # bk_core= which WRF core is used as background (NMM or ARW)
@@ -420,6 +421,8 @@ cat << EOF > gsiparm.anl
  /
  &RAPIDREFRESH_CLDSURF
    l_cloud_analysis=.false.,
+ /
+ &CHEM
  /
  &SINGLEOB_TEST
    maginnov=1.0,magoberr=0.8,oneob_type='t',
