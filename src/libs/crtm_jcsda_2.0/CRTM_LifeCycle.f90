@@ -45,7 +45,7 @@ MODULE CRTM_LifeCycle
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_LifeCycle.f90 6961 2010-03-10 20:22:54Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_LifeCycle.f90 7825 2010-05-12 19:20:11Z david.groff@noaa.gov $'
   ! String lengths
   INTEGER, PARAMETER :: ML = 256   ! Error message length
   INTEGER, PARAMETER :: SL = 2000  ! Maximum length for path+filenames
@@ -247,11 +247,10 @@ CONTAINS
     ! ******
     ! TEMPORARY UNTIL LOAD ROUTINE INTERFACES HAVE BEEN MODIFIED
     INTEGER :: iQuiet
+    iQuiet = 0
     IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet ) THEN
         iQuiet = 1  ! Set
-      ELSE
-        iQuiet = 0  ! Not set
       END IF
     END IF
     ! ******

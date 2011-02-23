@@ -45,7 +45,7 @@ MODULE SpcCoeff_Binary_IO
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: SpcCoeff_Binary_IO.f90 3255 2009-02-19 23:17:43Z paul.vandelst@noaa.gov $'
+    '$Id: SpcCoeff_Binary_IO.f90 7839 2010-05-13 13:20:20Z david.groff@noaa.gov $'
   ! Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
   ! Message character length
@@ -410,13 +410,14 @@ CONTAINS
     Error_Status = SUCCESS
     IF ( PRESENT(RCS_Id) ) RCS_Id = MODULE_RCS_ID
 
+    ! Output informational messages.....
     Noisy = .TRUE.
+    ! ....unless....
     IF ( PRESENT(Quiet) ) THEN
       IF ( Quiet == SET ) Noisy = .FALSE.
-    ELSE
-      IF ( PRESENT(Process_ID) .AND. PRESENT(Output_Process_ID) ) THEN
-        IF ( Process_ID /= Output_Process_ID ) Noisy = .FALSE.
-      END IF
+    END IF
+    IF ( Noisy .AND. PRESENT(Process_ID) .AND. PRESENT(Output_Process_ID) ) THEN
+      IF ( Process_ID /= Output_Process_ID ) Noisy = .FALSE.
     END IF
 
     IF ( PRESENT( Process_ID ) ) THEN

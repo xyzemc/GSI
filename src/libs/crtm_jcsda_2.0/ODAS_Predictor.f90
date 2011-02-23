@@ -68,7 +68,7 @@ MODULE ODAS_Predictor
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODAS_Predictor.f90 6789 2010-02-26 20:31:19Z yong.han@noaa.gov $'
+  '$Id: ODAS_Predictor.f90 7751 2010-05-10 22:32:05Z paul.vandelst@noaa.gov $'
 
   ! Absorbers in the gas absorption model
   ! -------------------------------------
@@ -191,7 +191,7 @@ CONTAINS
 
     ! Initialise 0'th level amounts
     Pred%A(0,WET_ABSORBER_INDEX) = ZERO
-    Pred%A(0,DRY_ABSORBER_INDEX) = TOA_PRESSURE
+    Pred%A(0,DRY_ABSORBER_INDEX) = MIN(TOA_PRESSURE,Atm%Level_Pressure(0))
     Pred%A(0,OZO_ABSORBER_INDEX) = ZERO
 
     ! Get the atmosphere gaseous absorber indices

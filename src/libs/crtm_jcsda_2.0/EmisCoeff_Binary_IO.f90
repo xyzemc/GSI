@@ -46,7 +46,7 @@ MODULE EmisCoeff_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: EmisCoeff_Binary_IO.f90 1036 2007-10-16 20:23:14Z paul.vandelst@noaa.gov $'
+    '$Id: EmisCoeff_Binary_IO.f90 7839 2010-05-13 13:20:20Z david.groff@noaa.gov $'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
 
@@ -432,13 +432,10 @@ CONTAINS
     Noisy = .TRUE.
     ! ....unless....
     IF ( PRESENT( Quiet ) ) THEN
-      ! ....the QUIET keyword is set.
-      IF ( Quiet == 1 ) Noisy = .FALSE.
-    ELSE
-      ! ....the Process_ID is not selected for output
-      IF ( PRESENT( Process_ID ) .AND. PRESENT( Output_Process_ID ) ) THEN
-        IF ( Process_ID /= Output_Process_ID ) Noisy = .FALSE.
-      END IF
+      IF ( Quiet == SET ) Noisy = .FALSE.
+    END IF
+    IF ( Noisy .AND. PRESENT(Process_ID) .AND. PRESENT(Output_Process_ID) ) THEN
+      IF ( Process_ID /= Output_Process_ID ) Noisy = .FALSE.
     END IF
 
     ! Create a process ID message tag for

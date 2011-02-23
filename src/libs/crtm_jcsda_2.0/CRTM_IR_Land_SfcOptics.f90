@@ -52,7 +52,7 @@ MODULE CRTM_IR_Land_SfcOptics
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_IR_Land_SfcOptics.f90 5959 2009-12-07 14:07:01Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_IR_Land_SfcOptics.f90 8128 2010-05-28 18:48:07Z paul.vandelst@noaa.gov $'
 
 
   ! --------------------------------------
@@ -223,7 +223,7 @@ CONTAINS
     ! --------------------------------------------------
     SfcOptics%Emissivity(1:SfcOptics%n_Angles,1) = Emissivity
     DO j = 1, SfcOptics%n_Angles 
-      SfcOptics%Reflectivity(1:SfcOptics%n_Angles,1,j,1) = (ONE-Emissivity)*SfcOptics%Weight(j)
+      SfcOptics%Reflectivity(j,1,j,1) = ONE-SfcOptics%Emissivity(j,1)
     END DO
 
   END FUNCTION Compute_IR_Land_SfcOptics

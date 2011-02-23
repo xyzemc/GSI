@@ -80,7 +80,7 @@ MODULE CRTM_RTSolution
   ! -----------------
   ! Version Id for the module
   CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_RTSolution.f90 6442 2010-01-22 21:32:23Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_RTSolution.f90 8130 2010-05-28 18:59:06Z paul.vandelst@noaa.gov $'
 
 
 CONTAINS
@@ -267,10 +267,7 @@ CONTAINS
    
     ! Determine the surface emission behavior
     !   By default, surface is SPECULAR.
-    !   If IR sensor AND water coverage < 50%, surface is DIFFUSE
     RTV%Diffuse_Surface = .FALSE.
-    IF( Sensor_Type == INFRARED_SENSOR .AND. Surface%Water_Coverage < 0.5_fp) &
-      RTV%Diffuse_Surface = .TRUE.
 
 
     ! -------------------------------------------
@@ -352,8 +349,9 @@ CONTAINS
       ! ----------------
       RTV%n_Streams = 0
       RTV%n_Angles  = 1
-      RTV%COS_Angle( RTV%n_Angles ) = u
-      SfcOptics%Index_Sat_Ang       = RTV%n_Angles
+      RTV%COS_Angle( RTV%n_Angles )  = u
+      RTV%COS_Weight( RTV%n_Angles ) = ONE
+      SfcOptics%Index_Sat_Ang        = RTV%n_Angles
 
     END IF Determine_Stream_Angles
 

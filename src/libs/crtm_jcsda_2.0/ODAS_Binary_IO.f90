@@ -47,7 +47,7 @@ MODULE ODAS_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-    '$Id: ODAS_Binary_IO.f90 5689 2009-11-12 20:49:39Z paul.vandelst@noaa.gov $'
+    '$Id: ODAS_Binary_IO.f90 7839 2010-05-13 13:20:20Z david.groff@noaa.gov $'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Message character length
@@ -505,17 +505,15 @@ CONTAINS
       Error_Status = FAILURE
       RETURN
     END IF 
-    
+
     ! Output informational messages....
     Noisy = .TRUE.
+    ! ....unless....
     IF ( PRESENT(Quiet) ) THEN
-      ! ....unless the QUIET keyword is set
       IF ( Quiet == SET ) Noisy = .FALSE.
-    ELSE
-      ! ....or the Process_ID is not selected for output
-      IF ( PRESENT(Process_ID) .AND. PRESENT(Output_Process_ID) ) THEN
-        IF ( Process_ID /= Output_Process_ID ) Noisy = .FALSE.
-      END IF
+    END IF
+    IF ( Noisy .AND. PRESENT(Process_ID) .AND. PRESENT(Output_Process_ID) ) THEN
+      IF ( Process_ID /= Output_Process_ID ) Noisy = .FALSE.
     END IF
 
     ! Create a process ID message tag for

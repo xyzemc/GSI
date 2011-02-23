@@ -67,7 +67,7 @@ MODULE CRTM_SensorData_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_SensorData_Define.f90 6945 2010-03-10 02:52:19Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_SensorData_Define.f90 7502 2010-04-22 20:47:22Z paul.vandelst@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 
@@ -318,12 +318,12 @@ CONTAINS
     ! ...Check if structure is used
     IF ( .NOT. CRTM_SensorData_Associated(SensorData) ) THEN
       msg = 'SensorData structure not allocated'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
     ENDIF
     IF ( SensorData%n_channels < 1 ) THEN
       msg = 'SensorData structure dimension invalid'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       RETURN
     ENDIF
     
@@ -333,28 +333,29 @@ CONTAINS
     ! ...Data sensor ids
     IF ( LEN_TRIM(SensorData%Sensor_Id) == 0 ) THEN
       msg = 'Invalid Sensor Id found'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
     IF ( SensorData%WMO_Satellite_Id == INVALID_WMO_SATELLITE_ID ) THEN
       msg = 'Invalid WMO Satellite Id found'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
     IF ( SensorData%WMO_Sensor_Id == INVALID_WMO_SENSOR_ID ) THEN
       msg = 'Invalid WMO Sensor Id'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
+    ! ...Listed sensor channels
     IF ( ANY(SensorData%Sensor_Channel < 1) ) THEN
       msg = 'Invalid Sensor Channel found'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
     ! ...Data
-    IF ( ANY(SensorData%Tb < ZERO ) ) THEN
-      msg = 'Negative SensorData brightness temperatures found'
-      CALL Display_Message( ROUTINE_NAME, TRIM(msg), INFORMATION )
+    IF ( ALL(SensorData%Tb < ZERO ) ) THEN
+      msg = 'All input SensorData brightness temperatures are negative'
+      CALL Display_Message( ROUTINE_NAME, msg, INFORMATION )
       IsValid = .FALSE.
     ENDIF
 

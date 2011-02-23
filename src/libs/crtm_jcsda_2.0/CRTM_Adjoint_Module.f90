@@ -23,7 +23,7 @@ MODULE CRTM_Adjoint_Module
                                         MAX_N_LEGENDRE_TERMS   , &
                                         MAX_N_STOKES           , &
                                         MAX_N_ANGLES           , &
-                                        MAX_N_AZI              , &
+                                        MAX_N_AZIMUTH_FOURIER  , &
                                         MAX_SOURCE_ZENITH_ANGLE
   USE CRTM_SpcCoeff,              ONLY: SC, VISIBLE_SENSOR
   USE CRTM_Atmosphere_Define,     ONLY: CRTM_Atmosphere_type, &
@@ -115,7 +115,7 @@ MODULE CRTM_Adjoint_Module
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_Adjoint_Module.f90 6810 2010-03-02 01:56:06Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_Adjoint_Module.f90 8133 2010-05-28 20:26:31Z paul.vandelst@noaa.gov $'
 
 
 CONTAINS
@@ -651,13 +651,13 @@ CONTAINS
           
           IF( SC(SensorIndex)%Sensor_Type == VISIBLE_SENSOR .and. RTV%Solar_Flag_true ) THEN 
             RTV%Visible_Flag_true = .TRUE.
-            RTV%n_Azi = MAX_N_AZI     
             ! Rayleigh phase function has 0, 1, 2 components.
             IF( AtmOptics%n_Legendre_Terms < 4 ) THEN
               AtmOptics%n_Legendre_Terms = 4
               RTSolution(ln,m)%Scattering_FLAG = .TRUE.
               RTSolution(ln,m)%n_Full_Streams = AtmOptics%n_Legendre_Terms + 2
             END IF
+            RTV%n_Azi = MIN( AtmOptics%n_Legendre_Terms - 1, MAX_N_AZIMUTH_FOURIER )
             ! Get molecular scattering and extinction
             Wavenumber = SC(SensorIndex)%Wavenumber(ChannelIndex)
             Error_Status = CRTM_Compute_MoleculeScatter( &

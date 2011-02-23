@@ -47,9 +47,9 @@ MODULE CRTM_Module
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_Module.f90 7042 2010-03-12 17:19:23Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_Module.f90 8103 2010-05-27 16:04:29Z paul.vandelst@noaa.gov $'
   CHARACTER(*), PRIVATE, PARAMETER :: CRTM_VERSION_ID = &
-  'REL-2.0'
+  'REL-2.0.2'
 
 
 CONTAINS
