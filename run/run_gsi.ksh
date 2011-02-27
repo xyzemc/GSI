@@ -28,18 +28,22 @@
   ANAL_TIME=2008051112
   WORK_ROOT=./gsiprd_${ANAL_TIME}_arw
   PREPBUFR=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs/newgblav.20080511.ruc2a.t12z.prepbufr
-  BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkARW/wrfout_d01_2008-05-11_12:00:00
-##  BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkNMM/wrfinput_d01_2008-05-11_12:00:00
+##  BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkARW/wrfout_d01_2008-05-11_12:00:00
+  BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkNMM/wrfinput_d01_2008-05-11_12:00:00
   OBS_ROOT=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs
   FIX_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk_r580/fix
+  CRTM_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/crtm/CRTM_Coefficients
   GSI_EXE=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk_r580/run/gsi.exe
 
 #------------------------------------------------
 # bk_core= which WRF core is used as background (NMM or ARW)
 # bkcv_option= which background error covariance and parameter will be used 
 #              (GLOBAL or NAM)
-  bk_core=ARW
+# if_clean = clean  : delete temperal files in working directory (default)
+#            no     : leave running directory as is (this is for debug only)
+  bk_core=NMM
   bkcv_option=NAM
+  if_clean=clean
 #
 #
 #####################################################
@@ -124,10 +128,6 @@ if [ ! "${WORK_ROOT}" ]; then
   echo "ERROR: \$WORK_ROOT is not defined!"
   exit 1
 fi
-if [ ! -d "${WORK_ROOT}" ]; then
-  echo "create WORK_ROOT directory "
-  mkdir ${WORK_ROOT}
-fi
 
 # Make sure the background file exists
 if [ ! -r "${BK_FILE}" ]; then
@@ -155,6 +155,17 @@ if [ ! -d "${FIX_ROOT}" ]; then
   exit 1
 fi
 
+# Set the path to the CRTM coefficients 
+if [ ! "${CRTM_ROOT}" ]; then
+  echo "ERROR: \$CRTM_ROOT is not defined!"
+  exit 1
+fi
+if [ ! -d "${CRTM_ROOT}" ]; then
+  echo "ERROR: fix directory '${CRTM_ROOT}' does not exist!"
+  exit 1
+fi
+
+
 # Make sure the GSI executable exists
 if [ ! -x "${GSI_EXE}" ]; then
   echo "ERROR: ${GSI_EXE} does not exist!"
@@ -170,16 +181,23 @@ fi
 #
 ##################################################################################
 # Create the ram work directory and cd into it
-  workdir=${WORK_ROOT}/gsiprd
+
+workdir=${WORK_ROOT}
+echo " Create working directory:" ${workdir}
+
+if [ -d "${workdir}" ]; then
   rm -rf ${workdir}
-  mkdir -p ${workdir}
-  cd ${workdir}
-  echo ${workdir}
+fi
+mkdir -p ${workdir}
+cd ${workdir}
 
 #
 ##################################################################################
+
+echo " Copy GSI executable, background file, and link observation bufr to working directory"
+
 # Save a copy of the GSI executable in the workdir
-  cp ${GSI_EXE} gsi.exe
+cp ${GSI_EXE} gsi.exe
 
 # Bring over background field (it's modified by GSI so we can't link to it)
 cp ${BK_FILE} ./wrf_inout
@@ -195,6 +213,9 @@ ln -s ${PREPBUFR} ./prepbufr
 
 #
 ##################################################################################
+
+echo " Copy fixed files and link CRTM coefficient files to working directory"
+
 # Set fixed files
 #   berror   = forecast model background error statistics
 #   specoef  = CRTM spectral coefficients
@@ -241,7 +262,7 @@ CONVINFO=${FIX_ROOT}/global_convinfo.txt
 OZINFO=${FIX_ROOT}/global_ozinfo.txt
 PCPINFO=${FIX_ROOT}/global_pcpinfo.txt
 
-RTMFIX=${FIX_ROOT}/CRTM_Coefficients
+RTMFIX=${CRTM_ROOT}
 RTMEMIS=${RTMFIX}/EmisCoeff/${BYTE_ORDER}/EmisCoeff.bin
 RTMAERO=${RTMFIX}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
 RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
@@ -251,15 +272,15 @@ RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
  cp $BERROR   berror_stats
  cp $SATANGL  satbias_angle
  cp $SATINFO  satinfo
- cp $RTMEMIS  EmisCoeff.bin
- cp $RTMAERO  AerosolCoeff.bin
- cp $RTMCLDS  CloudCoeff.bin
  cp $CONVINFO convinfo
  cp $OZINFO   ozinfo
  cp $PCPINFO  pcpinfo
  cp $OBERROR  errtable
 #
 ## CRTM Spectral and Transmittance coefficients
+ ln -s $RTMEMIS  EmisCoeff.bin
+ ln -s $RTMAERO  AerosolCoeff.bin
+ ln -s $RTMCLDS  CloudCoeff.bin
  nsatsen=`cat satinfo | wc -l`
  isatsen=1
  while [[ $isatsen -le $nsatsen ]]; do
@@ -268,8 +289,8 @@ RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
        satsen=`head -n $isatsen satinfo | tail -1 | cut -f 2 -d" "`
        spccoeff=${satsen}.SpcCoeff.bin
        if  [[ ! -s $spccoeff ]]; then
-          cp $RTMFIX/SpcCoeff/${BYTE_ORDER}/$spccoeff $spccoeff
-          cp $RTMFIX/TauCoeff/${BYTE_ORDER}/${satsen}.TauCoeff.bin ${satsen}.TauCoeff.bin
+          ln -s $RTMFIX/SpcCoeff/${BYTE_ORDER}/$spccoeff $spccoeff
+          ln -s $RTMFIX/TauCoeff/${BYTE_ORDER}/${satsen}.TauCoeff.bin ${satsen}.TauCoeff.bin
        fi
     fi
     isatsen=` expr $isatsen + 1 `
@@ -285,6 +306,8 @@ cp ${FIX_ROOT}/ndas.t06z.satbias.tm03 ./satbias_in
 #
 ##################################################################################
 # Set some parameters for use by the GSI executable and to build the namelist
+echo " Build the namelist "
+
 export JCAP=62
 export LEVS=60
 export JCAP_B=62
@@ -436,6 +459,7 @@ EOF
 ###################################################
 #  run  GSI
 ###################################################
+echo ' Run GSI with' ${bk_core} 'background'
 
 case $ARCH in
    'IBM_LSF')
@@ -462,13 +486,13 @@ fi
 # cp ./satbias_out ${FIX_ROOT}/ndas.t06z.satbias.tm03
 
 # Copy the output to more understandable names
-cp stdout      stdout.anl.${ANAL_TIME}
-cp wrf_inout   wrfanl.${ANAL_TIME}
-ln fort.201    fit_p1.${ANAL_TIME}
-ln fort.202    fit_w1.${ANAL_TIME}
-ln fort.203    fit_t1.${ANAL_TIME}
-ln fort.204    fit_q1.${ANAL_TIME}
-ln fort.207    fit_rad1.${ANAL_TIME}
+ln -s stdout      stdout.anl.${ANAL_TIME}
+ln -s wrf_inout   wrfanl.${ANAL_TIME}
+ln -s fort.201    fit_p1.${ANAL_TIME}
+ln -s fort.202    fit_w1.${ANAL_TIME}
+ln -s fort.203    fit_t1.${ANAL_TIME}
+ln -s fort.204    fit_q1.${ANAL_TIME}
+ln -s fort.207    fit_rad1.${ANAL_TIME}
 
 # Loop over first and last outer loops to generate innovation
 # diagnostic files for indicated observation types (groups)
@@ -512,5 +536,16 @@ esac
       fi
    done
 done
+
+#  Clean working directory to save only important files 
+if [ ${if_clean} = clean ]; then
+  echo ' Clean working directory after GSI run'
+  rm -f *Coeff.bin     # all CRTM coefficient files
+  rm -f pe0*           # diag files on each processor
+  rm -f obs_input.*    # observation middle files
+  rm -f siganl sigf03  # background middle files
+  rm -f xhatsave.*     # some information on each processor
+  rm -f fsize_*        # delete temperal file for bufr size
+fi
 
 exit 0
