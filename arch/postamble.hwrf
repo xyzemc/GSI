@@ -13,6 +13,7 @@ WRF_INCLUDE     =  -I$(WRF_DIR)/frame
 
 WRF_LIB         =    $(WRF_DIR)/frame/module_internal_header_util.o \
                      $(WRF_DIR)/frame/pack_utils.o \
+                     $(WRF_DIR)/frame/module_machine.o \
                      -L$(WRF_DIR)/external/io_int -lwrfio_int \
                      -L$(WRF_DIR)/external/fftpack/fftpack5 -lfftpack \
                      -L$(WRF_DIR)/external/io_netcdf -lwrfio_nf \
