@@ -443,7 +443,6 @@ cat << EOF > gsiparm.anl
    l_hyb_ens=.false.,
  /
  &RAPIDREFRESH_CLDSURF
-   l_cloud_analysis=.false.,
  /
  &CHEM
  /
