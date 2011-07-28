@@ -307,6 +307,7 @@ LIBsys          = $(MYLIBsys)
 	read_prepbufr.o \
 	read_radar.o \
         read_RadarRef_mosaic.o \
+        read_satwnd.o  \
 	read_seviri.o \
 	read_ssmi.o \
 	read_ssmis.o \
