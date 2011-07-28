@@ -5,9 +5,8 @@ include ../../../configure.gsi
 LIB=../../../lib/libbacio.a
 
 INC=clib4.h
-## CFLAGS= -O3 -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long' 
 
-$(LIB):	$(LIB)( bacio.v1.4.o baciof.o bafrio.o )
+$(LIB):	$(LIB)(bacio.v1.4.o baciof.o bafrio.o)
 
 $(LIB)(bacio.v1.4.o):       bacio.v1.4.c $(INC)
 	ln -fs $(INC) clib.h
@@ -22,5 +21,9 @@ $(LIB)(bafrio.o):   bafrio.f
 	$(FC) -c $(FFLAGS_BACIO) bafrio.f
 	$(AR) -rv $(ARFLAGS_BACIO) $(LIB) bafrio.o 
 
+dust:
+	$(RM) baciof.o bafrio.o clib.h bacio.v1.4.o
+
 clean:
 	$(RM) baciof.o bafrio.o clib.h $(LIB) bacio.v1.4.o bacio_module.mod
+
