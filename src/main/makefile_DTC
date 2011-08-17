@@ -121,6 +121,7 @@ LIBsys          = $(MYLIBsys)
         crtm_interface.o \
         cvsection.o \
         deter_nst.o \
+        deter_sfc_mod.o \
 	dtast.o \
 	egrid2agrid_mod.o \
         enorm_state.o \
