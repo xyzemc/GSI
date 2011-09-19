@@ -31,7 +31,7 @@ FFLAGS_W3      =  $(FFLAGS) $(FFLAGS_i4r8)
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -DWRF -DIBM4 -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DIBM4 -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
 
 DM_FC          =  mpxlf_r  
 DM_F90         =  mpxlf90_r  -qfree
@@ -80,7 +80,7 @@ FFLAGS_W3      =  $(FFLAGS) $(FFLAGS_i4r8)
 INC_FLAGS_W3   =  -module ../sigio
 # 
 CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -DWRF -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
 
 DM_FC          =  mpxlf_r  
 DM_F90         =  mpxlf90_r  -qfree
@@ -132,7 +132,7 @@ FFLAGS_W3      =  $(FFLAGS) $(FFLAGS_i4r8)
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -DWRF -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
 
 DM_FC          =  mpxlf_r  -q32 
 DM_F90         =  mpxlf90_r  -qfree -q32
@@ -184,7 +184,7 @@ FFLAGS_W3      =  $(FFLAGS) $(FFLAGS_i4r8)
 INC_FLAGS_W3   =  -module ../sigio
 # 
 CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -DWRF -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
 
 DM_FC          =  mpxlf_r  -q32
 DM_F90         =  mpxlf90_r  -qfree  -q32
@@ -234,7 +234,7 @@ FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  /lib/cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -DWRF -DLINUX -DPGI
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX -DPGI
 CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
 
 DM_FC          =  mpif90 -f90=pgf90
@@ -285,7 +285,7 @@ FFLAGS_W3      =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  /lib/cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -DWRF -DLINUX -DPGI
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX -DPGI
 CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
 
 DM_FC          =  mpif90 -f90=pgf90
@@ -336,7 +336,7 @@ FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  /lib/cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -DWRF -DLINUX -DPGI
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX -DPGI
 CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
 
 DM_FC          =  mpif90 -f90=pgf90
@@ -388,7 +388,7 @@ FFLAGS_W3      =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  /lib/cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -DWRF -DLINUX -DPGI
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX -DPGI
 CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
 
 DM_FC          =  mpif90 -f90=pgf90
@@ -439,7 +439,7 @@ FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  /lib/cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -DWRF -DLINUX 
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX 
 CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
 
 DM_FC          =  ifort
@@ -490,7 +490,7 @@ FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  /lib/cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -DWRF -DLINUX 
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX 
 CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
 
 DM_FC          =  ifort
@@ -541,7 +541,7 @@ FFLAGS_W3      =  -O0 -g $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  /lib/cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -DWRF -DLINUX 
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX 
 CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
 
 DM_FC          =  ifort
@@ -630,7 +630,7 @@ FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  /lib/cpp
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -DWRF -DLINUX 
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER)  -D_REAL8_ -DWRF -DLINUX 
 # CPP_F90FLAGS =  -traditional-cpp -lang-fortran
 
 DM_FC          =  ifort
@@ -680,7 +680,7 @@ FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  cpp
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -DWRF -DLINUX -DPGI
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX -DPGI
 # CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
 
 DM_FC          =  mpif90 -f90=pgf90
