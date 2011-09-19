@@ -85,8 +85,8 @@ LIBsys          = $(MYLIBsys)
 	balmod.o \
 	berror.o \
         bias_predictors.o \
-        bicg.o \
-        bicglanczos.o \
+        bicg.o  \
+        bicglanczos.o  \
 	bkerror.o \
 	bkgcov.o \
 	bkgvar.o \
@@ -103,6 +103,7 @@ LIBsys          = $(MYLIBsys)
         chemmod.o \
         clw_mod.o \
         cmaq_routines.o \
+        co_mop_ak.o  \
         coinfo.o \
 	combine_radobs.o \
 	compact_diffs.o \
@@ -116,7 +117,6 @@ LIBsys          = $(MYLIBsys)
 	converr.o \
 	convinfo.o \
 	convthin.o \
-        co_mop_ak.o \
         crtm_cloud.o \
         crtm_interface.o \
         cvsection.o \
@@ -145,6 +145,7 @@ LIBsys          = $(MYLIBsys)
 	get_derivatives.o \
 	get_derivatives2.o \
         get_gefs_ensperts_dualres.o \
+        get_gefs_for_regional.o  \
 	get_semimp_mats.o \
 	getprs.o \
 	getsiga.o \
@@ -204,7 +205,7 @@ LIBsys          = $(MYLIBsys)
 	intw.o \
 	jcmod.o \
 	jfunc.o \
-        jgrad.o \
+        jgrad.o  \
 	kinds.o \
         lag_fields.o \
         lag_interp.o \
@@ -308,14 +309,14 @@ LIBsys          = $(MYLIBsys)
 	read_prepbufr.o \
 	read_radar.o \
         read_RadarRef_mosaic.o \
-        read_satwnd.o  \
+        read_satwnd.o \
 	read_seviri.o \
 	read_ssmi.o \
 	read_ssmis.o \
 	read_superwinds.o \
 	read_tcps.o \
 	read_wrf_mass_files.o \
-	read_wrf_mass_guess.o \
+        read_wrf_mass_guess.o  \
 	read_wrf_nmm_files.o \
 	read_wrf_nmm_guess.o \
 	regional_io.o \
@@ -324,6 +325,8 @@ LIBsys          = $(MYLIBsys)
 	rsearch.o \
         rtlnmc_version3.o \
 	satthin.o \
+        set_crtm_aerosolmod.o \
+        set_crtm_cloudmod.o \
         setupbend.o \
         setupco.o \
 	setupdw.o \
@@ -459,6 +462,7 @@ include Makefile.dependency
 	$(RM) $*.b
 	$(F90) $(FFLAGS) -c $*.f90
 	$(RM) $*.f90
+
 
 clean:
 	$(RM) -f *.o *.exe $(LIB)
