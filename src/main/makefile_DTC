@@ -101,6 +101,7 @@ LIBsys          = $(MYLIBsys)
 	calctends_no_ad.o \
 	calctends_no_tl.o \
 	chemmod.o \
+        cloud_efr.o \
 	clw_mod.o \
 	cmaq_routines.o \
         co_mop_ak.o  \
@@ -117,9 +118,9 @@ LIBsys          = $(MYLIBsys)
 	converr.o \
 	convinfo.o \
 	convthin.o \
-	crtm_cloud.o \
 	crtm_interface.o \
 	cvsection.o \
+        cwhydromod.o \
 	deter_nst.o \
 	deter_sfc_mod.o \
 	dtast.o \
@@ -414,7 +415,6 @@ LIBsys          = $(MYLIBsys)
 	sub2grid.o \
 	support_2dvar.o \
 	stub_set_crtm_aerosol.o \
-        stub_set_crtm_cloud.o \
         stub_pertmod.o \
         stub_timermod.o \
 	tendsmod.o \
