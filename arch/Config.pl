@@ -186,82 +186,13 @@ if ( $iflinux  )
         printf " required \nwhen building with Intel ifort. The library path variable ";
         printf "\$LAPACK_PATH has not \nbeen set. Typically the required path is ";
         printf " something like; \n"; 
-        printf "     .../intel/mkl72/lib/em64t on NCAR systems or \n";
-        printf "     given by the path variable \$MKL on NOAA systems. \n";
+        printf "     .../intel/mkl72/lib/em64t or on Jet the \n";
+        printf "     the path is given by the variable \$MKL. \n";
         printf "Please set the path, and rerun the configure script. \n";
         printf "Configuration unsuccessful. \n" ;
         printf "----------------------------------------------------------";
         printf "--------------\n" ;
         die;
-      }
-      else
-      { 
-         # is LAPACK_PATH set to a valid directory? If so, check that the two
-         # libraries libmkl_lapack.a and libmkl_em64t.a exist there.
-         if( -x $LAPACK_PATH )
-         {
-            unless ( -e $LAPACK_PATH . "/libmkl_lapack.so" || -e $LAPACK_PATH . "/libmkl_lapack.a" ) {
-              printf "The LAPACK library libmkl_lapack was not found in ";
-              printf "the directory \$LAPACK_PATH. \n";
-              printf "Check the contents of the path for the lapack library \n";
-              printf "Please reset the path if it is not correct and rerun the configure\n";
-              printf "script. If the path is correct, your version of the libraries \n";
-              printf "may be differently named. Edit the variable MYLIBsys in \n";
-              printf "configure.gsi to reflect the correct names. \n";
-              printf "Configuration unsuccessful. \n" ;
-              printf "----------------------------------------------------------";
-              printf "--------------\n" ;
-            }
-            unless ( -e $LAPACK_PATH . "/libmkl_intel_lp64.a" ) {
-              printf "The LAPACK library libmkl_intel_lp64 was not found in ";
-              printf "the directory \$LAPACK_PATH. \n";
-              printf "Check the contents of the path for the library \n";
-              printf "Please reset the path if it is not correct and rerun the configure\n";
-              printf "script. If the path is correct, your version of the libraries \n";
-              printf "may be differently named. Edit the variable MYLIBsys in \n";
-              printf "configure.gsi to reflect the correct names. \n";
-              printf "Configuration unsuccessful. \n" ;
-              printf "----------------------------------------------------------";
-              printf "--------------\n" ;
-            }
-            unless ( -e $LAPACK_PATH . "/libmkl_core.a" ) {
-              printf "The LAPACK library libmkl_core was not found in ";
-              printf "the directory \$LAPACK_PATH. \n";
-              printf "Check the contents of the path for the library \n";
-              printf "Please reset the path if it is not correct and rerun the configure\n";
-              printf "script. If the path is correct, your version of the libraries \n";
-              printf "may be differently named. Edit the variable MYLIBsys in \n";
-              printf "configure.gsi to reflect the correct names. \n";
-              printf "Configuration unsuccessful. \n" ;
-              printf "----------------------------------------------------------";
-              printf "--------------\n" ;
-            }
-            unless ( -e $LAPACK_PATH . "/libmkl_intel_thread.a" ) {
-              printf "The LAPACK library libmkl_intel_thread was not found in ";
-              printf "the directory \$LAPACK_PATH. \n";
-              printf "Check the contents of the path for the library \n";
-              printf "Please reset the path if it is not correct and rerun the configure\n";
-              printf "script. If the path is correct, your version of the libraries \n";
-              printf "may be differently named. Edit the variable MYLIBsys in \n";
-              printf "configure.gsi to reflect the correct names. \n";
-              printf "Configuration unsuccessful. \n" ;
-              printf "----------------------------------------------------------";
-              printf "--------------\n" ;
-            }
-         }
-         else
-         {
-           printf "The library path variable \$LAPACK_PATH is not set to a";
-           printf " valid path. The \ncurrent path does not exist. ";
-           printf "Typically the path is something like; \n"; 
-           printf "     .../intel/mkl72/lib/em64t on NCAR systems or \n";
-           printf "     .../intel/mkl/8.1.1/lib/em64t on NOAA systems. \n";
-           printf "Please reset the path, and rerun the configure script. \n";
-           printf "Configuration unsuccessful. \n" ;
-           printf "----------------------------------------------------------";
-           printf "--------------\n" ;
-           die;
-         }
       }
    }
 }

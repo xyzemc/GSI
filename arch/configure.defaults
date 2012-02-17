@@ -406,7 +406,7 @@ MYLIBsys       =  -llapack -lblas
 NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
 
 ###########################################################
-#ARCH	Linux i486 i586 i686, Intel compiler	# (dmpar,optimize)
+#ARCH	Linux i486 i586 i686, Intel compiler (ifort & icc)	# (dmpar,optimize)
 #
 LDFLAGS        =  -Wl,-noinhibit-exec -ftz
 
@@ -417,9 +417,9 @@ SFC            =  ifort
 SF90           =  ifort -free
 SCC            =  icc
 INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR)
-FFLAGS_i4r4    =  -i4 -r4
-FFLAGS_i4r8    =  -i4 -r8
-FFLAGS_DEFAULT =  -xW -fp-model precise -assume byterecl -fpe0 -ftz
+FFLAGS_i4r4    =  -integer-size 32 -real-size 32
+FFLAGS_i4r8    =  -integer-size 32 -real-size 64
+FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -ftz
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
 FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
@@ -457,7 +457,57 @@ MYLIBsys       = -L$(LAPACK_PATH) -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core
 NETCDF_PATH    = 
 
 ###########################################################
-#ARCH	Linux x86_64, Intel compiler	# (dmpar,optimize)
+#ARCH	Linux x86_64, Intel/gnu compiler (ifort & gcc)	# (dmpar,optimize)
+#
+LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib
+
+COREDIR        =  CONFIGURE_CORE_PATH
+INC_DIR        =  $(COREDIR)/include
+BYTE_ORDER     =  LITTLE_ENDIAN
+SFC            =  ifort
+SF90           =  ifort -free
+SCC            =  gcc
+INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR)
+FFLAGS_i4r4    =  -integer-size 32 -real-size 32
+FFLAGS_i4r8    =  -integer-size 32 -real-size 64
+FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -ftz
+FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
+# Library build flags
+FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
+ARFLAGS_BACIO  =
+FFLAGS_BUFR    =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+CFLAGS_BUFR    =  -O3 -DUNDERSCORE
+FFLAGS_CLOUD   =  -O3 $(FFLAGS_DEFAULT)
+FFLAGS_CRTM    =  -O2 $(FFLAGS_DEFAULT)
+LFLAGS_CRTM    =  
+FFLAGS_GFSIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+ARFLAGS_GFSIO  =
+FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+ARFLAGS_SIGIO  =
+FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8) 
+INC_FLAGS_W3   =  -module ../sigio
+#
+CPP            =  /lib/cpp 
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX 
+CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
+
+DM_FC          =  ifort
+DM_F90         =  mpif90 -free
+DM_CC          =  cc
+
+FC             =  CONFIGURE_FC
+F90            =  CONFIGURE_F90
+CC             =  CONFIGURE_CC
+
+CFLAGS         =  -O0 -DLINUX -DUNDERSCORE
+CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
+
+MYLIBsys       =  -L$(LAPACK_PATH) -mkl=sequential
+NETCDF_PATH    =  
+###########################################################
+#ARCH	Linux x86_64, Intel compiler (ifort & icc)	# (dmpar,optimize)
 #
 LDFLAGS        =  -Wl,-noinhibit-exec -ftz
 
@@ -468,9 +518,9 @@ SFC            =  ifort
 SF90           =  ifort -free
 SCC            =  icc
 INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR)
-FFLAGS_i4r4    =  -i4 -r4
-FFLAGS_i4r8    =  -i4 -r8
-FFLAGS_DEFAULT =  -xW -fp-model precise -assume byterecl -fpe0 -ftz
+FFLAGS_i4r4    =  -integer-size 32 -real-size 32
+FFLAGS_i4r8    =  -integer-size 32 -real-size 64
+FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -ftz
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
 FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
@@ -508,7 +558,7 @@ MYLIBsys       =  -L$(LAPACK_PATH) -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_cor
 NETCDF_PATH    = 
 
 ###########################################################
-#ARCH	Linux x86_64, Intel compiler	# (dmpar,debug)
+#ARCH	Linux x86_64, Intel compiler (ifort & icc)	# (dmpar,debug)
 #
 LDFLAGS         =     -Wl,-noinhibit-exec  -ftz
 
@@ -519,8 +569,8 @@ SFC=ifort
 SF90=ifort -free
 SCC=icc
 INC_FLAGS = -module $(INC_DIR) -I $(INC_DIR)
-FFLAGS_i4r4    =  -i4 -r4
-FFLAGS_i4r8    =  -i4 -r8
+FFLAGS_i4r4    =  -integer-size 32 -real-size 32
+FFLAGS_i4r8    =  -integer-size 32 -real-size 64
 FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -traceback -check bounds -warn errors -free -fpstkchk -mp -ftz
 FFLAGS         =  -O0 -g $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
@@ -608,8 +658,8 @@ SFC            =  ifort
 SF90           =  ifort -free
 SCC            =  icc
 INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR)
-FFLAGS_i4r4    =  -i4 -r4
-FFLAGS_i4r8    =  -i4 -r8
+FFLAGS_i4r4    =  -integer-size 32 -real-size 32
+FFLAGS_i4r8    =  -integer-size 32 -real-size 64
 FFLAGS_DEFAULT =  -g -C -fp-model precise -assume byterecl -fpe0 -ftz -traceback
 FFLAGS         =  -O3 -ftz $(FFLAGS_DEFAULT)-align all -fno-alias $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
