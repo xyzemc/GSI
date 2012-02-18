@@ -201,7 +201,7 @@ MYLIBsys       = -lessl_r -lmass -bdatapsize:64K -bstackpsize:64K
 NETCDF_PATH    = 
 
 ###########################################################
-#ARCH	Linux i486 i586 i686, PGI compiler # distributed memory parallel (dmpar,optimized)
+#ARCH	Linux i486 i586 i686, PGI compilers (pgf90 & pgcc) # distributed memory parallel (dmpar,optimized)
 #
 LDFLAGS        =  -Wl,-noinhibit-exec 
 
@@ -252,7 +252,7 @@ MYLIBsys       =  -llapack -lblas
 NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
 
 ###########################################################
-#ARCH	Linux i486 i586 i686, PGI compiler # distributed memory parallel (dmpar,debug)
+#ARCH	Linux i486 i586 i686, PGI compilers (pgf90 & pgcc) # distributed memory parallel (dmpar,debug)
 #
 LDFLAGS        = -Wl,-noinhibit-exec 
 
@@ -303,7 +303,7 @@ MYLIBsys       =  -llapack -lblas
 NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
 
 ###########################################################
-#ARCH	Linux x86_64, PGI compiler # distributed memory parallel (dmpar,optimize)
+#ARCH	Linux x86_64, PGI compilers (pgf90 & pgcc) # distributed memory parallel (dmpar,optimize)
 #
 LDFLAGS        =  -Wl,-noinhibit-exec 
 
@@ -355,7 +355,7 @@ MYLIBsys       =  -llapack -lblas
 NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
 
 ###########################################################
-#ARCH	Linux x86_64, PGI compiler # distributed memory parallel (dmpar,debug)
+#ARCH	Linux x86_64, PGI compilers (pgf90 & pgcc) # distributed memory parallel (dmpar,debug)
 #
 LDFLAGS        =  -Wl,-noinhibit-exec 
 
@@ -560,15 +560,15 @@ NETCDF_PATH    =
 ###########################################################
 #ARCH	Linux x86_64, Intel compiler (ifort & icc)	# (dmpar,debug)
 #
-LDFLAGS         =     -Wl,-noinhibit-exec  -ftz
+LDFLAGS        = -Wl,-noinhibit-exec  -ftz
 
-COREDIR = CONFIGURE_CORE_PATH
-INC_DIR = $(COREDIR)/include
-BYTE_ORDER=LITTLE_ENDIAN
-SFC=ifort
-SF90=ifort -free
-SCC=icc
-INC_FLAGS = -module $(INC_DIR) -I $(INC_DIR)
+COREDIR        =  CONFIGURE_CORE_PATH
+INC_DIR        =  $(COREDIR)/include
+BYTE_ORDER     =  LITTLE_ENDIAN
+SFC            =  ifort
+SF90           =  ifort -free
+SCC            =  icc
+INC_FLAGS      = -module $(INC_DIR) -I $(INC_DIR)
 FFLAGS_i4r4    =  -integer-size 32 -real-size 32
 FFLAGS_i4r8    =  -integer-size 32 -real-size 64
 FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -traceback -check bounds -warn errors -free -fpstkchk -mp -ftz
