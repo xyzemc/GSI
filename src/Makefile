@@ -4,11 +4,9 @@ SUBDIRS = libs
 
 all: $(SUBDIRS)
 	@for dir in $(SUBDIRS); do \
-           ( cd $$dir; echo "Making $@ in `pwd`" ; \
-                make CPP="$(CPP)" SED_FTN="$(SED_FTN)" AFLAGS="$(AFLAGS)" );  \
+           ( cd $$dir; echo "Making $@ in `pwd`" ; make ) ; \
         done
-	( cd main; echo "Making $@ in `pwd`" ; \
-                make -f makefile_DTC CPP="$(CPP)" SED_FTN="$(SED_FTN)" AFLAGS="$(AFLAGS)" ); 
+	( cd main; echo "Making $@ in `pwd`" ; make -f makefile_DTC ) ;
 
 clean: $(SUBDIRS) clean_main
 	@for dir in $(SUBDIRS); do \
