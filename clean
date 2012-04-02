@@ -18,6 +18,8 @@ if ( "$1" == '-a' ) then
 	if ( -e configure.gsi ) then
 		/bin/cp configure.gsi configure.gsi.backup
 		/bin/rm -f configure.gsi
+                /bin/rm -rf ./include
+                /bin/rm -rf ./lib
 	endif
 #	The nuclear option
 	find . -name \*.exe -exec \rm {} \; 
