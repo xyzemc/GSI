@@ -7,7 +7,6 @@ RM		=  /bin/rm -f
 CP		=  /bin/cp
 AR		=  ar 
 MKDIR           =  /bin/mkdir -p
-CPP             =  cpp
 
 WRF_INCLUDE     =  -I$(WRF_DIR)/frame
 
@@ -28,7 +27,7 @@ SED_FTN         =  $(WRF_DIR)/tools/standard.exe
 
 
 .IGNORE:
-.SUFFIXES: .c .f .F .F90 .f90 .o
+.SUFFIXES: .c .f .F .F90 .f90 .o .fpp
 
 #	There is probably no reason to modify these rules
 
@@ -39,6 +38,12 @@ SED_FTN         =  $(WRF_DIR)/tools/standard.exe
 .f.o:
 	$(RM) $@ $*.mod
 	$(FC) $(FFLAGS) -c $< 
+
+.fpp.o:
+	$(RM) $@ $*.mod $*.f
+	$(CPP) $(CPP_FLAGS) $< > $*.f
+	$(FC) $(FFLAGS) -c $*.f 
+	$(RM) $*.f
 
 .F.o:
 	$(RM) $@ $*.mod

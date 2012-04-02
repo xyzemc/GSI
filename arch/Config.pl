@@ -4,7 +4,7 @@
 # 
 # Be sure to run as ./configure (to avoid getting a system configure command by mistake)
 #
-
+select((select(STDOUT), $|=1)[0]);
 $sw_netcdf_path = "" ;
 $sw_wrf_path = "" ;
 $sw_core_path = "" ;
