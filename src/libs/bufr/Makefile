@@ -44,11 +44,16 @@ bufrlib.prm: bufrlib.PRM
 	$(CPP) $(CPP_FLAGS) bufrlib.PRM bufrlib.prm
 
 .SUFFIXES :
-.SUFFIXES : .F .f .a .c .o
+.SUFFIXES : .F .f .a .c .o .fpp
 
 .F.o:
 	$(SED_FTN) $*.F > $*.b 
-	$(CPP) $(CPP_FLAGS) $(CPP_F90FLAGS) $*.b  > $*.f
+	$(CPP) $(CPP_FLAGS) $*.b  > $*.f
+	$(SFC) -c $(FFLAGS_BUFR) $*.f
+	$(RM) $*.f $*.b
+
+.fpp.o:
+	$(CPP) $(CPP_FLAGS) $*.fpp  > $*.f
 	$(SFC) -c $(FFLAGS_BUFR) $*.f
 	$(RM) $*.f $*.b
 
