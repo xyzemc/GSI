@@ -53,7 +53,8 @@ bufrlib.prm: bufrlib.PRM
 	$(RM) $*.f $*.b
 
 .fpp.o:
-	$(CPP) $(CPP_FLAGS) $*.fpp  > $*.f
+	$(SED_FTN) $*.fpp > $*.b 
+	$(CPP) $(CPP_FLAGS) $(CPP_F90FLAGS)  $*.b  > $*.f
 	$(SFC) -c $(FFLAGS_BUFR) $*.f
 	$(RM) $*.f $*.b
 
