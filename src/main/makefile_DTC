@@ -126,7 +126,6 @@ LIBsys          = $(MYLIBsys)
 	dtast.o \
 	egrid2agrid_mod.o \
 	enorm_state.o \
-	ensctl2state.o \
 	evaljgrad.o \
 	evaljcdfi.o \
 	evaljo.o \
@@ -136,11 +135,9 @@ LIBsys          = $(MYLIBsys)
 	fill_nmm_grid2.o \
 	fpvsx_ad.o \
 	general_read_gfsatm.o \
-	general_read_nmmb.o \
 	general_specmod.o \
 	general_spectral_transforms.o \
 	general_sub2grid_mod.o \
-	general_tll2xy_mod.o \
 	general_transform.o \
 	gengrid_vars.o \
 	genqsat.o \
@@ -150,10 +147,7 @@ LIBsys          = $(MYLIBsys)
 	get_derivatives2.o \
 	get_gefs_ensperts_dualres.o \
 	get_gefs_for_regional.o \
-	get_nmmb_ensperts.o \
-	get_pseudo_ensperts.o \
 	get_semimp_mats.o \
-	get_wrf_nmm_ensperts.o \
 	getprs.o \
 	getsiga.o \
 	get_wrf_mass_ensperts_netcdf.o \
@@ -191,9 +185,13 @@ LIBsys          = $(MYLIBsys)
 	intdw.o \
 	intgps.o \
 	intgust.o \
-	intjcmod.o \
+	intjcpdry.o \
 	intjo.o \
 	intlag.o \
+	intlimq.o \
+	intlimv.o \
+	intlimp.o \
+	intlimg.o \
 	intoz.o \
 	intpblh.o \
 	intpcp.o \
@@ -373,7 +371,6 @@ LIBsys          = $(MYLIBsys)
 	sqrtmin.o \
 	sst_retrieval.o \
 	state2control.o \
-	state2ensctl.o \
 	state_vectors.o \
 	statsco.o \
 	statsconv.o \
@@ -387,8 +384,12 @@ LIBsys          = $(MYLIBsys)
 	stpdw.o \
 	stpgps.o \
 	stpgust.o \
-	stpjcmod.o \
+	stpjcpdry.o \
 	stpjo.o \
+	stplimp.o \
+	stplimv.o \
+	stplimg.o \
+	stplimq.o \
 	stpoz.o \
 	stppblh.o \
 	stppcp.o \

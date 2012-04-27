@@ -17,9 +17,6 @@ module mod_nmmb_to_a
 ! program history log:
 !   2009-08-06  lueken - added module doc block
 !   2010-09-10  parrish, add more extensive description, and add routine nmmb_h_to_a8
-!   2012-02-08  parrish - add public variables ratio_x, ratio_y, for use in gridmod.F90 for bug fix
-!                            in definition of region_dx, region_dy.
-!   2012-02-08  parrish - remove use of izero, ione
 !
 ! subroutines included:
 !   sub init_nmmb_to_a
@@ -41,12 +38,11 @@ module mod_nmmb_to_a
 
   private
   public init_nmmb_to_a,nmmb_h_to_a,nmmb_h_to_a8,nmmb_v_to_a,nmmb_a_to_h,nmmb_a_to_v
-  public nxa,nya,ratio_x,ratio_y
+  public nxa,nya
 
   integer(i_kind) nxa,nya,nxb,nyb
   real(r_kind),allocatable,dimension(:)::xbh_a,xbh_b,xbv_a,xbv_b,xa_a,xa_b
   real(r_kind),allocatable,dimension(:)::ybh_a,ybh_b,ybv_a,ybv_b,ya_a,ya_b
-  real(r_kind) ratio_x,ratio_y
 
 contains
 
@@ -78,7 +74,7 @@ subroutine init_nmmb_to_a(nmmb_reference_grid,grid_ratio_nmmb,nxb_in,nyb_in)
 
 !   initialize constants required to interpolate back and forth between nmmb grid and analysis grid
 
-  use constants, only: half,one,two
+  use constants, only:ione, half,one,two
   implicit none
 
   character(1)   , intent(in   ) :: nmmb_reference_grid   ! ='H': use nmmb H grid as reference for analysis grid
@@ -86,6 +82,7 @@ subroutine init_nmmb_to_a(nmmb_reference_grid,grid_ratio_nmmb,nxb_in,nyb_in)
   real(r_kind)   , intent(in   ) :: grid_ratio_nmmb       ! analysis grid increment in nmmb grid units
   integer(i_kind), intent(in   ) :: nxb_in,nyb_in         ! x and y dimensions of nmmb grid.
 
+  real(r_kind) ratio_x,ratio_y
   integer(i_kind) i,j
 
   nxb=nxb_in
@@ -94,11 +91,11 @@ subroutine init_nmmb_to_a(nmmb_reference_grid,grid_ratio_nmmb,nxb_in,nyb_in)
 !--------------------------obtain analysis grid dimensions nxa,nxb
 
   if(nmmb_reference_grid=='H') then
-     nxa=1+nint((nxb-one)/grid_ratio_nmmb)
-     nya=1+nint((nyb-one)/grid_ratio_nmmb)
+     nxa=ione+nint((nxb-one)/grid_ratio_nmmb)
+     nya=ione+nint((nyb-one)/grid_ratio_nmmb)
   else if(nmmb_reference_grid=='V') then
-     nxa=1+nint((nxb-two)/grid_ratio_nmmb)
-     nya=1+nint((nyb-two)/grid_ratio_nmmb)
+     nxa=ione+nint((nxb-two)/grid_ratio_nmmb)
+     nya=ione+nint((nyb-two)/grid_ratio_nmmb)
   end if
 
 !--------------------compute all combinations of relative coordinates
@@ -266,6 +263,7 @@ subroutine nmmb_v_to_a(vb,va)
 !$$$ end documentation block
 
   use kinds, only: r_single
+  use constants, only: ione
   implicit none
 
   real(r_single),intent(in   ) :: vb(nxb,nyb)
@@ -277,9 +275,9 @@ subroutine nmmb_v_to_a(vb,va)
 !                  input variable on v grid is zero on north and east boundaries,
 !                  so replace with values of adjacent interior points.
   do j=1,nxb
-     jj=min(j,nxb-1)
+     jj=min(j,nxb-ione)
      do i=1,nyb
-        ii=min(i,nyb-1)
+        ii=min(i,nyb-ione)
         bv(i,j)=vb(jj,ii)
      end do
   end do
@@ -354,7 +352,7 @@ subroutine nmmb_a_to_v(va,vb)
 !$$$ end documentation block
 
   use kinds, only: r_single
-  use constants, only: zero
+  use constants, only: ione,zero
   implicit none
 
   real(r_kind)  ,intent(in   ) :: va(nya,nxa)
@@ -375,7 +373,7 @@ subroutine nmmb_a_to_v(va,vb)
   do i=1,nyb
      vb(nxb,i)=zero
   end do
-  do j=1,nxb-1
+  do j=1,nxb-ione
      vb(j,nyb)=zero
   end do
 
@@ -415,7 +413,7 @@ subroutine b_to_a_interpolate(b,a,mb,nb,ma,na,xb,yb,xa,ya)
 
 !   NOTE:  xa is in xb units, ya is in yb units
 
-  use constants, only: zero,one
+  use constants, only: ione,zero,one
   implicit none
 
   integer(i_kind),intent(in   ) :: mb,nb,ma,na
@@ -429,21 +427,21 @@ subroutine b_to_a_interpolate(b,a,mb,nb,ma,na,xb,yb,xa,ya)
 
   do j=1,ma
      gxa=xa(j)
-     call grdcrd(gxa,1,xb,mb,1)
+     call grdcrd(gxa,ione,xb,mb,ione)
      jxa(j)=int(gxa)
-     jxa(j)=min(max(1,jxa(j)),mb)
+     jxa(j)=min(max(ione,jxa(j)),mb)
      dx(j)=max(zero,min(one,gxa-jxa(j)))
      dx1(j)=one-dx(j)
-     jxap(j)=min(mb,jxa(j)+1)
+     jxap(j)=min(mb,jxa(j)+ione)
   end do
   do i=1,na
      gya=ya(i)
-     call grdcrd(gya,1,yb,nb,1)
+     call grdcrd(gya,ione,yb,nb,ione)
      iya(i)=int(gya)
-     iya(i)=min(max(1,iya(i)),nb)
+     iya(i)=min(max(ione,iya(i)),nb)
      dy(i)=max(zero,min(one,gya-iya(i)))
      dy1(i)=one-dy(i)
-     iyap(i)=min(nb,iya(i)+1)
+     iyap(i)=min(nb,iya(i)+ione)
   end do
 
   do j=1,ma

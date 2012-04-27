@@ -19,8 +19,6 @@ subroutine strong_baldiag_inc(sval,nsval)
 !   2011-06-07  guo      - fixed the dimension of argument sval and added nsval
 !   2011-07-03  todling  - avoid explicit reference to internal bundle arrays
 !   2011-11-01  eliu     - add handling for ql and qi increments 
-!   2012-02-08  kleist   - add uvflag=.true. to call to strong_bal_correction
-!   2012-02-08  parrish  - remove use of izero
 !
 !   input argument list:
 !     sval    - current solution in state space
@@ -45,7 +43,7 @@ subroutine strong_baldiag_inc(sval,nsval)
   use gsi_bundlemod, only: gsi_bundlegetpointer
   use gsi_bundlemod, only: assignment(=)
   use gsi_metguess_mod,  only: gsi_metguess_get
-  use constants, only: zero
+  use constants, only: izero,zero
   implicit none
 
 ! Declare passed variables
@@ -146,12 +144,12 @@ subroutine strong_baldiag_inc(sval,nsval)
           mype, nnnn1o,          &
           dhat_dt_u,dhat_dt_v ,dhat_dt_t,dhat_dt_p3d, &
           dhat_dt_q,dhat_dt_oz,dhat_dt_cw,p_p3d)
-        if(nvmodes_keep>0) then
+        if(nvmodes_keep>izero) then
            fullfield=.false.
            call strong_bal_correction(dhat_dt_u,dhat_dt_v,dhat_dt_t,dhat_dt_p3d,&
                        mype,p_u,p_v,&
                             p_t,p_ps,&
-                      .true.,fullfield,.false.,.true.)
+                      .true.,fullfield,.false.)
         end if
      else
         call gsi_bundlegetpointer(sval(ii),'ql', p_ql, istatus)
@@ -163,12 +161,12 @@ subroutine strong_baldiag_inc(sval,nsval)
           dhat_dt_u,dhat_dt_v ,dhat_dt_t,dhat_dt_p3d, &
           dhat_dt_q,dhat_dt_oz,dhat_dt_ql,p_p3d)    ! eliu: for now, just use dhat_dt_ql to hold time tendency terms for cw
                                                     !       since it is calculated but not used 
-        if(nvmodes_keep>0) then
+        if(nvmodes_keep>izero) then
            fullfield=.false.
            call strong_bal_correction(dhat_dt_u,dhat_dt_v,dhat_dt_t,dhat_dt_p3d,&
                        mype,p_u,p_v,&
                             p_t,p_ps,&
-                      .true.,fullfield,.false.,.true.)
+                      .true.,fullfield,.false.)
         end if
 
      endif ! icw=0

@@ -1457,6 +1457,7 @@ if [[ "$rc" != "0" ]]; then
    exit
 fi
 
+mkdir $noscrub/tmp${global_3d4dvar}
 mkdir $control_global_3d4dvar_T622
 cp -rp stdout $control_global_3d4dvar_T622
 cp -rp fort.220 $control_global_3d4dvar_T622

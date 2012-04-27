@@ -1058,6 +1058,7 @@ if [[ "$rc" != "0" ]]; then
    exit
 fi
 
+mkdir $noscrub/tmpreg_${nems_nmmb}
 mkdir $control_nems_nmmb2
 cp -rp stdout $control_nems_nmmb2
 cp -rp fort.220 $control_nems_nmmb2

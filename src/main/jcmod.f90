@@ -14,7 +14,6 @@ module jcmod
 !   2005-11-21  kleist, remove tendency arrays
 !   2006-04-06  kleist, expand and redefine Jc term for two formulations
 !   2007-10-18  tremolet - added Jc DFI option
-!   2012-02-08  kleist - add parameter ljc4tlevs 
 !
 ! subroutines included:
 !   sub init_jcvars          - initialize Jc related variables
@@ -22,7 +21,6 @@ module jcmod
 ! Variable Definitions:
 !   def ljcdfi               - if true, use digital filter Jc
 !   def alphajc              - multiplying factor for Jc DFI
-!   def ljc4tlevs            - if true, apply jc (limq, pdry) over all time levels if in 4D mode
 !
 !   The z_* arrays are used to accumulate information from previous outer loops regarding
 !      congributions to the Jc term
@@ -43,9 +41,8 @@ module jcmod
   public :: init_jcvars
 ! set passed variables to public
   public :: ljcdfi,alphajc,wgtdfi,bamp_jcpdry,ljcpdry,eps_eer
-  public :: ljc4tlevs
 
-  logical ljcdfi,ljcpdry,ljc4tlevs
+  logical ljcdfi,ljcpdry
   real(r_kind) alphajc,bamp_jcpdry,eps_eer
   real(r_kind),allocatable :: wgtdfi(:)
 
@@ -80,7 +77,6 @@ contains
 ! load defaults for non-allocatable arrays
     ljcdfi=.false.
     ljcpdry=.false.
-    ljc4tlevs=.false.
     alphajc=10.0_r_kind
     bamp_jcpdry=zero
     eps_eer=-one  ! default: don't use q-term in norm

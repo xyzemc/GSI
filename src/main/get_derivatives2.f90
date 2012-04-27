@@ -1,6 +1,6 @@
 subroutine get_derivatives2(st,vp,t,p3d,u,v, &
                  u_x,v_x,t_x,p3d_x, &
-                 u_y,v_y,t_y,p3d_y,uvflag)
+                 u_y,v_y,t_y,p3d_y)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    get_derivatives2  compute horizontal derivatives
@@ -16,7 +16,6 @@ subroutine get_derivatives2(st,vp,t,p3d,u,v, &
 !   2009-11-27  parrish - add uv_hyb_ens:  uv_hyb_ens=T, then st=u, vp=v
 !   2010-01-04  safford - comment out $omp directives that produce inconsistent results 
 !   2010-05-23  todling - trying to unwire index assumptions for sf and vp 
-!   2012-02-08  kleist  - add uvflag to input arguments, remove ref to uv_hyb_ens parameter.
 !
 !   input argument list:
 !     u        - longitude velocity component
@@ -60,6 +59,7 @@ subroutine get_derivatives2(st,vp,t,p3d,u,v, &
   use gridmod, only: regional,nlat,nlon,lat2,lon2,nsig
   use compact_diffs, only: compact_dlat,compact_dlon,stvp2uv
   use mpimod, only: nvarbal_id,nlevsbal,nnnvsbal
+  use hybrid_ensemble_parameters, only: uv_hyb_ens
   use control_vectors, only: nrf_var
 
   implicit none
@@ -70,7 +70,6 @@ subroutine get_derivatives2(st,vp,t,p3d,u,v, &
   real(r_kind),dimension(lat2,lon2,nsig+1),intent(  out) :: p3d_x,p3d_y
   real(r_kind),dimension(lat2,lon2,nsig)  ,intent(  out) :: t_x,u_x,v_x,u,v
   real(r_kind),dimension(lat2,lon2,nsig)  ,intent(  out) :: t_y,u_y,v_y
-  logical                                 ,intent(in   ) :: uvflag
 
 ! Local Variables
   integer(i_kind) iflg,k,i,j,isf,ivp
@@ -92,7 +91,7 @@ subroutine get_derivatives2(st,vp,t,p3d,u,v, &
 
 ! x derivative
   if(regional)then
-     if(.not. uvflag)then
+     if(.not. uv_hyb_ens)then
        do k=1,nnnvsbal
           if(nvarbal_id(k) ==isf)then ! _RTod dangerously assume sf and vp 
                                       !       are sequentially arranged in hwork
@@ -115,7 +114,7 @@ subroutine get_derivatives2(st,vp,t,p3d,u,v, &
      end do
 !$omp end parallel do
   else
-     if(.not. uvflag)then
+     if(.not. uv_hyb_ens)then
        do k=1,nnnvsbal
           if(nvarbal_id(k) == isf)then ! _RTod dangerously assume sf and vp 
                                                             !       are sequentially arranged in hwork
@@ -143,7 +142,7 @@ end subroutine get_derivatives2
 
 subroutine tget_derivatives2(st,vp,t,p3d,u,v,&
                  u_x,v_x,t_x,p3d_x, &
-                 u_y,v_y,t_y,p3d_y,uvflag)
+                 u_y,v_y,t_y,p3d_y)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
 ! subprogram:    tget_derivatives2  adjoint of get_derivatives
@@ -158,7 +157,6 @@ subroutine tget_derivatives2(st,vp,t,p3d,u,v,&
 !               and work for mass and momentum only and calculate uv
 !   2009-11-27  parrish - add uv_hyb_ens:  uv_hyb_ens=T, then st=u, vp=v
 !   2010-05-23  todling - trying to unwire index assumptions for sf and vp 
-!   2012-02-08  kleist  - add uvflag to input arguments, remove ref to uv_hyb_ens parameter.
 !
 !   input argument list:
 !     u_x      - longitude derivative of u  (note: in global mode, undefined at pole points)
@@ -188,6 +186,7 @@ subroutine tget_derivatives2(st,vp,t,p3d,u,v,&
   use gridmod, only: regional,nlat,nlon,lat2,lon2,nsig
   use compact_diffs, only: tcompact_dlat,tcompact_dlon,tstvp2uv
   use mpimod, only: nvarbal_id,nnnvsbal
+  use hybrid_ensemble_parameters, only: uv_hyb_ens
   use control_vectors, only: nrf_var
   implicit none
 
@@ -198,7 +197,6 @@ subroutine tget_derivatives2(st,vp,t,p3d,u,v,&
   real(r_kind),dimension(lat2,lon2,nsig)  ,intent(inout) :: t_x,u_x,v_x,u,v
   real(r_kind),dimension(lat2,lon2,nsig+1),intent(inout) :: p3d_y
   real(r_kind),dimension(lat2,lon2,nsig)  ,intent(inout) :: t_y,u_y,v_y
-  logical                                 ,intent(in   ) :: uvflag
 
 ! Local Variables
   integer(i_kind) iflg,k,i,j,isf,ivp
@@ -232,7 +230,7 @@ subroutine tget_derivatives2(st,vp,t,p3d,u,v,&
         call tdelx_reg(hwork_x(1,1,k),hwork(1,1,k),vector)
         call tdely_reg(hwork_y(1,1,k),hwork(1,1,k),vector)
      end do
-     if(.not. uvflag)then
+     if(.not. uv_hyb_ens)then
        do k=1,nnnvsbal
           if(nvarbal_id(k) == isf)then
              do j=1,nlon
@@ -256,7 +254,7 @@ subroutine tget_derivatives2(st,vp,t,p3d,u,v,&
         call tcompact_dlon(hwork(1,1,k),hwork_x(1,1,k),vector)
         call tcompact_dlat(hwork(1,1,k),hwork_y(1,1,k),vector)
      end do
-     if(.not. uvflag)then
+     if(.not. uv_hyb_ens)then
        do k=1,nnnvsbal
           if(nvarbal_id(k) == isf)then
              call tstvp2uv(hwork(1,1,k),hwork(1,1,k+1))

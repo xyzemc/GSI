@@ -177,6 +177,7 @@ subroutine stpjo(yobs,dval,dbias,xval,xbias,sges,pbcjo,nstep)
   use stppsmod, only: stpps
   use stppwmod, only: stppw
   use stpqmod, only: stpq
+! use stpcldmod, only: stpcld
   use stpradmod, only: stprad
   use stpgpsmod, only: stpgps
   use stprwmod, only: stprw
@@ -281,6 +282,11 @@ subroutine stpjo(yobs,dval,dbias,xval,xbias,sges,pbcjo,nstep)
 !$omp section
 !   penalty, b, and c for MSLP TC obs
     call stptcp(yobs%tcp,dval,xval,pbcjo(1,i_tcp_ob_type),sges,nstep)
+
+
+!_$omp section
+!   penalty, b, and c for clouds
+!   call stpcld(dval,xhat,pbcjo(:,i_cld_ob_type),sges,nstep)
 
 !$omp section
 !   penalty, b, and c for conventional gust
