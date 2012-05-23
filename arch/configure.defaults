@@ -412,7 +412,7 @@ NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
 ###########################################################
 #ARCH	Linux i486 i586 i686, Intel compiler (ifort & icc)	# (dmpar,optimize)
 #
-LDFLAGS        =  -Wl,-noinhibit-exec -ftz
+LDFLAGS        =  -Wl,-noinhibit-exec -ftz -openmp
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
@@ -463,7 +463,7 @@ NETCDF_PATH    =
 ###########################################################
 #ARCH	Linux x86_64, Intel/gnu compiler (ifort & gcc)	# (dmpar,optimize)
 #
-LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib
+LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -openmp
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
@@ -513,7 +513,7 @@ NETCDF_PATH    =
 ###########################################################
 #ARCH	Linux x86_64, Intel compiler (ifort & icc)	# (dmpar,optimize)
 #
-LDFLAGS        =  -Wl,-noinhibit-exec -ftz
+LDFLAGS        =  -Wl,-noinhibit-exec -ftz -openmp
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
@@ -564,7 +564,7 @@ NETCDF_PATH    =
 ###########################################################
 #ARCH	Linux x86_64, Intel compiler (ifort & icc)	# (dmpar,debug)
 #
-LDFLAGS        = -Wl,-noinhibit-exec  -ftz
+LDFLAGS        = -Wl,-noinhibit-exec  -ftz -openmp
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
