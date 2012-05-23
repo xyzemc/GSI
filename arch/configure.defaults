@@ -7,7 +7,7 @@ BYTE_ORDER     =  BIG_ENDIAN
 SFC            =  xlf_r 
 SF90           =  xlf90  -qfree
 SCC            =  xlc_r
-INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR)
+INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -qintsize=4 -qrealsize=4
 FFLAGS_i4r8    =  -qintsize=4 -qrealsize=8
 FFLAGS_DEFAULT =  -q64 -qstrict -qarch=auto
@@ -57,7 +57,7 @@ BYTE_ORDER     =  BIG_ENDIAN
 SFC            =  xlf_r 
 SF90           =  xlf90  -qfree
 SCC            =  xlc_r
-INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR)
+INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -qintsize=4 -qrealsize=4
 FFLAGS_i4r8    =  -qintsize=4 -qrealsize=8
 FFLAGS_DEFAULT =  -O0 -q64 -qarch=auto -qfullpath -qdbg -qsource -qcheck
@@ -110,7 +110,7 @@ BYTE_ORDER     =   BIG_ENDIAN
 SFC            =   xlf_r  -q32
 SF90           =   xlf90  -qfree  -q32
 SCC            =   xlc_r  -q32
-INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR) -q32
+INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -qintsize=4 -qrealsize=4
 FFLAGS_i4r8    =  -qintsize=4 -qrealsize=8
 FFLAGS_DEFAULT =  -qstrict -qarch=auto
@@ -163,7 +163,7 @@ BYTE_ORDER     =  BIG_ENDIAN
 SFC            =  xlf_r  -q32
 SF90           =  xlf90  -qfree  -q32
 SCC            =  xlc_r  -q32
-INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR)
+INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -qintsize=4 -qrealsize=4
 FFLAGS_i4r8    =  -qintsize=4 -qrealsize=8
 FFLAGS_DEFAULT =  -O0 -qarch=auto -qfullpath -qdbg -qsource -qcheck
