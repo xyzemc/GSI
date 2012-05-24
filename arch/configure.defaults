@@ -10,6 +10,7 @@ SCC            =  xlc_r
 INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -qintsize=4 -qrealsize=4
 FFLAGS_i4r8    =  -qintsize=4 -qrealsize=8
+FFLAGS_i8r8    =  -qintsize=8 -qrealsize=8
 FFLAGS_DEFAULT =  -q64 -qstrict -qarch=auto
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) -qmaxmem=-1 $(INC_FLAGS) -DIBM4
 LDFLAGS        =  
@@ -27,7 +28,7 @@ FFLAGS_SFCIO   =  -O -qnosave $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  -O3 -qnosave $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =  -X64
 FFLAGS_SP      =  $(FFLAGS) $(FFLAGS_i4r8)
-FFLAGS_W3      =  $(FFLAGS) $(FFLAGS_i4r8)
+FFLAGS_W3      =  $(FFLAGS) 
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  /usr/ccs/lib/cpp 
@@ -60,6 +61,7 @@ SCC            =  xlc_r
 INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -qintsize=4 -qrealsize=4
 FFLAGS_i4r8    =  -qintsize=4 -qrealsize=8
+FFLAGS_i8r8    =  -qintsize=8 -qrealsize=8
 FFLAGS_DEFAULT =  -O0 -q64 -qarch=auto -qfullpath -qdbg -qsource -qcheck
 FFLAGS         =  $(FFLAGS_DEFAULT) -qmaxmem=-1 $(INC_FLAGS) -DIBM4
 LDFLAGS        =  -bnoquiet
@@ -77,7 +79,7 @@ FFLAGS_SFCIO   =  $(FFLAGS_DEFAULT) -qnosave $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  $(FFLAGS_DEFAULT) -qnosave $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =  -X64
 FFLAGS_SP      =  $(FFLAGS) $(FFLAGS_i4r8) -DIBM4
-FFLAGS_W3      =  $(FFLAGS) $(FFLAGS_i4r8)
+FFLAGS_W3      =  $(FFLAGS) 
 INC_FLAGS_W3   =  -module ../sigio
 # 
 CPP            =  /usr/ccs/lib/cpp
@@ -113,6 +115,7 @@ SCC            =   xlc_r  -q32
 INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -qintsize=4 -qrealsize=4
 FFLAGS_i4r8    =  -qintsize=4 -qrealsize=8
+FFLAGS_i8r8    =  -qintsize=8 -qrealsize=8
 FFLAGS_DEFAULT =  -qstrict -qarch=auto
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) -qmaxmem=-1 $(INC_FLAGS) -DIBM4
 LDFLAGS        =  
@@ -130,7 +133,7 @@ FFLAGS_SFCIO   =  -O -qnosave $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  -O3 -qnosave $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =  -X32
 FFLAGS_SP      =  $(FFLAGS) $(FFLAGS_i4r8) -DIBM4
-FFLAGS_W3      =  $(FFLAGS) $(FFLAGS_i4r8)
+FFLAGS_W3      =  $(FFLAGS) 
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  /usr/ccs/lib/cpp
@@ -166,6 +169,7 @@ SCC            =  xlc_r  -q32
 INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -qintsize=4 -qrealsize=4
 FFLAGS_i4r8    =  -qintsize=4 -qrealsize=8
+FFLAGS_i8r8    =  -qintsize=8 -qrealsize=8
 FFLAGS_DEFAULT =  -O0 -qarch=auto -qfullpath -qdbg -qsource -qcheck
 FFLAGS         =  $(FFLAGS_DEFAULT) -qmaxmem=-1 $(INC_FLAGS) -DIBM4
 LDFLAGS        =  -bnoquiet
@@ -183,7 +187,7 @@ FFLAGS_SFCIO   =  $(FFLAGS_DEFAULT) -qnosave $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  $(FFLAGS_DEFAULT) -qnosave $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =  -X32
 FFLAGS_SP      =  $(FFLAGS) $(FFLAGS_i4r8) -DIBM4
-FFLAGS_W3      =  $(FFLAGS) $(FFLAGS_i4r8) 
+FFLAGS_W3      =  $(FFLAGS) 
 INC_FLAGS_W3   =  -module ../sigio
 # 
 CPP            =  /usr/ccs/lib/cpp
@@ -218,6 +222,7 @@ SCC            =  pgcc
 INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -i4 -r4
 FFLAGS_i4r8    =  -i4 -r8
+FFLAGS_i8r8    =  -i8 -r8
 FFLAGS_DEFAULT =  -Kieee -pc 32 -Ktrap=fp
 FFLAGS         =  -fast $(FFLAGS_DEFAULT) -DLANGUAGE_FORTRAN -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX -DPGI
 # Library build flags
@@ -234,7 +239,7 @@ FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =  
 FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  cpp 
@@ -269,6 +274,7 @@ SCC            = pgcc
 INC_FLAGS      = -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -i4 -r4
 FFLAGS_i4r8    =  -i4 -r8
+FFLAGS_i8r8    =  -i8 -r8
 FFLAGS_DEFAULT =  -q -O0 -Kieee -pc 32 -Ktrap=fp -C
 FFLAGS         =  $(FFLAGS_DEFAULT) -DLANGUAGE_FORTRAN -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX -DPGI
 # Library build flags
@@ -285,7 +291,7 @@ FFLAGS_SFCIO   =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =  
 FFLAGS_SP      =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+FFLAGS_W3      =  $(FFLAGS_DEFAULT) 
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  cpp 
@@ -320,6 +326,7 @@ SCC            =  pgcc
 INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -i4 -r4
 FFLAGS_i4r8    =  -i4 -r8
+FFLAGS_i8r8    =  -i8 -r8
 FFLAGS_DEFAULT =  -Kieee -pc 64 -Ktrap=fp 
 FFLAGS         =  -fast $(FFLAGS_DEFAULT) -DLANGUAGE_FORTRAN -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX -DPGI
 # Library build flags
@@ -336,7 +343,7 @@ FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =
 FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8) 
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT)
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  cpp 
@@ -372,6 +379,7 @@ SCC            =  pgcc
 INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -i4 -r4
 FFLAGS_i4r8    =  -i4 -r8
+FFLAGS_i8r8    =  -i8 -r8
 FFLAGS_DEFAULT =  -g -O0 -Kieee -pc 64 -Ktrap=fp -C 
 FFLAGS         =  $(FFLAGS_DEFAULT) -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX -DPGI
 # Library build flags
@@ -388,7 +396,7 @@ FFLAGS_SFCIO   =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =
 FFLAGS_SP      =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r8) 
+FFLAGS_W3      =  $(FFLAGS_DEFAULT) 
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  cpp 
@@ -423,6 +431,7 @@ SCC            =  icc
 INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -integer-size 32 -real-size 32
 FFLAGS_i4r8    =  -integer-size 32 -real-size 64
+FFLAGS_i8r8    =  -integer-size 64 -real-size 64
 FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -ftz
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
@@ -439,7 +448,7 @@ FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =
 FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8) 
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  cpp 
@@ -474,6 +483,7 @@ SCC            =  gcc
 INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -integer-size 32 -real-size 32
 FFLAGS_i4r8    =  -integer-size 32 -real-size 64
+FFLAGS_i8r8    =  -integer-size 64 -real-size 64
 FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -ftz
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
@@ -490,7 +500,7 @@ FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =
 FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8) 
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  cpp 
@@ -524,10 +534,11 @@ SCC            =  icc
 INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -integer-size 32 -real-size 32
 FFLAGS_i4r8    =  -integer-size 32 -real-size 64
+FFLAGS_i8r8    =  -integer-size 64 -real-size 64
 FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -ftz
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
-FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
+FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT) 
 ARFLAGS_BACIO  =
 FFLAGS_BUFR    =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 CFLAGS_BUFR    =  -O3 -DUNDERSCORE
@@ -540,7 +551,7 @@ FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =
 FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8) 
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  cpp 
@@ -575,6 +586,7 @@ SCC            =  icc
 INC_FLAGS      = -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -integer-size 32 -real-size 32
 FFLAGS_i4r8    =  -integer-size 32 -real-size 64
+FFLAGS_i8r8    =  -integer-size 64 -real-size 64
 FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -traceback -check bounds -warn errors -free -fpstkchk -mp -ftz
 FFLAGS         =  -O0 -g $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
@@ -591,7 +603,7 @@ FFLAGS_SFCIO   =  -O0 -g $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  -O0 -g $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =
 FFLAGS_SP      =  -O0 -g $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  -O0 -g $(FFLAGS_DEFAULT) $(FFLAGS_i4r8) 
+FFLAGS_W3      =  -O0 -g $(FFLAGS_DEFAULT) 
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  cpp 
@@ -664,6 +676,7 @@ SCC            =  icc
 INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR)
 FFLAGS_i4r4    =  -integer-size 32 -real-size 32
 FFLAGS_i4r8    =  -integer-size 32 -real-size 64
+FFLAGS_i8r8    =  -integer-size 64 -real-size 64
 FFLAGS_DEFAULT =  -g -C -fp-model precise -assume byterecl -fpe0 -ftz -traceback
 FFLAGS         =  -O3 -ftz $(FFLAGS_DEFAULT)-align all -fno-alias $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
@@ -680,7 +693,7 @@ FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =
 FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  /lib/cpp
@@ -730,7 +743,7 @@ FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =
 FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  cpp
