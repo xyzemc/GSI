@@ -27,8 +27,8 @@ else
 endif
 echo " "
 
-mkdir -p lib
-mkdir -p include
+mkdir -p ./lib
+mkdir -p ./include
 
 ( make -i -f makefile all )
 
