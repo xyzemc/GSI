@@ -20,10 +20,9 @@ $(LIB): $(OBJ) $(OBJ_F77)
 	$(AR) -ruv $(ARFLAGS_GFSIO) $(LIB) $(OBJ) $(OBJ_F77)
 
 $(OBJ):
-	$(SED_FTN) $*.F90 > $*.b
-	$(CPP) $(CPP_FLAGS) $(CPP_F90FLAGS) $*.b  > $*.f90
+	$(CPP) $(CPP_FLAGS) $(CPP_F90FLAGS) $*.F90  > $*.f90
 	$(SF90) $(FFLAGS_GFSIO) -c $*.f90
-	$(RM) $*.f90 $*.b
+	$(RM) $*.f90
 
 $(OBJ_F77):
 	$(SFC) $(FFLAGS_GFSIO) -c $(SRC_F77)
