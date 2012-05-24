@@ -29,7 +29,11 @@ OBJS = addate.o adn30.o \
         ufbmns.o ufbovr.o ufbpos.o ufbqcd.o ufbqcp.o ufbrep.o ufbrms.o ufbrp.o \
 	ufbrw.o ufbseq.o ufbsp.o ufbstp.o ufbtab.o ufbtam.o ufdump.o upb.o upbb.o upc.o upds3.o upftbv.o uptdd.o usrtpl.o \
 	valx.o \
-	wrcmps.o wrdlen.o writcp.o writdx.o writlc.o writsa.o writsb.o wrtree.o wtstat.o \
+	atrcpt.o bvers.o cpdxmm.o errwrt.o icmpdx.o idxmsg.o igetntbi.o igetsc.o igettdi.o \
+	iok2cpy.o ishrdx.o isize.o iupbs3.o lcmgdf.o msgfull.o mtinfo.o \
+	cmpia.o icvidx.o nummtb.o stseq.o \
+	pad.o readmt.o rtrcpt.o stbfdx.o stntbia.o stntbi.o strcpt.o  reads3.o \
+	wrcmps.o wrdlen.o wrdxtb.o writcp.o writdx.o writlc.o writsa.o writsb.o wrtree.o wtstat.o \
 	bort_exit.o ccbfl.o cobfl.o crbmg.o cwbmg.o rbytes.o restd.o wrdesc.o 
 
 PRM = bufrlib.prm
@@ -47,16 +51,14 @@ bufrlib.prm: bufrlib.PRM
 .SUFFIXES : .F .f .a .c .o .fpp
 
 .F.o:
-	$(SED_FTN) $*.F > $*.b 
-	$(CPP) $(CPP_FLAGS) $*.b  > $*.f
+	$(CPP) $(CPP_FLAGS) $*.F  > $*.f
 	$(SFC) -c $(FFLAGS_BUFR) $*.f
-	$(RM) $*.f $*.b
+	$(RM) $*.f
 
 .fpp.o:
-	$(SED_FTN) $*.fpp > $*.b 
-	$(CPP) $(CPP_FLAGS) $(CPP_F90FLAGS)  $*.b  > $*.f
+	$(CPP) $(CPP_FLAGS) $(CPP_F90FLAGS)  $*.fpp  > $*.f
 	$(SFC) -c $(FFLAGS_BUFR) $*.f
-	$(RM) $*.f $*.b
+	$(RM) $*.f
 
 .f.o:
 	$(SFC) -c $(FFLAGS_BUFR)  $<
@@ -65,7 +67,7 @@ bufrlib.prm: bufrlib.PRM
 	$(SCC) -c  $(CFLAGS_BUFR) $<
 
 clean:
-	rm -f *.o *.mod $(LIB) *.b bufrlib.prm
+	rm -f *.o *.mod $(LIB) bufrlib.prm
 
 # DEPENDENCIES : only dependencies after this line (don't remove the word DEPENDENCIES)
 
