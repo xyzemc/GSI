@@ -21,9 +21,6 @@ $(LIB)(bafrio.o):   bafrio.f
 	$(FC) -c $(FFLAGS_BACIO) bafrio.f
 	$(AR) -rv $(ARFLAGS_BACIO) $(LIB) bafrio.o 
 
-dust:
-	$(RM) baciof.o bafrio.o clib.h bacio.v1.4.o
-
 clean:
 	$(RM) baciof.o bafrio.o clib.h $(LIB) bacio.v1.4.o bacio_module.mod
 
