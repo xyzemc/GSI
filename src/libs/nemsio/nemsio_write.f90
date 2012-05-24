@@ -112,33 +112,17 @@ contains
 !
    if ( mygdatatype .eq. 'bin4') then
      call nemsio_writerecbin4d4(gfile,jrec,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else if ( mygdatatype .eq. 'bin8') then
      call nemsio_writerecbin8d4(gfile,jrec,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else
      call nemsio_writerecgrb4(gfile,jrec,data,ios,itr=itr,zhour=zhour)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
      endif
    endif
    if(present(iret)) iret=0
@@ -167,33 +151,17 @@ contains
 !
    if ( mygdatatype .eq. 'bin4') then
      call nemsio_writerecbin4d8(gfile,jrec,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else if ( mygdatatype .eq. 'bin8') then
      call nemsio_writerecbin8d8(gfile,jrec,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else
      call nemsio_writerecgrb8(gfile,jrec,data,ios,itr=itr,zhour=zhour)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
      endif
    endif
    if(present(iret)) iret=0
@@ -226,34 +194,18 @@ contains
 !
    if ( mygdatatype .eq. 'bin4') then
      call nemsio_writerecvbin4d4(gfile,name,levtyp,lev,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else if ( mygdatatype .eq. 'bin8') then
      call nemsio_writerecvbin8d4(gfile,name,levtyp,lev,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else
      call nemsio_writerecvgrb4(gfile,name,levtyp,lev,data,ios,itr=itr,        &
           zhour=zhour)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
      endif
    endif
    if(present(iret)) iret=0
@@ -286,34 +238,18 @@ contains
 !
    if ( mygdatatype .eq. 'bin4') then
      call nemsio_writerecvbin4d8(gfile,name,levtyp,lev,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else if ( mygdatatype .eq. 'bin8') then
      call nemsio_writerecvbin8d8(gfile,name,levtyp,lev,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else
      call nemsio_writerecvgrb8(gfile,name,levtyp,lev,data,ios,itr=itr,    &
           zhour=zhour)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
      endif
    endif
    if(present(iret)) iret=0
@@ -345,33 +281,17 @@ contains
 !
    if ( mygdatatype .eq. 'bin4') then
      call nemsio_writerecbin4d4(gfile,jrec,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else if ( mygdatatype .eq. 'bin8') then
      call nemsio_writerecbin8d4(gfile,jrec,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else
      call nemsio_writerecgrb4w34(gfile,jrec,data,ios,itr=itr,zhour=zhour)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
      endif
    endif
    if(present(iret)) iret=0
@@ -402,38 +322,22 @@ contains
 !
    if ( mygdatatype .eq. 'bin4') then
      call nemsio_writerecbin4d8(gfile,jrec,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else if ( mygdatatype .eq. 'bin8') then
      call nemsio_writerecbin8d8(gfile,jrec,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else
      allocate(datatmp(myfieldsize))
      datatmp(1:myfieldsize)=data(1:myfieldsize)
      call nemsio_writerecgrb4w34(gfile,jrec,datatmp,ios,itr=itr,zhour=zhour)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
-     deallocate(datatmp)
    endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
+     endif
+   endif
+   if(mygdatatype .eq. 'grib')  deallocate(datatmp)
    if(present(iret)) iret=0
 !
    return
@@ -464,34 +368,18 @@ contains
 !
    if ( mygdatatype .eq. 'bin4') then
      call nemsio_writerecvbin4d4(gfile,name,levtyp,lev,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else if ( mygdatatype .eq. 'bin8') then
      call nemsio_writerecvbin8d4(gfile,name,levtyp,lev,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else
      call nemsio_writerecvgrb4w34(gfile,name,levtyp,lev,data,ios,itr=itr,        &
           zhour=zhour)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
      endif
    endif
    if(present(iret)) iret=0
@@ -525,39 +413,23 @@ contains
 !
    if ( mygdatatype .eq. 'bin4') then
      call nemsio_writerecvbin4d8(gfile,name,levtyp,lev,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else if ( mygdatatype .eq. 'bin8') then
      call nemsio_writerecvbin8d8(gfile,name,levtyp,lev,data,ios)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
    else
      allocate(datatmp(myfieldsize))
      datatmp(1:myfieldsize)=data(1:myfieldsize)
      call nemsio_writerecvgrb4w34(gfile,name,levtyp,lev,datatmp,ios,itr=itr,    &
          zhour=zhour)
-     if ( ios .ne.0 ) then
-       if(present(iret)) then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-     endif
-     deallocate(datatmp)
    endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
+     endif
+   endif
+   if(mygdatatype .eq. 'grib')   deallocate(datatmp)
    if(present(iret)) iret=0
 !
    return
@@ -871,7 +743,7 @@ contains
 ! check precision -- for pressure now
 !------------------------------------------------------------
     if ( grbmeta%jpds(5).eq.1 .and. grbmeta%jpds(6).eq.109 ) then
-     grbmeta%jpds(22)=min(int(5-log10(mymax)),2)
+     grbmeta%jpds(22)=min(int(6-log10(mymax)),4)
     endif
 !------------------------------------------------------------
 ! get data from putgb _w34
@@ -909,7 +781,7 @@ contains
     integer(nemsio_intkind)      :: N=nemsio_kpds_intfill
     integer(nemsio_intkind)      :: nc,i,nc1
     integer(nemsio_intkind)      :: ios,ibms
-    real(nemsio_intkind)         :: mymax
+    real(nemsio_dblekind)         :: mymax
 !------------------------------------------------------------
 ! set up grib meta 
 !------------------------------------------------------------
@@ -961,7 +833,7 @@ contains
 ! check precision -- for pressure now
 !------------------------------------------------------------
     if ( grbmeta%jpds(5).eq.1 .and. grbmeta%jpds(6).eq.109 ) then
-     grbmeta%jpds(22)=min(int(5-log10(mymax)),2)
+     grbmeta%jpds(22)=min(int(6-log10(mymax)),4)
     endif
 !------------------------------------------------------------
 ! get data from putgb _w3d
@@ -1004,7 +876,7 @@ contains
     integer(nemsio_intkind)      :: nc,i
     integer(nemsio_intkind)      :: ios,ibms
 !---
-    real(nemsio_realkind)      :: mymax
+    real(nemsio_dblekind)      :: mymax
 !------------------------------------------------------------
 ! set up grib meta 
 !------------------------------------------------------------
@@ -1044,7 +916,7 @@ contains
 ! check precision -- for pressure now
 !------------------------------------------------------------
     if ( grbmeta%jpds(5).eq.1 .and. grbmeta%jpds(6).eq.109 ) then
-     grbmeta%jpds(22)=min(int(5-log10(mymax)),2)
+     grbmeta%jpds(22)=min(int(6-log10(mymax)),4)
     endif
 !------------------------------------------------------------
 ! get data from putgb _w3d
@@ -1126,7 +998,7 @@ contains
 ! check precision -- for pressure now
 !------------------------------------------------------------
     if ( grbmeta%jpds(5).eq.1 .and. grbmeta%jpds(6).eq.109 ) then
-     grbmeta%jpds(22)=min(int(5-log10(mymax)),2)
+     grbmeta%jpds(22)=min(int(6-log10(mymax)),4)
     endif
 !------------------------------------------------------------
 ! get data from putgb _w34
@@ -1166,7 +1038,7 @@ contains
     integer(nemsio_intkind)      :: N=nemsio_kpds_intfill
     integer(nemsio_intkind)      :: nc,i
     integer(nemsio_intkind)      :: ios,ibms
-    real(nemsio_realkind)        :: mymax
+    real(nemsio_dblekind)        :: mymax
 !------------------------------------------------------------
 ! set up grib meta 
 !------------------------------------------------------------
@@ -1194,12 +1066,15 @@ contains
        endif
     endif
 !
+    allocate(data8(size(data)) )
+    data8=data
+!
     grbmeta%lbms=.true.
-    where(abs(data)>=nemsio_undef_grb) grbmeta%lbms=.false.
-    mymax=minval(data)
+    where(abs(data8)>=nemsio_undef_grb) grbmeta%lbms=.false.
+    mymax=minval(data8)
     do i=1,myfieldsize
-     if(abs(data(i))<nemsio_undef_grb) then
-       if(data(i) .gt.mymax) mymax=data(i)
+     if(abs(data8(i))<nemsio_undef_grb) then
+       if(data8(i) .gt.mymax) mymax=data8(i)
      endif
     enddo
 !
@@ -1207,13 +1082,11 @@ contains
 ! check precision -- for pressure now
 !------------------------------------------------------------
     if ( grbmeta%jpds(5).eq.1 .and. grbmeta%jpds(6).eq.109 ) then
-     grbmeta%jpds(22)=min(int(5-log10(mymax)),2)
+     grbmeta%jpds(22)=min(int(6-log10(mymax)),4)
     endif
 !------------------------------------------------------------
 ! get data from putgb _w3d
 !------------------------------------------------------------
-    allocate(data8(size(data)) )
-    daTa8=data
     call putgb(myflunit,grbmeta%jf,grbmeta%jpds,grbmeta%jgds, &
       grbmeta%lbms,data8,ios)
     deallocate(grbmeta%lbms)
@@ -1248,7 +1121,7 @@ contains
     integer(nemsio_intkind)      :: N=nemsio_kpds_intfill
     integer(nemsio_intkind)      :: nc,i
     integer(nemsio_intkind)      :: ios,ibms
-    real(nemsio_realkind)        :: mymax
+    real(nemsio_dblekind)        :: mymax
 !------------------------------------------------------------
 ! set up grib meta 
 !------------------------------------------------------------
@@ -1289,7 +1162,7 @@ contains
 ! check precision -- for pressure now
 !------------------------------------------------------------
     if ( grbmeta%jpds(5).eq.1 .and. grbmeta%jpds(6).eq.109 ) then
-     grbmeta%jpds(22)=min(int(5-log10(mymax)),2)
+     grbmeta%jpds(22)=min(int(6-log10(mymax)),4)
     endif
 !------------------------------------------------------------
 ! get data from putgb _w3d

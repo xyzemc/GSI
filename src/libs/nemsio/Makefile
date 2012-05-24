@@ -7,7 +7,7 @@ INCMOD  = ../../../include
 ## AR      = ar
 ## ARFLAGS = -rv -X64
 
-MODULES  = nemsio_openclose.o nemsio_read.o nemsio_write.o nemsio_module.o nemsio_gfs.o
+MODULES  = nemsio_openclose.o nemsio_read.o nemsio_write.o nemsio_module.o
 
 $(LIB): $(MODULES)
 	$(AR) -ruv $@ $(MODULES)

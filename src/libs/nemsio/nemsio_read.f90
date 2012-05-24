@@ -128,6 +128,7 @@ contains
     integer(nemsio_intkind),optional,intent(out)  :: iret
     integer(nemsio_intkind),optional,intent(in)  :: nframe
     real(nemsio_realkind),allocatable             :: datatmp(:)
+    real(nemsio_dblekind),allocatable            :: datatmp8(:)
     integer :: i,j,ios
 !------------------------------------------------------------
 ! read 4 byte rec
@@ -136,55 +137,53 @@ contains
 !---
    call nemsio_getgfile(gfile,iret)
 !---
-   allocate(datatmp(myfieldsize) )
    if ( mygdatatype .eq. 'bin4') then 
+     if(.not.present(nframe) ) then
+       call nemsio_readrecbin4d4(gfile,jrec,data,ios)
+     else
+      allocate(datatmp(myfieldsize) )
       call nemsio_readrecbin4d4(gfile,jrec,datatmp,ios)
-      if ( ios .ne.0 ) then 
-        if(present(iret)) then 
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     endif
    else if ( mygdatatype .eq. 'bin8') then
-      call nemsio_readrecbin8d4(gfile,jrec,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     allocate(datatmp8(myfieldsize) )
+     call nemsio_readrecbin8d8(gfile,jrec,datatmp8,ios)
    else
-      call nemsio_readrecgrb4(gfile,jrec,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     allocate(datatmp8(myfieldsize) )
+     call nemsio_readrecgrb8(gfile,jrec,datatmp8,ios)
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
+     endif
    endif
 !---
    if ( present(nframe) ) then
-     if(nframe.le.mynframe ) then
-      do j=1,mydimy+2*mynframe-2*nframe
-       do i=1,mydimx+2*mynframe -2*nframe
-        data(i+(j-1)*(mydimx+2*mynframe-mynframe))=datatmp(i+nframe        &
-          +(j-1+nframe)*(mydimx+2*mynframe))
+     if(mygdatatype .eq. 'bin4') then
+       do j=1,mydimy+2*mynframe-2*nframe
+        do i=1,mydimx+2*mynframe -2*nframe
+         data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe        &
+           +(j-1+nframe)*(mydimx+2*mynframe))
+        enddo
        enddo
-      enddo
-     else
-       print *,"WARNING: nframe is larger than the nframe in the file!"
-       call nemsio_stop
+       deallocate(datatmp)
+     elseif(mygdatatype=='bin8'.or.mygdatatype=='grib') then
+       do j=1,mydimy+2*mynframe-2*nframe
+        do i=1,mydimx+2*mynframe -2*nframe
+         data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp8(i+nframe        &
+           +(j-1+nframe)*(mydimx+2*mynframe))
+        enddo
+       enddo
+       deallocate(datatmp8)
      endif
    else
-     data=datatmp
+     if(mygdatatype=='bin8'.or.mygdatatype=='grib') then
+       data=datatmp8
+       deallocate(datatmp8)
+     endif
    endif
-   deallocate(datatmp)
 !---
    if(present(iret)) iret=0
    return
@@ -200,6 +199,7 @@ contains
     real(nemsio_dblekind),intent(inout)           :: data(:)
     integer(nemsio_intkind),optional,intent(out)  :: iret
     integer(nemsio_intkind),optional,intent(in)   :: nframe
+    real(nemsio_realkind),allocatable             :: datatmp4(:)
     real(nemsio_dblekind),allocatable             :: datatmp(:)
     integer :: i,j,ios
 !------------------------------------------------------------
@@ -209,55 +209,57 @@ contains
 !---
    call nemsio_getgfile(gfile,iret)
 !
-   allocate(datatmp(myfieldsize))
    if ( mygdatatype .eq. 'bin4') then
-     call nemsio_readrecbin4d8(gfile,jrec,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     allocate(datatmp4(myfieldsize))
+     call nemsio_readrecbin4d4(gfile,jrec,datatmp4,ios)
    else if ( mygdatatype .eq. 'bin8') then
-     call nemsio_readrecbin8d8(gfile,jrec,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     if(.not.present(nframe)) then
+       call nemsio_readrecbin8d8(gfile,jrec,data,ios)
+     else
+       allocate(datatmp(myfieldsize))
+       call nemsio_readrecbin8d8(gfile,jrec,datatmp,ios)
+     endif
    else
-     call nemsio_readrecgrb8(gfile,jrec,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     if(.not.present(nframe)) then
+       call nemsio_readrecgrb8(gfile,jrec,data,ios)
+     else
+       allocate(datatmp(myfieldsize))
+       call nemsio_readrecgrb8(gfile,jrec,datatmp,ios)
+     endif
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
+     endif
    endif
 !---
    if ( present(nframe) ) then
-     if(nframe.le.mynframe ) then
-      do j=1,mydimy+2*mynframe-2*nframe
-       do i=1,mydimx+2*mynframe -2*nframe
-        data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe        &
-          +(j-1+nframe)*(mydimx+2*mynframe))
-       enddo
-      enddo
-     else
-       print *,"WARNING: nframe is larger than the nframe in the file!"
-       call nemsio_stop
+     if(mygdatatype=='bin4') then
+        do j=1,mydimy+2*mynframe-2*nframe
+         do i=1,mydimx+2*mynframe -2*nframe
+          data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp4(i+nframe        &
+            +(j-1+nframe)*(mydimx+2*mynframe))
+         enddo
+        enddo
+        deallocate(datatmp4)
+     elseif(mygdatatype=='bin8'.or.mygdatatype=='grib') then
+        do j=1,mydimy+2*mynframe-2*nframe
+         do i=1,mydimx+2*mynframe -2*nframe
+          data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe        &
+            +(j-1+nframe)*(mydimx+2*mynframe))
+         enddo
+        enddo
+        deallocate(datatmp)
      endif
    else
-     data=datatmp
+     if(mygdatatype=='bin4') then
+       data=datatmp4
+       deallocate(datatmp4)
+     endif
    endif
-   deallocate(datatmp)
 !
    if(present(iret)) iret=0
    return
@@ -276,6 +278,7 @@ contains
     integer(nemsio_intkind),optional,intent(out)  :: iret
     integer(nemsio_intkind),optional,intent(in)   :: nframe
     real(nemsio_realkind),allocatable             :: datatmp(:)
+    real(nemsio_dblekind),allocatable             :: datatmp8(:)
     integer :: i,j,ios
 !------------------------------------------------------------
 ! read 4 byte rec
@@ -284,55 +287,53 @@ contains
 !---
    call nemsio_getgfile(gfile,iret)
 !---
-   allocate(datatmp(myfieldsize) )
    if ( mygdatatype .eq. 'bin4') then
-     call nemsio_readrecvbin4d4(gfile,name,levtyp,lev,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     if(.not.present(nframe) ) then
+       call nemsio_readrecvbin4d4(gfile,name,levtyp,lev,data,ios)
+     else
+       allocate(datatmp(myfieldsize) )
+       call nemsio_readrecvbin4d4(gfile,name,levtyp,lev,datatmp,ios)
+     endif
    else if ( mygdatatype .eq. 'bin8') then
-     call nemsio_readrecvbin8d4(gfile,name,levtyp,lev,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     allocate(datatmp8(myfieldsize) )
+     call nemsio_readrecvbin8d8(gfile,name,levtyp,lev,datatmp8,ios)
    else
-     call nemsio_readrecvgrb4(gfile,name,levtyp,lev,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     allocate(datatmp8(myfieldsize) )
+     call nemsio_readrecvgrb8(gfile,name,levtyp,lev,datatmp8,ios)
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
+     endif
    endif
 !---
    if ( present(nframe) ) then
-     if(nframe.le.mynframe ) then
-      do j=1,mydimy+2*mynframe-2*nframe
-       do i=1,mydimx+2*mynframe -2*nframe
-        data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe        &
-          +(j-1+nframe)*(mydimx+2*mynframe))
-       enddo
-      enddo
-     else
-       print *,"WARNING: nframe is larger than the nframe in the file!"
-       call nemsio_stop
+     if(mygdatatype=='bin4') then
+        do j=1,mydimy+2*mynframe-2*nframe
+         do i=1,mydimx+2*mynframe -2*nframe
+          data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe        &
+            +(j-1+nframe)*(mydimx+2*mynframe))
+         enddo
+        enddo
+        deallocate(datatmp)
+     elseif(mygdatatype=='bin8'.or.mygdatatype=='grib' ) then
+        do j=1,mydimy+2*mynframe-2*nframe
+         do i=1,mydimx+2*mynframe -2*nframe
+          data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp8(i+nframe        &
+            +(j-1+nframe)*(mydimx+2*mynframe))
+         enddo
+        enddo
+        deallocate(datatmp8)
      endif
    else
-     data=datatmp
+     if(mygdatatype=='bin8'.or.mygdatatype=='grib' ) then
+       data=datatmp8
+       deallocate(datatmp8)
+     endif
    endif
-   deallocate(datatmp)
 !---
    if(present(iret)) iret=0
    return
@@ -350,6 +351,7 @@ contains
     real(nemsio_dblekind),intent(inout)           :: data(:)
     integer(nemsio_intkind),optional,intent(out)  :: iret
     integer(nemsio_intkind),optional,intent(in)   :: nframe
+    real(nemsio_realkind),allocatable             :: datatmp4(:)
     real(nemsio_dblekind),allocatable             :: datatmp(:)
     integer :: i,j,ios
 !------------------------------------------------------------
@@ -359,55 +361,57 @@ contains
 !---
    call nemsio_getgfile(gfile,iret)
 !---
-   allocate(datatmp(myfieldsize) )
    if ( mygdatatype .eq. 'bin4') then
-     call nemsio_readrecvbin4d8(gfile,name,levtyp,lev,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     allocate(datatmp4(myfieldsize) )
+     call nemsio_readrecvbin4d4(gfile,name,levtyp,lev,datatmp4,ios)
    else if ( mygdatatype .eq. 'bin8') then
-     call nemsio_readrecvbin8d8(gfile,name,levtyp,lev,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     if(.not.present(nframe) ) then
+       call nemsio_readrecvbin8d8(gfile,name,levtyp,lev,data,ios)
+     else
+       allocate(datatmp(myfieldsize) )
+       call nemsio_readrecvbin8d8(gfile,name,levtyp,lev,datatmp,ios)
+     endif
    else
-     call nemsio_readrecvgrb8(gfile,name,levtyp,lev,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     if(.not.present(nframe) ) then
+       call nemsio_readrecvgrb8(gfile,name,levtyp,lev,data,ios)
+     else
+       allocate(datatmp(myfieldsize) )
+       call nemsio_readrecvgrb8(gfile,name,levtyp,lev,datatmp,ios)
+     endif
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
+     endif
    endif
 !---
    if ( present(nframe) ) then
-     if(nframe.le.mynframe ) then
-      do j=1,mydimy+2*mynframe-2*nframe
-       do i=1,mydimx+2*mynframe -2*nframe
-        data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe        &
-          +(j-1+nframe)*(mydimx+2*mynframe))
-       enddo
-      enddo
-     else
-       print *,"WARNING: nframe is larger than the nframe in the file!"
-       call nemsio_stop
-     endif
+      if(mygdatatype=='bin4') then
+        do j=1,mydimy+2*mynframe-2*nframe
+         do i=1,mydimx+2*mynframe -2*nframe
+          data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp4(i+nframe        &
+           +(j-1+nframe)*(mydimx+2*mynframe))
+         enddo
+        enddo
+        deallocate(datatmp4)
+      elseif(mygdatatype=='bin8'.or.mygdatatype=='grib') then
+        do j=1,mydimy+2*mynframe-2*nframe
+         do i=1,mydimx+2*mynframe -2*nframe
+          data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe        &
+           +(j-1+nframe)*(mydimx+2*mynframe))
+         enddo
+        enddo
+        deallocate(datatmp)
+      endif
    else
-     data=datatmp
+     if(mygdatatype=='bin4') then
+       data=datatmp4
+       deallocate(datatmp4)
+     endif
    endif
-   deallocate(datatmp)
 !
    if(present(iret)) iret=0
    return
@@ -425,6 +429,7 @@ contains
     integer(nemsio_intkind),optional,intent(out)  :: iret
     integer(nemsio_intkind),optional,intent(in)   :: nframe
     real(nemsio_realkind),allocatable             :: datatmp(:)
+    real(nemsio_dblekind),allocatable             :: datatmp8(:)
     integer :: i,j,ios
 !------------------------------------------------------------
 ! read 4 byte rec
@@ -433,55 +438,57 @@ contains
 !---
    call nemsio_getgfile(gfile,iret)
 !---
-   allocate(datatmp(myfieldsize) )
    if ( mygdatatype .eq. 'bin4') then
-      call nemsio_readrecbin4d4(gfile,jrec,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     if(.not.present(nframe)) then
+       call nemsio_readrecbin4d4(gfile,jrec,data,ios)
+     else
+       allocate(datatmp(myfieldsize) )
+       call nemsio_readrecbin4d4(gfile,jrec,datatmp,ios)
+     endif
    else if ( mygdatatype .eq. 'bin8') then
-      call nemsio_readrecbin8d4(gfile,jrec,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+      allocate(datatmp8(myfieldsize) )
+      call nemsio_readrecbin8d8(gfile,jrec,datatmp8,ios)
    else
-      call nemsio_readrecgrb4w34(gfile,jrec,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     if(.not.present(nframe)) then
+       call nemsio_readrecgrb4w34(gfile,jrec,data,ios)
+     else
+       allocate(datatmp(myfieldsize) )
+       call nemsio_readrecgrb4w34(gfile,jrec,datatmp,ios)
+     endif
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
+     endif
    endif
 !---
    if ( present(nframe) ) then
-     if(nframe.le.mynframe ) then
-      do j=1,mydimy+2*mynframe-2*nframe
-       do i=1,mydimx+2*mynframe -2*nframe
-        data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe        &
-          +(j-1+nframe)*(mydimx+2*mynframe))
-       enddo
-      enddo
-     else
-       print *,"WARNING: nframe is larger than the nframe in the file!"
-       call nemsio_stop
-     endif
+      if(mygdatatype=='bin4'.or.mygdatatype=='grib') then
+        do j=1,mydimy+2*mynframe-2*nframe
+         do i=1,mydimx+2*mynframe -2*nframe
+          data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe        &
+            +(j-1+nframe)*(mydimx+2*mynframe))
+         enddo
+        enddo
+        deallocate(datatmp)
+      elseif(mygdatatype=='bin8') then
+        do j=1,mydimy+2*mynframe-2*nframe
+         do i=1,mydimx+2*mynframe -2*nframe
+          data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp8(i+nframe        &
+            +(j-1+nframe)*(mydimx+2*mynframe))
+         enddo
+        enddo
+        deallocate(datatmp8)
+      endif
    else
-     data=datatmp
+     if(mygdatatype=='bin8') then
+       data=datatmp8
+       deallocate(datatmp8)
+     endif
    endif
-   deallocate(datatmp)
 !---
    if(present(iret)) iret=0
    return
@@ -499,8 +506,8 @@ contains
     real(nemsio_dblekind),intent(inout)           :: data(:)
     integer(nemsio_intkind),optional,intent(out)  :: iret
     integer(nemsio_intkind),optional,intent(in)   :: nframe
-    real(nemsio_realkind),allocatable             :: datatmp(:)
-    real(nemsio_dblekind),allocatable             :: datatmp2(:)
+    real(nemsio_realkind),allocatable             :: datatmp4(:)
+    real(nemsio_dblekind),allocatable             :: datatmp(:)
     integer :: i,j,ios
 !------------------------------------------------------------
 ! read 4 byte rec
@@ -510,65 +517,52 @@ contains
    call nemsio_getgfile(gfile,iret)
 !---
    if ( mygdatatype .eq. 'bin4') then
-     allocate(datatmp(myfieldsize) )
-     call nemsio_readrecbin4d4(gfile,jrec,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     allocate(datatmp4(myfieldsize) )
+     call nemsio_readrecbin4d4(gfile,jrec,datatmp4,ios)
    else if ( mygdatatype .eq. 'bin8') then
-     allocate(datatmp2(myfieldsize) )
-     call nemsio_readrecbin8d8(gfile,jrec,datatmp2,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     if(.not.present(nframe) ) then
+      call nemsio_readrecbin8d8(gfile,jrec,data,ios)
+     else
+      allocate(datatmp(myfieldsize) )
+      call nemsio_readrecbin8d8(gfile,jrec,datatmp,ios)
+     endif
    else
-     allocate(datatmp(myfieldsize) )
-     call nemsio_readrecgrb4w34(gfile,jrec,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     allocate(datatmp4(myfieldsize) )
+     call nemsio_readrecgrb4w34(gfile,jrec,datatmp4,ios)
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
+     endif
    endif
 !---
    if ( present(nframe) ) then
-     if(nframe.le.mynframe ) then
-      if(mygdatatype .eq. 'bin4'.or.mygdatatype .eq. 'grb' ) then
+     if(mygdatatype .eq. 'bin4'.or.mygdatatype .eq. 'grib' ) then
        do j=1,mydimy+2*mynframe-2*nframe
        do i=1,mydimx+2*mynframe -2*nframe
-        data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe        &
+        data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp4(i+nframe        &
           +(j-1+nframe)*(mydimx+2*mynframe))
        enddo
        enddo
-      else if(mygdatatype .eq. 'bin8') then
+       deallocate(datatmp4)
+     else if(mygdatatype .eq. 'bin8') then
        do j=1,mydimy+2*mynframe-2*nframe
        do i=1,mydimx+2*mynframe -2*nframe
-        data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp2(i+nframe       &
+        data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe       &
           +(j-1+nframe)*(mydimx+2*mynframe))
        enddo
        enddo
-      endif
-     else 
-       print *,"WARNING: nframe is larger than the nframe in the file!"
-       call nemsio_stop
+       deallocate(datatmp)
      endif
    else
-     data=datatmp
+     if(mygdatatype .eq. 'bin4'.or.mygdatatype .eq. 'grib' ) then
+       data=datatmp4
+       deallocate(datatmp4)
+     endif
    endif
-   deallocate(datatmp)
 !---
    if(present(iret)) iret=0
    return
@@ -587,6 +581,7 @@ contains
     integer(nemsio_intkind),optional,intent(out)  :: iret
     integer(nemsio_intkind),optional,intent(in)   :: nframe
     real(nemsio_realkind),allocatable             :: datatmp(:)
+    real(nemsio_dblekind),allocatable             :: datatmp8(:)
     integer :: i,j,ios
 !------------------------------------------------------------
 ! read 4 byte rec
@@ -595,55 +590,57 @@ contains
 !---
    call nemsio_getgfile(gfile,iret)
 !---
-   allocate(datatmp(myfieldsize) )
    if ( mygdatatype .eq. 'bin4') then
-     call nemsio_readrecvbin4d4(gfile,name,levtyp,lev,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     if(.not.present(nframe)) then
+       call nemsio_readrecvbin4d4(gfile,name,levtyp,lev,data,ios)
+     else
+       allocate(datatmp(myfieldsize) )
+       call nemsio_readrecvbin4d4(gfile,name,levtyp,lev,datatmp,ios)
+     endif
    else if ( mygdatatype .eq. 'bin8') then
-     call nemsio_readrecvbin8d4(gfile,name,levtyp,lev,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     allocate(datatmp8(myfieldsize) )
+     call nemsio_readrecvbin8d8(gfile,name,levtyp,lev,datatmp8,ios)
    else
-     call nemsio_readrecvgrb4w34(gfile,name,levtyp,lev,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     if(.not.present(nframe)) then
+       call nemsio_readrecvgrb4w34(gfile,name,levtyp,lev,data,ios)
+     else
+       allocate(datatmp(myfieldsize) )
+       call nemsio_readrecvgrb4w34(gfile,name,levtyp,lev,datatmp,ios)
+     endif
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
+     endif
    endif
 !---
    if ( present(nframe) ) then
-     if(nframe.le.mynframe ) then
-      do j=1,mydimy+2*mynframe-2*nframe
-       do i=1,mydimx+2*mynframe -2*nframe
-        data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe        &
-          +(j-1+nframe)*(mydimx+2*mynframe))
-       enddo
-      enddo
-     else
-       print *,"WARNING: nframe is larger than the nframe in the file!"
-       call nemsio_stop
-     endif
+      if(mygdatatype=='bin4'.or.mygdatatype=='grib') then
+        do j=1,mydimy+2*mynframe-2*nframe
+         do i=1,mydimx+2*mynframe -2*nframe
+           data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe        &
+            +(j-1+nframe)*(mydimx+2*mynframe))
+         enddo
+        enddo
+        deallocate(datatmp)
+      elseif(mygdatatype=='grib8') then
+        do j=1,mydimy+2*mynframe-2*nframe
+         do i=1,mydimx+2*mynframe -2*nframe
+           data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp8(i+nframe        &
+            +(j-1+nframe)*(mydimx+2*mynframe))
+         enddo
+        enddo
+        deallocate(datatmp8)
+      endif
    else
-     data=datatmp
+      if(mygdatatype=='grib8') then
+        data=datatmp8
+        deallocate(datatmp8)
+      endif
    endif
-   deallocate(datatmp)
 !---
    if(present(iret)) iret=0
    return
@@ -663,7 +660,7 @@ contains
     integer(nemsio_intkind),optional,intent(out)  :: iret
     integer(nemsio_intkind),optional,intent(in)   :: nframe
     real(nemsio_dblekind),allocatable             :: datatmp(:)
-    real(nemsio_realkind),allocatable             :: datatmp2(:)
+    real(nemsio_realkind),allocatable             :: datatmp4(:)
     integer :: i,j,ios
 !------------------------------------------------------------
 ! read 8 byte rec
@@ -673,65 +670,52 @@ contains
    call nemsio_getgfile(gfile,iret)
 !---
    if ( mygdatatype .eq. 'bin4') then
-     allocate(datatmp(myfieldsize) )
-     call nemsio_readrecvbin4d8(gfile,name,levtyp,lev,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     allocate(datatmp4(myfieldsize) )
+     call nemsio_readrecvbin4d4(gfile,name,levtyp,lev,datatmp4,ios)
    else if ( mygdatatype .eq. 'bin8') then
-     allocate(datatmp(myfieldsize) )
-     call nemsio_readrecvbin8d8(gfile,name,levtyp,lev,datatmp,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     if(.not.present(nframe)) then
+       call nemsio_readrecvbin8d8(gfile,name,levtyp,lev,data,ios)
+     else
+       allocate(datatmp(myfieldsize) )
+       call nemsio_readrecvbin8d8(gfile,name,levtyp,lev,datatmp,ios)
+     endif
    else
-     allocate(datatmp2(myfieldsize) )
-     call nemsio_readrecvgrb4w34(gfile,name,levtyp,lev,datatmp2,ios)
-      if ( ios .ne.0 ) then
-        if(present(iret)) then
-          iret=ios
-          return
-        else
-          call nemsio_stop
-        endif
-      endif
+     allocate(datatmp4(myfieldsize) )
+     call nemsio_readrecvgrb4w34(gfile,name,levtyp,lev,datatmp4,ios)
+   endif
+   if ( ios .ne.0 ) then
+     if(present(iret)) then
+       iret=ios
+       return
+     else
+       call nemsio_stop
+     endif
    endif
 !---
    if ( present(nframe) ) then
-     if(nframe.le.mynframe ) then
-      if(mygdatatype .eq. 'bin4'.or.mygdatatype .eq. 'bin8') then
+      if(mygdatatype .eq. 'bin4'.or.mygdatatype .eq. 'grib') then
+       do j=1,mydimy+2*mynframe-2*nframe
+       do i=1,mydimx+2*mynframe -2*nframe
+        data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp4(i+nframe        &
+          +(j-1+nframe)*(mydimx+2*mynframe))
+       enddo
+       enddo
+       deallocate(datatmp4)
+      elseif(mygdatatype .eq. 'bin8') then
        do j=1,mydimy+2*mynframe-2*nframe
        do i=1,mydimx+2*mynframe -2*nframe
         data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp(i+nframe        &
           +(j-1+nframe)*(mydimx+2*mynframe))
        enddo
        enddo
-      else
-       do j=1,mydimy+2*mynframe-2*nframe
-       do i=1,mydimx+2*mynframe -2*nframe
-        data(i+(j-1)*(mydimx+2*mynframe-2*nframe))=datatmp2(i+nframe        &
-          +(j-1+nframe)*(mydimx+2*mynframe))
-       enddo
-       enddo
-     endif
-     else
-       print *,"WARNING: nframe is larger than the nframe in the file!"
-       call nemsio_stop
+       deallocate(datatmp)
      endif
    else
-     data=datatmp
+     if(mygdatatype .eq. 'bin4'.or.mygdatatype .eq. 'grib') then
+       data=datatmp4
+       deallocate(datatmp4)
+     endif
    endif
-   deallocate(datatmp)
 !
    if(present(iret)) iret=0
    return
@@ -762,30 +746,6 @@ contains
     return
   end subroutine nemsio_readrecbin4d4
 !------------------------------------------------------------------------------
-  subroutine nemsio_readrecbin4d8(gfile,jrec,data,iret)
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
-! abstract: read nemsio data (bin) by record number into a 2D 32 bits array
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
-    implicit none
-    type(nemsio_gfile),intent(in)                 :: gfile
-    integer(nemsio_intkind),intent(in)            :: jrec
-    real(nemsio_dblekind),intent(out)             :: data(:)
-    integer(nemsio_intkind),optional,intent(out)  :: iret
-    real(nemsio_realkind),allocatable        :: data4(:)
-    integer(nemsio_intkind8) :: iskip,iread,nread
-
-    if(present(iret)) iret=-41
-    allocate(data4(size(data)) )
-    iskip=mytlmeta+int(jrec-1,8)*int(kind(data4)*myfieldsize+8,8)
-    iread=int(nemsio_realkind,8)*int(size(data4),8)
-    call bafrreadl(myflunit,iskip,iread,nread,data4)
-    if(nread.lt.iread) return
-    data=data4
-    if(present(iret)) iret=0
-
-    return
-  end subroutine nemsio_readrecbin4d8
-!------------------------------------------------------------------------------
   subroutine nemsio_readrecvbin4d4(gfile,name,levtyp,lev,data,iret)
 !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
 ! abstract: read nemsio data (bin) by record number into a 2D 32 bits array
@@ -812,59 +772,6 @@ contains
     return
   end subroutine nemsio_readrecvbin4d4
 !------------------------------------------------------------------------------
-  subroutine nemsio_readrecvbin4d8(gfile,name,levtyp,lev,data,iret)
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
-! abstract: read nemsio data (bin) by record number into a 2D 32 bits array
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
-    implicit none
-    type(nemsio_gfile),intent(in)                 :: gfile
-    character(*),intent(in)                      :: name
-    character(*),intent(in),optional             :: levtyp
-    integer(nemsio_intkind),optional,intent(in)  :: lev
-    real(nemsio_dblekind),intent(out)             :: data(:)
-    integer(nemsio_intkind),optional,intent(out)  :: iret
-    real(nemsio_realkind),allocatable        :: data4(:)
-    integer(nemsio_intkind8) :: iskip,iread,nread
-    integer :: jrec, ierr
-
-    if(present(iret)) iret=-42
-    allocate(data4(size(data)) )
-    call nemsio_searchrecv(gfile,jrec,name,levtyp,lev,ierr)
-    if ( ierr .ne. 0) return
-    iskip=mytlmeta+int(jrec-1,8)*int(nemsio_realkind*myfieldsize+8,8)
-    iread=int(kind(data4),8)*int(size(data4),8)
-    call bafrreadl(myflunit,iskip,iread,nread,data4)
-    if(nread.lt.iread) return
-    data=data4
-    if(present(iret)) iret=0
-
-    return
-  end subroutine nemsio_readrecvbin4d8
-!------------------------------------------------------------------------------
-  subroutine nemsio_readrecbin8d4(gfile,jrec,data,iret)
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
-! abstract: read nemsio data (bin) by record number into a 2D 32 bits array
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
-    implicit none
-    type(nemsio_gfile),intent(in)                 :: gfile
-    integer(nemsio_intkind),intent(in)            :: jrec
-    real(nemsio_realkind),intent(out)             :: data(:)
-    integer(nemsio_intkind),optional,intent(out)  :: iret
-    real(nemsio_dblekind),allocatable             :: data8(:)
-    integer(nemsio_intkind8) :: iskip,iread,nread
-
-    if(present(iret)) iret=-43
-    allocate(data8(size(data)) )
-    iskip=mytlmeta+int(jrec-1,8)*int(nemsio_dblekind*myfieldsize+8,8)
-    iread=int(nemsio_dblekind,8)*int(size(data8),8)
-    call bafrreadl(myflunit,iskip,iread,nread,data8)
-    if(nread.lt.iread) return
-    data=data8
-    if(present(iret)) iret=0
-
-    return
-  end subroutine nemsio_readrecbin8d4
-!------------------------------------------------------------------------------
   subroutine nemsio_readrecbin8d8(gfile,jrec,data,iret)
 !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
 ! abstract: read nemsio data (bin) by record number into a 2D 32 bits array
@@ -885,35 +792,6 @@ contains
 
     return
   end subroutine nemsio_readrecbin8d8
-!------------------------------------------------------------------------------
-  subroutine nemsio_readrecvbin8d4(gfile,name,levtyp,lev,data,iret)
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
-! abstract: read nemsio data (bin) by record number into a 2D 32 bits array
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
-    implicit none
-    type(nemsio_gfile),intent(in)                 :: gfile
-    character(*),intent(in)                      :: name
-    character(*),intent(in),optional             :: levtyp
-    integer(nemsio_intkind),optional,intent(in)  :: lev
-    real(nemsio_realkind),intent(out)             :: data(:)
-    integer(nemsio_intkind),optional,intent(out)  :: iret
-    real(nemsio_dblekind),allocatable        :: data8(:)
-    integer(nemsio_intkind8) :: iskip,iread,nread
-    integer :: jrec, ierr
-
-    if(present(iret)) iret=-44
-    allocate(data8(size(data)) )
-    call nemsio_searchrecv(gfile,jrec,name,levtyp,lev,ierr)
-    if ( ierr .ne. 0) return
-    iskip=mytlmeta+int(jrec-1,8)*int(nemsio_dblekind*myfieldsize+8,8)
-    iread=int(nemsio_dblekind,8)*int(size(data8),8)
-    call bafrreadl(myflunit,iskip,iread,nread,data8)
-    if(nread.lt.iread) return
-    data=data8
-    if(present(iret)) iret=0
-
-    return
-  end subroutine nemsio_readrecvbin8d4
 !------------------------------------------------------------------------------
   subroutine nemsio_readrecvbin8d8(gfile,name,levtyp,lev,data,iret)
 !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
@@ -1054,66 +932,6 @@ contains
 !*****************   read grb data set w3d:  *************************************
 !
 !------------------------------------------------------------------------------
-  subroutine nemsio_readrecgrb4(gfile,jrec,data,iret)
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
-! abstract: read nemsio data by record number into a 2D 32 bits array, 
-!           using w3_d library to compile
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
-    implicit none
-    type(nemsio_gfile),intent(in)                 :: gfile
-    integer(nemsio_intkind),intent(in)            :: jrec
-    real(nemsio_realkind),intent(out)             :: data(:)
-    integer(nemsio_intkind),optional,intent(out)  :: iret
-    real(nemsio_dblekind),allocatable        :: data8(:)
-    type(nemsio_grbmeta)         :: grbmeta
-    integer(nemsio_intkind)      :: luidx
-    integer(nemsio_intkind)      :: kf,k,kpds(200),kgds(200)
-    logical*1,allocatable       :: lbms(:)
-    integer(nemsio_intkind)      :: N=nemsio_kpds_intfill
-    integer(nemsio_intkind)      :: ios,i
-!
-!------------------------------------------------------------
-! set up grib meta 
-!------------------------------------------------------------
-    luidx=0
-    if ( present(iret)) iret=-46
-    allocate(data8(size(data)) )
-    call nemsio_setrqst(gfile,grbmeta,ios,jrec=jrec)
-    if (ios.ne.0) then
-       if ( present(iret))  then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-    endif
-!------------------------------------------------------------
-! get data from getgb _w3d
-!------------------------------------------------------------
-    data8=data
-    allocate(lbms(grbmeta%jf))
-    N=0
-!    print *,'getrecgrb4,in nemsio, before getgbm,mbuf=',mymbuf,&
-!     'nlen=',mynlen,'nnum=',mynnum,'mnum=',mymnum, &
-!     'jf=',grbmeta%jf,'jpds=',grbmeta%jpds(1:20),'jgds=', &
-!     grbmeta%jgds(1:20),'myflunit=',myflunit,'luidx=',luidx
-    call getgbm(myflunit,luidx,grbmeta%jf,N,grbmeta%jpds,grbmeta%jgds,&
-      mymbuf,mycbuf,mynlen,mynnum,mymnum, &
-      kf,k,kpds,kgds,lbms,data8,ios)
-    data=data8
-    deallocate(lbms,grbmeta%lbms)
-
-    if(ios.ne.0) then
-       if ( present(iret))  then
-         print *,'getgb_ios=',ios
-         return
-       else
-         call nemsio_stop
-       endif
-    endif
-    if (present(iret)) iret=0
-  end subroutine nemsio_readrecgrb4
-!------------------------------------------------------------------------------
   subroutine nemsio_readrecgrb8(gfile,jrec,data,iret)
 !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
 ! abstract: read nemsio data by record number into a 2D 64 bits array, 
@@ -1164,63 +982,6 @@ contains
     endif
     if (present(iret)) iret=0
   end subroutine nemsio_readrecgrb8
-!------------------------------------------------------------------------------
-  subroutine nemsio_readrecvgrb4(gfile,vname,vlevtyp,vlev,data,iret)
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
-! abstract: read nemsio data by field name into a 2D 32bits array, 
-!           using w3_d library to compile
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
-    implicit none
-    type(nemsio_gfile),intent(in)                 :: gfile
-    character*(*),intent(in)                      :: vname,vlevtyp
-    integer(nemsio_intkind),intent(in)            :: vlev
-    real(nemsio_realkind),intent(out)             :: data(:)
-    integer(nemsio_intkind),optional,intent(out)  :: iret
-    real(nemsio_dblekind),allocatable        :: data8(:)
-    type(nemsio_grbmeta)         :: grbmeta
-    integer(nemsio_intkind)      :: luidx
-    integer(nemsio_intkind)      :: kf,k,kpds(200),kgds(200)
-    logical*1,allocatable       :: lbms(:)
-    integer(nemsio_intkind)      :: N=nemsio_kpds_intfill
-    integer(nemsio_intkind)      :: ios,i
-!
-!------------------------------------------------------------
-! set up grib meta 
-!------------------------------------------------------------
-    luidx=0
-    if ( present(iret)) iret=-47
-    allocate(data8(size(data)) )
-    call nemsio_setrqst(gfile,grbmeta,ios,vname=vname, &
-      vlevtyp=vlevtyp, vlev=vlev )
-    if (ios.ne.0) then
-       if ( present(iret))  then
-         iret=ios
-         return
-       else
-         call nemsio_stop
-       endif
-    endif
-!------------------------------------------------------------
-! get data from getgb _w3d
-!------------------------------------------------------------
-    data8=data
-    allocate(lbms(grbmeta%jf))
-    N=0
-    call getgbm(myflunit,luidx,grbmeta%jf,N,grbmeta%jpds,grbmeta%jgds,&
-      mymbuf,mycbuf,mynlen,mynnum,mymnum, &
-      kf,k,kpds,kgds,lbms,data8,ios)
-    data=data8
-    deallocate(lbms,grbmeta%lbms)
-    if(ios.ne.0) then
-       if ( present(iret))  then
-          print *,'getgb_ios=',ios
-         return
-       else
-         call nemsio_stop
-       endif
-    endif
-    if ( present(iret)) iret=0
-  end subroutine nemsio_readrecvgrb4
 !------------------------------------------------------------------------------
   subroutine nemsio_readrecvgrb8(gfile,vname,vlevtyp,vlev,data,iret)
 !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - -
