@@ -1,6 +1,6 @@
 SHELL=/bin/sh
 
-SUBDIRS = bacio bufr crtm_jcsda_2.0 sp gfsio sfcio sigio w3 gsdcloud nemsio
+SUBDIRS = bacio bufr crtm_jcsda_2.0 sp gfsio sfcio sigio w3 gsdcloud nemsio misc
 
 all: $(SUBDIRS)
 	@for dir in $(SUBDIRS); do \
