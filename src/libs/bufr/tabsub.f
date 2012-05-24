@@ -54,6 +54,8 @@ C               non-delayed) replication, or no replication at all
 C         "RPC" if TAG(I) is a Table D mnemonic using either medium
 C               (i.e. 8-bit) delayed replication or long (i.e. 16-bit)
 C               delayed replication
+C         "RPS" if TAG(I) is a Table D mnemonic using medium
+C               (i.e. 8-bit) delayed replication in a stack context
 C         "DRB" if TAG(I) denotes the short (i.e. 1-bit) delayed
 C               replication of a Table D mnemonic (which would then
 C               itself have its own separate entry in the jump/link
@@ -63,6 +65,11 @@ C               long (i.e. 16-bit) delayed replication of a Table D
 C               mnemonic (which would then itself have its own separate
 C               entry in the jump/link table with a corresponding TAG
 C               value of "RPC")
+C         "DRS" if TAG(I) denotes the medium (i.e. 8-bit) delayed
+C               replication, in a stack context, of a Table D mnemonic
+C               (which would then itself have its own separate entry
+C               in the jump/link table with a corresponding TAG value
+C               of "RPS")
 C         "REP" if TAG(I) denotes the F=1 regular (i.e. non-delayed)
 C               replication of a Table D mnemonic (which would then
 C               itself have its own separate entry in the jump/link

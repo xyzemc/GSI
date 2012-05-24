@@ -35,7 +35,7 @@ C
 C REMARKS:
 C    THIS ROUTINE CALLS:        RESTD    NUMTBD   NEMTBB   IFXY
 C				CADN30   ISTDESC  WRDESC   UPTDD
-C    THIS ROUTINE IS CALLED BY: RESTD    STNDRD   CMSGINI
+C    THIS ROUTINE IS CALLED BY: RESTD    STNDRD 
 C                               Normally not called by application
 C                               programs but it could be.
 C

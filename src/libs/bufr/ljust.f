@@ -30,10 +30,10 @@ C                RETURNED WITH NO CHANGES)
 C     LJUST    - INTEGER: ALWAYS RETURNED AS 0 (DUMMY)
 C
 C REMARKS:
-C    THIS ROUTINE CALLS:        None
+C    THIS ROUTINE CALLS:        ERRWRT
 C    THIS ROUTINE IS CALLED BY: None at this time
 C                               Normally not called by any application
-C                               Programs but it could be.
+C                               programs but it could be.
 C
 C ATTRIBUTES:
 C   LANGUAGE: FORTRAN 77
@@ -45,6 +45,8 @@ C$$$
 
       COMMON /QUIET / IPRT
 
+      CHARACTER*128 ERRSTR
+
       DATA IFIRST/0/
 
       SAVE IFIRST
@@ -54,13 +56,12 @@ C-----------------------------------------------------------------------
 
       IF(IFIRST.EQ.0) THEN
          IF(IPRT.GE.0) THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-      PRINT 101
-101   FORMAT(' BUFRLIB: LJUST - THIS FUNCTION IS NOW OBSOLETE; ',
-     . 'USE SUBROUTINE JSTCHR INSTEAD')
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      ERRSTR = 'BUFRLIB: LJUST - THIS FUNCTION IS NOW OBSOLETE;'//
+     . ' USE SUBROUTINE JSTCHR INSTEAD'
+      CALL ERRWRT(ERRSTR)
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      CALL ERRWRT(' ')
          ENDIF
          IFIRST = 1
       ENDIF

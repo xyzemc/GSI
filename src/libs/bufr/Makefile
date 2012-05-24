@@ -11,18 +11,18 @@ OBJS = addate.o adn30.o \
 	elemdx.o \
 	getabdb.o getlens.o getntbe.o gets1loc.o gettbh.o getwin.o \
 	i4dy.o ibfms.o ichkstr.o icopysb.o idn30.o ifbget.o ifxy.o igetdate.o igetfxy.o igetntbl.o \
-	inctab.o invcon.o invmrg.o invtag.o invwin.o ipkm.o ireadft.o ireadibm.o ireadmg.o ireadmm.o \
+	inctab.o invcon.o invmrg.o invtag.o invwin.o ipkm.o ireadmg.o ireadmm.o \
         ireadns.o ireadsb.o irev.o istdesc.o iupb.o iupbs01.o iupbs1.o iupm.o iupvs01.o iupvs1.o \
 	jstchr.o jstnum.o \
 	ljust.o lmsg.o lstjpb.o lstrpc.o lstrps.o \
-	makestab.o  maxout.o  mesgbc.o mesgbf.o minimg.o mova2i.o mrginv.o msgini.o msgupd.o msgwrt.o mvb.o \
-	nemock.o nemtab.o nemtba.o nemtbax.o nemtbb.o nemtbd.o nenuaa.o nenubd.o nevn.o newwin.o nmbyt.o \
+	makestab.o  maxout.o  mesgbc.o mesgbf.o minimg.o mrginv.o msgini.o msgupd.o msgwrt.o mvb.o \
+	nemock.o nemtab.o nemtba.o nemtbax.o nemtbb.o nemtbd.o nenubd.o nevn.o newwin.o \
         nmsub.o nmwrd.o numbck.o numtab.o numtbd.o nvnwin.o nwords.o nxtwin.o \
-	openbf.o openbt.o openmb.o openmg.o ovrbs1.o \
+	openbf.o openbt.o openmb.o openmg.o \
 	pad.o padmsg.o parseq.o parstr.o parusr.o parutg.o \
-	pkb.o pkbs1.o pkc.o pkftbv.o pktdd.o pkvs01.o pkvs1.o posapn.o posapx.o \
+	pkb.o pkbs1.o pkc.o pkftbv.o pktdd.o pkvs01.o posapn.o posapx.o \
 	rcstpl.o rdbfdx.o rdcmps.o rdmemm.o rdmems.o rdmgsb.o rdmsgb.o rdmsgw.o rdmtbb.o rdmtbd.o rdtree.o \
-        rdusdx.o readdx.o readerme.o readft.o readibm.o readlc.o readmg.o readmm.o readns.o readsb.o rewnbf.o rjust.o rsvfvm.o \
+        rdusdx.o readdx.o readerme.o readlc.o readmg.o readmm.o readns.o readsb.o rewnbf.o rjust.o rsvfvm.o \
 	seqsdx.o sntbbe.o sntbde.o status.o stdmsg.o stndrd.o strcln.o string.o strnum.o strsuc.o subupd.o \
 	tabent.o tabsub.o trybump.o \
 	ufbcnt.o ufbcpy.o ufbcup.o ufbdmp.o ufbevn.o ufbget.o ufbin3.o ufbint.o ufbinx.o ufbmem.o ufbmms.o \
@@ -41,7 +41,7 @@ $(LIB):	$(OBJS)
 	$(AR) -ruv $(LIB) $(OBJS)
 
 bufrlib.prm: bufrlib.PRM
-	$(CPP) $(CPP_FLAGS) bufrlib.PRM bufrlib.prm
+	$(CPP) $(CPP_FLAGS) $(CPP_F90FLAGS) bufrlib.PRM bufrlib.prm
 
 .SUFFIXES :
 .SUFFIXES : .F .f .a .c .o .fpp

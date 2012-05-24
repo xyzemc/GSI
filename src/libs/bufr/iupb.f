@@ -30,9 +30,10 @@ C     IUPB     - INTEGER: UNPACKED INTEGER WORD
 C
 C REMARKS:
 C    THIS ROUTINE CALLS:        UPB
-C    THIS ROUTINE IS CALLED BY: CKTABA   CPYUPD   DUMPBF   GETLENS
-C                               IUPBS01  IUPBS1   MSGUPD   MSGWRT
-C                               RDMEMS   STNDRD   SUBUPD   UPDS3
+C    THIS ROUTINE IS CALLED BY: CKTABA   CPYUPD   GETLENS  IUPBS01
+C                               IUPBS1   IUPBS3   MSGUPD   MSGWRT
+C                               RDMEMS   STNDRD   STRCPT   SUBUPD
+C                               UPDS3    WRITLC
 C                               Normally not called by any application
 C                               programs.
 C

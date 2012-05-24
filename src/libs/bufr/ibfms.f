@@ -14,6 +14,8 @@ C   CONTEXT FROM A CALLING PROGRAM WRITTEN IN C.
 C
 C PROGRAM HISTORY LOG:
 C 2007-01-19  J. ATOR    -- ORIGINAL AUTHOR
+C 2009-03-23  J. ATOR    -- INCREASED VALUE OF BDIFD FOR BETTER 
+C                           TEST ACCURACY
 C
 C USAGE:    IBFMS ( R8VAL )
 C   INPUT ARGUMENT LIST:
@@ -45,7 +47,7 @@ C	The following parameter defines the fuzziness threshold to use
 C	when testing for BUFR "missing".
 
 	REAL*8          BDIFD
-	PARAMETER       ( BDIFD = 100. )
+	PARAMETER       ( BDIFD = 10.0E6 )
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 

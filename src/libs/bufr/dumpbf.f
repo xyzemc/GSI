@@ -46,6 +46,7 @@ C                           CALLED), THIS ROUTINE DOES NOT REQUIRE IT
 C                           BUT 2004-08-18 CHANGE CALLS OTHER ROUTINES
 C                           THAT DO REQUIRE IT
 C 2005-11-29  J. ATOR    -- USE IUPBS01, IGETDATE, GETLENS AND RDMSGW
+C 2009-03-23  J. ATOR    -- USE IDXMSG, IUPBS3 AND ERRWRT
 C
 C USAGE:    CALL DUMPBF (LUNIT, JDATE, JDUMP)
 C   INPUT ARGUMENT LIST:
@@ -68,12 +69,10 @@ C
 C   INPUT FILES:
 C     UNIT "LUNIT" - BUFR FILE
 C
-C   OUTPUT FILES:
-C     UNIT 06  - STANDARD OUTPUT PRINT
-C
 C REMARKS:
-C    THIS ROUTINE CALLS:        BORT     GETLENS  IGETDATE IUPB
-C                               IUPBS01  RDMSGW   STATUS   WRDLEN
+C    THIS ROUTINE CALLS:        BORT     ERRWRT   IDXMSG   IGETDATE
+C                               IUPBS01  IUPBS3   RDMSGW   STATUS
+C                               WRDLEN
 C    THIS ROUTINE IS CALLED BY: None
 C                               Normally called only by application
 C                               programs.
@@ -90,6 +89,8 @@ C$$$
 
       DIMENSION     MBAY(MXMSGLD4)
       DIMENSION     JDATE(5),JDUMP(5)
+
+      CHARACTER*128 ERRSTR
 
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
@@ -118,15 +119,13 @@ C  ---------------------------------
 
 1     CALL RDMSGW(LUNIT,MBAY,IER)
       IF(IER.LT.0) GOTO 200
-      IF(IUPBS01(MBAY,'MTYP').EQ.11) GOTO 1
+      IF(IDXMSG(MBAY).EQ.1) GOTO 1
 
 C  DUMP CENTER YY,MM,DD,HH,MM IS IN THE FIRST EMPTY MESSAGE
 C  --------------------------------------------------------
 C  i.e. the first message containing zero subsets
      
-      CALL GETLENS(MBAY,2,LEN0,LEN1,LEN2,L3,L4,L5)
-      IPT = LEN0+LEN1+LEN2+5
-      IF(IUPB(MBAY,IPT,16).NE.0) GOTO 200
+      IF(IUPBS3(MBAY,'NSUB').NE.0) GOTO 200
 
       IGD = IGETDATE(MBAY,JDATE(1),JDATE(2),JDATE(3),JDATE(4))
       JDATE(5) = IUPBS01(MBAY,'MINU')
@@ -138,9 +137,7 @@ C  i.e. the second message containing zero subsets
       CALL RDMSGW(LUNIT,MBAY,IER)
       IF(IER.LT.0) GOTO 200
      
-      CALL GETLENS(MBAY,2,LEN0,LEN1,LEN2,L3,L4,L5)
-      IPT = LEN0+LEN1+LEN2+5
-      IF(IUPB(MBAY,IPT,16).NE.0) GOTO 200
+      IF(IUPBS3(MBAY,'NSUB').NE.0) GOTO 200
 
       IGD = IGETDATE(MBAY,JDUMP(1),JDUMP(2),JDUMP(3),JDUMP(4))
       JDUMP(5) = IUPBS01(MBAY,'MINU')
@@ -148,16 +145,21 @@ C  i.e. the second message containing zero subsets
       GOTO 100
 
 200   IF(IPRT.GE.1 .AND. (JDATE(1).EQ.-1.OR.JDUMP(1).EQ.-1)) THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-         IF(JDATE(1).EQ.-1) PRINT*, 'BUFRLIB: DATEBF - FIRST  EMPTY ',
-     .    'BUFR MESSAGE SECTION 1 DATE COULD NOT BE LOCATED - RETURN ',
-     .    'WITH JDATE = 4*-1'
-         IF(JDUMP(1).EQ.-1) PRINT*, 'BUFRLIB: DATEBF - SECOND EMPTY ',
-     .    'BUFR MESSAGE SECTION 1 DATE COULD NOT BE LOCATED - RETURN ',
-     .    'WITH JDUMP = 4*-1'
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      IF(JDATE(1).EQ.-1) THEN
+        ERRSTR = 'BUFRLIB: DUMPBF - FIRST  EMPTY BUFR MESSAGE '//
+     .    'SECTION 1 DATE COULD NOT BE LOCATED - RETURN WITH '//
+     .    'JDATE = 4*-1'
+        CALL ERRWRT(ERRSTR)
+      ENDIF
+      IF(JDUMP(1).EQ.-1) THEN
+        ERRSTR = 'BUFRLIB: DUMPBF - SECOND EMPTY BUFR MESSAGE '//
+     .    'SECTION 1 DATE COULD NOT BE LOCATED - RETURN WITH '//
+     .    'JDUMP = 4*-1'
+        CALL ERRWRT(ERRSTR)
+      ENDIF
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      CALL ERRWRT(' ')
       ENDIF
 
 C  EXITS

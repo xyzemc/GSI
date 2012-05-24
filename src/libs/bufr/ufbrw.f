@@ -38,6 +38,7 @@ C                           VERIFICATION VERSION); UNIFIED/PORTABLE FOR
 C                           WRF; ADDED DOCUMENTATION (INCLUDING
 C                           HISTORY) (INCOMPLETE)
 C 2007-01-19  J. ATOR    -- USE FUNCTION IBFMS
+C 2009-04-21  J. ATOR    -- USE ERRWRT; USE LSTJPB INSTEAD OF LSTRPS
 C
 C USAGE:    CALL UFBRW (LUN, USR, I1, I2, IO, IRET)
 C   INPUT ARGUMENT LIST:
@@ -66,12 +67,10 @@ C                    OF DATA VALUES WRITTEN TO DATA SUBSET (SHOULD BE
 C                    SAME AS I2)
 C                      -1 = ....
 C
-C   OUTPUT FILES:
-C     UNIT 06  - STANDARD OUTPUT PRINT
-C
 C REMARKS:
-C    THIS ROUTINE CALLS:        CONWIN   DRSTPL   GETWIN   IBFMS
-C                               INVWIN   LSTRPS   NEWWIN   NXTWIN
+C    THIS ROUTINE CALLS:        CONWIN   DRSTPL   ERRWRT   GETWIN
+C                               IBFMS    INVWIN   LSTJPB   NEWWIN
+C                               NXTWIN
 C    THIS ROUTINE IS CALLED BY: TRYBUMP  UFBINT
 C                               Normally not called by any application
 C                               programs (they should call UFBINT).
@@ -89,10 +88,11 @@ C$$$
      .                IBT(MAXJL),IRF(MAXJL),ISC(MAXJL),
      .                ITP(MAXJL),VALI(MAXJL),KNTI(MAXJL),
      .                ISEQ(MAXJL,2),JSEQ(MAXJL)
-      COMMON /USRINT/ NVAL(NFILES),INV(MAXJL,NFILES),VAL(MAXJL,NFILES)
+      COMMON /USRINT/ NVAL(NFILES),INV(MAXSS,NFILES),VAL(MAXSS,NFILES)
       COMMON /USRSTR/ NNOD,NCON,NODS(20),NODC(10),IVLS(10),KONS(10)
       COMMON /QUIET / IPRT
 
+      CHARACTER*128 ERRSTR
       CHARACTER*10 TAG
       CHARACTER*3  TYP
       REAL*8       USR(I1,I2),VAL
@@ -133,13 +133,23 @@ C  ---------------------
 2     IRET = IRET+1
 
       IF(IPRT.GE.2)  THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-         PRINT*,'BUFRLIB: UFBRW -  IRET:INS1:INS2:INC1:INC2 = ',IRET,
-     .    ':',INS1,':',INS2,':',INC1,':',INC2
-         PRINT'(5A10)',(TAG(INV(I,LUN)),I=INS1,INS2)
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+         WRITE ( UNIT=ERRSTR, FMT='(5(A,I4))' )
+     .      'BUFRLIB: UFBRW - IRET:INS1:INS2:INC1:INC2 = ',
+     .      IRET, ':', INS1, ':', INS2, ':', INC1, ':', INC2
+         CALL ERRWRT(ERRSTR)
+         KK = INS1
+         DO WHILE ( ( INS2 - KK ) .GE. 5 )
+            WRITE ( UNIT=ERRSTR, FMT='(5A10)' )
+     .         (TAG(INV(I,LUN)),I=KK,KK+4)
+            CALL ERRWRT(ERRSTR)
+            KK = KK+5
+         ENDDO
+         WRITE ( UNIT=ERRSTR, FMT='(5A10)' )
+     .      (TAG(INV(I,LUN)),I=KK,INS2)
+         CALL ERRWRT(ERRSTR)
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      CALL ERRWRT(' ')
       ENDIF
 
 C  WRITE USER VALUES
@@ -158,7 +168,7 @@ C  -----------------
                   ENDIF
                   CALL NEWWIN(LUN,INC1,INC2)
                   VAL(INVN,LUN) = USR(I,IRET)
-               ELSEIF(LSTRPS(NODS(I),LUN).EQ.0) THEN
+               ELSEIF(LSTJPB(NODS(I),LUN,'RPS').EQ.0) THEN
                   VAL(INVN,LUN) = USR(I,IRET)
                ELSEIF(IBFMS(VAL(INVN,LUN)).NE.0) THEN
                   VAL(INVN,LUN) = USR(I,IRET)

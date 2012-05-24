@@ -23,6 +23,7 @@ C                           WRF; ADDED HISTORY DOCUMENTATION; OUTPUTS
 C                           MORE COMPLETE DIAGNOSTIC INFO WHEN ROUTINE
 C                           TERMINATES ABNORMALLY
 C 2005-11-29  J. ATOR    -- ADDED SUPPORT FOR 207 AND 208 OPERATORS
+C 2010-03-19  J. ATOR    -- ADDED SUPPORT FOR 204 OPERATOR
 C
 C USAGE:    CALL TABENT (LUN, NEMO, TAB, ITAB, IREP, IKNT, JUM0)
 C   INPUT ARGUMENT LIST:
@@ -124,7 +125,7 @@ C  ----------------------------------------------------
          ELSEIF(UNIT(1:4).EQ.'FLAG') THEN
             TYPT = 'FLG'
          ENDIF
-         IF(TYPT.EQ.'NUM') THEN
+         IF( (TYPT.EQ.'NUM') .AND. (NEMO(1:3).NE.'204') ) THEN
             IBT(NODE) = IBT(NODE) + ICDW
             ISC(NODE) = ISC(NODE) + ICSC
             IRF(NODE) = IRF(NODE) * ICRV

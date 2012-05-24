@@ -42,6 +42,9 @@ C                           SCROLLING CAPABILITY SIMILAR TO UFBDMP
 C 2006-04-14  J. ATOR    -- ADD CALL TO UPFTBV FOR FLAG TABLES TO GET
 C                           ACTUAL BITS THAT WERE SET TO GENERATE VALUE
 C 2007-01-19  J. ATOR    -- USE FUNCTION IBFMS
+C 2009-03-23  J. ATOR    -- ADD LEVEL MARKERS TO OUTPUT FOR SEQUENCES
+C                           WHERE THE REPLICATION COUNT IS > 1; OUTPUT
+C                           ALL OCCURRENCES OF LONG CHARACTER STRINGS
 C
 C USAGE:    CALL UFDUMP (LUNIT, LUPRT)
 C   INPUT ARGUMENT LIST:
@@ -69,8 +72,9 @@ C    ENTERS "q" FOLLOWED BY "<enter>" AFTER THE PROMPT, IN WHICH CASE
 C    THIS SUBROUTINE STOPS THE SCROLL AND RETURNS TO THE CALLING
 C    PROGRAM (PRESUMABLY TO READ IN THE NEXT SUBSET IN THE BUFR FILE).
 C
-C    THIS ROUTINE CALLS:        BORT     IBFMS    NEMTAB   READLC
-C                               RJUST    STATUS   UPFTBV
+C    THIS ROUTINE CALLS:        BORT     IBFMS    ISIZE    NEMTAB
+C                               READLC   RJUST    STATUS   STRSUC
+C                               UPFTBV
 C    THIS ROUTINE IS CALLED BY: None
 C                               Normally called only by application
 C                               programs.
@@ -90,7 +94,7 @@ C$$$
      .                IBT(MAXJL),IRF(MAXJL),ISC(MAXJL),
      .                ITP(MAXJL),VALI(MAXJL),KNTI(MAXJL),
      .                ISEQ(MAXJL,2),JSEQ(MAXJL)
-      COMMON /USRINT/ NVAL(NFILES),INV(MAXJL,NFILES),VAL(MAXJL,NFILES)
+      COMMON /USRINT/ NVAL(NFILES),INV(MAXSS,NFILES),VAL(MAXSS,NFILES)
       COMMON /TABABD/ NTBA(0:NFILES),NTBB(0:NFILES),NTBD(0:NFILES),
      .                MTAB(MAXTBA,NFILES),IDNA(MAXTBA,NFILES,2),
      .                IDNB(MAXTBB,NFILES),IDND(MAXTBD,NFILES),
@@ -104,24 +108,39 @@ C$$$
       CHARACTER*80 FMT
       CHARACTER*64 DESC
       CHARACTER*24 UNIT
-      CHARACTER*20 LCHR
-      CHARACTER*10 TAG,NEMO
+      CHARACTER*120 LCHR2
+      CHARACTER*20  LCHR
+      CHARACTER*15 NEMO3
+      CHARACTER*10 TAG,NEMO,NEMO2
       CHARACTER*6  NUMB
       CHARACTER*7  FMTF
       CHARACTER*8  CVAL,PMISS
-      CHARACTER*3  TYP
+      CHARACTER*3  TYP,TYPE
       CHARACTER*1  TAB,YOU
       EQUIVALENCE  (RVAL,CVAL)
       REAL*8       VAL,RVAL
+      LOGICAL      TRACK,FOUND
 
       PARAMETER (MXFV=31)
       INTEGER	IFV(MXFV)
+
+      PARAMETER (MXSEQ=10)
+      INTEGER   IDXREP(MXSEQ)
+      INTEGER   NUMREP(MXSEQ)
+      CHARACTER*10 SEQNAM(MXSEQ)
+
+      PARAMETER (MXLS=10)
+      CHARACTER*10 LSNEMO(MXLS)
+      INTEGER   LSCT(MXLS)
 
       DATA PMISS /' MISSING'/
       DATA YOU /'Y'/
 
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
+
+      NSEQ = 0
+      NLS = 0
 
       IF(LUPRT.EQ.0) THEN
          LUOUT = 6
@@ -170,6 +189,8 @@ C  -------------------------------------------------------------------
       NODE = INV (NV,LUN)
       NEMO = TAG (NODE)
       ITYP = ITP (NODE)
+      TYPE = TYP (NODE)
+
       IF(ITYP.GE.1.AND.ITYP.LE.3) THEN
          CALL NEMTAB(LUN,NEMO,IDN,TAB,N)
          NUMB = TABB(N,LUN)(1:6)
@@ -177,12 +198,74 @@ C  -------------------------------------------------------------------
          UNIT = TABB(N,LUN)(71:94)
          RVAL = VAL(NV,LUN)
       ENDIF
-      IF(ITYP.EQ.1) THEN
+      
+      IF((ITYP.EQ.0).OR.(ITYP.EQ.1)) THEN
 
-C        Delayed descriptor replication factor
+C        Sequence descriptor or delayed descriptor replication factor
 
-         FMT = '(7X,A10,2X,I6,1X,A)'
-         WRITE(LUOUT,FMT) NEMO,NINT(RVAL),'REPLICATIONS'
+         IF((TYPE.EQ.'REP').OR.(TYPE.EQ.'DRP').OR.(TYPE.EQ.'DRB')) THEN
+
+C	   Print the number of replications
+
+           NSEQ = NSEQ+1
+           IF(NSEQ.GT.MXSEQ) GOTO 904
+           IF(TYPE.EQ.'REP') THEN
+             NUMREP(NSEQ) = IRF(NODE)
+           ELSE
+             NUMREP(NSEQ) = NINT(RVAL)
+           ENDIF
+           CALL STRSUC(NEMO,NEMO2,LNM2)
+           FMT = '(11X,A,I6,1X,A)'
+           WRITE(LUOUT,FMT) NEMO2(1:LNM2), NUMREP(NSEQ), 'REPLICATIONS'
+
+C          How many times is this sequence replicated?
+
+           IF(NUMREP(NSEQ).GT.1) THEN
+
+C            Track the sequence
+
+             SEQNAM(NSEQ) = NEMO
+             IDXREP(NSEQ) = 1
+           ELSE
+
+C            Don't bother
+
+             NSEQ = NSEQ-1
+           ENDIF
+         ELSEIF( ((TYPE.EQ.'SEQ').OR.(TYPE.EQ.'RPC'))
+     .             .AND. (NSEQ.GT.0) ) THEN
+
+C          Is this one of the sequences being tracked?
+
+           II = NSEQ
+           TRACK = .FALSE.
+           CALL STRSUC(NEMO,NEMO2,LNM2)
+           DO WHILE ((II.GE.1).AND.(.NOT.TRACK))
+             IF(INDEX(SEQNAM(II),NEMO2(1:LNM2)).GT.0) THEN
+               TRACK = .TRUE.
+
+C              Mark this level in the output
+
+               FMT = '(4X,A,2X,A,2X,A,I6,2X,A)'
+               WRITE(LUOUT,FMT) '++++++', NEMO2(1:LNM2),
+     .                 'REPLICATION #', IDXREP(II), '++++++'
+               IF(IDXREP(II).LT.NUMREP(II)) THEN
+
+C                There are more levels to come
+
+                 IDXREP(II) = IDXREP(II)+1
+               ELSE
+
+C                This was the last level for this sequence, so stop
+C                tracking it
+
+                 NSEQ = NSEQ-1
+               ENDIF
+             ELSE
+               II = II-1
+             ENDIF
+           ENDDO
+         ENDIF
       ELSEIF(ITYP.EQ.2) THEN
 
 C        Other numeric value
@@ -210,15 +293,14 @@ C              this value.
                   UNIT(11:11) = '('
                   IPT = 12
                   DO II=1,NIFV
-                    IF(IFV(II).LT.10) THEN
-                       ISZ = 1
-                    ELSE
-                       ISZ = 2
-                    ENDIF
+                    ISZ = ISIZE(IFV(II))
                     WRITE(FMTF,'(A2,I1,A4)') '(I', ISZ, ',A1)'
                     IF((IPT+ISZ).LE.24) THEN
                        WRITE(UNIT(IPT:IPT+ISZ),FMTF) IFV(II), ','
                        IPT = IPT + ISZ + 1
+                    ELSE
+                       UNIT(12:23) = 'MANY BITS ON'
+                       IPT = 25
                     ENDIF
                   ENDDO
                   UNIT(IPT-1:IPT-1) = ')'
@@ -231,16 +313,58 @@ C              this value.
 C        Character (CCITT IA5) value
 
          NCHR = IBT(NODE)/8
-         IF(NCHR.GT.8) THEN
-            CALL READLC(LUNIT,LCHR,NEMO)
+
+         IF(NCHR.LE.8) THEN
+            IF(IBFMS(RVAL).NE.0) THEN
+               LCHR = PMISS
+            ELSE
+               LCHR = CVAL
+            ENDIF
          ELSE
-            LCHR = CVAL
+
+C           Track the number of occurrences of this long character string, so
+C           that we can properly output each one.
+
+            II = 1
+            FOUND = .FALSE.
+            DO WHILE((II.LE.NLS).AND.(.NOT.FOUND))
+               IF(NEMO.EQ.LSNEMO(II)) THEN
+                 FOUND = .TRUE.
+               ELSE
+                 II = II + 1
+               ENDIF
+            ENDDO
+
+            IF(.NOT.FOUND) THEN
+               NLS = NLS+1
+               IF(NLS.GT.MXLS) GOTO 905
+               LSNEMO(NLS) = NEMO
+               LSCT(NLS) = 1
+               NEMO3 = NEMO
+            ELSE
+               CALL STRSUC(NEMO,NEMO3,LNM3)
+               LSCT(II) = LSCT(II) + 1
+               WRITE(FMTF,'(A,I1,A)') '(2A,I', ISIZE(LSCT(II)), ')'
+               WRITE(NEMO3,FMTF) NEMO(1:LNM3), '#', LSCT(II)
+            ENDIF
+
+            IF(NCHR.LE.20) THEN
+               CALL READLC(LUNIT,LCHR,NEMO3)
+            ELSE
+               CALL READLC(LUNIT,LCHR2,NEMO3)
+            ENDIF
          ENDIF
-         IF(IBFMS(RVAL).NE.0) LCHR = PMISS
-         IRET = RJUST(LCHR)
-         FMT = '(A6,2X,A10,2X,A20,2X,"(",I2,")",A24,2X,A48)'
-         WRITE(LUOUT,FMT) NUMB,NEMO,LCHR,NCHR,UNIT,DESC
+
+         IF(NCHR.LE.20) THEN
+            IRET = RJUST(LCHR)
+            FMT = '(A6,2X,A10,2X,A20,2X,"(",I2,")",A24,2X,A48)'
+            WRITE(LUOUT,FMT) NUMB,NEMO,LCHR,NCHR,UNIT,DESC
+         ELSE
+            FMT = '(A6,2X,A10,2X,A,2X,"(",I3,")",A23,2X,A48)'
+            WRITE(LUOUT,FMT) NUMB,NEMO,LCHR2(1:NCHR),NCHR,UNIT,DESC
+         ENDIF
       ENDIF
+
       ENDDO
 
       WRITE(LUOUT,3)
@@ -259,4 +383,6 @@ C  -----
 903   CALL BORT('BUFRLIB: UFDUMP - LOCATION OF INTERNAL TABLE FOR '//
      . 'INPUT BUFR FILE DOES NOT AGREE WITH EXPECTED LOCATION IN '//
      . 'INTERNAL SUBSET ARRAY')
+904   CALL BORT('BUFRLIB: UFDUMP - MXSEQ OVERFLOW')
+905   CALL BORT('BUFRLIB: UFDUMP - MXLS OVERFLOW')
       END

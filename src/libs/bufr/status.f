@@ -69,18 +69,19 @@ C    THIS ROUTINE CALLS:        BORT
 C    THIS ROUTINE IS CALLED BY: CLOSBF   CLOSMG   COPYBF   COPYMG
 C                               COPYSB   CPYMEM   DATEBF   DRFINI
 C                               DUMPBF   DXDUMP   GETABDB  IFBGET
-C                               INVMRG   IUPVS01  IUPVS1   MESGBC
-C                               MINIMG   MSGWRT   NMSUB    OPENBF
-C                               OPENMB   OPENMG   RDMEMM   RDMEMS
-C                               RDMGSB   READDX   READERME READLC
-C                               READMG   READMM   READNS   READSB
-C                               REWNBF   STNDRD   UFBCNT   UFBCPY
-C                               UFBCUP   UFBDMP   UFBEVN   UFBGET
-C                               UFBIN3   UFBINT   UFBINX   UFBMMS
-C                               UFBOVR   UFBPOS   UFBQCD   UFBQCP
-C                               UFBREP   UFBRMS   UFBSEQ   UFBSTP
-C                               UFBTAB   UFBTAM   UFDUMP   UPFTBV
-C                               WRCMPS   WRITLC   WRITSA   WRITSB
+C                               IGETSC   INVMRG   IUPVS01  IUPVS1
+C                               LCMGDF   MESGBC   MINIMG   MSGWRT
+C                               NMSUB    OPENBF   OPENMB   OPENMG
+C                               POSAPX   RDMEMM   RDMEMS   RDMGSB
+C                               READDX   READERME READLC   READMG
+C                               READNS   READSB   REWNBF   RTRCPT
+C                               STNDRD   UFBCNT   UFBCPY   UFBCUP
+C                               UFBDMP   UFBEVN   UFBGET   UFBIN3
+C                               UFBINT   UFBINX   UFBMMS   UFBOVR
+C                               UFBPOS   UFBQCD   UFBQCP   UFBREP
+C                               UFBRMS   UFBSEQ   UFBSTP   UFBTAB
+C                               UFBTAM   UFDUMP   UPFTBV   WRCMPS
+C                               WRDXTB   WRITLC   WRITSA   WRITSB
 C                               Also called by application programs.
 C
 C ATTRIBUTES:

@@ -36,6 +36,8 @@ C                           DIAGNOSTIC INFO WHEN ROUTINE TERMINATES
 C                           ABNORMALLY
 C 2004-08-09  J. ATOR    -- MAXIMUM MESSAGE LENGTH INCREASED FROM
 C                           20,000 TO 50,000 BYTES
+C 2009-03-23  J. ATOR    -- MODIFIED TO HANDLE EMBEDDED BUFR TABLE
+C                           (DICTIONARY) MESSAGES
 C
 C USAGE:    CALL REWNBF (LUNIT, ISR)
 C   INPUT ARGUMENT LIST:
@@ -53,7 +55,7 @@ C   INPUT FILES:
 C     UNIT "LUNIT" - BUFR FILE
 C
 C REMARKS:
-C    THIS ROUTINE CALLS:        BORT     I4DY     RDMSGW   STATUS
+C    THIS ROUTINE CALLS:        BORT     I4DY     READMG   STATUS
 C                               WTSTAT
 C    THIS ROUTINE IS CALLED BY: UFBINX   UFBTAB
 C                               Also called by application programs.
@@ -74,6 +76,8 @@ C$$$
      .                JSR(NFILES),JBAY(MXMSGLD4)
 
       CHARACTER*128 BORT_STR
+
+      CHARACTER*8   SUBSET
 
       DIMENSION     MESG(MXMSGLD4)
 
@@ -105,7 +109,7 @@ C  -----------------------------------------
          JBYT = MBYT(LUN)
          JMSG = NMSG(LUN)
          JSUB = NSUB(LUN)
-         KSUB = MSUB (LUN)
+         KSUB = MSUB(LUN)
          JNOD = INODE(LUN)
          JDAT = IDATE(LUN)
          DO I=1,JBYT
@@ -118,11 +122,8 @@ C  REWIND THE FILE AND POSITION AFTER THE DICTIONARY
 C  -------------------------------------------------
 
       REWIND LUNIT
-1     CALL RDMSGW(LUNIT,MESG,IER)
-      IF(IER.EQ.-1) GOTO 2
-      IF(IER.EQ.-2) GOTO 904
-      IF(IUPBS01(MESG,'MTYP').EQ.11) GOTO 1
-2     BACKSPACE LUNIT
+      CALL READMG(LUNIT,SUBSET,KDATE,IER)
+      IF(IER.LT.0) GOTO 904
 
 C  RESTORE FILE PARAMETERS AND POSITION IT TO WHERE IT WAS SAVED
 C  -------------------------------------------------------------
@@ -139,10 +140,11 @@ C  -------------------------------------------------------------
          INODE(LUN) = JNOD
          IDATE(LUN) = I4DY(JDAT)
          DO I=1,JBYT
-         MBAY(I,LUN) = JBAY(I)
+           MBAY(I,LUN) = JBAY(I)
          ENDDO
          DO IMSG=1,JMSG
-         READ(LUNIT,ERR=905,END=906)
+           CALL READMG(LUNIT,SUBSET,KDATE,IER)
+           IF(IER.LT.0) GOTO 905
          ENDDO
          CALL WTSTAT(LUNIT,LUN,IL,IM)
       ENDIF
@@ -166,16 +168,13 @@ C  -----
      . LUNIT
       CALL BORT(BORT_STR)
 903   WRITE(BORT_STR,'("BUFRLIB: REWNBF - SAVE/RESTORE SWITCH (INPUT '//
-     . 'ARGUMENT ISR) IS NOT ZERO OR ONE (HERE =",I4,") (UNIT",I3,")")')     . ISR,LUNIT
+     . 'ARGUMENT ISR) IS NOT ZERO OR ONE (HERE =",I4,") (UNIT",I3,")")')
+     . ISR,LUNIT
       CALL BORT(BORT_STR)
-904   WRITE(BORT_STR,'("BUFRLIB: REWNBF - ERROR READING A DICTIONARY '//
-     . 'MESSAGE AFTER REWIND OF BUFR FILE IN UNIT",I4,")")')  LUNIT
+904   WRITE(BORT_STR,'("BUFRLIB: REWNBF - ERROR READING DICTIONARY '//
+     . 'MESSAGES AFTER REWIND OF BUFR FILE IN UNIT",I4,")")')  LUNIT
       CALL BORT(BORT_STR)
-905   WRITE(BORT_STR,'("BUFRLIB: REWNBF - ERROR READING MSG (RECORD) '//
-     . 'NO.",I5," IN ATTEMPT TO REPOSITION BUFR FILE IN UNIT",I3," TO'//
-     . ' ORIGINAL MSG NO.",I5)') IMSG,LUNIT,JMSG
-      CALL BORT(BORT_STR)
-906   WRITE(BORT_STR,'("BUFRLIB: REWNBF - HIT END OF FILE BEFORE '//
+905   WRITE(BORT_STR,'("BUFRLIB: REWNBF - HIT END OF FILE BEFORE '//
      . 'REPOSITIONING BUFR FILE IN UNIT",I3," TO ORIGINAL MESSAGE '//
      . 'NO.",I5)') LUNIT,JMSG
       CALL BORT(BORT_STR)

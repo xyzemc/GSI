@@ -35,6 +35,7 @@ C                           INTERDEPENDENCIES
 C 2003-11-04  D. KEYSER  -- UNIFIED/PORTABLE FOR WRF; ADDED HISTORY
 C                           DOCUMENTATION
 C 2005-11-29  J. ATOR    -- ADDED SUPPORT FOR 207 AND 208 OPERATORS
+C 2010-03-19  J. ATOR    -- ADDED SUPPORT FOR 204 AND 205 OPERATORS
 C
 C USAGE:    CALL NEMTAB (LUN, NEMO, IDN, TAB, IRET)
 C   INPUT ARGUMENT LIST:
@@ -56,8 +57,8 @@ C
 C REMARKS:
 C    THIS ROUTINE CALLS:        IFXY
 C    THIS ROUTINE IS CALLED BY: CHEKSTAB CMSGINI  ELEMDX   MSGINI
-C                               SEQSDX   TABSUB   UFBDMP   UFBQCD
-C                               UFDUMP   UPFTBV
+C                               SEQSDX   STSEQ    TABSUB   UFBDMP
+C                               UFBQCD   UFDUMP   UPFTBV
 C                               Also called by application programs
 C                               (see ABSTRACT).
 C
@@ -134,6 +135,8 @@ C  -------------------------------------------------------------
 
       IF(NEMO(1:3).EQ.'201' .OR.
      .   NEMO(1:3).EQ.'202' .OR.
+     .   NEMO(1:3).EQ.'204' .OR.
+     .   NEMO(1:3).EQ.'205' .OR.
      .   NEMO(1:3).EQ.'206' .OR.
      .   NEMO(1:3).EQ.'207' .OR.
      .   NEMO(1:3).EQ.'208' ) THEN

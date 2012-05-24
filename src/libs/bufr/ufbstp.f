@@ -34,6 +34,7 @@ C                           TERMINATES ABNORMALLY OR UNUSUAL THINGS
 C                           HAPPEN; CHANGED CALL FROM BORT TO BORT2 IN
 C                           SOME CASES
 C 2004-08-18  J. ATOR    -- ADDED SAVE FOR IFIRST1 AND IFIRST2 FLAGS
+C 2009-04-21  J. ATOR    -- USE ERRWRT
 C
 C USAGE:    CALL UFBSTP (LUNIO, USR, I1, I2, IRET, STR)
 C   INPUT ARGUMENT LIST:
@@ -53,7 +54,6 @@ C                  - IF BUFR FILE OPEN FOR INPUT:  LENGTH OF SECOND
 C                    DIMENSION OF USR
 C                  - IF BUFR FILE OPEN FOR OUTPUT: NUMBER OF "LEVELS
 C                    OF DATA VALUES TO BE WRITTEN TO DATA SUBSET
-C                    (MAXIMUM VALUE IS 255)
 C     STR      - CHARACTER*(*): STRING ....
 C
 C   OUTPUT ARGUMENT LIST:
@@ -68,12 +68,9 @@ C                  - IF BUFR FILE OPEN FOR OUTPUT: NUMBER OF "LEVELS"
 C                    OF DATA VALUES WRITTEN TO DATA SUBSET (SHOULD BE
 C                    SAME AS I2)
 C
-C   OUTPUT FILES:
-C     UNIT 06  - STANDARD OUTPUT PRINT
-C
 C REMARKS:
-C    THIS ROUTINE CALLS:        BORT     BORT2    STATUS   STRING
-C                               UFBSP
+C    THIS ROUTINE CALLS:        BORT     BORT2    ERRWRT   STATUS
+C                               STRING   UFBSP
 C    THIS ROUTINE IS CALLED BY: None
 C                               Normally called only by application
 C                               programs.
@@ -88,11 +85,11 @@ C$$$
 
       COMMON /MSGCWD/ NMSG(NFILES),NSUB(NFILES),MSUB(NFILES),
      .                INODE(NFILES),IDATE(NFILES)
-      COMMON /USRINT/ NVAL(NFILES),INV(MAXJL,NFILES),VAL(MAXJL,NFILES)
+      COMMON /USRINT/ NVAL(NFILES),INV(MAXSS,NFILES),VAL(MAXSS,NFILES)
       COMMON /QUIET / IPRT
 
       CHARACTER*(*) STR
-      CHARACTER*128 BORT_STR1,BORT_STR2
+      CHARACTER*128 BORT_STR1,BORT_STR2,ERRSTR
       REAL*8        USR(I1,I2),VAL
 
       DATA IFIRST1/0/,IFIRST2/0/
@@ -118,31 +115,35 @@ C  --------------------------------
 
       IF(I1.LE.0) THEN
          IF(IPRT.GE.0) THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-         PRINT*,'BUFRLIB: UFBSTP - THIRD ARGUMENT (INPUT) IS .LE. 0',
-     .    ' -  RETURN WITH FIFTH ARGUMENT (IRET) = 0'
-         PRINT*,'STR = ',STR
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      ERRSTR = 'BUFRLIB: UFBSTP - 3rd ARG. (INPUT) IS .LE. 0, ' //
+     .   'SO RETURN WITH 5th ARG. (IRET) = 0; 6th ARG. (STR) ='
+      CALL ERRWRT(ERRSTR)
+      CALL ERRWRT(STR)
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      CALL ERRWRT(' ')
          ENDIF
          GOTO 100
       ELSEIF(I2.LE.0) THEN
          IF(IPRT.EQ.-1)  IFIRST1 = 1
          IF(IO.EQ.0 .OR. IFIRST1.EQ.0 .OR. IPRT.GE.1)  THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-            PRINT*,'BUFRLIB: UFBSTP - FOURTH ARGUMENT (INPUT) IS .LE. ',
-     .       '0 -  RETURN WITH FIFTH ARGUMENT (IRET) = 0'
-            PRINT*,'STR = ',STR
-            IF(IPRT.EQ.0 .AND. IO.EQ.1)  PRINT 101
-101   FORMAT('Note: Only the first occurrence of this WARNING message ',
-     . 'is printed, there may be more.  To output'/6X,'ALL WARNING ',
-     . 'messages, modify your application program to add ',
-     . '"CALL OPENBF(0,''QUIET'',1)" prior'/6X,'to the first call to a',
-     . ' BUFRLIB routine.')
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      ERRSTR = 'BUFRLIB: UFBSTP - 4th ARG. (INPUT) IS .LE. 0, ' //
+     .   'SO RETURN WITH 5th ARG. (IRET) = 0; 6th ARG. (STR) ='
+      CALL ERRWRT(ERRSTR)
+      CALL ERRWRT(STR)
+            IF(IPRT.EQ.0 .AND. IO.EQ.1) THEN
+      ERRSTR = 'Note: Only the first occurrence of this WARNING ' //
+     .   'message is printed, there may be more.  To output all ' //
+     .   'such messages,'
+      CALL ERRWRT(ERRSTR)
+      ERRSTR = 'modify your application program to add ' //
+     .   '"CALL OPENBF(0,''QUIET'',1)" prior to the first call ' //
+     .   'to a BUFRLIB routine.'
+      CALL ERRWRT(ERRSTR)
+            ENDIF
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      CALL ERRWRT(' ')
             IFIRST1 = 1
          ENDIF
          GOTO 100
@@ -174,25 +175,35 @@ C  -------------------------------
       IF(IRET.EQ.0)  THEN
          IF(IO.EQ.0) THEN
             IF(IPRT.GE.1)  THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-               PRINT*,'BUFRLIB: UFBSTP - NO SPECIFIED VALUES READ IN',
-     .          ' -  RETURN WITH FIFTH ARGUMENT (IRET) = 0'
-               PRINT*,'STR = ',STR
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      ERRSTR = 'BUFRLIB: UFBSTP - NO SPECIFIED VALUES READ IN, ' //
+     .   'SO RETURN WITH 5th ARG. (IRET) = 0; 6th ARG. (STR) ='
+      CALL ERRWRT(ERRSTR)
+      CALL ERRWRT(STR)
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      CALL ERRWRT(' ')
             ENDIF
          ELSE
             IF(IPRT.EQ.-1)  IFIRST2 = 1
             IF(IFIRST2.EQ.0 .OR. IPRT.GE.1)  THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-               PRINT*,'BUFRLIB: UFBSTP - NO SPECIFIED VALUES WRITTEN ',
-     .          'OUT -  RETURN WITH FIFTH ARGUMENT (IRET) = 0'
-               PRINT*,'STR = ',STR,' MAY NOT BE IN THE BUFR TABLE(?)'
-               IF(IPRT.EQ.0)  PRINT 101
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      ERRSTR = 'BUFRLIB: UFBSTP - NO SPECIFIED VALUES WRITTEN OUT, ' //
+     .   'SO RETURN WITH 5th ARG. (IRET) = 0; 6th ARG. (STR) ='
+      CALL ERRWRT(ERRSTR)
+      CALL ERRWRT(STR)
+      CALL ERRWRT('MAY NOT BE IN THE BUFR TABLE(?)')
+               IF(IPRT.EQ.0) THEN
+      ERRSTR = 'Note: Only the first occurrence of this WARNING ' //
+     .   'message is printed, there may be more.  To output all ' //
+     .   'such messages,'
+      CALL ERRWRT(ERRSTR)
+      ERRSTR = 'modify your application program to add ' //
+     .   '"CALL OPENBF(0,''QUIET'',1)" prior to the first call ' //
+     .   'to a BUFRLIB routine.'
+      CALL ERRWRT(ERRSTR)
+               ENDIF
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      CALL ERRWRT(' ')
                IFIRST2 = 1
             ENDIF
          ENDIF

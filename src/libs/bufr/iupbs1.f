@@ -34,7 +34,7 @@ C   OUTPUT ARGUMENT LIST:
 C     IUPBS1   - INTEGER: UNPACKED INTEGER WORD
 C
 C REMARKS:
-C    THIS ROUTINE CALLS:        IUPB     WRDLEN
+C    THIS ROUTINE CALLS:        ERRWRT   IUPB     WRDLEN
 C    THIS ROUTINE IS CALLED BY: IUPVS1
 C                               Also called by application programs.
 C
@@ -44,10 +44,33 @@ C   MACHINE:  PORTABLE TO ALL PLATFORMS
 C
 C$$$
 
+      COMMON /QUIET / IPRT
+
       DIMENSION MBAY(*)
+
+      CHARACTER*128 ERRSTR
+
+      DATA IFIRST/0/
+
+      SAVE IFIRST
 
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
+
+      IF(IFIRST.EQ.0) THEN
+
+         IFIRST = 1
+
+         IF(IPRT.GE.0) THEN
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      ERRSTR = 'BUFRLIB: IUPBS1 - THIS FUNCTION IS NOW OBSOLETE;'//
+     . ' USE FUNCTION IUPBS01 INSTEAD'
+      CALL ERRWRT(ERRSTR)
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      CALL ERRWRT(' ')
+         ENDIF
+
+      ENDIF
 
 C     CALL SUBROUTINE WRDLEN TO INITIALIZE SOME IMPORTANT INFORMATION
 C     ABOUT THE LOCAL MACHINE, JUST IN CASE SUBROUTINE OPENBF HASN'T

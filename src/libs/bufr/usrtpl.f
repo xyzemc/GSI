@@ -32,6 +32,7 @@ C                           TERMINATES ABNORMALLY OR UNUSUAL THINGS
 C                           HAPPEN; COMMENTED OUT HARDWIRE OF VTMP TO
 C                           "BMISS" (10E10) WHEN IT IS > 10E9 (CAUSED
 C                           PROBLEMS ON SOME FOREIGN MACHINES)
+C 2009-04-21  J. ATOR    -- USE ERRWRT
 C
 C USAGE:    CALL USRTPL (LUN, INVN, NBMP)
 C   INPUT ARGUMENT LIST:
@@ -39,15 +40,12 @@ C     LUN      - INTEGER: I/O STREAM INDEX INTO INTERNAL MEMORY ARRAYS
 C     INVN     - INTEGER: INVENTORY INDEX FOR ELEMENTS
 C     NBMP     - INTEGER  ....
 C
-C   OUTPUT FILES:
-C     UNIT 06  - STANDARD OUTPUT PRINT
-C
 C REMARKS:
 C    THIS ROUTINE CALLS:        BORT
-C    THIS ROUTINE IS CALLED BY: CONWIN   DRFINI   DRSTPL   MSGUPD
-C                               OPENMB   OPENMG   RDCMPS   SUBUPD
-C                               TRYBUMP  UFBGET   UFBTAB   UFBTAM
-C                               WRCMPS   WRITLC
+C    THIS ROUTINE IS CALLED BY: CONWIN   DRFINI   DRSTPL   ERRWRT
+C                               MSGUPD   OPENMB   OPENMG   RDCMPS
+C                               SUBUPD   TRYBUMP  UFBGET   UFBTAB
+C                               UFBTAM   WRCMPS   WRITLC
 C                               Normally not called by any application
 C                               programs.
 C
@@ -66,10 +64,10 @@ C$$$
      .                IBT(MAXJL),IRF(MAXJL),ISC(MAXJL),
      .                ITP(MAXJL),VALI(MAXJL),KNTI(MAXJL),
      .                ISEQ(MAXJL,2),JSEQ(MAXJL)
-      COMMON /USRINT/ NVAL(NFILES),INV(MAXJL,NFILES),VAL(MAXJL,NFILES)
+      COMMON /USRINT/ NVAL(NFILES),INV(MAXSS,NFILES),VAL(MAXSS,NFILES)
       COMMON /QUIET / IPRT
 
-      CHARACTER*128 BORT_STR
+      CHARACTER*128 BORT_STR,ERRSTR
       CHARACTER*10  TAG
       CHARACTER*3   TYP
       DIMENSION     ITMP(MAXJL)
@@ -80,21 +78,21 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
       IF(IPRT.GE.2)  THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-         PRINT*,'BUFRLIB: USRTPL - LUN:INVN:NBMP:TAG(INODE(LUN)) = ',
-     .    LUN,':',INVN,':',NBMP,':',TAG(INODE(LUN))
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+         WRITE ( UNIT=ERRSTR, FMT='(A,I3,A,I5,A,I5,A,A10)' )
+     .      'BUFRLIB: USRTPL - LUN:INVN:NBMP:TAG(INODE(LUN)) = ',
+     .      LUN, ':', INVN, ':', NBMP, ':', TAG(INODE(LUN))
+         CALL ERRWRT(ERRSTR)
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      CALL ERRWRT(' ')
       ENDIF
 
       IF(NBMP.LE.0) THEN
          IF(IPRT.GE.1)  THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-            PRINT*,'BUFRLIB: USRTPL - NBMP .LE. 0 - IMMEDIATE RETURN'
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      CALL ERRWRT('BUFRLIB: USRTPL - NBMP .LE. 0 - IMMEDIATE RETURN')
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      CALL ERRWRT(' ')
          ENDIF
          GOTO 100
       ENDIF
@@ -173,17 +171,20 @@ C  ---------------------------
       NVAL(LUN) = NVAL(LUN) + NEWN*NBMP
 
       IF(IPRT.GE.2)  THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-         PRINT*,'BUFRLIB: USRTPL - TAG(INV(INVN,LUN)):NEWN:NBMP:',
-     .    'NVAL(LUN) = ',TAG(INV(INVN,LUN)),':',NEWN,':',NBMP,':',
-     .    NVAL(LUN)
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+         WRITE ( UNIT=ERRSTR, FMT='(A,A,A10,3(A,I5))' )
+     .      'BUFRLIB: USRTPL - TAG(INV(INVN,LUN)):NEWN:NBMP:',
+     .      'NVAL(LUN) = ', TAG(INV(INVN,LUN)), ':', NEWN, ':',
+     .      NBMP, ':', NVAL(LUN)
+         CALL ERRWRT(ERRSTR)
          DO I=1,NEWN
-            PRINT*,'For I = ',I,', ITMP(I) = ',ITMP(I),
-     .       ', TAG(ITMP(I)) = ',TAG(ITMP(I))
+           WRITE ( UNIT=ERRSTR, FMT='(2(A,I5),A,A10)' )
+     .      'For I = ', I, ', ITMP(I) = ', ITMP(I),
+     .      ', TAG(ITMP(I)) = ', TAG(ITMP(I))
+           CALL ERRWRT(ERRSTR)
          ENDDO
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      CALL ERRWRT(' ')
       ENDIF
 
       IF(DRX) THEN

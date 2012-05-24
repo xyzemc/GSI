@@ -40,7 +40,7 @@ C                NTAG WORDS FILLED)
 C     NTAG     - INTEGER: NUMBER OF MNEMONICS RETURNED
 C
 C REMARKS:
-C    THIS ROUTINE CALLS:        BORT2
+C    THIS ROUTINE CALLS:        BORT2    ERRWRT
 C    THIS ROUTINE IS CALLED BY: None
 C                               Normally not called by any application
 C                               programs but it could be.
@@ -52,7 +52,7 @@ C
 C$$$
 
       CHARACTER*(*) STR,TAGS(MTAG)
-      CHARACTER*128 BORT_STR1,BORT_STR2
+      CHARACTER*128 BORT_STR1,BORT_STR2,ERRSTR
       CHARACTER*80  ASTR
       LOGICAL       WORD
 
@@ -67,13 +67,12 @@ C-----------------------------------------------------------------------
 
       IF(IFIRST.EQ.0) THEN
          IF(IPRT.GE.0) THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-      PRINT 101
-101   FORMAT(' BUFRLIB: PARSEQ - THIS SUBROUTINE IS NOW OBSOLETE; ',
-     . 'USE SUBROUTINE PARSTR INSTEAD')
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      ERRSTR = 'BUFRLIB: PARSEQ - THIS SUBROUTINE IS NOW OBSOLETE;'//
+     . ' USE SUBROUTINE PARSTR INSTEAD'
+      CALL ERRWRT(ERRSTR)
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      CALL ERRWRT(' ')
          ENDIF
          IFIRST = 1
       ENDIF

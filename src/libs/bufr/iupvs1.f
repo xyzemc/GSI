@@ -33,7 +33,7 @@ C   OUTPUT ARGUMENT LIST:
 C     IUPVS1   - INTEGER: UNPACKED INTEGER WORD
 C
 C REMARKS:
-C    THIS ROUTINE CALLS:        BORT     IUPBS1   STATUS
+C    THIS ROUTINE CALLS:        BORT     ERRWRT   IUPBS1   STATUS
 C    THIS ROUTINE IS CALLED BY: None
 C                               Normally called only by application
 C                               programs.
@@ -49,8 +49,31 @@ C$$$
       COMMON /BITBUF/ MAXBYT,IBIT,IBAY(MXMSGLD4),MBYT(NFILES),
      .                MBAY(MXMSGLD4,NFILES)
 
+      COMMON /QUIET / IPRT
+
+      CHARACTER*128 ERRSTR
+
+      DATA IFIRST/0/
+
+      SAVE IFIRST
+
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
+
+      IF(IFIRST.EQ.0) THEN
+
+         IFIRST = 1
+
+         IF(IPRT.GE.0) THEN
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      ERRSTR = 'BUFRLIB: IUPVS1 - THIS FUNCTION IS NOW OBSOLETE;'//
+     . ' USE FUNCTION IUPVS01 INSTEAD'
+      CALL ERRWRT(ERRSTR)
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      CALL ERRWRT(' ')
+         ENDIF
+
+      ENDIF
 
 C  CHECK THE FILE STATUS
 C  ---------------------

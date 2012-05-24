@@ -31,13 +31,16 @@ C 2004-08-09  J. ATOR    -- MAXIMUM MESSAGE LENGTH INCREASED FROM
 C                           20,000 TO 50,000 BYTES
 C 2007-01-19  J. ATOR    -- PREVENT OVERFLOW OF CVAL FOR STRINGS LONGER
 C                           THAN 8 CHARACTERS; USE FUNCTION IBFMS
+C 2009-08-03  J. WOOLLEN -- ADDED CAPABILITY TO COPY LONG STRINGS VIA
+C                           UFBCPY USING FILE POINTER STORED IN NEW
+C                           COMMON UFBCPL
 C
 C USAGE:    CALL WRTREE (LUN)
 C   INPUT ARGUMENT LIST:
 C     LUN      - INTEGER: I/O STREAM INDEX INTO INTERNAL MEMORY ARRAYS
 C
 C REMARKS:
-C    THIS ROUTINE CALLS:        IBFMS    PKB      PKC
+C    THIS ROUTINE CALLS:        IBFMS    PKB      PKC      READLC
 C    THIS ROUTINE IS CALLED BY: WRITSA   WRITSB
 C                               Normally not called by any application
 C                               programs.
@@ -57,16 +60,18 @@ C$$$
      .                IBT(MAXJL),IRF(MAXJL),ISC(MAXJL),
      .                ITP(MAXJL),VALI(MAXJL),KNTI(MAXJL),
      .                ISEQ(MAXJL,2),JSEQ(MAXJL)
-      COMMON /USRINT/ NVAL(NFILES),INV(MAXJL,NFILES),VAL(MAXJL,NFILES)
+      COMMON /USRINT/ NVAL(NFILES),INV(MAXSS,NFILES),VAL(MAXSS,NFILES)
+      COMMON /UFBCPL/ LUNCPY(NFILES) 
 
-      CHARACTER*10 TAG
-      CHARACTER*8  CVAL
-      CHARACTER*3  TYP
-      DIMENSION    IVAL(MAXJL)
-      EQUIVALENCE  (CVAL,RVAL)
-      REAL*8       VAL,RVAL,PKS,TEN
+      CHARACTER*100 LSTR
+      CHARACTER*10  TAG
+      CHARACTER*8   CVAL
+      CHARACTER*3   TYP
+      DIMENSION     IVAL(MAXSS)
+      EQUIVALENCE   (CVAL,RVAL)
+      REAL*8        VAL,RVAL,PKS,TEN
 
-      DATA         TEN  /10./
+      DATA TEN /10./
 
 C-----------------------------------------------------------------------
       PKS(NODE) = VAL(N,LUN)*TEN**ISC(NODE)-IRF(NODE)
@@ -103,16 +108,30 @@ C	 The value to be packed is numeric.
       ELSE
 
 C	 The value to be packed is a character string.  If the string is
-C	 longer than 8 characters, then only the first 8 will be packed
-C	 by this routine, and a separate subsequent call to BUFR archive
-C	 library subroutine WRITLC will be required to pack the
-C	 remainder of the string.
+C	 longer than 8 characters, and if there was a preceeding call to
+C	 UFBCPY involving this output unit, then the long string will be
+C	 read with READLC and written into the output buffer using PKC.
+C	 Otherwise, only up to 8 characters will be copied here, and a
+C	 separate subsequent call to BUFR archive library subroutine
+C	 WRITLC will be required to store the complete string if it is
+C	 longer than 8 characters.
 
-         RVAL = VAL(N,LUN)
-         NBT = MIN(8,IBT(NODE)/8)
-         CALL PKC(CVAL,NBT,IBAY,IBIT)
+         NCR=IBT(NODE)/8
+         IF(NCR.LE.8.OR.LUNCPY(LUN).EQ.0) THEN
+            RVAL = VAL(N,LUN)
+            CALL PKC(CVAL,NCR,IBAY,IBIT)
+         ELSE
+            CALL READLC(LUNCPY(LUN),LSTR,TAG(NODE))
+            CALL PKC(LSTR,NCR,IBAY,IBIT)
+         ENDIF
+
       ENDIF
       ENDDO
 
+C  RESET UFBCPY FILE POINTER
+C  -------------------------
+
+      LUNCPY(LUN)=0
+            
       RETURN
       END

@@ -5,11 +5,11 @@ C
 C SUBPROGRAM:    BORT
 C   PRGMMR: WOOLLEN          ORG: NP20       DATE: 1998-07-08
 C
-C ABSTRACT: THIS SUBROUTINE PRINTS (TO STDOUT) A GIVEN ERROR STRING
-C   AND THEN CALLS BUFR ARCHIVE LIBRARY SUBROUTINE BORT_EXIT TO ABORT
-C   THE APPLICATION PROGRAM CALLING THE BUFR ARCHIVE LIBRARY SOFTWARE.
-C   IT IS SIMILAR TO BUFR ARCHIVE LIBRARY SUBROUTINE BORT2, EXCEPT
-C   BORT2 PRINTS TWO ERROR STRINGS. 
+C ABSTRACT: THIS SUBROUTINE WRITES (VIA BUFR ARCHIVE LIBRARY SUBROUTINE
+C   ERRWRT) A GIVEN ERROR STRING AND THEN CALLS BUFR ARCHIVE LIBRARY
+C   SUBROUTINE BORT_EXIT TO ABORT THE APPLICATION PROGRAM CALLING THE
+C   BUFR ARCHIVE LIBRARY SOFTWARE. IT IS SIMILAR TO BUFR ARCHIVE LIBRARY
+C   SUBROUTINE BORT2, EXCEPT BORT2 WRITES TWO ERROR STRINGS. 
 C
 C PROGRAM HISTORY LOG:
 C 1998-07-08  J. WOOLLEN -- ORIGINAL AUTHOR (REPLACED CRAY LIBRARY
@@ -23,48 +23,49 @@ C 2003-11-04  S. BENDER  -- ADDED REMARKS/BUFRLIB ROUTINE
 C                           INTERDEPENDENCIES
 C 2003-11-04  D. KEYSER  -- UNIFIED/PORTABLE FOR WRF; ADDED HISTORY
 C                           DOCUMENTATION
+C 2009-04-21  J. ATOR    -- USE ERRWRT
 C
 C USAGE:    CALL BORT (STR)
 C   INPUT ARGUMENT LIST:
-C     STR      - CHARACTER*(*): ERROR MESSAGE TO BE PRINTED TO
-C                STANDARD OUTPUT 
-C
-C   OUTPUT FILES:
-C     UNIT 06  - STANDARD OUTPUT PRINT
+C     STR      - CHARACTER*(*): ERROR MESSAGE TO BE WRITTEN VIA
+C                SUBROUTINE ERRWRT 
 C
 C REMARKS:
-C    THIS ROUTINE CALLS:        BORT_EXIT
-C    THIS ROUTINE IS CALLED BY: ADN30    CHEKSTAB CKTABA   CLOSMG
-C                               CMPMSG   CMSGINI  CNVED4   COBFL
-C                               COPYBF   COPYMG   COPYSB   CPYMEM
-C                               CPYUPD   CRBMG    CWBMG    DATEBF
-C                               DATELEN  DRFINI   DRSTPL   DUMPBF
-C                               DXDUMP   DXMINI   GETWIN   GETTBH
-C                               IDN30    IFBGET   INCTAB   INVMRG
-C                               IPKM     IUPVS01  IUPVS1   IUPM
-C                               JSTNUM   LSTJPB   LSTRPC   LSTRPS
-C                               MAKESTAB MINIMG   MSGINI   MSGWRT
-C                               MVB      NEMTBA   NEMTBAX  NEMTBB
-C                               NEMTBD   NENUAA   NENUBD   NEVN
-C                               NEWWIN   NMSUB    NVNWIN   NXTWIN
-C                               OPENBF   OPENMB   OPENMG   OVRBS1
-C                               PAD      PADMSG   PARUTG   PKBS1
-C                               PKVS01   PKVS1    POSAPN   POSAPX
-C                               RCSTPL   RDBFDX   RDMEMM   RDMEMS
-C                               RDMGSB   RDMTBB   RDMTBD   READDX
-C                               READERME READLC   READMG   READMM
-C                               READNS   READSB   REWNBF   SNTBBE
-C                               SNTBDE   STATUS   STDMSG   STNDRD
+C    THIS ROUTINE CALLS:        BORT_EXIT ERRWRT
+C    THIS ROUTINE IS CALLED BY: ADN30    ATRCPT   BVERS    CHEKSTAB
+C                               CKTABA   CLOSMG   CMPMSG   CMSGINI
+C                               CNVED4   COBFL    COPYBF   COPYMG
+C                               COPYSB   CPDXMM   CPYMEM   CPYUPD
+C                               CRBMG    CWBMG    DATEBF   DATELEN
+C                               DRFINI   DRSTPL   DUMPBF   DXDUMP
+C                               DXMINI   GETWIN   GETTBH   IDN30
+C                               IFBGET   IGETNTBI IGETSC   IGETTDI
+C                               INCTAB   INVMRG   IPKM     ISIZE
+C                               IUPVS01  IUPVS1   IUPM     JSTNUM
+C                               LCMGDF   LSTJPB   MAKESTAB MINIMG
+C                               MSGINI   MSGWRT   MVB      NEMTBA
+C                               NEMTBAX  NEMTBB   NEMTBD   NENUBD
+C                               NEVN     NEWWIN   NMSUB    NUMMTB
+C                               NVNWIN   NXTWIN   OPENBF   OPENMB
+C                               OPENMG   PAD      PADMSG   PARUTG
+C                               PKBS1    PKVS01   POSAPN   POSAPX
+C                               RCSTPL   RDBFDX   RDCMPS   RDMEMM
+C                               RDMEMS   RDMGSB   RDMSGB   RDMSGW
+C                               RDMTBB   RDMTBD   READDX   READERME
+C                               READLC   READMG   READNS   READSB
+C                               READS3   REWNBF   RTRCPT   SNTBBE
+C                               SNTBDE   STATUS   STBFDX   STDMSG
+C                               STNDRD   STNTBIA  STRCPT   STSEQ
 C                               TABENT   TABSUB   TRYBUMP  UFBCNT
 C                               UFBCPY   UFBCUP   UFBDMP   UFBEVN
 C                               UFBGET   UFBIN3   UFBINT   UFBINX
 C                               UFBMEM   UFBMMS   UFBMNS   UFBOVR
 C                               UFBPOS   UFBQCD   UFBQCP   UFBREP
 C                               UFBRMS   UFBSEQ   UFBSTP   UFBTAB
-C                               UFBTAM   UFDUMP   UPFTBV   UPTDD
-C                               USRTPL   WRCMPS   WRDESC   WRDLEN
-C                               WRITDX   WRITLC   WRITSA   WRITSB
-C                               WTSTAT
+C                               UFBTAM   UFDUMP   UPDS3    UPFTBV
+C                               UPTDD    USRTPL   WRCMPS   WRDESC
+C                               WRDLEN   WRDXTB   WRITDX   WRITLC
+C                               WRITSA   WRITSB   WTSTAT
 C                               Normally not called by any application
 C                               programs but it could be.
 C
@@ -75,10 +76,13 @@ C
 C$$$
 
       CHARACTER*(*) STR
-      PRINT*
-      PRINT*,'**************BUFR ARCHIVE LIBRARY ABORT*****************'
-      PRINT*,STR
-      PRINT*,'**************BUFR ARCHIVE LIBRARY ABORT*****************'
-      PRINT*
+
+      CALL ERRWRT(' ')
+      CALL ERRWRT('***********BUFR ARCHIVE LIBRARY ABORT**************')
+      CALL ERRWRT(STR)
+      CALL ERRWRT('***********BUFR ARCHIVE LIBRARY ABORT**************')
+      CALL ERRWRT(' ')
+
       CALL BORT_EXIT
+
       END

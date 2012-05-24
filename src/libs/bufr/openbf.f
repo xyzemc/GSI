@@ -49,6 +49,9 @@ C                           INFORMATIONAL PURPOSES
 C 2004-08-18  J. ATOR    -- ADDED SAVE FOR IFIRST FLAG AND IO="NODX"
 C                           OPTION 
 C 2005-11-29  J. ATOR    -- ADDED COMMON /MSGFMT/ AND ICHKSTR CALL
+C 2009-03-23  J. ATOR    -- ADDED IO='SEC3' OPTION; REMOVED CALL TO
+C                           POSAPN; CLARIFIED COMMENTS; USE ERRWRT
+C 2010-05-11  J. ATOR    -- ADDED COMMON /STCODE/
 C
 C USAGE:    CALL OPENBF (LUNIT, IO, LUNDX)
 C   INPUT ARGUMENT LIST:
@@ -58,12 +61,19 @@ C     IO       - CHARACTER*(*): FLAG INDICATING HOW LUNIT IS TO BE
 C                USED BY THE SOFTWARE:
 C                    'IN' = input operations
 C                   'OUT' = output operations
-C                   'APN' = same as 'OUT', except begin writing at end
+C                  'SEC3' = same as 'IN', except use Section 3 of input 
+C                           messages for decoding rather than dictionary
+C                           table information from LUNDX; in this case
+C                           LUNDX is ignored, and user must provide 
+C                           appropriate BUFR master tables within
+C                           directory specified by a subsequent call
+C                           to subroutine MTINFO
+C                  'NODX' = same as 'OUT', except don't write dictionary
+C                           (i.e. DX) table messages to LUNIT
+C                   'APN' = same as 'NODX', except begin writing at end
 C                           of file ("append")
 C                   'APX' = same as 'APN', except backspace before
 C                           appending
-C                  'NODX' = same as 'OUT', except don't write dictionary
-C                           (i.e. DX) table messages to LUNIT
 C                   'NUL' = same as 'OUT', except don't write any
 C                           messages whatsoever to LUNIT (e.g. when
 C                           subroutine WRITSA is to be used)
@@ -93,12 +103,9 @@ C
 C   INPUT FILES:
 C     UNIT "LUNIT" - BUFR FILE
 C
-C   OUTPUT FILES:
-C     UNIT 06  - STANDARD OUTPUT PRINT
-C
 C REMARKS:
-C    THIS ROUTINE CALLS:        BFRINI   BORT     DXINIT   ICHKSTR
-C                               POSAPN   POSAPX   READDX   STATUS   
+C    THIS ROUTINE CALLS:        BFRINI   BORT     DXINIT   ERRWRT
+C                               ICHKSTR  POSAPX   READDX   STATUS
 C                               WRDLEN   WRITDX   WTSTAT
 C    THIS ROUTINE IS CALLED BY: RDMGSB   UFBINX   UFBMEM   UFBTAB
 C                               Also called by application programs.
@@ -115,20 +122,24 @@ C$$$
      .                INODE(NFILES),IDATE(NFILES)
       COMMON /STBFR / IOLUN(NFILES),IOMSG(NFILES)
       COMMON /NULBFR/ NULL(NFILES)
+      COMMON /SC3BFR/ ISC3(NFILES),TAMNEM(NFILES)
       COMMON /MSGFMT/ MGWRDS(NFILES)
+      COMMON /LUSHR/  LUS(NFILES)
+      COMMON /STCODE/ ISCODES(NFILES)
       COMMON /QUIET / IPRT
 
       CHARACTER*(*) IO
-      CHARACTER*128 BORT_STR
-      CHARACTER*54  CPRINT(0:3)
+      CHARACTER*128 BORT_STR,ERRSTR
+      CHARACTER*28  CPRINT(0:3)
+      CHARACTER*8   TAMNEM
       CHARACTER*1   BSTR(4)
 
       DATA IFIRST/0/
       DATA          CPRINT/
-     . 'No printout except for ABORT messages',
-     . 'Limited printout (default)',
-     . 'All warning messages are printed out',
-     . 'All warning and informational messages are printed out'/
+     . ' (only ABORTs)              ',
+     . ' (limited - default)        ',
+     . ' (all warnings)             ',
+     . ' (all warning+informational)'/
 
       SAVE IFIRST
 
@@ -146,13 +157,13 @@ c  .... override previous IPRT value (printout indicator)
          IF(LUNDX.LT.-1)  LUNDX = -1
          IF(LUNDX.GT. 2)  LUNDX =  2
          IF(LUNDX.GE.0) THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-      PRINT 101, IPRT,CPRINT(IPRT+1),LUNDX,CPRINT(LUNDX+1)
-101   FORMAT(' BUFRLIB: OPENBF - THE DEGREE OF PRINTOUT INDICATOR IS ',
-     . 'BEING CHANGED FROM:'/15X,I3,' - ',A/25X,'to'/15X,I3,' - ',A)
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      WRITE ( UNIT=ERRSTR, FMT='(A,I3,A,A,I3,A)' )
+     . 'BUFRLIB: OPENBF - DEGREE OF MESSAGE PRINT INDICATOR '//
+     . 'CHNGED FROM',IPRT,CPRINT(IPRT+1),' TO',LUNDX,CPRINT(LUNDX+1)
+      CALL ERRWRT(ERRSTR)
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      CALL ERRWRT(' ')
          ENDIF
          IPRT = LUNDX
       ENDIF
@@ -179,7 +190,10 @@ C  ---------------------------
       IF(LUN.EQ.0) GOTO 900
       IF(IL .NE.0) GOTO 901
       NULL(LUN) = 0
+      ISC3(LUN) = 0
       MGWRDS(LUN) = 0
+      ISCODES(LUN) = 0
+      LUS(LUN) = 0
 
 C  CHECK FOR NO BUFR DATA OR NO DATA AT ALL IN AN "IN" FILE
 C  --------------------------------------------------------
@@ -218,6 +232,9 @@ C  ----------------------------------
       IF(IO.EQ.'IN') THEN
          CALL WTSTAT(LUNIT,LUN,-1,0)
          CALL READDX(LUNIT,LUN,LUNDX)
+      ELSE IF(IO.EQ.'SEC3') THEN
+         CALL WTSTAT(LUNIT,LUN,-1,0)
+         ISC3(LUN) = 1
       ELSE IF(IO.EQ.'OUT') THEN
          CALL WTSTAT(LUNIT,LUN, 1,0)
          CALL WRITDX(LUNIT,LUN,LUNDX)
@@ -226,7 +243,7 @@ C  ----------------------------------
          CALL WTSTAT(LUNIT,LUN, 1,0)
          CALL READDX(LUNIT,LUN,LUNDX)
          IF(IO.EQ.'APN') THEN
-           CALL POSAPN(LUNIT)
+           CALL POSAPX(-LUNIT)
          ELSE IF(IO.EQ.'APX') THEN
            CALL POSAPX(LUNIT)
          ELSE IF(IO.EQ.'NUL') THEN
@@ -243,12 +260,13 @@ C     THE BAD NEWS LATER
 
 200   REWIND LUNIT
       IF(IPRT.GE.0) THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-      PRINT*, 'BUFRLIB: OPENBF - INPUT BUFR FILE IN UNIT ',LUNIT,
-     . ' IS EMPTY'
-      PRINT*,'+++++++++++++++++++++++WARNING+++++++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      WRITE ( UNIT=ERRSTR, FMT='(A,I3,A)' )
+     .  'BUFRLIB: OPENBF - INPUT BUFR FILE IN UNIT ', LUNIT,
+     .  ' IS EMPTY'
+      CALL ERRWRT(ERRSTR)
+      CALL ERRWRT('+++++++++++++++++++++WARNING+++++++++++++++++++++++')
+      CALL ERRWRT(' ')
       ENDIF
       CALL WTSTAT(LUNIT,LUN,-1,0)
 
@@ -276,7 +294,7 @@ C  -----
      . 'RECORD IN INPUT FILE CONNECTED TO UNIT",I4," NOT ''BUFR'', '//
      . 'DOES NOT CONTAIN BUFR DATA")') LUNIT
       CALL BORT(BORT_STR)
-904   CALL BORT('BUFRLIB: OPENBF - SECOND (INPUT) ARGUMENT IS NOT ONE'//
-     . ' OF THE FOLLOWING: "IN", "OUT", "NODX", "NUL", "APN", "APX"'//
+904   CALL BORT('BUFRLIB: OPENBF - SECOND (INPUT) ARGUMENT MUST BE'//
+     . ' "IN", "OUT", "NODX", "NUL", "APN", "APX", "SEC3"'//
      . ' OR "QUIET"')
       END

@@ -23,6 +23,7 @@ C                           WRF; ADDED DOCUMENTATION (INCLUDING
 C                           HISTORY) (INCOMPLETE);  OUTPUTS MORE
 C                           COMPLETE DIAGNOSTIC INFO WHEN UNUSUAL
 C                           THINGS HAPPEN
+C 2009-04-21  J. ATOR    -- USE ERRWRT
 C
 C USAGE:    INVCON (NC, LUN, INV1, INV2)
 C   INPUT ARGUMENT LIST:
@@ -34,11 +35,8 @@ C
 C   OUTPUT ARGUMENT LIST:
 C     INVCON   - INTEGER: ....
 C
-C   OUTPUT FILES:
-C     UNIT 06  - STANDARD OUTPUT PRINT
-C
 C REMARKS:
-C    THIS ROUTINE CALLS:        None
+C    THIS ROUTINE CALLS:        ERRWRT
 C    THIS ROUTINE IS CALLED BY: CONWIN
 C                               Normally not called by any application
 C                               programs.
@@ -51,7 +49,7 @@ C$$$
 
       INCLUDE 'bufrlib.prm'
 
-      COMMON /USRINT/ NVAL(NFILES),INV(MAXJL,NFILES),VAL(MAXJL,NFILES)
+      COMMON /USRINT/ NVAL(NFILES),INV(MAXSS,NFILES),VAL(MAXSS,NFILES)
       COMMON /USRSTR/ NNOD,NCON,NODS(20),NODC(10),IVLS(10),KONS(10)
       COMMON /QUIET / IPRT
 
@@ -80,11 +78,10 @@ C  --------------------------------------------------------------
 
 99    INVCON = 0
       IF(IPRT.GE.2) THEN
-      PRINT*
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-         PRINT*, 'BUFRLIB: INVCON - INVCON RETURNING WITH VALUE OF 0'
-      PRINT*,'+++++++++++++++++BUFR ARCHIVE LIBRARY++++++++++++++++++++'
-      PRINT*
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      CALL ERRWRT('BUFRLIB: INVCON - RETURNING WITH A VALUE OF 0')
+      CALL ERRWRT('++++++++++++++BUFR ARCHIVE LIBRARY+++++++++++++++++')
+      CALL ERRWRT(' ')
       ENDIF
 
 C  EXIT
