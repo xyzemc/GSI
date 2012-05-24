@@ -113,7 +113,7 @@ MODULE CRTM_SpcCoeff
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_SpcCoeff.f90 1879 2008-03-03 19:45:30Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_SpcCoeff.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
 
   ! -------------------------------------

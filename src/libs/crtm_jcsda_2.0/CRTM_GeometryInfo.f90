@@ -49,7 +49,7 @@ MODULE CRTM_GeometryInfo
   ! -----------------
   ! Version Id for the module
   CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_GeometryInfo.f90 6790 2010-02-26 21:22:16Z yong.han@noaa.gov $'
+  '$Id: CRTM_GeometryInfo.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Metres->kilometres conversion factor
   REAL(fp), PARAMETER :: M_TO_KM = 1.0e-03_fp
 

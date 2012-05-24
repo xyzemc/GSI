@@ -51,7 +51,7 @@ MODULE CRTM_BeCoeff
   ! -----------------
   ! Version Id for the module
   CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_BeCoeff.f90 6629 2010-02-14 19:48:43Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_BeCoeff.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

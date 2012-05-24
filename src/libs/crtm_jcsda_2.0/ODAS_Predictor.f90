@@ -68,7 +68,7 @@ MODULE ODAS_Predictor
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODAS_Predictor.f90 7751 2010-05-10 22:32:05Z paul.vandelst@noaa.gov $'
+  '$Id: ODAS_Predictor.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
   ! Absorbers in the gas absorption model
   ! -------------------------------------

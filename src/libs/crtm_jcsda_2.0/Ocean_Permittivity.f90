@@ -66,7 +66,7 @@ MODULE Ocean_Permittivity
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: Ocean_Permittivity.f90 2272 2008-07-29 21:03:44Z paul.vandelst@noaa.gov $'
+  '$Id: Ocean_Permittivity.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   REAL(fp), PARAMETER :: ZERO   = 0.0_fp
   REAL(fp), PARAMETER :: POINT5 = 0.5_fp
   REAL(fp), PARAMETER :: ONE    = 1.0_fp

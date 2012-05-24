@@ -129,7 +129,7 @@ MODULE SpcCoeff_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: SpcCoeff_Define.f90 3195 2009-02-13 23:02:57Z david.groff@noaa.gov $'
+  '$Id: SpcCoeff_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   ! SpcCoeff invalid value

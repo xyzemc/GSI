@@ -42,7 +42,7 @@ MODULE BeCoeff_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-    '$Id: BeCoeff_Binary_IO.f90 6624 2010-02-13 19:17:31Z paul.vandelst@noaa.gov $'
+    '$Id: BeCoeff_Binary_IO.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256

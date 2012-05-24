@@ -61,7 +61,7 @@ MODULE ODAS_TauCoeff
   ! Module parameters
   ! -----------------
   CHARACTER(*),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &
-  '$Id: ODAS_TauCoeff.f90 5594 2009-11-05 01:17:41Z paul.vandelst@noaa.gov $'
+  '$Id: ODAS_TauCoeff.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
 
   ! --------------------------------------

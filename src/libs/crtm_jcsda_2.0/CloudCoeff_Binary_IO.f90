@@ -43,7 +43,7 @@ MODULE CloudCoeff_Binary_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id: CloudCoeff_Binary_IO.f90 6760 2010-02-25 16:02:55Z paul.vandelst@noaa.gov $'
+    '$Id: CloudCoeff_Binary_IO.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256

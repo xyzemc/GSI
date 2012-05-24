@@ -45,7 +45,7 @@ MODULE CRTM_AtmScatter_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_AtmScatter_Define.f90 2329 2008-08-15 15:13:16Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_AtmScatter_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

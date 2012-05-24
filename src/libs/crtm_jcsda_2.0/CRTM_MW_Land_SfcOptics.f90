@@ -51,7 +51,7 @@ MODULE CRTM_MW_Land_SfcOptics
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_MW_Land_SfcOptics.f90 6689 2010-02-18 22:37:33Z quanhua.liu@noaa.gov $'
+  '$Id: CRTM_MW_Land_SfcOptics.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
 
   ! --------------------------------------

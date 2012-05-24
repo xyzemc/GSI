@@ -66,7 +66,7 @@ MODULE CRTM_MW_Snow_SfcOptics
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_MW_Snow_SfcOptics.f90 6943 2010-03-10 02:35:10Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_MW_Snow_SfcOptics.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
 
   ! --------------------------------------

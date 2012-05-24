@@ -68,7 +68,7 @@ MODULE CRTM_LowFrequency_MWSSEM
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_LowFrequency_MWSSEM.f90 3008 2009-01-09 20:33:32Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_LowFrequency_MWSSEM.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   
   ! Various quantities
   REAL(fp), PARAMETER :: LOW_F_THRESHOLD        = 20.0_fp  ! Frequency threshold for permittivity models(GHz)

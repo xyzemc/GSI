@@ -44,7 +44,7 @@ MODULE AntCorr_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: AntCorr_Define.f90 2299 2008-08-11 18:18:34Z paul.vandelst@noaa.gov $'
+  '$Id: AntCorr_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Literal constants
   REAL(Double), PARAMETER :: ZERO = 0.0_Double
   REAL(Double), PARAMETER :: ONE  = 1.0_Double

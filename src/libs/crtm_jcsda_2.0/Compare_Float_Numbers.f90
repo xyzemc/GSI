@@ -85,7 +85,7 @@ MODULE Compare_Float_Numbers
   ! -----------------
   ! Module Version Id
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id: Compare_Float_Numbers.f90 6125 2009-12-18 20:19:59Z paul.vandelst@noaa.gov $'
+    '$Id: Compare_Float_Numbers.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Numeric literals
   REAL(Single), PARAMETER :: SP_ZERO = 0.0_Single
   REAL(Double), PARAMETER :: DP_ZERO = 0.0_Double

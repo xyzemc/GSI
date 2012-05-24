@@ -44,7 +44,7 @@ MODULE CRTM_SfcOptics_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_SfcOptics_Define.f90 5959 2009-12-07 14:07:01Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_SfcOptics_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
   
   ! -----------------------------------

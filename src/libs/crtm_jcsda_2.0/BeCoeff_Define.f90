@@ -62,7 +62,7 @@ MODULE BeCoeff_Define
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: BeCoeff_Define.f90 6621 2010-02-12 21:51:13Z paul.vandelst@noaa.gov $'
+  '$Id: BeCoeff_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Current valid release and version numbers
   INTEGER, PARAMETER :: BeCOEFF_RELEASE = 1  ! This determines object and file formats.
   INTEGER, PARAMETER :: BeCOEFF_VERSION = 1  ! This is just the data version for the release.

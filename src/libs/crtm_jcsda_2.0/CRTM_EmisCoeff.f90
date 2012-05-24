@@ -52,7 +52,7 @@ MODULE CRTM_EmisCoeff
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER, PRIVATE :: MODULE_RCS_ID = &
-  '$Id: CRTM_EmisCoeff.f90 1036 2007-10-16 20:23:14Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_EmisCoeff.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
   ! ---------------------------------
   ! The shared IRSSEM emissivity data

@@ -69,7 +69,7 @@ MODULE ODAS_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODAS_Define.f90 6405 2010-01-21 18:57:13Z paul.vandelst@noaa.gov $'
+  '$Id: ODAS_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! ODAS invalid values
   INTEGER,      PARAMETER :: IP_INVALID = -1
   REAL(Double), PARAMETER :: FP_INVALID = -1.0_Double

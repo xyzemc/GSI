@@ -54,7 +54,7 @@ MODULE CRTM_AerosolCoeff
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_AerosolCoeff.f90 6810 2010-03-02 01:56:06Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_AerosolCoeff.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

@@ -47,7 +47,7 @@ MODULE ODAS_Predictor_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODAS_Predictor_Define.f90 4799 2009-09-01 13:57:30Z yong.han@noaa.gov $'
+  '$Id: ODAS_Predictor_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

@@ -127,7 +127,7 @@ MODULE CRTM_AtmOptics
 
   ! -- RCS Id for the module                                            
   CHARACTER( * ),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &              
-  '$Id: CRTM_AtmOptics.f90 5959 2009-12-07 14:07:01Z paul.vandelst@noaa.gov $'        
+  '$Id: CRTM_AtmOptics.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'        
 
 
   ! --------------------------------------
@@ -736,11 +736,11 @@ END MODULE CRTM_AtmOptics
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id: CRTM_AtmOptics.f90 5959 2009-12-07 14:07:01Z paul.vandelst@noaa.gov $
+! $Id: CRTM_AtmOptics.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $
 !
 ! $Date: 2006/05/02 14:58:34 $
 !
-! $Revision: 5959 $
+! $Revision: 16677 $
 !
 ! $Name:  $
 !

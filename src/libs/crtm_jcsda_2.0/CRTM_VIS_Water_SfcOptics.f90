@@ -51,7 +51,7 @@ MODULE CRTM_VIS_Water_SfcOptics
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_VIS_Water_SfcOptics.f90 6287 2010-01-12 20:37:43Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_VIS_Water_SfcOptics.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
 
 CONTAINS

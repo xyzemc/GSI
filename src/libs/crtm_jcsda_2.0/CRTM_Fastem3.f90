@@ -72,7 +72,7 @@ MODULE CRTM_Fastem3
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_Fastem3.f90 4801 2009-09-01 14:52:31Z quanhua.liu@noaa.gov $'
+  '$Id: CRTM_Fastem3.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Literal constants
   REAL(fp), PARAMETER :: HUNDRED = 100.0_fp
   

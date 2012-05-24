@@ -57,7 +57,7 @@ MODULE ODPS_CoordinateMapping
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODPS_CoordinateMapping.f90 6789 2010-02-26 20:31:19Z yong.han@noaa.gov $'
+  '$Id: ODPS_CoordinateMapping.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
 CONTAINS
 

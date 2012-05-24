@@ -63,7 +63,7 @@ MODULE CRTM_Options_Define
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_Options_Define.f90 6881 2010-03-05 23:33:01Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_Options_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

@@ -61,7 +61,7 @@ MODULE ODAS_AtmAbsorption
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODAS_AtmAbsorption.f90 5959 2009-12-07 14:07:01Z paul.vandelst@noaa.gov $'
+  '$Id: ODAS_AtmAbsorption.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
   ! ------------------------------------------
   ! Structure definition to hold forward model

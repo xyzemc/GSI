@@ -53,7 +53,7 @@ MODULE CRTM_CloudCoeff
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_CloudCoeff.f90 6783 2010-02-26 17:52:30Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_CloudCoeff.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

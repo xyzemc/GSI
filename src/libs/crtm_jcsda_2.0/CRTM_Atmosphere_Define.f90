@@ -306,7 +306,7 @@ MODULE CRTM_Atmosphere_Define
 
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_Atmosphere_Define.f90 7725 2010-05-10 18:20:59Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_Atmosphere_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

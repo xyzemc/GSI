@@ -40,7 +40,7 @@ MODULE iAtm_Define
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: iAtm_Define.f90 6125 2009-12-18 20:19:59Z paul.vandelst@noaa.gov $'
+  '$Id: iAtm_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

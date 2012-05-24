@@ -41,7 +41,7 @@ MODULE CRTM_SensorData_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-    '$Id: CRTM_SensorData_IO.f90 6942 2010-03-10 02:30:02Z paul.vandelst@noaa.gov $'
+    '$Id: CRTM_SensorData_IO.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256

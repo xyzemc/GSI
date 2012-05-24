@@ -94,7 +94,7 @@ MODULE CRTM_CloudScatter
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_CloudScatter.f90 6783 2010-02-26 17:52:30Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_CloudScatter.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
   ! Number of stream angle definitions
@@ -244,7 +244,7 @@ CONTAINS
     INTEGER                    , INTENT(IN)     :: SensorIndex
     INTEGER                    , INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_AtmScatter_type) , INTENT(IN OUT) :: CScat
-    TYPE(CRTM_CSVariables_type), INTENT(OUT)    :: CSV
+    TYPE(CRTM_CSVariables_type), INTENT(IN OUT) :: CSV
     ! Function result
     INTEGER :: Error_Status
     ! Function parameters

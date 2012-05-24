@@ -59,7 +59,7 @@ MODULE CRTM_Interpolation
   ! Module parameters
   ! -----------------  
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID=&
-  '$Id: CRTM_Interpolation.f90 6551 2010-02-02 00:05:49Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_Interpolation.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   REAL(fp), PARAMETER :: ZERO = 0.0_fp
   REAL(fp), PARAMETER :: ONE  = 1.0_fp
   INTEGER,  PARAMETER :: ORDER     = 2            ! Quadratic

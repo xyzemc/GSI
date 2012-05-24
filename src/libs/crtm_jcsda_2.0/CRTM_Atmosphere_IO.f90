@@ -60,7 +60,7 @@ MODULE CRTM_Atmosphere_IO
   ! Module parameters
   ! -----------------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-    '$Id: CRTM_Atmosphere_IO.f90 6125 2009-12-18 20:19:59Z paul.vandelst@noaa.gov $'
+    '$Id: CRTM_Atmosphere_IO.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   CHARACTER(*), PARAMETER :: WRITE_ERROR_STATUS = 'DELETE'
   ! Default message length
   INTEGER, PARAMETER :: ML = 256

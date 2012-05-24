@@ -35,7 +35,7 @@ MODULE Fresnel
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: Fresnel.f90 2229 2008-07-21 18:11:04Z paul.vandelst@noaa.gov $'
+  '$Id: Fresnel.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   REAL(fp), PARAMETER :: ZERO   = 0.0_fp
   REAL(fp), PARAMETER :: POINT5 = 0.5_fp
   REAL(fp), PARAMETER :: ONE    = 1.0_fp

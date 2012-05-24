@@ -52,7 +52,7 @@ MODULE ODZeeman_TauCoeff
   ! Module parameters
   ! -----------------
   CHARACTER(*),  PARAMETER, PRIVATE :: MODULE_RCS_ID = &
-  '$Id: ODZeeman_TauCoeff.f90 5764 2009-11-18 17:30:49Z david.groff@noaa.gov $'
+  '$Id: ODZeeman_TauCoeff.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
 
   ! --------------------------------------

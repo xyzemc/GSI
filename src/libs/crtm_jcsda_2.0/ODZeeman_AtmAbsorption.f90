@@ -73,7 +73,7 @@ MODULE ODZeeman_AtmAbsorption
   ! Parameters
   ! ----------
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: ODZeeman_AtmAbsorption.f90 7874 2010-05-14 14:17:57Z paul.vandelst@noaa.gov $'
+  '$Id: ODZeeman_AtmAbsorption.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
 
 CONTAINS

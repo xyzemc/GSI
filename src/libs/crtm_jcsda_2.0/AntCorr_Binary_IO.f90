@@ -45,7 +45,7 @@ MODULE AntCorr_Binary_IO
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: AntCorr_Binary_IO.f90 3254 2009-02-19 23:02:07Z paul.vandelst@noaa.gov $'
+  '$Id: AntCorr_Binary_IO.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Keyword set value
   INTEGER, PARAMETER :: SET = 1
   ! Message character length

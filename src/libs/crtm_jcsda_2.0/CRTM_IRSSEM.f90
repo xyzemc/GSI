@@ -51,7 +51,7 @@ MODULE CRTM_IRSSEM
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_IRSSEM.f90 7906 2010-05-17 14:50:18Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_IRSSEM.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
   
@@ -470,6 +470,8 @@ CONTAINS
     
     ! Set Up
     Error_Status = SUCCESS
+    e_AD = ZERO
+    v_AD = ZERO
     ! ...Check internal variable allocation
     IF ( .NOT. Einterp_Associated( EVar%ei ) ) THEN
       Error_Status = FAILURE

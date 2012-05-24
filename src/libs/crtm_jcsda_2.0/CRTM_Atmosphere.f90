@@ -62,7 +62,7 @@ MODULE CRTM_Atmosphere
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_Atmosphere.f90 6543 2010-02-01 20:32:30Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_Atmosphere.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
 

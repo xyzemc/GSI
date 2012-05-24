@@ -80,7 +80,7 @@ MODULE CRTM_RTSolution
   ! -----------------
   ! Version Id for the module
   CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_RTSolution.f90 8130 2010-05-28 18:59:06Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_RTSolution.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
 
 CONTAINS

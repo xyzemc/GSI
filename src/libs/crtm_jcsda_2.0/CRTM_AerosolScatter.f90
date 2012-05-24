@@ -94,7 +94,7 @@ MODULE CRTM_AerosolScatter
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_AerosolScatter.f90 6810 2010-03-02 01:56:06Z paul.vandelst@noaa.gov $'  
+  '$Id: CRTM_AerosolScatter.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'  
   ! Message string length
   INTEGER, PARAMETER :: ML = 256
   ! Number of stream angle definitions
@@ -234,7 +234,7 @@ CONTAINS
     INTEGER,                     INTENT(IN)     :: ChannelIndex
     INTEGER,                     INTENT(IN)     :: SensorIndex
     TYPE(CRTM_AtmScatter_type),  INTENT(IN OUT) :: AScat
-    TYPE(CRTM_ASVariables_type), INTENT(OUT)    :: ASV
+    TYPE(CRTM_ASVariables_type), INTENT(IN OUT) :: ASV
     ! Function result
     INTEGER :: Error_Status    
     ! Local parameters

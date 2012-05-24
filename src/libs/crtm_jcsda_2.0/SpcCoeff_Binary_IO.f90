@@ -45,7 +45,7 @@ MODULE SpcCoeff_Binary_IO
   ! -----------------
   ! Module RCS Id string
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-    '$Id: SpcCoeff_Binary_IO.f90 7839 2010-05-13 13:20:20Z david.groff@noaa.gov $'
+    '$Id: SpcCoeff_Binary_IO.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
   ! Message character length

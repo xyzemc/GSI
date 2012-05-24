@@ -68,7 +68,7 @@ MODULE CRTM_GeometryInfo_Define
   ! Module parameters
   ! -----------------
   CHARACTER(*),  PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_GeometryInfo_Define.f90 6787 2010-02-26 20:23:06Z yong.han@noaa.gov $'
+  '$Id: CRTM_GeometryInfo_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Maximum message length
   INTEGER, PARAMETER :: ML=256
 

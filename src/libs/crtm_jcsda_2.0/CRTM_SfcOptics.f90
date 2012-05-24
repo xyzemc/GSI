@@ -112,7 +112,7 @@ MODULE CRTM_SfcOptics
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_SfcOptics.f90 6551 2010-02-02 00:05:49Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_SfcOptics.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Keyword set value
   INTEGER, PRIVATE, PARAMETER :: SET = 1
 

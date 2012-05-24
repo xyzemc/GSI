@@ -60,7 +60,7 @@ MODULE CRTM_MW_Water_SfcOptics
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_RCS_ID = &
-  '$Id: CRTM_MW_Water_SfcOptics.f90 6285 2010-01-12 20:29:40Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_MW_Water_SfcOptics.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! Low frequency model threshold
   REAL(fp), PARAMETER :: LOW_F_THRESHOLD = 20.0_fp ! GHz
   ! Fastem3 model defaults

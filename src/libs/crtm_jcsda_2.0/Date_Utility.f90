@@ -33,7 +33,7 @@ MODULE Date_Utility
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: Date_Utility.f90 6125 2009-12-18 20:19:59Z paul.vandelst@noaa.gov $'
+  '$Id: Date_Utility.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
 
   ! Number of Months in a Year
   INTEGER, PARAMETER :: N_MONTHS = 12

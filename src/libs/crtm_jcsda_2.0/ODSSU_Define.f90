@@ -58,7 +58,7 @@ MODULE ODSSU_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*), PARAMETER :: MODULE_RCS_ID = &
-  '$Id: ODSSU_Define.f90 5746 2009-11-17 16:34:08Z paul.vandelst@noaa.gov $'
+  '$Id: ODSSU_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! ODSSU invalid values
   INTEGER,      PARAMETER :: IP_INVALID = -1
   REAL(Double), PARAMETER :: FP_INVALID = -1.0_Double

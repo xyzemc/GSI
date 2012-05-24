@@ -25,7 +25,7 @@ MODULE CRTM_AncillaryInput_Define
   ! -----------------
   ! Version Id for the module
   CHARACTER(*), PRIVATE, PARAMETER :: MODULE_VERSION_ID = &
-  '$Id: CRTM_AncillaryInput_Define.f90 6125 2009-12-18 20:19:59Z paul.vandelst@noaa.gov $'
+  '$Id: CRTM_AncillaryInput_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   
   !--------------------
   ! Structure defintion

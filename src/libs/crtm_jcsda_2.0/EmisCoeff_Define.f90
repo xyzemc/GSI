@@ -51,7 +51,7 @@ MODULE EmisCoeff_Define
   ! -----------------
   ! RCS Id for the module
   CHARACTER(*),  PARAMETER :: MODULE_RCS_ID = &
-  '$Id: EmisCoeff_Define.f90 1879 2008-03-03 19:45:30Z paul.vandelst@noaa.gov $'
+  '$Id: EmisCoeff_Define.f90 16677 2011-12-05 20:30:10Z paul.vandelst@noaa.gov $'
   ! EmisCoeff init values
   REAL(Double),  PARAMETER :: FP_INIT = 0.0_Double
   INTEGER,       PARAMETER :: IP_INIT = -1
