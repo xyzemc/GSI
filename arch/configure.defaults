@@ -12,6 +12,8 @@ FFLAGS_i4r4    =  -qintsize=4 -qrealsize=4
 FFLAGS_i4r8    =  -qintsize=4 -qrealsize=8
 FFLAGS_i8r8    =  -qintsize=8 -qrealsize=8
 FFLAGS_DEFAULT =  -q64 -qstrict -qarch=auto
+FFLAGS_DEBUG   =  -O0 -qfullpath -qdbg -qsource -qcheck
+FFLAGS_OPT     =  -O3
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) -qmaxmem=-1 $(INC_FLAGS) -DIBM4
 LDFLAGS        =  
 # Library build flags
@@ -49,56 +51,6 @@ CFLAGS2        =  $(CFLAGS)
 MYLIBsys       =  -lessl_r -lmass -bdatapsize:64K -bstackpsize:64K
 NETCDF_PATH    = 
 
-###########################################################
-#ARCH	AIX 64-bit  #distributed memory parallel (dmpar,debug)
-#
-COREDIR        =  CONFIGURE_CORE_PATH
-INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  BIG_ENDIAN
-SFC            =  xlf_r 
-SF90           =  xlf90  -qfree
-SCC            =  xlc_r
-INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
-FFLAGS_i4r4    =  -qintsize=4 -qrealsize=4
-FFLAGS_i4r8    =  -qintsize=4 -qrealsize=8
-FFLAGS_i8r8    =  -qintsize=8 -qrealsize=8
-FFLAGS_DEFAULT =  -O0 -q64 -qarch=auto -qfullpath -qdbg -qsource -qcheck
-FFLAGS         =  $(FFLAGS_DEFAULT) -qmaxmem=-1 $(INC_FLAGS) -DIBM4
-LDFLAGS        =  -bnoquiet
-# Library build flags
-FFLAGS_BACIO   =  -O0 $(FFLAGS_DEFAULT) -qnosave
-ARFLAGS_BACIO  =  -X64
-FFLAGS_BUFR    =  -O0 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8) -qnosave
-CFLAGS_BUFR    =  -O0 -q64
-FFLAGS_CLOUD   =  -O0 $(FFLAGS_DEFAULT)
-FFLAGS_CRTM    =  $(FFLAGS_DEFAULT) -qextchk -qfloat=nomaf:rndsngl:nans -qflttrap=ov:zero:inv:en -qinitauto
-LFLAGS_CRTM    =
-FFLAGS_GFSIO   =  $(FFLAGS_DEFAULT) -qnosave $(FFLAGS_i4r4) -DIBM4
-ARFLAGS_GFSIO  =  -X64
-FFLAGS_SFCIO   =  $(FFLAGS_DEFAULT) -qnosave $(FFLAGS_i4r4)
-FFLAGS_SIGIO   =  $(FFLAGS_DEFAULT) -qnosave $(FFLAGS_i4r4)
-ARFLAGS_SIGIO  =  -X64
-FFLAGS_SP      =  $(FFLAGS) $(FFLAGS_i4r8) -DIBM4
-FFLAGS_W3      =  $(FFLAGS) 
-INC_FLAGS_W3   =  -module ../sigio
-# 
-CPP            =  /usr/ccs/lib/cpp
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
-CPP_F90FLAGS   =  
-
-DM_FC          =  mpxlf_r  
-DM_F90         =  mpxlf90_r  -qfree
-DM_CC          =  mpcc_r
-
-FC             =  CONFIGURE_FC
-F90            =  CONFIGURE_F90
-CC             =  CONFIGURE_CC
-
-CFLAGS         =  -I ./ -DFortranByte=char -DFortranInt=int -DFortranLlong='long long' -DIBM4 -DVERBOSE -q64 -C -qfullpath
-CFLAGS2        =  $(CFLAGS)
-
-MYLIBsys       =  -lessl_r -lmass -bdatapsize:64K -bstackpsize:64K
-NETCDF_PATH    = 
 
 ###########################################################
 #ARCH	AIX 32-bit #distributed memory parallel (dmpar,optimized)
@@ -117,6 +69,8 @@ FFLAGS_i4r4    =  -qintsize=4 -qrealsize=4
 FFLAGS_i4r8    =  -qintsize=4 -qrealsize=8
 FFLAGS_i8r8    =  -qintsize=8 -qrealsize=8
 FFLAGS_DEFAULT =  -qstrict -qarch=auto
+FFLAGS_DEBUG   =  -O0 -qfullpath -qdbg -qsource -qcheck
+FFLAGS_OPT     =  -O3
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) -qmaxmem=-1 $(INC_FLAGS) -DIBM4
 LDFLAGS        =  
 # Library build flags
@@ -154,59 +108,6 @@ CFLAGS2        =  $(CFLAGS)
 MYLIBsys       =  -lessl_r -lmass -bdatapsize:64K -bstackpsize:64K
 NETCDF_PATH    = 
 
-###########################################################
-#ARCH	AIX 32-bit #distributed memory parallel (dmpar,debug)
-#
-ARFLAGS        =  -x32
-AFLAGS         =  -x32
-
-COREDIR        =  CONFIGURE_CORE_PATH
-INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  BIG_ENDIAN
-SFC            =  xlf_r  -q32
-SF90           =  xlf90  -qfree  -q32
-SCC            =  xlc_r  -q32
-INC_FLAGS      =  -qmoddir=$(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
-FFLAGS_i4r4    =  -qintsize=4 -qrealsize=4
-FFLAGS_i4r8    =  -qintsize=4 -qrealsize=8
-FFLAGS_i8r8    =  -qintsize=8 -qrealsize=8
-FFLAGS_DEFAULT =  -O0 -qarch=auto -qfullpath -qdbg -qsource -qcheck
-FFLAGS         =  $(FFLAGS_DEFAULT) -qmaxmem=-1 $(INC_FLAGS) -DIBM4
-LDFLAGS        =  -bnoquiet
-# Library build flags
-FFLAGS_BACIO   =  -O0 $(FFLAGS_DEFAULT) -qnosave
-ARFLAGS_BACIO  =  -X32
-FFLAGS_BUFR    =  -O0 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8) -qnosave
-CFLAGS_BUFR    =  -O0 -q32
-FFLAGS_CLOUD   =  -O0 $(FFLAGS_DEFAULT)
-FFLAGS_CRTM    =  $(FFLAGS_DEFAULT) -qextchk -qfloat=nomaf:rndsngl:nans -qflttrap=ov:zero:inv:en -qinitauto
-LFLAGS_CRTM    =
-FFLAGS_GFSIO   =  $(FFLAGS_DEFAULT) -qnosave $(FFLAGS_i4r4) -DIBM4
-ARFLAGS_GFSIO  =  -X32
-FFLAGS_SFCIO   =  $(FFLAGS_DEFAULT) -qnosave $(FFLAGS_i4r4)
-FFLAGS_SIGIO   =  $(FFLAGS_DEFAULT) -qnosave $(FFLAGS_i4r4)
-ARFLAGS_SIGIO  =  -X32
-FFLAGS_SP      =  $(FFLAGS) $(FFLAGS_i4r8) -DIBM4
-FFLAGS_W3      =  $(FFLAGS) 
-INC_FLAGS_W3   =  -module ../sigio
-# 
-CPP            =  /usr/ccs/lib/cpp
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
-CPP_F90FLAGS   =  
-
-DM_FC          =  mpxlf_r  -q32
-DM_F90         =  mpxlf90_r  -qfree  -q32
-DM_CC          =  mpcc_r -q32
-
-FC             =  CONFIGURE_FC
-F90            =  CONFIGURE_F90
-CC             =  CONFIGURE_CC
-
-CFLAGS= -I ./ -DFortranByte=char -DFortranInt=int -DFortranLlong='long long' -DIBM4 -DVERBOSE -q32 -C -qfullpath
-CFLAGS2= -I ./ -DFortranByte=char -DFortranInt=int -DFortranLlong='long long' -DIBM4 -DVERBOSE -q32 -C -qfullpath
-
-MYLIBsys       = -lessl_r -lmass -bdatapsize:64K -bstackpsize:64K
-NETCDF_PATH    = 
 
 ###########################################################
 #ARCH	Linux i486 i586 i686, PGI compilers (pgf90 & pgcc) # distributed memory parallel (dmpar,optimized)
@@ -224,6 +125,8 @@ FFLAGS_i4r4    =  -i4 -r4
 FFLAGS_i4r8    =  -i4 -r8
 FFLAGS_i8r8    =  -i8 -r8
 FFLAGS_DEFAULT =  -Kieee -pc 32 -Ktrap=fp
+FFLAGS_DEBUG   =  -O0 -q -C
+FFLAGS_OPT     =  -O3
 FFLAGS         =  -fast $(FFLAGS_DEFAULT) -DLANGUAGE_FORTRAN -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX -DPGI
 # Library build flags
 FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
@@ -260,57 +163,6 @@ CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortran
 MYLIBsys       =  -llapack -lblas
 NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
 
-###########################################################
-#ARCH	Linux i486 i586 i686, PGI compilers (pgf90 & pgcc) # distributed memory parallel (dmpar,debug)
-#
-LDFLAGS        = -Wl,-noinhibit-exec 
-
-COREDIR        = CONFIGURE_CORE_PATH
-INC_DIR        = $(COREDIR)/include
-BYTE_ORDER     = LITTLE_ENDIAN
-SFC            = pgf90
-SF90           = pgf90 -Mfree
-SCC            = pgcc
-INC_FLAGS      = -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
-FFLAGS_i4r4    =  -i4 -r4
-FFLAGS_i4r8    =  -i4 -r8
-FFLAGS_i8r8    =  -i8 -r8
-FFLAGS_DEFAULT =  -q -O0 -Kieee -pc 32 -Ktrap=fp -C
-FFLAGS         =  $(FFLAGS_DEFAULT) -DLANGUAGE_FORTRAN -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX -DPGI
-# Library build flags
-FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
-ARFLAGS_BACIO  =
-FFLAGS_BUFR    =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-CFLAGS_BUFR    =  -O0 -DUNDERSCORE
-FFLAGS_CLOUD   =  -O0 $(FFLAGS_DEFAULT)
-FFLAGS_CRTM    =  $(FFLAGS_DEFAULT) -Ktrap=ovf,divz -Mbounds -Mchkstk -Mdclchk -Minform,inform -Mnosave -Mref_externals
-LFLAGS_CRTM    =
-FFLAGS_GFSIO   =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
-ARFLAGS_GFSIO  =  
-FFLAGS_SFCIO   =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
-FFLAGS_SIGIO   =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
-ARFLAGS_SIGIO  =  
-FFLAGS_SP      =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  $(FFLAGS_DEFAULT) 
-INC_FLAGS_W3   =  -module ../sigio
-#
-CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX -DPGI
-CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
-
-DM_FC          =  mpif90 -f90=pgf90
-DM_F90         =  mpif90 -Mfree -f90=pgf90
-DM_CC          =  mpicc 
-
-FC             =  CONFIGURE_FC
-F90            =  CONFIGURE_F90
-CC             =  CONFIGURE_CC
-
-CFLAGS         =  -O0 -DLINUX -DUNDERSCORE
-CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
-
-MYLIBsys       =  -llapack -lblas
-NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
 
 ###########################################################
 #ARCH	Linux x86_64, PGI compilers (pgf90 & pgcc) # distributed memory parallel (dmpar,optimize)
@@ -328,6 +180,8 @@ FFLAGS_i4r4    =  -i4 -r4
 FFLAGS_i4r8    =  -i4 -r8
 FFLAGS_i8r8    =  -i8 -r8
 FFLAGS_DEFAULT =  -Kieee -pc 64 -Ktrap=fp 
+FFLAGS_DEBUG   =  -O0 -q -C
+FFLAGS_OPT     =  -O3
 FFLAGS         =  -fast $(FFLAGS_DEFAULT) -DLANGUAGE_FORTRAN -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX -DPGI
 # Library build flags
 FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
@@ -365,8 +219,9 @@ CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortran
 MYLIBsys       =  -llapack -lblas
 NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
 
+
 ###########################################################
-#ARCH	Linux x86_64, PGI compilers (pgf90 & pgcc) # distributed memory parallel (dmpar,debug)
+#ARCH	Linux x86_64, PGI compilers (pgf90 & gcc) # distributed memory parallel (dmpar,optimize)
 #
 LDFLAGS        =  -Wl,-noinhibit-exec 
 
@@ -375,28 +230,30 @@ INC_DIR        =  $(COREDIR)/include
 BYTE_ORDER     =  LITTLE_ENDIAN
 SFC            =  pgf90
 SF90           =  pgf90 -Mfree
-SCC            =  pgcc
+SCC            =  gcc
 INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -i4 -r4
 FFLAGS_i4r8    =  -i4 -r8
 FFLAGS_i8r8    =  -i8 -r8
-FFLAGS_DEFAULT =  -g -O0 -Kieee -pc 64 -Ktrap=fp -C 
-FFLAGS         =  $(FFLAGS_DEFAULT) -DLANGUAGE_FORTRAN  -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX -DPGI
+FFLAGS_DEFAULT =  -Kieee -pc 64 -Ktrap=fp 
+FFLAGS_DEBUG   =  -O0 -q -C
+FFLAGS_OPT     =  -O3
+FFLAGS         =  -fast $(FFLAGS_DEFAULT) -DLANGUAGE_FORTRAN -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX -DPGI
 # Library build flags
-FFLAGS_BACIO   =  -O0 $(FFLAGS_DEFAULT)
+FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
 ARFLAGS_BACIO  =
-FFLAGS_BUFR    =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-CFLAGS_BUFR    =  -O0 -DUNDERSCORE
-FFLAGS_CLOUD   =  -O0 $(FFLAGS_DEFAULT)
-FFLAGS_CRTM    =   $(FFLAGS_DEFAULT) -Ktrap=ovf,divz -Mbounds -Mchkstk -Mdclchk -Minform,inform -Mnosave -Mref_externals
+FFLAGS_BUFR    =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+CFLAGS_BUFR    =  -O3 -DUNDERSCORE
+FFLAGS_CLOUD   =  -O3 $(FFLAGS_DEFAULT)
+FFLAGS_CRTM    =  -fast $(FFLAGS_DEFAULT)
 LFLAGS_CRTM    =
-FFLAGS_GFSIO   =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+FFLAGS_GFSIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_GFSIO  =
-FFLAGS_SFCIO   =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
-FFLAGS_SIGIO   =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =
-FFLAGS_SP      =  $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  $(FFLAGS_DEFAULT) 
+FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT)
 INC_FLAGS_W3   =  -module ../sigio
 #
 CPP            =  cpp 
@@ -405,7 +262,7 @@ CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
 
 DM_FC          =  mpif90 -f90=pgf90
 DM_F90         =  mpif90 -Mfree -f90=pgf90
-DM_CC          =  mpicc 
+DM_CC          =  gcc 
 
 FC             =  CONFIGURE_FC
 F90            =  CONFIGURE_F90
@@ -414,11 +271,13 @@ CC             =  CONFIGURE_CC
 CFLAGS         =  -O0 -DLINUX -DUNDERSCORE
 CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
 
+
 MYLIBsys       =  -llapack -lblas
 NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
 
+
 ###########################################################
-#ARCH	Linux i486 i586 i686, Intel compiler (ifort & icc)	# (dmpar,optimize)
+#ARCH	Linux i486 i586 i686, Intel compiler (ifort & icc) # (dmpar,optimize)
 #
 LDFLAGS        =  -Wl,-noinhibit-exec -ftz -openmp
 
@@ -433,6 +292,8 @@ FFLAGS_i4r4    =  -integer-size 32 -real-size 32
 FFLAGS_i4r8    =  -integer-size 32 -real-size 64
 FFLAGS_i8r8    =  -integer-size 64 -real-size 64
 FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -ftz
+FFLAGS_DEBUG   =  -O0 -g -traceback -check bounds -warn errors -fpstkchk -mp
+FFLAGS_OPT     =  -O3
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
 FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
@@ -455,9 +316,9 @@ CPP            =  cpp
 CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX 
 CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
 
-DM_FC          =  ifort
+DM_FC          =  mpif90  
 DM_F90         =  mpif90 -free
-DM_CC          =  cc
+DM_CC          =  icc
 
 FC             =  CONFIGURE_FC
 F90            =  CONFIGURE_F90
@@ -468,6 +329,62 @@ CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortran
 
 MYLIBsys       = -L$(LAPACK_PATH) -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lguide
 NETCDF_PATH    = 
+
+
+###########################################################
+#ARCH	Linux x86_64, Intel compiler (ifort & icc) # (dmpar,optimize)
+#
+LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -openmp
+
+COREDIR        =  CONFIGURE_CORE_PATH
+INC_DIR        =  $(COREDIR)/include
+BYTE_ORDER     =  LITTLE_ENDIAN
+SFC            =  ifort
+SF90           =  ifort -free
+SCC            =  icc
+INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
+FFLAGS_i4r4    =  -integer-size 32 -real-size 32
+FFLAGS_i4r8    =  -integer-size 32 -real-size 64
+FFLAGS_i8r8    =  -integer-size 64 -real-size 64
+FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -ftz
+FFLAGS_DEBUG   =  -O0 -g -traceback -check bounds -warn errors -fpstkchk -mp
+FFLAGS_OPT     =  -O3
+FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
+# Library build flags
+FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
+ARFLAGS_BACIO  =
+FFLAGS_BUFR    =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+CFLAGS_BUFR    =  -O3 -DUNDERSCORE
+FFLAGS_CLOUD   =  -O3 $(FFLAGS_DEFAULT)
+FFLAGS_CRTM    =  -O2 $(FFLAGS_DEFAULT)
+LFLAGS_CRTM    =  
+FFLAGS_GFSIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+ARFLAGS_GFSIO  =
+FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+ARFLAGS_SIGIO  =
+FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
+INC_FLAGS_W3   =  -module ../sigio
+#
+CPP            =  cpp 
+CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX 
+CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
+
+DM_FC          =  mpif90  
+DM_F90         =  mpif90 -free
+DM_CC          =  icc
+
+FC             =  CONFIGURE_FC
+F90            =  CONFIGURE_F90
+CC             =  CONFIGURE_CC
+
+CFLAGS         =  -O0 -DLINUX -DUNDERSCORE
+CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
+
+MYLIBsys       = -L$(LAPACK_PATH) -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lguide
+NETCDF_PATH    = 
+
 
 ###########################################################
 #ARCH	Linux x86_64, Intel/gnu compiler (ifort & gcc)	# (dmpar,optimize)
@@ -485,6 +402,8 @@ FFLAGS_i4r4    =  -integer-size 32 -real-size 32
 FFLAGS_i4r8    =  -integer-size 32 -real-size 64
 FFLAGS_i8r8    =  -integer-size 64 -real-size 64
 FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -ftz
+FFLAGS_DEBUG   =  -O0 -g -traceback -check bounds -warn errors -fpstkchk -mp
+FFLAGS_OPT     =  -O3
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
 FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
@@ -507,9 +426,9 @@ CPP            =  cpp
 CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX 
 CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
 
-DM_FC          =  ifort
+DM_FC          =  mpif90
 DM_F90         =  mpif90 -free
-DM_CC          =  cc
+DM_CC          =  gcc
 
 FC             =  CONFIGURE_FC
 F90            =  CONFIGURE_F90
@@ -520,108 +439,7 @@ CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortran
 
 MYLIBsys       =  -L$(LAPACK_PATH) -mkl=sequential
 NETCDF_PATH    =  
-###########################################################
-#ARCH	Linux x86_64, Intel compiler (ifort & icc)	# (dmpar,optimize)
-#
-LDFLAGS        =  -Wl,-noinhibit-exec -ftz -openmp
 
-COREDIR        =  CONFIGURE_CORE_PATH
-INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  LITTLE_ENDIAN
-SFC            =  ifort
-SF90           =  ifort -free
-SCC            =  icc
-INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
-FFLAGS_i4r4    =  -integer-size 32 -real-size 32
-FFLAGS_i4r8    =  -integer-size 32 -real-size 64
-FFLAGS_i8r8    =  -integer-size 64 -real-size 64
-FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -ftz
-FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
-# Library build flags
-FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT) 
-ARFLAGS_BACIO  =
-FFLAGS_BUFR    =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-CFLAGS_BUFR    =  -O3 -DUNDERSCORE
-FFLAGS_CLOUD   =  -O3 $(FFLAGS_DEFAULT)
-FFLAGS_CRTM    =  -O2 $(FFLAGS_DEFAULT)
-LFLAGS_CRTM    =  
-FFLAGS_GFSIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
-ARFLAGS_GFSIO  =
-FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
-FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
-ARFLAGS_SIGIO  =
-FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
-INC_FLAGS_W3   =  -module ../sigio
-#
-CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX 
-CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
-
-DM_FC          =  ifort
-DM_F90         =  mpif90 -free
-DM_CC          =  cc
-
-FC             =  CONFIGURE_FC
-F90            =  CONFIGURE_F90
-CC             =  CONFIGURE_CC
-
-CFLAGS         =  -O0 -DLINUX -DUNDERSCORE
-CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
-
-MYLIBsys       =  -L$(LAPACK_PATH) -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lguide
-NETCDF_PATH    = 
-
-###########################################################
-#ARCH	Linux x86_64, Intel compiler (ifort & icc)	# (dmpar,debug)
-#
-LDFLAGS        = -Wl,-noinhibit-exec  -ftz -openmp
-
-COREDIR        =  CONFIGURE_CORE_PATH
-INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  LITTLE_ENDIAN
-SFC            =  ifort
-SF90           =  ifort -free
-SCC            =  icc
-INC_FLAGS      = -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
-FFLAGS_i4r4    =  -integer-size 32 -real-size 32
-FFLAGS_i4r8    =  -integer-size 32 -real-size 64
-FFLAGS_i8r8    =  -integer-size 64 -real-size 64
-FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -traceback -check bounds -warn errors -free -fpstkchk -mp -ftz
-FFLAGS         =  -O0 -g $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
-# Library build flags
-FFLAGS_BACIO   =  -O0 $(FFLAGS_DEFAULT)
-ARFLAGS_BACIO  =
-FFLAGS_BUFR    =  -O0 -g $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-CFLAGS_BUFR    =  -O0 -DUNDERSCORE
-FFLAGS_CLOUD   =  -O0 $(FFLAGS_DEFAULT)
-FFLAGS_CRTM    =  -00 -g $(FFLAGS_DEFAULT)
-LFLAGS_CRTM    =  -static-libcxa
-FFLAGS_GFSIO   =  -O0 -g $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
-ARFLAGS_GFSIO  =
-FFLAGS_SFCIO   =  -O0 -g $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
-FFLAGS_SIGIO   =  -O0 -g $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
-ARFLAGS_SIGIO  =
-FFLAGS_SP      =  -O0 -g $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
-FFLAGS_W3      =  -O0 -g $(FFLAGS_DEFAULT) 
-INC_FLAGS_W3   =  -module ../sigio
-#
-CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX 
-CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
-
-DM_FC          =  ifort
-DM_F90         =  mpif90 -free
-DM_CC          =  cc
-
-FC             =  CONFIGURE_FC
-F90            =  CONFIGURE_F90
-CC             =  CONFIGURE_CC
-
-CFLAGS         =  -O0 -DLINUX -DUNDERSCORE
-CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
-MYLIBsys       =  -L$(LAPACK_PATH) -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lguide
-NETCDF_PATH    = 
 
 ###########################################################
 #ARCH    Linux SGI Altix, ifort compiler with icc 9.x,10.x # (dmpar,optimize)
@@ -715,7 +533,7 @@ MYLIBsys       =  -L$(LAPACK_PATH) -lmkl_lapack -lmkl -lguide -lpthread -lm  -L/
 NETCDF_PATH    = 
 
 ###########################################################
-#ARCH   Darwin (MACOS), PGI compiler    # (dmpar,optimize)
+#ARCH   Darwin (MACOS), PGI compilers (pgf90 & pgcc)    # (dmpar,optimize)
 #
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
@@ -723,7 +541,7 @@ BYTE_ORDER     =  LITTLE_ENDIAN
 SFC            =  pgf90
 SF90           =  pgf90 -Mfree 
 SCC            =  pgcc
-INC_FLAGS      =  -I $(INC_DIR) -module $(INC_DIR)
+INC_FLAGS      =  -I $(INC_DIR) -module $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -i4 -r4
 FFLAGS_i4r8    =  -i4 -r8
 FFLAGS_DEFAULT =  -C
