@@ -134,7 +134,7 @@ contains
     real(r_kind),dimension(1,1):: pob
     integer(i_kind) n,k,iret
     real(r_kind) hdr(10),obs(10,255),qms(10,255),err(10,255)
-    character(80):: hdrstr='SID XOB YOB DHR TYP'
+    character(80):: hdrstr='SID XOB YOB DHR TYP T29'
     character(80):: obsstr='POB QOB TOB ZOB UOB VOB CAT'
     character(80):: qmsstr='PQM QQM TQM ZQM WQM'
     character(80):: errstr='POE QOE TOE WOE'
@@ -195,6 +195,7 @@ contains
        hdr(3)=yob(n)
        hdr(4)=dhr(n)
        hdr(5)=r100+typ(n)
+       hdr(6)=r100
        obs=bmiss
        qms=bmiss
        err=bmiss
@@ -223,6 +224,7 @@ contains
        hdr(3)=yob(n)
        hdr(4)=dhr(n)
        hdr(5)=200_r_kind+typ(n)
+       hdr(6)=200_r_kind
        obs=bmiss
        qms=bmiss
        err=bmiss
