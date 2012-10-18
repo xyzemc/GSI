@@ -1,0 +1,57 @@
+#!/usr/bin/env ksh93
+######################################################################
+#                gsi regression test wrapper script                          
+######################################################################
+######################################################################
+#   NOTES:                                                           #
+#                                                                    #
+#   Author: DRS Oct 17, 2012                                         #
+######################################################################
+
+######################################################################
+#   Definitions
+######################################################################
+export GSI_ROOT=/d1/stark/GSI
+#export GSI_TEST_DIR=comGSI_v3.1
+#export COMPILER=pgi intel
+export COMPILER=pgi
+
+for TEST_SRC in com_trunk comGSI_v3.1
+do
+export GSI_TEST_DIR=${TEST_SRC}
+
+for PE in 1 4
+do
+   for ACORE in ARW NMM
+   do
+      export GSIPROC=${PE}
+      export bk_core=${ACORE}
+      echo '                                                             '
+      echo '-------------------------------------------------------------'
+      echo "- running single obs test with ${PE} pe on ${ACORE} core."
+      echo '                                                             '
+      . /d1/stark/GSI/run/run/run_sot_test.ksh
+      echo '- run with single obs test completed'
+      echo '                                                             '
+      echo '-------------------------------------------------------------'
+      echo "- running conventional obs test with ${PE} pe on ${ACORE} core."
+      echo '                                                             '
+      . /d1/stark/GSI/run/run/run_con_test.ksh
+      echo '- run with conventional obs completed'
+      echo '                                                             '
+      echo '-------------------------------------------------------------'
+      echo "- running radiance test with ${PE} pe on ${ACORE} core."
+      echo '                                                             '
+      . /d1/stark/GSI/run/run/run_rad_test.ksh
+      echo '- run with radiance completed'
+      echo '                                                             '
+      echo '-------------------------------------------------------------'
+      echo "running gpsro test with ${PE} pe on ${ACORE} core."
+      echo '                                                             '
+      . /d1/stark/GSI/run/run/run_gpsro_test.ksh
+      echo 'run with gpsro completed'
+   done
+done
+
+done
+
