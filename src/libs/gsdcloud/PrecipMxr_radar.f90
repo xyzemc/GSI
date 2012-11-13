@@ -1,5 +1,6 @@
-SUBROUTINE PrecipMxR_radar(mype,nlat,nlon,nsig,t_bk,p_bk,ref_mos_3d,cldpcp_type_3d, &
-                 qr_cld,qs_cld,qg_cld,cldqropt)  
+SUBROUTINE PrecipMxR_radar(mype,nlat,nlon,nsig,l_cleanSnow_WarmTs,   &
+                 r_cleanSnow_WarmTs_threshold,t_bk,p_bk,ref_mos_3d,  &
+                 cldpcp_type_3d,qr_cld,qs_cld,qg_cld,cldqropt)  
 !
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -21,6 +22,8 @@ SUBROUTINE PrecipMxR_radar(mype,nlat,nlon,nsig,t_bk,p_bk,ref_mos_3d,cldpcp_type_
 !     nlon        - no. of lons on subdomain (buffer points on ends)
 !     nlat        - no. of lats on subdomain (buffer points on ends)
 !     nsig        - no. of levels
+!     l_cleanSnow_WarmTs - if clean snow retrieval when Ts > 5C
+!     r_cleanSnow_WarmTs_threshold - threshold for the Ts used in cleaning snow
 !
 !     t_bk        - 3D background potential temperature (K)
 !     p_bk        - 3D background pressure  (hPa)
@@ -57,6 +60,9 @@ SUBROUTINE PrecipMxR_radar(mype,nlat,nlon,nsig,t_bk,p_bk,ref_mos_3d,cldpcp_type_
   implicit none
   integer(i_kind),intent(in):: nlat,nlon,nsig
   integer(i_kind),intent(in):: mype
+!mhu  integer(i_kind),intent(in) :: regional_time(6)
+  logical,intent(in) :: l_cleanSnow_WarmTs
+  real(r_kind),intent(in)  :: r_cleanSnow_WarmTs_threshold
 !
 !  background
 !
@@ -82,10 +88,13 @@ SUBROUTINE PrecipMxR_radar(mype,nlat,nlon,nsig,t_bk,p_bk,ref_mos_3d,cldpcp_type_
 
   REAL(r_single) :: t_3d(nlon,nlat,nsig)  
   REAL(r_single) :: p_3d(nlon,nlat,nsig)  
+  REAL(r_kind) ::  qs_max
 
   INTEGER(i_kind) :: cldqropt
   INTEGER(i_kind) :: istatus_pcp
   INTEGER(i_kind) :: i,j,k
+  INTEGER(i_kind) :: k_qs_max
+  REAL(r_kind) ::    threshold_t_1st
   
 !
 !====================================================================
@@ -137,7 +146,7 @@ SUBROUTINE PrecipMxR_radar(mype,nlat,nlon,nsig,t_bk,p_bk,ref_mos_3d,cldpcp_type_
       CALL pcp_mxr_ferrier (nlon,nlat,nsig,t_3d,p_3d,ref_mos_3d,        &
                             cldpcp_type_3d,                             &
                             qr_cld,qs_cld,qg_cld,                       &
-                            istatus_pcp)
+                            istatus_pcp,mype)
 
   ELSE IF (cldqropt == 3) THEN
 !
@@ -155,6 +164,49 @@ SUBROUTINE PrecipMxR_radar(mype,nlat,nlon,nsig,t_bk,p_bk,ref_mos_3d,cldpcp_type_
         call stop2(114)
 
   END IF   !cldqropt=1 or 2  or 3
+!
+! Set qs to radar retrieved snow mixing ratio at all levels
+! within 150 hPa above surface in all seasons (this condition
+! should occur rarely in summer in the US lower 48 states).
+! 
+! If there is no reflectivity at all below (for qs)
+! within 150 hPa of surface in a column, but there is radar-qs > 0
+! above, then apply radar-qs to model-qs at 2 levels with
+! maximum radar-qs in the column but for no other levels.
+!
+! If the 1st level temperature is less than 5 degree, then keep 
+! snow. Otherwise, keep a sinlge layer (maximum) of snow.
+!
+  if(l_cleanSnow_WarmTs) then
+     threshold_t_1st=r_cleanSnow_WarmTs_threshold
+     DO j = 2,nlat-1
+       DO i = 2,nlon-1
+!
+          k_qs_max=2
+          qs_max=0.0_r_kind
+          DO k = 2,nsig
+              if(qs_max < qs_cld(i,j,k) ) then
+                  qs_max = qs_cld(i,j,k)
+                  k_qs_max=k
+              endif
+          END DO
+
+          if(t_3d(i,j,1)  < threshold_t_1st) then
+!  keep snow falling
+          else
+             if(qs_max > 1.0e-7_r_kind) then
+                DO k = 1,nsig
+                   if(k==k_qs_max) then
+! do nothing to keep snow mixing ratio
+                   else
+                      qs_cld(i,j,k)=0.0_r_kind
+                   endif
+                END DO
+             endif
+          endif
+       END DO  !i
+     END DO  ! j
+  endif  ! l_cleanSnow_WarmTs
 
 END SUBROUTINE PrecipMxR_radar
 

@@ -117,6 +117,10 @@ subroutine map_ctp (ib,jb,nx,ny,nn_obs,numsao,data_s,sat_ctp,sat_tem,w_frac)
       integer(i_kind) :: nlev_cld(Nx,Ny)
       integer(i_kind) :: ios
 
+      integer(i_kind) :: npts_rad
+
+      npts_rad = 1
+
 !
 ! * Initialize outputs since GOES sounder do not scan all MAPS domain
 !
@@ -148,9 +152,9 @@ subroutine map_ctp (ib,jb,nx,ny,nn_obs,numsao,data_s,sat_ctp,sat_tem,w_frac)
              ii1 = int(xc+0.5_r_kind)
              jj1 = int(yc+0.5_r_kind)
 
-             do jj = max(1,jj1-2), min(ny,jj1+2)
+             do jj = max(1,jj1-npts_rad), min(ny,jj1+npts_rad)
                if (jj1-1 >= 1 .and. jj1+1 <= ny) then
-                 do ii = max(1,ii1-2), min(nx,ii1+2)
+                 do ii = max(1,ii1-npts_rad), min(nx,ii1+npts_rad)
                    if (ii1-1 >= 1 .and. ii1+1 <= nx) then
              
 ! * We check multiple data within gridbox

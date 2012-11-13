@@ -143,7 +143,7 @@ SUBROUTINE convert_lghtn2ref(mype,nlon,nlat,nsig,ref_mos_3d,lightning,h_bk)
   DO j=2,nlat-1
     DO i=2,nlon-1
       if(lightning(i,j) > 0.1_r_kind ) then
-        num_lightning = min(30,int(lightning(i,j)))
+        num_lightning = max(1,min(30,int(lightning(i,j))))
         if(season== 2 ) then
            dbz_lightning(i,j) = table_lghtn2ref_winter(num_lightning)
         else if(season== 1 ) then

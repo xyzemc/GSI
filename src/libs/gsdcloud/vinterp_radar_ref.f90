@@ -78,7 +78,7 @@ SUBROUTINE vinterp_radar_ref(mype,nlon,nlat,nsig,Nmsclvl,ref_mos_3d,ref_mosaic31
      return
   endif
 !
-  ref_mos_3d=-9999.0_r_kind
+  ref_mos_3d=-99999.0_r_kind
   numref=0
   if (Nmsclvl == 31 ) then
       DO k=1,Nmsclvl
@@ -113,11 +113,11 @@ SUBROUTINE vinterp_radar_ref(mype,nlon,nlat,nsig,Nmsclvl,ref_mos_3d,ref_mosaic31
                    abs(downref+99.0_r_kind) <0.1_r_kind ) then
              ref_mosaic=-99.0_r_kind
            else
-             ref_mosaic=-9999.0_r_kind
+             ref_mosaic=-99999.0_r_kind
            endif
            ref_mos_3d(i,j,k2)=max(ref_mos_3d(i,j,k2),ref_mosaic)
         else
-          ref_mos_3d(i,j,k2)=-9999.0_r_kind
+          ref_mos_3d(i,j,k2)=-99999.0_r_kind
         endif
       ENDDO
     ENDDO

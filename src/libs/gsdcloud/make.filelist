@@ -27,6 +27,7 @@ SRC_FILES = ARPS_cldLib.f90 \
             read_nasalarc_cld.f90 \
             smooth.f90 \
             constants.f90 \
-            kinds.f90
+            kinds.f90 \
+            pbl_height.f90 
 
 OBJ_FILES =${SRC_FILES:.f90=.o}
