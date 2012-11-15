@@ -251,6 +251,7 @@ LIBsys          = $(MYLIBsys)
 	mpimod.o \
 	mpl_allreduce.o \
 	mpl_bcast.o \
+        native_endianness.o \
 	ncepgfs_ghg.o \
 	ncepgfs_io.o \
 	ncepnems_io.o \
