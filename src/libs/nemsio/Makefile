@@ -20,7 +20,7 @@ clean:
 .SUFFIXES: .f90 .o
 
 .f90.o:
-	$(FC) -c $*.f90
+	$(F90) -c $*.f90
 
 nemsio_read.o: nemsio_openclose.o
 nemsio_write.o: nemsio_openclose.o
