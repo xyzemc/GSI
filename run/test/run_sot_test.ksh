@@ -18,7 +18,7 @@
      exit 1
   fi 
 
-ARCH='LINUX'
+# ARCH='LINUX'
 # Supported configurations:
             # IBM_LSF,IBM_LoadLevel
             # LINUX, LINUX_LSF, LINUX_PBS,
@@ -125,6 +125,11 @@ case $ARCH in
       BYTE_ORDER=Little_Endian
       #### Linux cluster PBS (Portable Batch System)
       RUN_COMMAND="mpirun -np ${GSIPROC} " ;;
+
+   'LINUX_TORQUE')
+      BYTE_ORDER=Little_Endian
+      #### Linux cluster Torque (Torque Batch System)
+      RUN_COMMAND="mpiexec -np ${GSIPROC} " ;;
 
    'DARWIN_PGI')
       ### Mac - mpi run
@@ -361,7 +366,7 @@ RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
  cp $bufrtable ./prepobs_prep.bufrtable
 
 # for satellite bias correction
-cp ${FIX_ROOT}/sample.satbias ./satbias_in
+cp ${DATA_DIR}/fix/sample.satbias ./satbias_in
 
 #
 ##################################################################################
