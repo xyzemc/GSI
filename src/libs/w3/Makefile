@@ -10,6 +10,7 @@ OBJS = aea.o args_mod.o errexit.o errmsg.o fparsei.o fparser.o gblevents.o gbyte
 all:    $(LIB)
 
 $(LIB): $(OBJS)
+	$(CP) *.mod ../../../include
 	$(AR) -ruv $(LIB) $(OBJS)
 
 gblevents.o:
