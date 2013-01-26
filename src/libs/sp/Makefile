@@ -1,6 +1,8 @@
 SHELL=/bin/sh
 include ../../../configure.gsi
-LIB = ../../../lib/libsp_i4r8.a 
+LIBDIR = ../../../lib/
+LIB = $(LIBDIR)/libsp_i4r8.a
+INCMOD  = ../../../include
 
 
 OBJ_F77 = bll2ps.o spanaly.o spdz2uv.o speps.o spfft.o spfft1.o \
@@ -22,15 +24,19 @@ all:  $(LIB)
 $(LIB): $(OBJ) $(OBJ_F77)
 	$(AR) -ruv $(ARFLAGS_SP) $(LIB) $(OBJ) $(OBJ_F77)
 
+.SUFFIXES:
+.SUFFIXES: .F .f .fpp .o
+
+
 $(OBJ):
-	$(CPP) $(CPP_FLAGS) $(CPP_F90FLAGS) $*.F  > $*.f
-	$(SFC) $(FFLAGS_SP) -c $*.f
-	$(RM) $*.f
+	$(CPP) $(CPP_FLAGS) $(CPP_F90FLAGS) $*.F  > $*.fpp
+	$(SFC) $(FFLAGS_SP) -c $*.fpp
+	$(RM) $*.fpp
 
 $(OBJ_F77): 
 	$(SFC) $(FFLAGS_SP) -c $(SRC_F77)
 
 
 clean:
-	$(RM) $(OBJ) $(OBJ_F77) *.mod $(LIB)
+	$(RM) $(OBJ) $(OBJ_F77) $(LIB)
 

@@ -1,8 +1,10 @@
 SHELL=/bin/sh
- 
 include ../../../configure.gsi
+LIBDIR = ../../../lib
+LIB = $(LIBDIR)/libcrtm.a
+INCMOD = ../../../include
 
-LIB = ../../../lib/libcrtm.a
+MODLIST = $(INCMOD)/crtm*.mod $(INCMOD)/nesdis*.mod $(INCMOD)/od*.mod $(INCMOD)/*binary_io.mod $(INCMOD)/*define.mod $(INCMOD)/parameters.mod $(INCMOD)/*utility.mod $(INCMOD)/compare_float_numbers.mod $(INCMOD)/fundamental_constants.mod $(INCMOD)/ocean_permittivity.mod $(INCMOD)/*_parameters.mod $(INCMOD)/type_kinds.mod $(INCMOD)/fresnel.mod  $(INCMOD)/message_handler.mod  $(INCMOD)/spectral_units_conversion.mod
 
 include make.filelist
  
@@ -12,8 +14,8 @@ include make.filelist
 all:	$(LIB)
 
 $(LIB):	$(OBJ_FILES)
-	$(CP) *.mod ../../../include
 	$(AR) crvs $(LIB) $(OBJ_FILES)
+	$(CP) *.mod $(INCMOD)
 
 .f90.o:
 	$(SF90) -c $(FFLAGS_CRTM) $(LFLAGS_CRTM) $<
@@ -26,4 +28,4 @@ clean:
 include make.dependencies
 
 clean:
-	rm -f *.o *.mod $(LIB)
+	rm -f *.o $(LIB) *.mod $(MODLIST)

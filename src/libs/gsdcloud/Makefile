@@ -1,8 +1,8 @@
 SHELL=/bin/sh
-
-LIB = ../../../lib/libgsdcloud.a
-
 include ../../../configure.gsi
+LIBDIR = ../../../lib/
+LIB = $(LIBDIR)/libgsdcloud.a
+INCMOD  = ../../../include
 
 include make.filelist
 
