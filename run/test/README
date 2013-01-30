@@ -6,3 +6,4 @@ These are the scripts for running the community GSI regression tests.
 
 3. Check for self-consistency of the run with respect to differing processor counts using the script "selfcompare_script.ksh."
 
+Data directory structure.
