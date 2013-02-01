@@ -73,6 +73,7 @@ LIBsys          = $(MYLIBsys)
 # ------------
 
   OBJS	= \
+        add_gfs_stratosphere.o \
 	adjtest.o \
 	aeroinfo.o \
         aircraftobsqc.o \
@@ -95,6 +96,7 @@ LIBsys          = $(MYLIBsys)
 	bkgvar.o \
 	bkgvar_rewgt.o \
 	blacklist.o \
+        blendmod.o \
 	calc_fov_conical.o \
 	calc_fov_crosstrk.o \
 	cal_tztr.o \
@@ -163,6 +165,7 @@ LIBsys          = $(MYLIBsys)
 	get_wrf_mass_ensperts_netcdf.o \
 	getuv.o \
 	getvvel.o \
+        gfs_stratosphere.o \
 	glbsoi.o \
 	grtest.o \
 	grdcrd.o \
