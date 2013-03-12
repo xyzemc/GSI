@@ -50,6 +50,8 @@
 # Users should NOT change script after this point
 #####################################################
 #
+BYTE_ORDER_CRTM=Big_Endian
+
 case $ARCH in
    'IBM_LSF')
       ###### IBM LSF (Load Sharing Facility)
@@ -234,19 +236,19 @@ echo " Copy fixed files and link CRTM coefficient files to working directory"
 
 if [ ${bkcv_option} = GLOBAL ] ; then
   echo ' Use global background error covariance'
-  if [ ${BYTE_ORDER} = Little_Endian ] ; then
-    BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv_Little_Endian
-  else
+# if [ ${BYTE_ORDER} = Little_Endian ] ; then
+#   BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv_Little_Endian
+# else
     BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv
-  fi
+# fi
   OBERROR=${FIX_ROOT}/prepobs_errtable.global
 else
   echo ' Use NAM background error covariance'
-  if [ ${BYTE_ORDER} = Little_Endian ] ; then
-    BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv_Little_Endian
-  else
+# if [ ${BYTE_ORDER} = Little_Endian ] ; then
+#   BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv_Little_Endian
+# else
     BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv
-  fi
+# fi
   OBERROR=${FIX_ROOT}/nam_errtable.r3dv
 fi
 
@@ -263,9 +265,9 @@ OZINFO=${FIX_ROOT}/global_ozinfo.txt
 PCPINFO=${FIX_ROOT}/global_pcpinfo.txt
 
 RTMFIX=${CRTM_ROOT}
-RTMEMIS=${RTMFIX}/EmisCoeff/${BYTE_ORDER}/EmisCoeff.bin
-RTMAERO=${RTMFIX}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
-RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
+RTMEMIS=${RTMFIX}/EmisCoeff/${BYTE_ORDER_CRTM}/EmisCoeff.bin
+RTMAERO=${RTMFIX}/AerosolCoeff/${BYTE_ORDER_CRTM}/AerosolCoeff.bin
+RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER_CRTM}/CloudCoeff.bin
 
 #  copy Fixed fields to working directory
  cp $ANAVINFO anavinfo
@@ -289,8 +291,8 @@ RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
        satsen=`head -n $isatsen satinfo | tail -1 | cut -f 2 -d" "`
        spccoeff=${satsen}.SpcCoeff.bin
        if  [[ ! -s $spccoeff ]]; then
-          ln -s $RTMFIX/SpcCoeff/${BYTE_ORDER}/$spccoeff $spccoeff
-          ln -s $RTMFIX/TauCoeff/${BYTE_ORDER}/${satsen}.TauCoeff.bin ${satsen}.TauCoeff.bin
+          ln -s $RTMFIX/SpcCoeff/${BYTE_ORDER_CRTM}/$spccoeff $spccoeff
+          ln -s $RTMFIX/TauCoeff/${BYTE_ORDER_CRTM}/${satsen}.TauCoeff.bin ${satsen}.TauCoeff.bin
        fi
     fi
     isatsen=` expr $isatsen + 1 `
