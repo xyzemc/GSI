@@ -477,14 +477,12 @@ $(EXE_FILE):  $(OBJS) $(LIB) gsimain.o
 
 include Makefile.dependency
 
-.SUFFIXES : .F90 .o
+.SUFFIXES : .f90 .F90 .fpp .o
 
 .F90.o:
-	$(SED_FTN) $*.F90 > $*.b
-	$(CPP) $(CPP_FLAGS) $(CPP_F90FLAGS) $*.b  > $*.f90
-	$(RM) $*.b
-	$(F90) $(FFLAGS) -c $*.f90
-	$(RM) $*.f90
+	$(CPP) $(CPP_FLAGS) $(CPP_F90FLAGS) $*.F90  > $*.fpp
+	$(F90) $(FFLAGS) -c $*.fpp
+	$(RM) $*.fpp
 
 
 clean:
