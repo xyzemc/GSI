@@ -17,7 +17,7 @@
      exit 1
   fi 
 
-# ARCH='LINUX_PBS'
+  ARCH='LINUX'
 # Supported configurations:
             # IBM_LSF,IBM_LoadLevel
             # LINUX, LINUX_LSF, LINUX_PBS,
@@ -106,6 +106,8 @@ case $ARCH in
       RUN_COMMAND="poe " ;;
 
    'LINUX')
+#     BYTE_ORDER=Big_Endian
+      BYTE_ORDER_CRTM=Big_Endian
       BYTE_ORDER=Little_Endian
       if [ $GSIPROC = 1 ]; then
          #### Linux workstation - single processor
@@ -124,11 +126,6 @@ case $ARCH in
       BYTE_ORDER=Little_Endian
       #### Linux cluster PBS (Portable Batch System)
       RUN_COMMAND="mpirun -np ${GSIPROC} " ;;
-
-   'LINUX_TORQUE')
-      BYTE_ORDER=Little_Endian
-      #### Linux cluster Torque (Torque Batch System)
-      RUN_COMMAND="mpiexec -np ${GSIPROC} " ;;
 
    'DARWIN_PGI')
       ### Mac - mpi run
@@ -298,19 +295,19 @@ echo " Copy fixed files and link CRTM coefficient files to working directory"
 
 if [ ${bkcv_option} = GLOBAL ] ; then
   echo ' Use global background error covariance'
-  if [ ${BYTE_ORDER} = Little_Endian ] ; then
-    BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv_Little_Endian
-  else
+# if [ ${BYTE_ORDER} = Little_Endian ] ; then
+#   BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv_Little_Endian
+# else
     BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv
-  fi
+# fi
   OBERROR=${FIX_ROOT}/prepobs_errtable.global
 else
   echo ' Use NAM background error covariance'
-  if [ ${BYTE_ORDER} = Little_Endian ] ; then
-    BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv_Little_Endian
-  else
+# if [ ${BYTE_ORDER} = Little_Endian ] ; then
+#   BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv_Little_Endian
+# else
     BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv
-  fi
+# fi
   OBERROR=${FIX_ROOT}/nam_errtable.r3dv
 fi
 
@@ -327,9 +324,9 @@ OZINFO=${FIX_ROOT}/global_ozinfo.txt
 PCPINFO=${FIX_ROOT}/global_pcpinfo.txt
 
 RTMFIX=${CRTM_ROOT}
-RTMEMIS=${RTMFIX}/EmisCoeff/${BYTE_ORDER}/EmisCoeff.bin
-RTMAERO=${RTMFIX}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
-RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
+RTMEMIS=${RTMFIX}/EmisCoeff/${BYTE_ORDER_CRTM}/EmisCoeff.bin
+RTMAERO=${RTMFIX}/AerosolCoeff/${BYTE_ORDER_CRTM}/AerosolCoeff.bin
+RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER_CRTM}/CloudCoeff.bin
 
 #  copy Fixed fields to working directory
  cp $ANAVINFO anavinfo
@@ -353,8 +350,8 @@ RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
        satsen=`head -n $isatsen satinfo | tail -1 | cut -f 2 -d" "`
        spccoeff=${satsen}.SpcCoeff.bin
        if  [[ ! -s $spccoeff ]]; then
-          ln -s $RTMFIX/SpcCoeff/${BYTE_ORDER}/$spccoeff $spccoeff
-          ln -s $RTMFIX/TauCoeff/${BYTE_ORDER}/${satsen}.TauCoeff.bin ${satsen}.TauCoeff.bin
+          ln -s $RTMFIX/SpcCoeff/${BYTE_ORDER_CRTM}/$spccoeff $spccoeff
+          ln -s $RTMFIX/TauCoeff/${BYTE_ORDER_CRTM}/${satsen}.TauCoeff.bin ${satsen}.TauCoeff.bin
        fi
     fi
     isatsen=` expr $isatsen + 1 `
@@ -408,7 +405,7 @@ cat << EOF > gsiparm.anl
    use_pbl=.false.,
  /
  &GRIDOPTS
-   JCAP=$JCAP,JCAP_B=$JCAP_B,NLAT=$NLAT,NLON=$LONA,nsig=$LEVS,hybrid=.true.,
+   JCAP=$JCAP,JCAP_B=$JCAP_B,NLAT=$NLAT,NLON=$LONA,nsig=$LEVS,
    wrf_nmm_regional=${bk_core_nmm},wrf_mass_regional=${bk_core_arw},
    diagnostic_reg=.false.,
    filled_grid=.false.,half_grid=.true.,netcdf=.true.,
@@ -426,7 +423,7 @@ cat << EOF > gsiparm.anl
  &JCOPTS
  /
  &STRONGOPTS
-   jcstrong=.false.,jcstrong_option=3,nstrong=0,nvmodes_keep=20,period_max=3.,
+   tlnmc_type=3,nstrong=0,nvmodes_keep=20,period_max=3.,
    baldiag_full=.true.,baldiag_inc=.true.,
  /
  &OBSQC
