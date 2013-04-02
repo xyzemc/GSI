@@ -75,6 +75,7 @@ LIBsys          = $(MYLIBsys)
   OBJS	= \
         add_gfs_stratosphere.o \
 	adjtest.o \
+	adjtest_obs.o \
 	aeroinfo.o \
         aircraftobsqc.o \
 	anberror.o \
