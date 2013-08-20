@@ -1,4 +1,5 @@
 #!/bin/ksh 
+#Added by Dave hagerty for test
 #####################################################
 # machine set up (users should change this part)
 #####################################################
