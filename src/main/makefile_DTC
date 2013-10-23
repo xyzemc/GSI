@@ -416,7 +416,6 @@ LIBsys          = $(MYLIBsys)
 	strong_bal_correction.o \
 	strong_baldiag_inc.o \
 	strong_fast_global_mod.o \
-	strong_slow_global_mod.o \
 	sub2fslab_mod.o \
 	support_2dvar.o \
 	stub_set_crtm_aerosol.o \
