@@ -2,12 +2,12 @@
 
 # Link script to link in CRTM release fixfiles into a single directory.
 #
-# $Id: link_crtm_coeffs.sh 29949 2013-07-16 15:07:56Z Michael.Lueken@noaa.gov $
+# $Id$
 
 script_id()
 {
-  REVISION='$Revision: 29949 $'
-  LAST_CHANGED_DATE='$LastChangedDate: 2013-07-16 09:07:56 -0600 (Tue, 16 Jul 2013) $'
+  REVISION='$Revision$'
+  LAST_CHANGED_DATE='$LastChangedDate$'
   echo
   echo "${SCRIPT_NAME} ${REVISION} ${LAST_CHANGED_DATE}"
   echo " "`date`
