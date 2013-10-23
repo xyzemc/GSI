@@ -233,14 +233,18 @@ LIBsys          = $(MYLIBsys)
 	m_berror_stats.o \
 	m_berror_stats_reg.o \
 	m_dgeevx.o \
+	m_distance.o  \
 	m_dtime.o	\
+	m_find.o   \
 	m_gpsrhs.o \
 	m_gsiBiases.o \
 	m_rerank.o \
 	m_obdiag.o	\
 	m_rhs.o	\
+	m_sortind.o  \
 	m_stats.o \
 	m_tick.o \
+	m_uniq.o  \
 	mpeu_mpif.o \
 	mpeu_util.o \
 	mod_nmmb_to_a.o \
@@ -307,6 +311,7 @@ LIBsys          = $(MYLIBsys)
 	read_cris.o \
 	read_diag.o \
 	read_files.o \
+	read_fl_hdob.o  \
 	read_gfs_ozone_for_regional.o \
 	read_goesimg.o \
 	read_goesndr.o \
@@ -329,6 +334,7 @@ LIBsys          = $(MYLIBsys)
 	read_RadarRef_mosaic.o \
 	read_satwnd.o \
 	read_seviri.o \
+	read_sfcwnd.o  \
 	read_ssmi.o \
 	read_ssmis.o \
 	read_superwinds.o \
@@ -379,6 +385,7 @@ LIBsys          = $(MYLIBsys)
 	smoothwwrf.o \
 	smoothzrf.o \
 	sqrtmin.o \
+	ssmis_spatial_average_mod.o  \
 	sst_retrieval.o \
 	state2control.o \
 	state2ensctl.o \
