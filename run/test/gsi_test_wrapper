@@ -1,48 +1,26 @@
-#!/usr/bin/env ksh93
+#!/usr/bin/env ksh93 
 ######################################################################
 #                gsi regression test wrapper script                          
 ######################################################################
 ######################################################################
 #   NOTES:                                                           #
 #                                                                    #
-#   Author: DRS Dec 18, 2012                                         #
+#   Author: DRS Oct 17, 2012                                         #
 ######################################################################
-# Directions
-######################################################################
-# The test scripts excercise the GSI code by running four problem
-# configurations on 1 and 4 processors, and using both the ARW and 
-# NMM background, for a total of 16 variations.
-#
-# The top level script "gsi_test_wrapper" calls separate scripts for 
-# each  of the problem configurations.
-# 1. run_sot_test.ksh
-# 2. run_con_test.ksh
-# 3. run_rad_test.ksh
-# 4. run_gpsro_test.ksh
-# 
-# All local modifications should be in this script. 
-#
-# If no batch system is required by your computing system, simply run
-# this script at the command line. If on the other hand a batch queue
-# is required to run all parallel jobs, open an interactive session 
-# and run this script there. Examples of this are qrsh or qsub -X -I
-# depending on your queuing system.
-# 
-# The scripts assume a certaindirectoryt structure.
-# 1. The source code is located at
-# ${GSI_ROOT}/src/${COMPILER}/${TEST_SRC}
-# 2. The output is placed at
-# ${GSI_ROOT}/run/${COMPILER}/${TEST_SRC}
-#
+
 ######################################################################
 #   Definitions
 ######################################################################
-export GSI_ROOT=/mnt/lfs1/projects/dtc-hurr/stark/GSI
+ulimit -s 512000
+export GSI_ROOT=/d1/stark/GSI
+export GSI_TEST_ROOT=${GSI_ROOT}/run/run
+export TEST_SRCS=/tickets/com_trunk
 #export COMPILER=pgi intel
 export COMPILER=intel
-export ARCH='LINUX_TORQUE'
+export ARCH=LINUX
+export ANAL_TIME=2011060212
 
-for TEST_SRC in com_trunk_r969
+for TEST_SRC in ${TEST_SRCS}
 do
 export GSI_TEST_DIR=${TEST_SRC}
 
@@ -51,30 +29,38 @@ do
    for ACORE in ARW NMM
    do
       export GSIPROC=${PE}
+      # GSIPROC = processor number used for GSI analysis
+      if [ $GSIPROC = 1 ] ; then
+         export TEST_DIR_SUFFIX='np1'
+      elif [ $GSIPROC = 2 ] ; then
+         export TEST_DIR_SUFFIX='np2'
+      elif [ $GSIPROC = 4 ] ; then
+         export TEST_DIR_SUFFIX='np4'
+      fi
       export bk_core=${ACORE}
       echo '                                                             '
       echo '-------------------------------------------------------------'
       echo "- running single obs test with ${PE} pe on ${ACORE} core."
       echo '                                                             '
-      . ${GSI_ROOT}/run/run/run_sot_test.ksh
+      . ${GSI_TEST_ROOT}/run/test/run_sot_test.ksh
       echo '- run with single obs test completed'
       echo '                                                             '
       echo '-------------------------------------------------------------'
       echo "- running conventional obs test with ${PE} pe on ${ACORE} core."
       echo '                                                             '
-      . ${GSI_ROOT}/run/run/run_con_test.ksh
+      . ${GSI_TEST_ROOT}/run/test/run_con_test.ksh
       echo '- run with conventional obs completed'
       echo '                                                             '
       echo '-------------------------------------------------------------'
       echo "- running radiance test with ${PE} pe on ${ACORE} core."
       echo '                                                             '
-      . ${GSI_ROOT}/run/run/run_rad_test.ksh
+      . ${GSI_TEST_ROOT}/run/test/run_rad_test.ksh
       echo '- run with radiance completed'
       echo '                                                             '
       echo '-------------------------------------------------------------'
       echo "running gpsro test with ${PE} pe on ${ACORE} core."
       echo '                                                             '
-      . ${GSI_ROOT}/run/run/run_gpsro_test.ksh
+      . ${GSI_TEST_ROOT}/run/test/run_gpsro_test.ksh
       echo 'run with gpsro completed'
    done
 done

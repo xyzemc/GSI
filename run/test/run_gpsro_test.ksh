@@ -3,93 +3,98 @@
 # machine set up (users should change this part)
 #####################################################
 #
-#
 # GSIPROC = processor number used for GSI analysis
 #------------------------------------------------
-  GSIPROC=1
-  ARCH='LINUX_PGI' 
-# Supported configurations:
-            # IBM_LSF,
-            # LINUX_Intel, LINUX_Intel_LSF, LINUX_Intel_PBS,
-            # LINUX_PGI, LINUX_PGI_LSF, LINUX_PGI_PBS,
+# Defined in GSI test wrapper
+# GSIPROC=1,4
+
+# Supported configurations: Defined in GSI test Wrapper
+            # IBM_LSF,IBM_LoadLevel
+            # LINUX, LINUX_LSF, LINUX_PBS,
             # DARWIN_PGI
+# ARCH='LINUX'
 #
 #####################################################
 # case set up (users should change this part)
 #####################################################
-#
-# ANAL_TIME= analysis time  (YYYYMMDDHH)
-# WORK_ROOT= working directory, where GSI runs
-# PREPBURF = path of PreBUFR conventional obs
-# BK_FILE  = path and name of background file
-# OBS_ROOT = path of observations files
-# FIX_ROOT = path of fix files
-# GSI_EXE  = path and name of the gsi executable 
-  ANAL_TIME=2008051112
-  WORK_ROOT=./gsiprd_${ANAL_TIME}_arw
-  PREPBUFR=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs/newgblav.20080511.ruc2a.t12z.prepbufr
-  BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkARW/wrfout_d01_2008-05-11_12:00:00
-##  BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkNMM/wrfinput_d01_2008-05-11_12:00:00
-  OBS_ROOT=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs
-  FIX_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk_r580/fix
-  CRTM_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/crtm/CRTM_Coefficients
-  GSI_EXE=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk_r580/run/gsi.exe
-
-#------------------------------------------------
 # bk_core= which WRF core is used as background (NMM or ARW)
 # bkcv_option= which background error covariance and parameter will be used 
 #              (GLOBAL or NAM)
+# Defined in GSI test wrapper
+# bk_core=ARW, NMM
+  if [ ${bk_core} = NMM ] ; then
+    CORE_DIR=nmm
+  else
+    CORE_DIR=arw
+  fi
+  bkcv_option=NAM
+
+#####################################################
+# ANAL_TIME = analysis time  (YYYYMMDDHH)
+# COMPILER  = fortran compiler
+# GSI_TEST  = path to GSI test source code
+# GSI_ROOT  = root path to GSI workspace
+# WORK_ROOT = working directory, where GSI runs
+# DATA_DIR  = path to obs data and CRTM fixed files 
+# PREPBURF  = path of PreBUFR conventional obs
+# BK_FILE   = path and name of background file
+# OBS_ROOT  = path of observations files
+# FIX_ROOT  = path of fix files
+# GSI_EXE   = path and name of the gsi executable 
+#####################################################
+# ANAL_TIME=2011060212
+# COMPILER=intel,pgi
+# GSI_TEST=con,rad,gpsro,radar
+# GSI_ROOT=/d1/stark/GSI
+  GSI_TEST=gpsro
+  GSI_DIR=${COMPILER}/${GSI_TEST_DIR}
+  WORK_ROOT=${GSI_ROOT}/run/${GSI_DIR}/${GSI_TEST}_${ANAL_TIME}_${CORE_DIR}_${TEST_DIR_SUFFIX}
+  DATA_DIR=${GSI_ROOT}/data
+#
+#####################################################
+#    PATHS
+#####################################################
+  BK_FILE=${DATA_DIR}/${ANAL_TIME}/${CORE_DIR}/wrfinput_d01_2011-06-02_12:00:00
+  OBS_ROOT=${DATA_DIR}/${ANAL_TIME}/obs
+  PREPBUFR=${OBS_ROOT}/nam.t12z.prepbufr.tm00.nr.le
+  CRTM_ROOT=${DATA_DIR}/fix/CRTM_Coefficients-2.1.3
+  FIX_ROOT=${GSI_ROOT}/src/${GSI_DIR}/fix
+  GSI_EXE=${GSI_ROOT}/src/${GSI_DIR}/run/gsi.exe
+
+#####################################################
 # if_clean = clean  : delete temperal files in working directory (default)
 #            no     : leave running directory as is (this is for debug only)
-  bk_core=ARW
-  bkcv_option=NAM
   if_clean=clean
-#
-#
+ 
 #####################################################
 # Users should NOT change script after this point
 #####################################################
 #
 BYTE_ORDER=Big_Endian
-BYTE_ORDER_CRTM=Big_Endian
-
 case $ARCH in
    'IBM_LSF')
       ###### IBM LSF (Load Sharing Facility)
       RUN_COMMAND="mpirun.lsf " ;;
 
-   'LINUX_Intel')
+   'IBM_LoadLevel')
+      ###### IBM LoadLeve 
+      RUN_COMMAND="poe " ;;
+
+   'LINUX')
       if [ $GSIPROC = 1 ]; then
          #### Linux workstation - single processor
          RUN_COMMAND=""
       else
-         ###### Linux workstation -  mpi run
-        RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile ~/mach "
+         ###### Linux workstation -  using mpi run and with machfile 
+        RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile /home/${USER}/mach "
       fi ;;
 
-   'LINUX_Intel_LSF')
+   'LINUX_LSF')
       ###### LINUX LSF (Load Sharing Facility)
       RUN_COMMAND="mpirun.lsf " ;;
 
-   'LINUX_Intel_PBS')
+   'LINUX_PBS')
       #### Linux cluster PBS (Portable Batch System)
-      RUN_COMMAND="mpirun -np ${GSIPROC} " ;;
-
-   'LINUX_PGI')
-      if [ $GSIPROC = 1 ]; then
-         #### Linux workstation - single processor
-         RUN_COMMAND=""
-      else
-         ###### Linux workstation -  mpi run
-         RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile ~/mach "
-      fi ;;
-
-   'LINUX_PGI_LSF')
-      ###### LINUX LSF (Load Sharing Facility)
-      RUN_COMMAND="mpirun.lsf " ;;
-
-   'LINUX_PGI_PBS')
-      ###### Linux cluster PBS (Portable Batch System)
       RUN_COMMAND="mpirun -np ${GSIPROC} " ;;
 
    'DARWIN_PGI')
@@ -197,7 +202,6 @@ cp ${GSI_EXE} gsi.exe
 # Bring over background field (it's modified by GSI so we can't link to it)
 cp ${BK_FILE} ./wrf_inout
 
-
 # Link to the prepbufr data
 ln -s ${PREPBUFR} ./prepbufr
 
@@ -207,7 +211,8 @@ ln -s ${PREPBUFR} ./prepbufr
 # ln -s ${OBS_ROOT}/gdas1.t12z.1bhrs3.tm00.bufr_d hirs3bufr
 # ln -s ${OBS_ROOT}/gdas1.t12z.1bhrs4.tm00.bufr_d hirs4bufr
 # ln -s ${OBS_ROOT}/gdas1.t12z.1bmhs.tm00.bufr_d mhsbufr
-# ln -s ${OBS_ROOT}/gdas1.t12z.gpsro.tm00.bufr_d gpsrobufr
+  ln -s ${OBS_ROOT}/gdas1.t12z.gpsro.tm00.bufr_d gpsrobufr
+
 #
 ##################################################################################
 
@@ -234,7 +239,7 @@ if [ ${bkcv_option} = GLOBAL ] ; then
   BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv
   OBERROR=${FIX_ROOT}/prepobs_errtable.global
   if [ ${bk_core} = NMM ] ; then
-     ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf_glbe
+    ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf_glbe
   else
     ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf_glbe
   fi
@@ -243,11 +248,12 @@ else
   BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv
   OBERROR=${FIX_ROOT}/nam_errtable.r3dv
   if [ ${bk_core} = NMM ] ; then
-     ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf
+    ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf
   else
-     ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf
+    ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf
   fi
 fi
+
 
 SATANGL=${FIX_ROOT}/global_satangbias.txt
 SATINFO=${FIX_ROOT}/global_satinfo.txt
@@ -266,6 +272,11 @@ emiscoef_VISwater=${CRTM_ROOT}/EmisCoeff/VIS_Water/SEcategory/${BYTE_ORDER}/NPOE
 emiscoef_MWwater=${CRTM_ROOT}/EmisCoeff/MW_Water/${BYTE_ORDER}/FASTEM5.MWwater.EmisCoeff.bin
 aercoef=${CRTM_ROOT}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
 cldcoef=${CRTM_ROOT}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
+
+#Possible deletion
+#RTMEMIS=${CRTM_ROOT}/EmisCoeff/${BYTE_ORDER}/EmisCoeff.bin
+#RTMAERO=${CRTM_ROOT}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
+#RTMCLDS=${CRTM_ROOT}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
 
 #  copy Fixed fields to working directory
  cp $ANAVINFO anavinfo
@@ -300,24 +311,17 @@ done
  cp $bufrtable ./prepobs_prep.bufrtable
 
 # for satellite bias correction
-cp ${FIX_ROOT}/ndas.t06z.satbias.tm03 ./satbias_in
+ cp ${DATA_DIR}/fix/sample.satbias ./satbias_in
 
 #
 ##################################################################################
 # Set some parameters for use by the GSI executable and to build the namelist
 echo " Build the namelist "
 
-export JCAP=62
-export LEVS=60
-export JCAP_B=62
-export DELTIM=${DELTIM:-$((3600/($JCAP/20)))}
-
 if [ ${bkcv_option} = GLOBAL ] ; then
-   as_op='0.6,0.6,0.75,0.75,0.75,0.75,1.0,1.0'
    vs_op='0.7,'
    hzscl_op='1.7,0.8,0.5,'
 else
-   as_op='1.0,1.0,0.5 ,0.7,0.7,0.5,1.0,1.0,'
    vs_op='1.0,'
    hzscl_op='0.373,0.746,1.50,'
 fi
@@ -336,14 +340,14 @@ cat << EOF > gsiparm.anl
    miter=2,niter(1)=10,niter(2)=10,
    write_diag(1)=.true.,write_diag(2)=.false.,write_diag(3)=.true.,
    gencode=78,qoption=2,
-   factqmin=0.0,factqmax=0.0,deltim=$DELTIM,
-   ndat=62,iguess=-1,
+   factqmin=0.0,factqmax=0.0,deltim=1200,
+   ndat=87,iguess=-1,
    oneobtest=.false.,retrieval=.false.,
    nhr_assimilation=3,l_foto=.false.,
    use_pbl=.false.,
  /
  &GRIDOPTS
-   JCAP=$JCAP,JCAP_B=$JCAP_B,NLAT=$NLAT,NLON=$LONA,nsig=$LEVS,hybrid=.true.,
+   JCAP=62,JCAP_B=62,NLAT=60,NLON=60,nsig=60,regional=.true.,
    wrf_nmm_regional=${bk_core_nmm},wrf_mass_regional=${bk_core_arw},
    diagnostic_reg=.false.,
    filled_grid=.false.,half_grid=.true.,netcdf=.true.,
@@ -354,9 +358,7 @@ cat << EOF > gsiparm.anl
    bw=0.,fstat=.true.,
  /
  &ANBKGERR
-   anisotropic=.false.,an_vs=1.0,ngauss=1,
-   an_flen_u=-5.,an_flen_t=3.,an_flen_z=-200.,
-   ifilt_ord=2,npass=3,normal=-200,grid_ratio=4.,nord_f2a=4,
+   anisotropic=.false.,
  /
  &JCOPTS
  /
@@ -372,20 +374,20 @@ cat << EOF > gsiparm.anl
    dfile(01)='prepbufr',  dtype(01)='ps',        dplat(01)=' ',         dsis(01)='ps',                  dval(01)=1.0,  dthin(01)=0,
    dfile(02)='prepbufr'   dtype(02)='t',         dplat(02)=' ',         dsis(02)='t',                   dval(02)=1.0,  dthin(02)=0,
    dfile(03)='prepbufr',  dtype(03)='q',         dplat(03)=' ',         dsis(03)='q',                   dval(03)=1.0,  dthin(03)=0,
-   dfile(04)='prepbufr',  dtype(04)='uv',        dplat(04)=' ',         dsis(04)='uv',                  dval(04)=1.0,  dthin(04)=0,
-   dfile(05)='prepbufr',  dtype(05)='spd',       dplat(05)=' ',         dsis(05)='spd',                 dval(05)=1.0,  dthin(05)=0,
-   dfile(06)='radarbufr', dtype(06)='rw',        dplat(06)=' ',         dsis(06)='rw',                  dval(06)=1.0,  dthin(06)=0,
-   dfile(07)='prepbufr',  dtype(07)='dw',        dplat(07)=' ',         dsis(07)='dw',                  dval(07)=1.0,  dthin(07)=0,
-   dfile(08)='prepbufr',  dtype(08)='sst',       dplat(08)=' ',         dsis(08)='sst',                 dval(08)=1.0,  dthin(08)=0,
-   dfile(09)='prepbufr',  dtype(09)='pw',        dplat(09)=' ',         dsis(09)='pw',                  dval(09)=1.0,  dthin(09)=0,
-   dfile(10)='gpsrobufr', dtype(10)='gps_ref',   dplat(10)=' ',         dsis(10)='gps_ref',             dval(10)=1.0,  dthin(10)=0,
-   dfile(11)='ssmirrbufr',dtype(11)='pcp_ssmi',  dplat(11)='dmsp',      dsis(11)='pcp_ssmi',            dval(11)=1.0,  dthin(11)=-1,
-   dfile(12)='tmirrbufr', dtype(12)='pcp_tmi',   dplat(12)='trmm',      dsis(12)='pcp_tmi',             dval(12)=1.0,  dthin(12)=-1,
-   dfile(13)='sbuvbufr',  dtype(13)='sbuv2',     dplat(13)='n16',       dsis(13)='sbuv8_n16',           dval(13)=1.0,  dthin(13)=0,
-   dfile(14)='sbuvbufr',  dtype(14)='sbuv2',     dplat(14)='n17',       dsis(14)='sbuv8_n17',           dval(14)=1.0,  dthin(14)=0,
-   dfile(15)='sbuvbufr',  dtype(15)='sbuv2',     dplat(15)='n18',       dsis(15)='sbuv8_n18',           dval(15)=1.0,  dthin(15)=0,
-   dfile(16)='omi',       dtype(16)='omi',       dplat(16)='aura',      dsis(16)='omi_aura',            dval(16)=1.0,  dthin(16)=6,
-   dfile(17)='hirs2bufr', dtype(17)='hirs2',     dplat(17)='n14',       dsis(17)='hirs2_n14',           dval(17)=6.0,  dthin(17)=1,
+   dfile(04)='prepbufr',  dtype(04)='pw',        dplat(04)=' ',         dsis(04)='pw',                  dval(04)=1.0,  dthin(04)=0,
+   dfile(05)='satwnd',    dtype(05)='uv',        dplat(05)=' ',         dsis(05)='uv',                  dval(05)=1.0,  dthin(05)=0,
+   dfile(06)='prepbufr',  dtype(06)='uv',        dplat(06)=' ',         dsis(06)='uv',                  dval(06)=1.0,  dthin(06)=0,
+   dfile(07)='prepbufr',  dtype(07)='spd',       dplat(07)=' ',         dsis(07)='spd',                 dval(07)=1.0,  dthin(07)=0,
+   dfile(08)='prepbufr',  dtype(08)='dw',        dplat(08)=' ',         dsis(08)='dw',                  dval(08)=1.0,  dthin(08)=0,
+   dfile(09)='radarbufr', dtype(09)='rw',        dplat(09)=' ',         dsis(09)='rw',                  dval(09)=1.0,  dthin(09)=0,
+   dfile(10)='prepbufr',  dtype(10)='sst',       dplat(10)=' ',         dsis(10)='sst',                 dval(10)=1.0,  dthin(10)=0,
+   dfile(11)='gpsrobufr', dtype(11)='gps_ref',   dplat(11)=' ',         dsis(11)='gps',                 dval(11)=1.0,  dthin(11)=0,
+   dfile(12)='ssmirrbufr',dtype(12)='pcp_ssmi',  dplat(12)='dmsp',      dsis(12)='pcp_ssmi',            dval(12)=1.0,  dthin(12)=-1,
+   dfile(13)='tmirrbufr', dtype(13)='pcp_tmi',   dplat(13)='trmm',      dsis(13)='pcp_tmi',             dval(13)=1.0,  dthin(13)=-1,
+   dfile(14)='sbuvbufr',  dtype(14)='sbuv2',     dplat(14)='n16',       dsis(14)='sbuv8_n16',           dval(14)=1.0,  dthin(14)=0,
+   dfile(15)='sbuvbufr',  dtype(15)='sbuv2',     dplat(15)='n17',       dsis(15)='sbuv8_n17',           dval(15)=1.0,  dthin(15)=0,
+   dfile(16)='sbuvbufr',  dtype(16)='sbuv2',     dplat(16)='n18',       dsis(16)='sbuv8_n18',           dval(16)=1.0,  dthin(16)=0,
+   dfile(17)='omibufr',   dtype(17)='omi',       dplat(17)='aura',      dsis(17)='omi_aura',            dval(17)=1.0,  dthin(17)=6,
    dfile(18)='hirs3bufr', dtype(18)='hirs3',     dplat(18)='n16',       dsis(18)='hirs3_n16',           dval(18)=0.0,  dthin(18)=1,
    dfile(19)='hirs3bufr', dtype(19)='hirs3',     dplat(19)='n17',       dsis(19)='hirs3_n17',           dval(19)=6.0,  dthin(19)=1,
    dfile(20)='hirs4bufr', dtype(20)='hirs4',     dplat(20)='n18',       dsis(20)='hirs4_n18',           dval(20)=0.0,  dthin(20)=1,
@@ -413,24 +415,39 @@ cat << EOF > gsiparm.anl
    dfile(42)='amsrebufr', dtype(42)='amsre_low', dplat(42)='aqua',      dsis(42)='amsre_aqua',          dval(42)=0.0,  dthin(42)=4,
    dfile(43)='amsrebufr', dtype(43)='amsre_mid', dplat(43)='aqua',      dsis(43)='amsre_aqua',          dval(43)=0.0,  dthin(43)=4,
    dfile(44)='amsrebufr', dtype(44)='amsre_hig', dplat(44)='aqua',      dsis(44)='amsre_aqua',          dval(44)=0.0,  dthin(44)=4,
-   dfile(45)='ssmisbufr', dtype(45)='ssmis_las', dplat(45)='f16',       dsis(45)='ssmis_f16',           dval(45)=0.0,  dthin(45)=4,
-   dfile(46)='ssmisbufr', dtype(46)='ssmis_uas', dplat(46)='f16',       dsis(46)='ssmis_f16',           dval(46)=0.0,  dthin(46)=4,
-   dfile(47)='ssmisbufr', dtype(47)='ssmis_img', dplat(47)='f16',       dsis(47)='ssmis_f16',           dval(47)=0.0,  dthin(47)=4,
-   dfile(48)='ssmisbufr', dtype(48)='ssmis_env', dplat(48)='f16',       dsis(48)='ssmis_f16',           dval(48)=0.0,  dthin(48)=4,
-   dfile(49)='gsnd1bufr', dtype(49)='sndrd1',    dplat(49)='g12',       dsis(49)='sndrD1_g12',          dval(49)=1.5,  dthin(49)=5,
-   dfile(50)='gsnd1bufr', dtype(50)='sndrd2',    dplat(50)='g12',       dsis(50)='sndrD2_g12',          dval(50)=1.5,  dthin(50)=5,
-   dfile(51)='gsnd1bufr', dtype(51)='sndrd3',    dplat(51)='g12',       dsis(51)='sndrD3_g12',          dval(51)=1.5,  dthin(51)=5,
-   dfile(52)='gsnd1bufr', dtype(52)='sndrd4',    dplat(52)='g12',       dsis(52)='sndrD4_g12',          dval(52)=1.5,  dthin(52)=5,
-   dfile(53)='gsnd1bufr', dtype(53)='sndrd1',    dplat(53)='g11',       dsis(53)='sndrD1_g11',          dval(53)=1.5,  dthin(53)=5,
-   dfile(54)='gsnd1bufr', dtype(54)='sndrd2',    dplat(54)='g11',       dsis(54)='sndrD2_g11',          dval(54)=1.5,  dthin(54)=5,
-   dfile(55)='gsnd1bufr', dtype(55)='sndrd3',    dplat(55)='g11',       dsis(55)='sndrD3_g11',          dval(55)=1.5,  dthin(55)=5,
-   dfile(56)='gsnd1bufr', dtype(56)='sndrd4',    dplat(56)='g11',       dsis(56)='sndrD4_g11',          dval(56)=1.5,  dthin(56)=5,
-   dfile(57)='gsnd1bufr', dtype(57)='sndrd1',    dplat(57)='g13',       dsis(57)='sndrD1_g13',          dval(57)=1.5,  dthin(57)=5,
-   dfile(58)='gsnd1bufr', dtype(58)='sndrd2',    dplat(58)='g13',       dsis(58)='sndrD2_g13',          dval(58)=1.5,  dthin(58)=5,
-   dfile(59)='gsnd1bufr', dtype(59)='sndrd3',    dplat(59)='g13',       dsis(59)='sndrD3_g13',          dval(59)=1.5,  dthin(59)=5,
-   dfile(60)='gsnd1bufr', dtype(60)='sndrd4',    dplat(60)='g13',       dsis(60)='sndrD4_g13',          dval(60)=1.5,  dthin(60)=5,
-   dfile(61)='iasibufr',  dtype(61)='iasi',      dplat(61)='metop-a',   dsis(61)='iasi616_metop-a',     dval(61)=20.0, dthin(61)=1,
-   dfile(62)='gomebufr',  dtype(62)='gome',      dplat(62)='metop-a',   dsis(62)='gome_metop-a',        dval(62)=1.0,  dthin(62)=6,
+   dfile(45)='ssmisbufr', dtype(45)='ssmis',     dplat(45)='f16',       dsis(45)='ssmis_f16',           dval(45)=0.0,  dthin(45)=4,
+   dfile(46)='gsnd1bufr', dtype(46)='sndrd1',    dplat(46)='g12',       dsis(46)='sndrD1_g12',          dval(46)=1.5,  dthin(46)=5,
+   dfile(47)='gsnd1bufr', dtype(47)='sndrd2',    dplat(47)='g12',       dsis(47)='sndrD2_g12',          dval(47)=1.5,  dthin(47)=5,
+   dfile(48)='gsnd1bufr', dtype(48)='sndrd3',    dplat(48)='g12',       dsis(48)='sndrD3_g12',          dval(48)=1.5,  dthin(48)=5,
+   dfile(49)='gsnd1bufr', dtype(49)='sndrd4',    dplat(49)='g12',       dsis(49)='sndrD4_g12',          dval(49)=1.5,  dthin(49)=5,
+   dfile(50)='gsnd1bufr', dtype(50)='sndrd1',    dplat(50)='g11',       dsis(50)='sndrD1_g11',          dval(50)=1.5,  dthin(50)=5,
+   dfile(51)='gsnd1bufr', dtype(51)='sndrd2',    dplat(51)='g11',       dsis(51)='sndrD2_g11',          dval(51)=1.5,  dthin(51)=5,
+   dfile(52)='gsnd1bufr', dtype(52)='sndrd3',    dplat(52)='g11',       dsis(52)='sndrD3_g11',          dval(52)=1.5,  dthin(52)=5,
+   dfile(53)='gsnd1bufr', dtype(53)='sndrd4',    dplat(53)='g11',       dsis(53)='sndrD4_g11',          dval(53)=1.5,  dthin(53)=5,
+   dfile(54)='gsnd1bufr', dtype(54)='sndrd1',    dplat(54)='g13',       dsis(54)='sndrD1_g13',          dval(54)=1.5,  dthin(54)=5,
+   dfile(55)='gsnd1bufr', dtype(55)='sndrd2',    dplat(55)='g13',       dsis(55)='sndrD2_g13',          dval(55)=1.5,  dthin(55)=5,
+   dfile(56)='gsnd1bufr', dtype(56)='sndrd3',    dplat(56)='g13',       dsis(56)='sndrD3_g13',          dval(56)=1.5,  dthin(56)=5,
+   dfile(57)='gsnd1bufr', dtype(57)='sndrd4',    dplat(57)='g13',       dsis(57)='sndrD4_g13',          dval(57)=1.5,  dthin(57)=5,
+   dfile(58)='iasibufr',  dtype(58)='iasi',      dplat(58)='metop-a',   dsis(58)='iasi586_metop-a',     dval(58)=20.0, dthin(58)=1,
+   dfile(59)='gomebufr',  dtype(59)='gome',      dplat(59)='metop-a',   dsis(59)='gome_metop-a',        dval(59)=1.0,  dthin(59)=6,
+   dfile(60)='sbuvbufr',  dtype(60)='sbuv2',     dplat(60)='n19',       dsis(60)='sbuv8_n19',           dval(60)=1.0,  dthin(60)=0,  
+   dfile(61)='hirs4bufr', dtype(61)='hirs4',     dplat(61)='n19',       dsis(61)='hirs4_n19',           dval(61)=6.0,  dthin(61)=1, 
+   dfile(62)='amsuabufr', dtype(62)='amsua',     dplat(62)='n19',       dsis(62)='amsua_n19',           dval(62)=10.0, dthin(62)=2,
+   dfile(63)='mhsbufr',   dtype(63)='mhs',       dplat(63)='n19',       dsis(63)='mhs_n19',             dval(63)=3.0,  dthin(63)=3,
+   dfile(64)='tcvitl'     dtype(64)='tcp',       dplat(64)=' ',         dsis(64)='tcp',                 dval(64)=1.0,  dthin(64)=0,
+   dfile(65)='mlsbufr',   dtype(65)='mls',       dplat(65)='aura',      dsis(65)='mls_aura',            dval(65)=1.0,  dthin(65)=0,
+   dfile(66)='seviribufr',dtype(66)='seviri',    dplat(66)='m08',       dsis(66)='seviri_m08',          dval(66)=0.0,  dthin(66)=1,
+   dfile(67)='seviribufr',dtype(67)='seviri',    dplat(67)='m09',       dsis(67)='seviri_m09',          dval(67)=0.0,  dthin(67)=1,
+   dfile(68)='seviribufr',dtype(68)='seviri',    dplat(68)='m10',       dsis(68)='seviri_m10',          dval(68)=0.0,  dthin(68)=1,
+   dfile(69)='hirs4bufr', dtype(69)='hirs4',     dplat(69)='metop-b',   dsis(69)='hirs4_metop-b',       dval(69)=0.0,  dthin(69)=1,
+   dfile(70)='amsuabufr', dtype(70)='amsua',     dplat(70)='metop-b',   dsis(70)='amsua_metop-b',       dval(70)=0.0,  dthin(70)=1,
+   dfile(71)='mhsbufr',   dtype(71)='mhs',       dplat(71)='metop-b',   dsis(71)='mhs_metop-b',         dval(71)=0.0,  dthin(71)=1,
+   dfile(72)='iasibufr',  dtype(72)='iasi',      dplat(72)='metop-b',   dsis(72)='iasi616_metop-b',     dval(72)=0.0,  dthin(72)=1,
+   dfile(73)='gomebufr',  dtype(73)='gome',      dplat(73)='metop-b',   dsis(73)='gome_metop-b',        dval(73)=0.0,  dthin(73)=1,
+   dfile(74)='atmsbufr',  dtype(74)='atms',      dplat(74)='npp',       dsis(74)='atms_npp',            dval(74)=0.0,  dthin(74)=1,
+   dfile(75)='crisbufr',  dtype(75)='cris',      dplat(75)='npp',       dsis(75)='cris_npp',            dval(75)=0.0,  dthin(75)=1,
+   dfile(76)='modisbufr', dtype(76)='aodmodis',  dplat(76)='aqua',      dsis(76)='modis_aqua',          dval(76)=1.0,  dthin(65)=6,
+   dfile(77)='modisbufr', dtype(77)='aodmodis',  dplat(77)='terra',     dsis(77)='modis_terra',         dval(77)=1.0,  dthin(77)=6,
  /
  &SUPEROB_RADAR
    del_azimuth=5.,del_elev=.25,del_range=5000.,del_time=.5,elev_angle_max=5.,minnum=50,range_max=100000.,
@@ -460,7 +477,7 @@ EOF
 echo ' Run GSI with' ${bk_core} 'background'
 
 case $ARCH in
-   'IBM_LSF')
+   'IBM_LSF'|'IBM_LoadLevel')
       ${RUN_COMMAND} ./gsi.exe < gsiparm.anl > stdout 2>&1  ;;
 
    * )
@@ -503,6 +520,7 @@ ln -s fort.207    fit_rad1.${ANAL_TIME}
 #        innovation files.
 #
 
+ls -l pe0*.* > listpe
 loops="01 03"
 for loop in $loops; do
 
@@ -525,10 +543,7 @@ esac
           amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 \
           ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16"
    for type in $listall; do
-      count=0
-      if [[ -f pe0000.${type}_${loop} ]]; then
-         count=`ls pe*${type}_${loop}* | wc -l`
-      fi
+      count=`grep pe*${type}_${loop}* listpe | wc -l`
       if [[ $count -gt 0 ]]; then
          cat pe*${type}_${loop}* > diag_${type}_${string}.${ANAL_TIME}
       fi
@@ -536,14 +551,16 @@ esac
 done
 
 #  Clean working directory to save only important files 
+ls -l * > list_run_directory
 if [ ${if_clean} = clean ]; then
   echo ' Clean working directory after GSI run'
   rm -f *Coeff.bin     # all CRTM coefficient files
   rm -f pe0*           # diag files on each processor
+  rm -f listpe         # list of diag files on each processor
   rm -f obs_input.*    # observation middle files
   rm -f siganl sigf03  # background middle files
   rm -f xhatsave.*     # some information on each processor
   rm -f fsize_*        # delete temperal file for bufr size
 fi
 
-exit 0
+#exit 0
