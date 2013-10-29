@@ -150,6 +150,7 @@ LIBsys          = $(MYLIBsys)
 	general_tll2xy_mod.o \
 	general_transform.o \
 	gengrid_vars.o \
+	general_write_gfsatm.o \
 	genqsat.o \
 	genstats_gps.o \
 	gesinfo.o \
