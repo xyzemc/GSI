@@ -1,3 +1,5 @@
+Synced with https://svnemc.ncep.noaa.gov/projects/nceplibs/sp/tags/v2.0.1.
+
 The base SP library has been optimized to build on an IBM AIX system, and therefore
 uses intrinsic IBM functions. This version of the library has been generalized to
 either build with the IBM functions or use generic functions.
@@ -7,7 +9,7 @@ The new source file contains local versions of two functions scrft and srcft
 (which are provided by direct copies of dcrft, drcft), and which can also be provided 
 by the IBM ESSL library. 
 
-splat.f 
+lapack_gen.F
 Include LU decomp routines as replacements for xlf essl dgef/dges.
  LUDCMP       LU factorization - numerical recipies
  LUBKSB       Matrix solver - numerical recipies

@@ -13,7 +13,7 @@ sptgptd.o sptgptsd.o sptgptv.o sptgptvd.o sptran.o sptrand.o sptranf.o sptranf0.
 sptranf1.o sptranfv.o sptranv.o sptrun.o sptrund.o sptrung.o sptrungv.o sptrunl.o \
 sptrunm.o sptrunmv.o sptruns.o sptrunsv.o sptrunv.o spuv2dz.o spvar.o spwget.o
 
-OBJ = fftpack.o ncpus.o splat.o
+OBJ = fftpack.o ncpus.o splat.o lapack_gen.o
 
 SRC_F77 = $(OBJ_F77:.o=.f)
 

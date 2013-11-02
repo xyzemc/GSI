@@ -44,7 +44,7 @@ all:	$(PRM) $(LIB)
 
 
 $(LIB):	$(OBJS)
-	$(AR) -ruv $(LIB) $(OBJS)
+	$(AR) -ruv $(ARFLAGS_BUFR) $(LIB) $(OBJS)
 
 bufrlib.prm: bufrlib.PRM
 	$(CPP) $(CPP_FLAGS) $(CPP_F90FLAGS) bufrlib.PRM bufrlib.prm
