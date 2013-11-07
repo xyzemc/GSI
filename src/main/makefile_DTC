@@ -24,7 +24,7 @@ EXE_FILE = gsi.exe
 # ---------
 ## LIBmpeu  = -L$(CORELIB) -lmpeu
 LIBbufr     = -L$(CORELIB) -lbufr_i4r8
-LIBw3       = -L$(CORELIB) -lw3_i4r8
+LIBw3       = -L$(CORELIB) -lw3nco_i4r8 -lw3emc_i4r8
 LIBsp       = -L$(CORELIB) -lsp_i4r8
 LIBbacio    = -L$(CORELIB) -lbacio
 LIBsfcio    = -L$(CORELIB) -lsfcio_i4r4
