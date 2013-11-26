@@ -1,0 +1,33 @@
+------------------------------------------------------------------------
+NOTES on CRTM coefficients 
+Last updated: Nov 25, 2013
+------------------------------------------------------------------------
+GSI requires the CRTM coefficients for the assimilation of satellite radiance data.
+
+These coefficients are not included with the other fixed files due to their large size. 
+
+These coefficients may be obtained in the following ways.
+
+Staged on disk:
+
+On Jet
+/lfs1/projects/dtc-hurr/datasets/fix/gsi/CRTM_Coefficients-2.1.3
+or
+/lfs1/projects/dtc-hurr/Donald.Stark/GSI/data/fix/CRTM_Coefficients-2.1.3
+
+On Zeus
+/scratch1/portfolios/BMC/dtc-hwrf/datasets/fix/gsi/CRTM_Coefficients-2.1.3
+or
+/scratch1/portfolios/BMC/dtc-hwrf/Donald.Stark/GSI/data/fix/CRTM_Coefficients-2.1.3
+
+On Yellowstone
+/glade/scratch/stark/GSI/data/fix/CRTM_Coefficients-2.1.3
+
+And from the EMC svn repository at:
+
+https://svnemc.ncep.noaa.gov/projects/crtm/tags/REL-2.1.3/fix
+
+You will need the following directorys from the repository:
+
+AerosolCoeff/  CloudCoeff/  EmisCoeff/  SpcCoeff/  TauCoeff/
+
