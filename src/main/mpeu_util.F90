@@ -479,11 +479,9 @@ end subroutine size_
 function myid_(who)
   implicit none
   character(len=*),intent(in) :: who
-  character(len=10+len(who)) :: myid_, ltmp
+  character(len=10+len(who)) :: myid_
 
   character(len=10) :: fmtid
-
-  ltmp=""
   if(mype<0) call mype_get_(mype,npes,trim(who)//'>myid_')
   select case(npes)
   case(0:999)
@@ -499,11 +497,11 @@ function myid_(who)
   endselect
 
   if(who/="") then
-    write(ltmp,fmtid) mype,']',trim(who)
-    myid_='['//adjustl(ltmp)
+    write(myid_,fmtid) mype,']',trim(who)
+    myid_='['//adjustl(myid_)
   else
-    write(ltmp,fmtid) mype
-    myid_=adjustl(ltmp)
+    write(myid_,fmtid) mype
+    myid_=adjustl(myid_)
   endif
 end function myid_
 
@@ -580,24 +578,15 @@ subroutine mprint_(lu,who,what)
   implicit none
   integer,intent(in) :: lu
   character(len=*),intent(in) :: who,what
-  character(len=128) :: ltmp
-  ltmp=""
-
-  ltmp= trim(ltmp) // '(): ' // trim(what)
-  write(lu,'(a)',advance='no') trim(ltmp)
-! write(lu,'(3a)') &
-!   trim(myid_(who)),'(): ',trim(what)
+  write(lu,'(3a)') &
+    trim(myid_(who)),'(): ',trim(what)
 end subroutine mprint_
 subroutine mprint_chr_(lu,who,what,val)
   implicit none
   integer,intent(in) :: lu
   character(len=*),intent(in) :: who,what,val
-  character(len=128) :: ltmp
-  ltmp=""
-  ltmp= trim(ltmp) // '(): ' // trim(what)
-  write(lu,'(a)',advance='no') trim(ltmp)
-! write(lu,'(3a)',advance='no') &
-!   trim(myid_(who)),'(): ',trim(what)
+  write(lu,'(3a)',advance='no') &
+    trim(myid_(who)),'(): ',trim(what)
   write(lu,'(1x,3a)') '"',trim(val),'"'
 end subroutine mprint_chr_
 subroutine mprint_bul_(lu,who,what,val)
@@ -605,12 +594,8 @@ subroutine mprint_bul_(lu,who,what,val)
   integer,intent(in) :: lu
   character(len=*),intent(in) :: who,what
   logical,intent(in) :: val
-  character(len=128) :: ltmp
-  ltmp=""
-  ltmp= trim(ltmp) // '(): ' // trim(what)
-  write(lu,'(a)',advance='no') trim(ltmp)
-! write(lu,'(3a)',advance='no') &
-!   trim(myid_(who)),'(): ',trim(what)
+  write(lu,'(3a)',advance='no') &
+    trim(myid_(who)),'(): ',trim(what)
   write(lu,'(1x,l1)') val
 end subroutine mprint_bul_
 subroutine mprint_int_(lu,who,what,val,base)
@@ -619,13 +604,9 @@ subroutine mprint_int_(lu,who,what,val,base)
   character(len=*),intent(in) :: who,what
   integer,intent(in) :: val
   character(len=*),optional,intent(in) :: base
-  character(len=128) :: ltmp
-  ltmp=""
         ! base is either z(hex), o(oct), b(binary), default(decimal)
-  ltmp = trim(myid_(who))
-  ltmp= trim(ltmp) // '(): ' // trim(what)
-! write(lu,'(3a)',advance='no') trim(ltmp),'(): ',trim(what)
-  write(lu,'(a)',advance='no') trim(ltmp)
+  write(lu,'(3a)',advance='no') &
+    trim(myid_(who)),'(): ',trim(what)
   if(present(base)) then
     select case(base)
     case('z','Z')
@@ -650,13 +631,8 @@ subroutine mprint_vint_(lu,who,what,vals,base,format,sum)
   character(len=*),optional,intent(in) :: format
   logical,optional,intent(in) :: sum
   integer:: i
-  character(len=128) :: ltmp
-  ltmp=""
-! print*,"mprint_vint_"
-  ltmp= trim(ltmp) // '(): ' // trim(what)
-  write(lu,'(a)',advance='no') trim(ltmp)
-! write(lu,'(3a)',advance='no') &
-!   trim(myid_(who)),'(): ',trim(what)
+  write(lu,'(3a)',advance='no') &
+    trim(myid_(who)),'(): ',trim(what)
   if(present(sum)) then
     if(sum) then
       if(present(format)) then
@@ -703,13 +679,8 @@ subroutine mprint_flt_(lu,who,what,val)
   integer,intent(in) :: lu
   character(len=*),intent(in) :: who,what
   real(SP),intent(in) :: val
-  character(len=128) :: ltmp
-  ltmp=""
-! print*,"mprint_flt_"
-  ltmp= trim(ltmp) // '(): ' // trim(what)
-  write(lu,'(a)',advance='no') trim(ltmp)
-! write(lu,'(3a)',advance='no') &
-!   trim(myid_(who)),'(): ',trim(what)
+  write(lu,'(3a)',advance='no') &
+    trim(myid_(who)),'(): ',trim(what)
   write(lu,'(1x,g15.7)') val
 end subroutine mprint_flt_
 subroutine mprint_dbl_(lu,who,what,val)
@@ -717,26 +688,16 @@ subroutine mprint_dbl_(lu,who,what,val)
   integer,intent(in) :: lu
   character(len=*),intent(in) :: who,what
   real(DP),intent(in) :: val
-  character(len=128) :: ltmp
-  ltmp=""
-! print*,"mprint_dbl_"
-  ltmp= trim(ltmp) // '(): ' // trim(what)
-  write(lu,'(a)',advance='no') trim(ltmp)
-! write(lu,'(3a)',advance='no') &
-!   trim(myid_(who)),'(): ',trim(what)
+  write(lu,'(3a)',advance='no') &
+    trim(myid_(who)),'(): ',trim(what)
   write(lu,'(1x,g23.15)') val
 end subroutine mprint_dbl_
 subroutine mprint_err_(lu,who,what,errm)
   implicit none
   integer,intent(in) :: lu
   character(len=*),intent(in) :: who,what,errm
-  character(len=128) :: ltmp
-  ltmp=""
-! print*,"mprint_err_"
-  ltmp= trim(ltmp) // '(): ' // trim(what)
-  write(lu,'(a)',advance='no') trim(ltmp)
-! write(lu,'(3a)',advance='no') &
-!   trim(myid_(who)),'(): >>> ERROR <<< ',trim(what)
+  write(lu,'(3a)',advance='no') &
+    trim(myid_(who)),'(): >>> ERROR <<< ',trim(what)
   write(lu,'(1x,3a)') '"',trim(errm),'"'
 end subroutine mprint_err_
 

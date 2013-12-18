@@ -77,6 +77,7 @@ LIBsys          = $(MYLIBsys)
 	adjtest.o \
 	adjtest_obs.o \
 	aeroinfo.o \
+	aircraftinfo.o \
         aircraftobsqc.o \
 	anberror.o \
 	anbkerror.o \
