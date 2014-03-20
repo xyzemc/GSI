@@ -83,7 +83,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   use obsmod, only: iadate,oberrflg,perturb_obs,perturb_fact,ran01dom,bmiss
   use convinfo, only: nconvtype,ctwind, &
        ncmiter,ncgroup,ncnumgrp,icuse,ictype,icsubtype,ioctype, &
-       ithin_conv,rmesh_conv,pmesh_conv, &
+       ithin_conv,rmesh_conv,pmesh_conv, index_sub,&
        id_bias_ps,id_bias_t,conv_bias_ps,conv_bias_t,use_prepb_satwnd
   use gsi_4dvar, only: l4dvar,iwinbgn,winlen,time_4dvar
   use deter_sfc_mod, only: deter_sfc_type,deter_sfc2
@@ -144,7 +144,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   integer(i_kind) nmind,lunin,idate,ilat,ilon,iret,k
   integer(i_kind) nreal,ithin,iout,ntmp,icount,iiout,icntpnt,ii,icntpnt2
   integer(i_kind) itype,iosub,ixsub,isubsub,iobsub 
-  integer(i_kind) qm
+  integer(i_kind) qm,ierr
   integer(i_kind) nlevp         ! vertical level for thinning
   integer(i_kind) pflag
   integer(i_kind) ntest,nvtest
@@ -161,7 +161,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   integer(i_kind),dimension(nmsgmax):: nrep
   integer(i_kind),allocatable,dimension(:):: isort,iloc
 
-  integer(i_kind) ietabl,itypex,lcount,iflag,m
+  integer(i_kind) ietabl,itypex,itypey,lcount,iflag,m
 
   real(r_single),allocatable,dimension(:,:,:) :: etabl
 
@@ -215,18 +215,21 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
 
 ! read observation error table
 
-  allocate(etabl(300,33,6))
+  ierr=2
+
+  allocate(etabl(100,33,6))
   etabl=1.e9_r_kind
   ietabl=19
-  open(ietabl,file='errtable',form='formatted')
+  open(ietabl,file='errtable_uv',form='formatted')
   rewind ietabl
   etabl=1.e9_r_kind
   lcount=0
   pflag=0
   loopd : do
-     read(ietabl,100,IOSTAT=iflag) itypex
+     read(ietabl,100,IOSTAT=iflag) itypey
      if( iflag /= 0 ) exit loopd
      lcount=lcount+1
+     itypex=itypey-199
      do k=1,33
         read(ietabl,110)(etabl(itypex,k,m),m=1,6)
      end do
@@ -812,20 +815,22 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
 
 !!  first to get observation error from PREPBUFR observation error table
            ppb=max(zero,min(ppb,r2000))
-           if(ppb>=etabl(itype,1,1)) k1=1          
+           itypey=itype-199 
+           ierr=index_sub(nc)
+           if(ppb>=etabl(itypey,1,1)) k1=1          
            do kl=1,32
-              if(ppb>=etabl(itype,kl+1,1).and.ppb<=etabl(itype,kl,1)) k1=kl
+              if(ppb>=etabl(itypey,kl+1,1).and.ppb<=etabl(itypey,kl,1)) k1=kl
            end do
-           if(ppb<=etabl(itype,33,1)) k1=33
+           if(ppb<=etabl(itypey,33,1)) k1=33
            k2=k1+1
-           ediff = etabl(itype,k2,1)-etabl(itype,k1,1)
+           ediff = etabl(itypey,k2,1)-etabl(itypey,k1,1)
            if (abs(ediff) > tiny_r_kind) then
-              del = (ppb-etabl(itype,k1,1))/ediff
+              del = (ppb-etabl(itypey,k1,1))/ediff
            else
               del = huge_r_kind
            endif
            del=max(zero,min(del,one))
-           obserr=(one-del)*etabl(itype,k1,4)+del*etabl(itype,k2,4)
+           obserr=(one-del)*etabl(itypey,k1,ierr)+del*etabl(itypey,k2,ierr)
            obserr=max(obserr,werrmin)
 !  for GOES hourly winds, set error doubled
             if(itype==245 .or. itype==246) then

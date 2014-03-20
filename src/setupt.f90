@@ -38,7 +38,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   use constants, only: huge_single,r1000,wgtlim,r10
   use constants, only: one_quad
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype,icsubtype
-  use converr, only: ptabl 
+  use converr_t, only: ptabl_t 
   use rapidrefresh_cldsurf_mod, only: l_gsd_terrain_match_surfTobs,l_sfcobserror_ramp_t
   use rapidrefresh_cldsurf_mod, only: l_PBL_pseudo_SurfobsT, pblH_ration,pps_press_incr
 
@@ -746,13 +746,13 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         if(oberror_tune) then
            ttail(ibin)%head%kx=ikx
            ttail(ibin)%head%tpertb=data(iptrb,i)/error/ratio_errors
-           if(prest > ptabl(2))then
+           if(prest > ptabl_t(2))then
               ttail(ibin)%head%k1=1
-           else if( prest <= ptabl(33)) then
+           else if( prest <= ptabl_t(33)) then
               ttail(ibin)%head%k1=33
            else
               k_loop: do k=2,32
-                 if(prest > ptabl(k+1) .and. prest <= ptabl(k)) then
+                 if(prest > ptabl_t(k+1) .and. prest <= ptabl_t(k)) then
                     ttail(ibin)%head%k1=k
                     exit k_loop
                  endif

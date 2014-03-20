@@ -141,14 +141,18 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
       rlats,rlons,twodvar_regional
   use convinfo, only: nconvtype,ctwind, &
       ncmiter,ncgroup,ncnumgrp,icuse,ictype,icsubtype,ioctype, &
-      ithin_conv,rmesh_conv,pmesh_conv, &
+      ithin_conv,rmesh_conv,pmesh_conv,index_sub, &
       id_bias_ps,id_bias_t,conv_bias_ps,conv_bias_t,use_prepb_satwnd
 
   use obsmod, only: iadate,oberrflg,perturb_obs,perturb_fact,ran01dom,hilbert_curve
   use obsmod, only: blacklst,offtime_data,bmiss,ext_sonde
   use aircraftinfo, only: aircraft_t_bc,aircraft_t_bc_pof,ntail,taillist,idx_tail,npredt,predt, &
       ntail_update,max_tail,nsort,itail_sort,idx_sort,timelist
-  use converr,only: etabl
+  use converr_ps,only: etabl_ps
+  use converr_q,only: etabl_q
+  use converr_t,only: etabl_t
+  use converr_uv,only: etabl_uv
+  use converr_pw,only: etabl_pw
   use gsi_4dvar, only: l4dvar,time_4dvar,winlen
   use qcmod, only: errormod,noiqc,newvad
   use convthin, only: make3grids,map3grids,del3grids,use_all
@@ -236,7 +240,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   integer(i_kind) pflag
   integer(i_kind) ntest,nvtest,iosub,ixsub,isubsub,iobsub
   integer(i_kind) kl,k1,k2
-  integer(i_kind) itypex
+  integer(i_kind) itypex,itypey
   integer(i_kind) minobs,minan
   integer(i_kind) ntb,ntmatch,ncx
   integer(i_kind) nmsg                ! message index
@@ -250,6 +254,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   integer(i_kind),dimension(nconvtype)::ntxall
   integer(i_kind),dimension(nconvtype+1)::ntx
   integer(i_kind),allocatable,dimension(:):: isort,iloc
+  integer(i_kind),ierr                           !  the position of error table collum
 
   real(r_kind) time,timex,time_drift,timeobs,toff,t4dv,zeps
   real(r_kind) qtflg,tdry,rmesh,ediff,usage
@@ -872,29 +877,39 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
               qerrmin=one_tenth
               pwerrmin=one
 
+              ierr=index_sub(nc)
               do k=1,levs
-                 itypex=kx
+                 itypey=kx
+                 if (itypey >=200) then
+                    itypex=itypey-199
+                 else if( pwob) then
+                    itypex=itypey-149
+                 else
+                    itypex=itypey-99
+                 endif
+                 enddo
                  ppb=obsdat(1,k)
                  if(kx==153)ppb=obsdat(11,k)*0.01_r_kind
                  ppb=max(zero,min(ppb,r2000))
-                 if(ppb>=etabl(itypex,1,1)) k1=1
+                 if(ppb>=etabl_t(itypex,1,1)) k1=1
                  do kl=1,32
-                    if(ppb>=etabl(itypex,kl+1,1).and.ppb<=etabl(itypex,kl,1)) k1=kl
+                    if(ppb>=etabl_t(itypex,kl+1,1).and.ppb<=etabl_t(itypex,kl,1)) k1=kl
                  end do
-                 if(ppb<=etabl(itypex,33,1)) k1=5
+                 if(ppb<=etabl_t(itypex,33,1)) k1=5
                  k2=k1+1
-                 ediff = etabl(itypex,k2,1)-etabl(itypex,k1,1)
+                 ediff = etabl_t(itypex,k2,1)-etabl_t(itypex,k1,1)
                  if (abs(ediff) > tiny_r_kind) then
-                    del = (ppb-etabl(itypex,k1,1))/ediff
+                    del = (ppb-etabl_t(itypex,k1,1))/ediff
                  else
                     del = huge_r_kind
                  endif
                  del=max(zero,min(del,one))
-                 obserr(3,k)=(one-del)*etabl(itypex,k1,2)+del*etabl(itypex,k2,2)
-                 obserr(2,k)=(one-del)*etabl(itypex,k1,3)+del*etabl(itypex,k2,3)
-                 obserr(5,k)=(one-del)*etabl(itypex,k1,4)+del*etabl(itypex,k2,4)
-                 obserr(1,k)=(one-del)*etabl(itypex,k1,5)+del*etabl(itypex,k2,5)
-                 obserr(7,k)=(one-del)*etabl(itypex,k1,6)+del*etabl(itypex,k2,6)
+                 obserr(3,k)=(one-del)*etabl_t(itypex,k1,ierr)+del*etabl_t(itypex,k2,ierr) ! Temperature error
+                 obserr(2,k)=(one-del)*etabl_q(itypex,k1,ierr)+del*etabl_q(itypex,k2,ierr) ! Humidity error
+                 obserr(5,k)=(one-del)*etabl_uv(itypex,k1,ierr)+del*etabl_uv(itypex,k2,ierr) ! Wind error 
+                 obserr(1,k)=(one-del)*etabl_ps(itypex,k1,ierr)+del*etabl_ps(itypex,k2,ierr) ! Surface pressure error
+                 obserr(7,k)=(one-del)*etabl_pw(itypex,k1,ierr)+del*etabl_pw(itypex,k2,ierr) ! Total precipitable water
+! 
 
                  obserr(3,k)=max(obserr(3,k),terrmin)
                  obserr(2,k)=max(obserr(2,k),qerrmin)

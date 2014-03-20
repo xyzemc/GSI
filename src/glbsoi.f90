@@ -128,7 +128,11 @@ subroutine glbsoi(mype)
   use control_vectors, only: dot_product,read_cv,write_cv
   use radinfo, only: radinfo_write,passive_bc,newpc4pred
   use pcpinfo, only: pcpinfo_write
-  use converr, only: converr_destroy
+!  use converr, only: converr_destroy
+  use converr_ps, only: converr_ps_destroy
+  use converr_q, only: converr_q_destroy
+  use converr_t, only: converr_t_destroy
+  use converr_uv, only: converr_uv_destroy
   use zrnmi_mod, only: zrnmi_initialize
   use observermod, only: observer_init,observer_set,observer_finalize,ndata
   use timermod, only: timer_ini, timer_fnl
@@ -324,7 +328,13 @@ subroutine glbsoi(mype)
   endif
 
 ! Deallocate arrays
-  if(perturb_obs) call converr_destroy
+!  if(perturb_obs) call converr_destroy
+  if(perturb_obs) then
+     call converr_ps_destroy 
+     call converr_q_destroy 
+     call converr_t_destroy 
+     call converr_uv_destroy 
+  endif
   if (regional) then
      if(anisotropic) then
         call destroy_anberror_vars_reg

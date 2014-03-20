@@ -238,7 +238,10 @@ clean:
 	control2model.f90 \
 	control2state.f90 \
 	control_vectors.f90 \
-	converr.f90 \
+	converr_ps.f90 \
+	converr_q.f90 \
+	converr_t.f90 \
+	converr_uv.f90 \
 	convinfo.f90 \
 	convthin.f90 \
 	crtm_interface.f90 \

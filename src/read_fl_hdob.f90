@@ -50,7 +50,10 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
          id_bias_ps,id_bias_t,conv_bias_ps,conv_bias_t,use_prepb_satwnd
      use obsmod, only: iadate,oberrflg,perturb_obs,perturb_fact,ran01dom,hilbert_curve
      use obsmod, only: blacklst,offtime_data,bmiss
-     use converr,only: etabl
+     use converr_ps,only: etabl_ps
+     use converr_q,only: etabl_q
+     use converr_t,only: etabl_t
+     use converr_uv,only: etabl_uv
      use gsi_4dvar, only: l4dvar,iwinbgn,time_4dvar,winlen
      use qcmod, only: errormod
      use convthin, only: make3grids,map3grids,del3grids,use_all
@@ -256,27 +259,27 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
 !    4: wind speed error [m/s]
 !    5: surface pressure error [mb] 
 !    6: total precipitable water error [?]  
-     open(ietabl,file='errtable',form='formatted')
-     rewind ietabl 
-     lcount = 0
-     etabl  = 1.e9_r_kind
-     loopd : do
-        read(ietabl,100,IOSTAT=iflag) itypex
-        if( iflag /= 0 ) exit loopd
-100     format(1x,i3)
-        lcount = lcount+1
+!     open(ietabl,file='errtable',form='formatted')
+!     rewind ietabl 
+!     lcount = 0
+!     etabl  = 1.e9_r_kind
+!     loopd : do
+!        read(ietabl,100,IOSTAT=iflag) itypex
+!        if( iflag /= 0 ) exit loopd
+!100     format(1x,i3)
+!        lcount = lcount+1
         do k = 1,33
-           read(ietabl,110)(etabl(itypex,k,m),m=1,6)
-110        format(1x,6e12.5)
-        end do
-     end do loopd
-
-     if (lcount <= 0) then
-        write(6,*)'READ_FL_HDOB: obs error table not available'
-        call stop2(49) 
-     else
-        write(6,*)'READ_FL_HDOB: obs errors provided by local file errtable'   
-     endif
+!           read(ietabl,110)(etabl(itypex,k,m),m=1,6)
+!110        format(1x,6e12.5)
+!        end do
+!     end do loopd
+!
+!     if (lcount <= 0) then
+!        write(6,*)'READ_FL_HDOB: obs error table not available'
+!        call stop2(49) 
+!     else
+!        write(6,*)'READ_FL_HDOB: obs errors provided by local file errtable'   
+!     endif
 
 !    Check if the obs type specified in the convinfo is in the fl hdob bufr file 
 !    If found, get the index (nc) from the convinfo for the specified type
@@ -560,23 +563,24 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
            gob = obsg10(1,1)/grav  !  convert to height [m]     
   
 !          Get observation error from error table
-           ppb = max(zero,min(pob_mb,r2000))
-           if(ppb >= etabl(itype,1,1)) k1 = 1
-           do kl = 1,32
-              if(ppb >= etabl(itype,kl+1,1) .and. ppb <= etabl(itype,kl,1)) k1 = kl
-           end do
-           if(ppb <= etabl(itype,33,1)) k1 = 5
-           k2 = k1+1
-           ediff = etabl(itype,k2,1)-etabl(itype,k1,1)
-           if (abs(ediff) > tiny_r_kind) then
-              del = (ppb-etabl(itype,k1,1))/ediff
-           else
-              del = huge_r_kind
-           endif
-           del    = max(zero,min(del,one))
-           obserr = (one-del)*etabl(itype,k1,iecol)+del*etabl(itype,k2,iecol)
-           obserr = max(obserr,errmin)
-
+!           ppb = max(zero,min(pob_mb,r2000))
+!           if(ppb >= etabl(itype,1,1)) k1 = 1
+!           do kl = 1,32
+!              if(ppb >= etabl(itype,kl+1,1) .and. ppb <= etabl(itype,kl,1)) k1 = kl
+!           end do
+!           if(ppb <= etabl(itype,33,1)) k1 = 5
+!           k2 = k1+1
+!           ediff = etabl(itype,k2,1)-etabl(itype,k1,1)
+!           if (abs(ediff) > tiny_r_kind) then
+!              del = (ppb-etabl(itype,k1,1))/ediff
+!           else
+!              del = huge_r_kind
+!           endif
+!           del    = max(zero,min(del,one))
+!           obserr = (one-del)*etabl(itype,k1,iecol)+del*etabl(itype,k2,iecol)
+!           obserr = max(obserr,errmin)
+!
+           iecol=index_sub(nc)
 !          Read extrapolated surface pressure [pa] and convert to [cb]
            if (lpsob) then
               call ufbint(lunin,obspsf,1,1,nlv,psfstr)
@@ -589,6 +593,23 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
               psob_mb = obspsf(1,1)*r0_01   ! convert {Pa] to [mb]
               psob_cb = obspsf(1,1)*r0_001  ! convert [Pa] to [cb]
               dlnpsob = log(psob_cb)        ! [cb]
+!             Get observation error from error table
+              ppb = max(zero,min(pob_mb,r2000))
+              if(ppb >= etabl_ps(itype,1,1)) k1 = 1
+              do kl = 1,32
+                 if(ppb >= etabl_ps(itype,kl+1,1) .and. ppb <= etabl_ps(itype,kl,1)) k1 = kl
+              end do
+              if(ppb <= etabl_ps(itype,33,1)) k1 = 5
+              k2 = k1+1
+              ediff = etabl_ps(itype,k2,1)-etabl_ps(itype,k1,1)
+              if (abs(ediff) > tiny_r_kind) then
+                 del = (ppb-etabl_ps(itype,k1,1))/ediff
+              else
+                 del = huge_r_kind
+              endif
+              del    = max(zero,min(del,one))
+              obserr = (one-del)*etabl_ps(itype,k1,iecol)+del*etabl_ps(itype,k2,iecol)
+              obserr = max(obserr,errmin)
            endif
 
 !          Convert raw temperature data to T or Tv     
@@ -630,6 +651,23 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
                  endif
                  tob = tob*(1.0_r_kind+0.61_r_kind*qob)  ! conver t to tv
               endif
+!             Get observation error from error table
+              ppb = max(zero,min(pob_mb,r2000))
+              if(ppb >= etabl_t(itype,1,1)) k1 = 1
+              do kl = 1,32
+                 if(ppb >= etabl_t(itype,kl+1,1) .and. ppb <= etabl_t(itype,kl,1)) k1 = kl
+              end do
+              if(ppb <= etabl_t(itype,33,1)) k1 = 5
+              k2 = k1+1
+              ediff = etabl_t(itype,k2,1)-etabl_t(itype,k1,1)
+              if (abs(ediff) > tiny_r_kind) then
+                 del = (ppb-etabl_t(itype,k1,1))/ediff
+              else
+                 del = huge_r_kind
+              endif
+              del    = max(zero,min(del,one))
+              obserr = (one-del)*etabl_t(itype,k1,iecol)+del*etabl_t(itype,k2,iecol)
+              obserr = max(obserr,errmin)
            endif
 
 !          Convert raw moisture data from dew point temperature to specific humidity
@@ -664,7 +702,23 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
               endif 
 !             write(4000,1004) nread,pob_mb,tob,tdob,qob,qsat,rhob,q_qm,usage 
 !1004         format(i6,6(1x,e20.12),1x,i5,1x,f5.0)
-
+!             Get observation error from error table
+              ppb = max(zero,min(pob_mb,r2000))
+              if(ppb >= etabl_q(itype,1,1)) k1 = 1
+              do kl = 1,32
+                 if(ppb >= etabl_q(itype,kl+1,1) .and. ppb <= etabl_q(itype,kl,1)) k1 = kl
+              end do 
+              if(ppb <= etabl_q(itype,33,1)) k1 = 5
+              k2 = k1+1 
+              ediff = etabl_q(itype,k2,1)-etabl_q(itype,k1,1)
+              if (abs(ediff) > tiny_r_kind) then
+                 del = (ppb-etabl_q(itype,k1,1))/ediff
+              else
+                 del = huge_r_kind
+              endif
+              del    = max(zero,min(del,one))
+              obserr = (one-del)*etabl_q(itype,k1,iecol)+del*etabl_q(itype,k2,iecol)
+              obserr = max(obserr,errmin)
            endif
 
 !          Convert raw wind data from wind direction/speed to u & v winds
@@ -691,6 +745,24 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
               spdob = obsfmr(1,1) ! surface wind speed 
               rrob  = obsfmr(2,1) ! rain rate 
               if (spdob >= missing .or. rrob >=missing) cycle loop_readsb2
+           endif
+           if lspdob .or. luvob) then             
+!             Get observation error from error table
+              ppb = max(zero,min(pob_mb,r2000))
+              if(ppb >= etabl_q(itype,1,1)) k1 = 1
+              do kl = 1,32
+                 if(ppb >= etabl_q(itype,kl+1,1) .and. ppb <= etabl_q(itype,kl,1)) k1 = kl
+              end do 
+              if(ppb <= etabl_q(itype,33,1)) k1 = 5
+              k2 = k1+1 
+              ediff = etabl_q(itype,k2,1)-etabl_q(itype,k1,1)
+              if (abs(ediff) > tiny_r_kind) then
+                 del = (ppb-etabl_q(itype,k1,1))/ediff
+              else
+                 del = huge_r_kind
+              endif
+              del    = max(zero,min(del,one))
+              obserr = (one-del)*etabl_q(itype,k1,iecol)+del*etabl_q(itype,k2,iecol)
            endif
 
 !          Obtain information necessary for conventional data assimilation 
@@ -978,7 +1050,7 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
         end do
      end do
      deallocate(cdata_all)
-     deallocate(etabl)
+!     deallocate(etabl)
 
      write(lunout) obstype,sis,nreal,nchanl,ilat,ilon
      write(lunout) cdata_out

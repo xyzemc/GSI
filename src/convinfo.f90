@@ -51,6 +51,7 @@ module convinfo
 !                        count,max # of coefs
 !   def npred_conv_max - maximum number of conv ob bias correction coefs 
 !   def npred_conv     - conv ob bias coef count
+!   def index_sub     - index to count how many subtypes in a type and the position in the bufr error table 
 
 ! attributes:
 !   language: f90
@@ -80,6 +81,7 @@ module convinfo
   public :: ncgroup,ncnumgrp,ncmiter,ctwind,cermax,pmesh_conv,rmesh_conv,ithin_conv,cvar_b,cvar_pg
   public :: cermin,cgross
   public :: use_prepb_satwnd
+  public :: index_su 
 
   logical diag_conv
   logical :: ihave_pm2_5
@@ -88,7 +90,7 @@ module convinfo
   real(r_kind),allocatable,dimension(:)::ctwind,cgross,cermax,cermin,cvar_b,cvar_pg, &
 										rmesh_conv,pmesh_conv,stndev_conv
   integer(i_kind),allocatable,dimension(:):: ncmiter,ncgroup,ncnumgrp,icuse,ictype,icsubtype,&
-                                             ithin_conv,npred_conv
+                                             ithin_conv,npred_conv,index_sub
   character(len=16),allocatable,dimension(:)::ioctype
 
   real(r_kind),allocatable,dimension(:,:) :: predx_conv
@@ -142,6 +144,7 @@ contains
     stndev_conv_ps =one
     stndev_conv_spd =one
     stndev_conv_pm2_5=one
+    index_sub=2           !  the position in prepbufr error table, the first collum is pressure
 
     id_bias_ps = 0            ! prepbufr id to have conv_bias added for testing 
     id_bias_t  = 0            ! prepbufr id to have conv_bias added for testing 
@@ -231,7 +234,7 @@ contains
     allocate(ctwind(nconvtype),cgross(nconvtype),cermax(nconvtype),cermin(nconvtype), &
              cvar_b(nconvtype),cvar_pg(nconvtype),ncmiter(nconvtype),ncgroup(nconvtype), &
              ncnumgrp(nconvtype),icuse(nconvtype),ictype(nconvtype),icsubtype(nconvtype), &
-             ioctype(nconvtype), & 
+             ioctype(nconvtype), index_sub(nconvtype),& 
              ithin_conv(nconvtype),rmesh_conv(nconvtype),pmesh_conv(nconvtype),&
              npred_conv(nconvtype), &
              stndev_conv(nconvtype), &
@@ -287,6 +290,10 @@ contains
        read(crecord,*)ictype(nc),icsubtype(nc),icuse(nc),ctwind(nc),ncnumgrp(nc), &
             ncgroup(nc),ncmiter(nc),cgross(nc),cermax(nc),cermin(nc),cvar_b(nc),cvar_pg(nc) &
             ,ithin_conv(nc),rmesh_conv(nc),pmesh_conv(nc),npred_conv(nc)
+         if(nc >=2 .and. trim(ioctype(nc)) == trim(ioctype(nc-1)) .and.  ictype(nc) == ictype(nc-1)) then
+             index_sub(nc)=index_sub(nc-1)+1
+         endif
+       
        if(mype == 0)write(6,1031)ioctype(nc),ictype(nc),icsubtype(nc),icuse(nc),ctwind(nc),ncnumgrp(nc), &
             ncgroup(nc),ncmiter(nc),cgross(nc),cermax(nc),cermin(nc),cvar_b(nc),cvar_pg(nc) &
             ,ithin_conv(nc),rmesh_conv(nc),pmesh_conv(nc),npred_conv(nc)
@@ -444,7 +451,7 @@ contains
     deallocate(ctwind,cgross,cermax,cermin, &
              cvar_b,cvar_pg,ncmiter,ncgroup, &
              ncnumgrp,icuse,ictype,icsubtype, &
-             ioctype, & 
+             ioctype,index_sub, & 
              ithin_conv,rmesh_conv,pmesh_conv, &
              npred_conv, &
              stndev_conv, &

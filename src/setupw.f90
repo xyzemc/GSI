@@ -33,7 +33,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   use jfunc, only: jiter,last,jiterstart,miter
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype
   use convinfo, only: icsubtype
-  use converr, only: ptabl
+  use converr_uv, only: ptabl_uv
   use rapidrefresh_cldsurf_mod, only: l_PBL_pseudo_SurfobsUV, pblH_ration,pps_press_incr
 
   use m_dtime, only: dtime_setup, dtime_check, dtime_show
@@ -983,13 +983,13 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            wtail(ibin)%head%upertb=data(iptrbu,i)/error/ratio_errors
            wtail(ibin)%head%vpertb=data(iptrbv,i)/error/ratio_errors
            wtail(ibin)%head%kx=ikx
-           if(presw > ptabl(2))then
+           if(presw > ptabl_uv(2))then
               wtail(ibin)%head%k1=1
-           else if( presw <= ptabl(33)) then
+           else if( presw <= ptabl_uv(33)) then
               wtail(ibin)%head%k1=33
            else
               k_loop: do k=2,32
-                 if(presw > ptabl(k+1) .and. presw <= ptabl(k)) then
+                 if(presw > ptabl_uv(k+1) .and. presw <= ptabl_uv(k)) then
                     wtail(ibin)%head%k1=k
                     exit k_loop
                  endif

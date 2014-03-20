@@ -102,7 +102,7 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   use jfunc, only: jiter,last,jiterstart,miter
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype
   use convinfo, only: icsubtype
-  use converr, only: ptabl 
+  use converr_q, only: ptabl_q 
   use m_dtime, only: dtime_setup, dtime_check, dtime_show
   use rapidrefresh_cldsurf_mod, only: l_sfcobserror_ramp_q
   use rapidrefresh_cldsurf_mod, only: l_PBL_pseudo_SurfobsQ,pblH_ration,pps_press_incr
@@ -553,13 +553,13 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         if(oberror_tune) then
            qtail(ibin)%head%qpertb=data(iptrb,i)/error/ratio_errors
            qtail(ibin)%head%kx=ikx
-           if(presq > ptabl(2))then
+           if(presq > ptabl_q(2))then
               qtail(ibin)%head%k1=1
-           else if( presq <= ptabl(33)) then
+           else if( presq <= ptabl_q(33)) then
               qtail(ibin)%head%k1=33
            else
               k_loop: do k=2,32
-                 if(presq > ptabl(k+1) .and. presq <= ptabl(k)) then
+                 if(presq > ptabl_q(k+1) .and. presq <= ptabl_q(k)) then
                     qtail(ibin)%head%k1=k
                     exit k_loop
                  endif

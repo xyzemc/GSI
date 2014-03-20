@@ -120,6 +120,7 @@ subroutine read_sfcwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   integer(i_kind) nmsg                ! message index
   integer(i_kind) tab(mxtb,3)
   integer(i_kind) qc1,qc2,qc3
+  integer(i_kind)  ierr             !  the position of error table collum
   
   
  
@@ -185,10 +186,10 @@ subroutine read_sfcwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
 ! Read observation error table
 ! itype 291 has been modified in the error table 
 
-  allocate(etabl(300,33,6))
+  allocate(etabl(100,33,6))
   etabl=1.e9_r_kind
   ietabl=19
-  open(ietabl,file='errtable',form='formatted')
+  open(ietabl,file='errtable_uv',form='formatted')
   rewind ietabl
   etabl=1.e9_r_kind
   lcount=0
@@ -303,7 +304,7 @@ subroutine read_sfcwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
            nc=ntxall(ncx)
            if (itype /= ictype(nc)) cycle matchloop
 
-!  Find convtype which match ob type and subtype
+!  Find convtype which match ob:/ type and subtype
            if(icsubtype(nc) == iobsub) then
               ncsave=nc
               exit matchloop
@@ -554,6 +555,7 @@ subroutine read_sfcwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
 !!  Get observation error from PREPBUFR observation error table
 !   only need read the 4th column for type 291 from the right
  
+           ierr=index_sub(nc)
            ppb=max(zero,min(ppb,r2000))
            if(ppb>=etabl(itype,1,1)) k1=1          
            do kl=1,32
@@ -568,7 +570,7 @@ subroutine read_sfcwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
               del = huge_r_kind
            endif
            del=max(zero,min(del,one))
-           obserr=(one-del)*etabl(itype,k1,4)+del*etabl(itype,k2,4)
+           obserr=(one-del)*etabl(itype,k1,ierr)+del*etabl(itype,k2,ierr)
            obserr=max(obserr,werrmin)
 
 
