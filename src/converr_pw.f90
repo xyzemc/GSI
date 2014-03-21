@@ -4,7 +4,8 @@ module converr_pw
 ! module:    converr_pw
 !   prgmmr: su          org: np2                date: 2007-03-15
 ! abstract:  This module contains variables and routines related
-!            to the assimilation of conventional observations error
+!            to the assimilation of conventional observations error for surface
+!            pressure
 !
 ! program history log:
 !   2007-03-15  su  - original code - move reading observation error table 
@@ -38,7 +39,7 @@ implicit none
 ! set passed variables as public
   public :: etabl_pw,ptabl_pw
 
-  integer(i_kind),save:: ietabl_pw,itypex,itypey,lcount,iflag,k,m
+  integer(i_kind),save:: ietabl,itypex,itypey,lcount,iflag,k,m
   real(r_single),save,allocatable,dimension(:,:,:) :: etabl_pw
   real(r_kind),save,allocatable,dimension(:)  :: ptabl_pw
 
@@ -80,8 +81,8 @@ contains
 
      etabl_pw=1.e9_r_kind
       
-     ietabl_pw=19
-     open(ietabl_pw,file='errtable_pw',form='formatted',status='old',iostat=ier)
+     ietabl=19
+     open(ietabl,file='errtable_pw',form='formatted',status='old',iostat=ier)
      if(ier/=0) then
         write(6,*)'CONVERR:  ***WARNING*** obs error table ("errtable") not available to 3dvar.'
         lcount=0
@@ -89,17 +90,17 @@ contains
         return
      endif
 
-     rewind ietabl_pw
+     rewind ietabl
      etabl_pw=1.e9_r_kind
      lcount=0
      loopd : do 
-        read(ietabl_pw,100,IOSTAT=iflag,end=120) itypey
+        read(ietabl,100,IOSTAT=iflag,end=120) itypex
         if( iflag /= 0 ) exit loopd
 100     format(1x,i3)
         lcount=lcount+1
-        itypex=itypey-149
+        itypey=itypex-145
         do k=1,33
-           read(ietabl_pw,110)(etabl_pw(itypex,k,m),m=1,6)
+           read(ietabl,110)(etabl_pw(itypey,k,m),m=1,6)
 110        format(1x,6e12.5)
         end do
      end do   loopd
@@ -112,14 +113,14 @@ contains
         if(mype == 0) write(6,*)'CONVERR:  using observation errors from user provided table'
         allocate(ptabl_pw(34))
         ptabl_pw=zero
-        ptabl_pw(1)=etabl_pw(5,1,1)
+        ptabl_pw(1)=etabl_pw(20,1,1)
         do k=2,33
-           ptabl_pw(k)=half*(etabl_pw(5,k-1,1)+etabl_pw(5,k,1))
+           ptabl_pw(k)=half*(etabl_pw(20,k-1,1)+etabl_pw(20,k,1))
         enddo
-        ptabl_pw(34)=etabl_pw(5,33,1)
+        ptabl_pw(34)=etabl_pw(20,33,1)
      endif
 
-     close(ietabl_pw)
+     close(ietabl)
 
      return
   end subroutine converr_pw_read
@@ -131,7 +132,7 @@ subroutine converr_pw_destroy
 ! subprogram:    converr_pw_destroy      destroy conventional information file
 !     prgmmr:    su    org: np2                date: 2007-03-15
 !
-! abstract:  This routine destroys arrays from converr_pw file
+! abstract:  This routine destroys arrays from converr file
 !
 ! program history log:
 !   2007-03-15  su 

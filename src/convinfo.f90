@@ -81,7 +81,7 @@ module convinfo
   public :: ncgroup,ncnumgrp,ncmiter,ctwind,cermax,pmesh_conv,rmesh_conv,ithin_conv,cvar_b,cvar_pg
   public :: cermin,cgross
   public :: use_prepb_satwnd
-  public :: index_su 
+  public :: index_sub 
 
   logical diag_conv
   logical :: ihave_pm2_5

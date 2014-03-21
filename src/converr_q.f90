@@ -38,7 +38,7 @@ implicit none
 ! set passed variables as public
   public :: etabl_q,ptabl_q
 
-  integer(i_kind),save:: ietabl_q,itypex,lcount,iflag,k,m
+  integer(i_kind),save:: ietabl_q,itypex,itypey,lcount,iflag,k,m
   real(r_single),save,allocatable,dimension(:,:,:) :: etabl_q
   real(r_kind),save,allocatable,dimension(:)  :: ptabl_q
 

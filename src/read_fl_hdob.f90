@@ -46,7 +46,7 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
          rlats,rlons,twodvar_regional
      use convinfo, only: nconvtype,ctwind, &
          ncmiter,ncgroup,ncnumgrp,icuse,ictype,icsubtype,ioctype, &
-         ithin_conv,rmesh_conv,pmesh_conv, &
+         ithin_conv,rmesh_conv,pmesh_conv,index_sub, &
          id_bias_ps,id_bias_t,conv_bias_ps,conv_bias_t,use_prepb_satwnd
      use obsmod, only: iadate,oberrflg,perturb_obs,perturb_fact,ran01dom,hilbert_curve
      use obsmod, only: blacklst,offtime_data,bmiss
@@ -108,7 +108,7 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
      integer(i_kind) :: ntread
      integer(i_kind) :: nmsg   
      integer(i_kind) :: maxobs 
-     integer(i_kind) :: itype,iobsub 
+     integer(i_kind) :: itype,iobsub,itypey 
      integer(i_kind) :: iecol 
      integer(i_kind) :: qcm,lim_qm
      integer(i_kind) :: p_qm,g_qm,t_qm,q_qm,uv_qm,wspd_qm,ps_qm
@@ -224,23 +224,23 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
      lim_qm = 4
      if (ltob) then
         nreal  = 24
-        iecol  =  2 
+!        iecol  =  2 
         errmin = half      ! set lower bound of ob error for T or Tv
      else if (luvob) then
         nreal  = 24
-        iecol  =  4  
+!        iecol  =  4  
         errmin = one       ! set lower bound of ob error for u,v winds
      else if (lspdob) then
         nreal  = 23
-        iecol  =  4  
+!        iecol  =  4  
         errmin = one
      else if (lqob) then   ! set lower bound of ob err for surface wind speed
         nreal  = 25
-        iecol  =  3 
+!        iecol  =  3 
         errmin = half      ! set lower bound of ob error for moisture (RH) 
      else if (lpsob) then  
         nreal  = 22 
-        iecol  =  5 
+!        iecol  =  5 
         errmin = one_tenth ! set lower bound of ob error for moisture (RH) 
      else 
         write(6,*) ' illegal obs type in read_fl_hdob '
@@ -268,7 +268,7 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
 !        if( iflag /= 0 ) exit loopd
 !100     format(1x,i3)
 !        lcount = lcount+1
-        do k = 1,33
+!        do k = 1,33
 !           read(ietabl,110)(etabl(itypex,k,m),m=1,6)
 !110        format(1x,6e12.5)
 !        end do
@@ -595,20 +595,21 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
               dlnpsob = log(psob_cb)        ! [cb]
 !             Get observation error from error table
               ppb = max(zero,min(pob_mb,r2000))
-              if(ppb >= etabl_ps(itype,1,1)) k1 = 1
+              itypey=itype-99
+              if(ppb >= etabl_ps(itypey,1,1)) k1 = 1
               do kl = 1,32
-                 if(ppb >= etabl_ps(itype,kl+1,1) .and. ppb <= etabl_ps(itype,kl,1)) k1 = kl
+                 if(ppb >= etabl_ps(itypey,kl+1,1) .and. ppb <= etabl_ps(itypey,kl,1)) k1 = kl
               end do
-              if(ppb <= etabl_ps(itype,33,1)) k1 = 5
+              if(ppb <= etabl_ps(itypey,33,1)) k1 = 5
               k2 = k1+1
-              ediff = etabl_ps(itype,k2,1)-etabl_ps(itype,k1,1)
+              ediff = etabl_ps(itypey,k2,1)-etabl_ps(itypey,k1,1)
               if (abs(ediff) > tiny_r_kind) then
-                 del = (ppb-etabl_ps(itype,k1,1))/ediff
+                 del = (ppb-etabl_ps(itypey,k1,1))/ediff
               else
                  del = huge_r_kind
               endif
               del    = max(zero,min(del,one))
-              obserr = (one-del)*etabl_ps(itype,k1,iecol)+del*etabl_ps(itype,k2,iecol)
+              obserr = (one-del)*etabl_ps(itypey,k1,iecol)+del*etabl_ps(itypey,k2,iecol)
               obserr = max(obserr,errmin)
            endif
 
@@ -653,20 +654,21 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
               endif
 !             Get observation error from error table
               ppb = max(zero,min(pob_mb,r2000))
-              if(ppb >= etabl_t(itype,1,1)) k1 = 1
+              itypey=itype-99
+              if(ppb >= etabl_t(itypey,1,1)) k1 = 1
               do kl = 1,32
-                 if(ppb >= etabl_t(itype,kl+1,1) .and. ppb <= etabl_t(itype,kl,1)) k1 = kl
+                 if(ppb >= etabl_t(itypey,kl+1,1) .and. ppb <= etabl_t(itypey,kl,1)) k1 = kl
               end do
-              if(ppb <= etabl_t(itype,33,1)) k1 = 5
+              if(ppb <= etabl_t(itypey,33,1)) k1 = 5
               k2 = k1+1
-              ediff = etabl_t(itype,k2,1)-etabl_t(itype,k1,1)
+              ediff = etabl_t(itypey,k2,1)-etabl_t(itypey,k1,1)
               if (abs(ediff) > tiny_r_kind) then
-                 del = (ppb-etabl_t(itype,k1,1))/ediff
+                 del = (ppb-etabl_t(itypey,k1,1))/ediff
               else
                  del = huge_r_kind
               endif
               del    = max(zero,min(del,one))
-              obserr = (one-del)*etabl_t(itype,k1,iecol)+del*etabl_t(itype,k2,iecol)
+              obserr = (one-del)*etabl_t(itypey,k1,iecol)+del*etabl_t(itypey,k2,iecol)
               obserr = max(obserr,errmin)
            endif
 
@@ -704,20 +706,21 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
 !1004         format(i6,6(1x,e20.12),1x,i5,1x,f5.0)
 !             Get observation error from error table
               ppb = max(zero,min(pob_mb,r2000))
-              if(ppb >= etabl_q(itype,1,1)) k1 = 1
+              itypey=itype-99
+              if(ppb >= etabl_q(itypey,1,1)) k1 = 1
               do kl = 1,32
-                 if(ppb >= etabl_q(itype,kl+1,1) .and. ppb <= etabl_q(itype,kl,1)) k1 = kl
+                 if(ppb >= etabl_q(itypey,kl+1,1) .and. ppb <= etabl_q(itypey,kl,1)) k1 = kl
               end do 
-              if(ppb <= etabl_q(itype,33,1)) k1 = 5
+              if(ppb <= etabl_q(itypey,33,1)) k1 = 5
               k2 = k1+1 
-              ediff = etabl_q(itype,k2,1)-etabl_q(itype,k1,1)
+              ediff = etabl_q(itypey,k2,1)-etabl_q(itypey,k1,1)
               if (abs(ediff) > tiny_r_kind) then
-                 del = (ppb-etabl_q(itype,k1,1))/ediff
+                 del = (ppb-etabl_q(itypey,k1,1))/ediff
               else
                  del = huge_r_kind
               endif
               del    = max(zero,min(del,one))
-              obserr = (one-del)*etabl_q(itype,k1,iecol)+del*etabl_q(itype,k2,iecol)
+              obserr = (one-del)*etabl_q(itypey,k1,iecol)+del*etabl_q(itypey,k2,iecol)
               obserr = max(obserr,errmin)
            endif
 
@@ -746,23 +749,24 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
               rrob  = obsfmr(2,1) ! rain rate 
               if (spdob >= missing .or. rrob >=missing) cycle loop_readsb2
            endif
-           if lspdob .or. luvob) then             
+           if( lspdob .or. luvob) then             
 !             Get observation error from error table
               ppb = max(zero,min(pob_mb,r2000))
-              if(ppb >= etabl_q(itype,1,1)) k1 = 1
+              itypey=itype-199
+              if(ppb >= etabl_uv(itypey,1,1)) k1 = 1
               do kl = 1,32
-                 if(ppb >= etabl_q(itype,kl+1,1) .and. ppb <= etabl_q(itype,kl,1)) k1 = kl
+                 if(ppb >= etabl_uv(itypey,kl+1,1) .and. ppb <= etabl_uv(itypey,kl,1)) k1 = kl
               end do 
-              if(ppb <= etabl_q(itype,33,1)) k1 = 5
+              if(ppb <= etabl_uv(itypey,33,1)) k1 = 5
               k2 = k1+1 
-              ediff = etabl_q(itype,k2,1)-etabl_q(itype,k1,1)
+              ediff = etabl_uv(itypey,k2,1)-etabl_uv(itypey,k1,1)
               if (abs(ediff) > tiny_r_kind) then
-                 del = (ppb-etabl_q(itype,k1,1))/ediff
+                 del = (ppb-etabl_uv(itypey,k1,1))/ediff
               else
                  del = huge_r_kind
               endif
               del    = max(zero,min(del,one))
-              obserr = (one-del)*etabl_q(itype,k1,iecol)+del*etabl_q(itype,k2,iecol)
+              obserr = (one-del)*etabl_uv(itypey,k1,iecol)+del*etabl_uv(itypey,k2,iecol)
            endif
 
 !          Obtain information necessary for conventional data assimilation 

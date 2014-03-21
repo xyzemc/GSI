@@ -254,7 +254,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   integer(i_kind),dimension(nconvtype)::ntxall
   integer(i_kind),dimension(nconvtype+1)::ntx
   integer(i_kind),allocatable,dimension(:):: isort,iloc
-  integer(i_kind),ierr                           !  the position of error table collum
+  integer(i_kind) ierr                           !  the position of error table collum
 
   real(r_kind) time,timex,time_drift,timeobs,toff,t4dv,zeps
   real(r_kind) qtflg,tdry,rmesh,ediff,usage
@@ -887,7 +887,6 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  else
                     itypex=itypey-99
                  endif
-                 enddo
                  ppb=obsdat(1,k)
                  if(kx==153)ppb=obsdat(11,k)*0.01_r_kind
                  ppb=max(zero,min(ppb,r2000))
@@ -909,7 +908,6 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  obserr(5,k)=(one-del)*etabl_uv(itypex,k1,ierr)+del*etabl_uv(itypex,k2,ierr) ! Wind error 
                  obserr(1,k)=(one-del)*etabl_ps(itypex,k1,ierr)+del*etabl_ps(itypex,k2,ierr) ! Surface pressure error
                  obserr(7,k)=(one-del)*etabl_pw(itypex,k1,ierr)+del*etabl_pw(itypex,k2,ierr) ! Total precipitable water
-! 
 
                  obserr(3,k)=max(obserr(3,k),terrmin)
                  obserr(2,k)=max(obserr(2,k),qerrmin)

@@ -511,7 +511,7 @@ subroutine read_obs(ndata,mype)
     use mpimod, only: ierror,mpi_comm_world,mpi_sum,mpi_rtype,mpi_integer,npe,&
          setcomm
     use constants, only: one,zero
-    use converr_ps, only: converr__ps_read
+    use converr_ps, only: converr_ps_read
     use converr_q, only: converr_q_read
     use converr_t, only: converr_t_read
     use converr_uv, only: converr_uv_read
