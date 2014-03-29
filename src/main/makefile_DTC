@@ -253,6 +253,7 @@ LIBsys          = $(MYLIBsys)
 	mod_nmmb_to_a.o \
 	mod_strong.o \
 	mod_vtrans.o \
+        mod_wrfmass_to_a.o \
 	model_ad.o \
 	model_tl.o \
 	model2control.o \
