@@ -1,57 +1,50 @@
-	Real Function Arc_Distance(lat1,lon1,lat2,lon2,Arc_Angle)
+ real(r_kind) function arc_distance(lat1,lon1,lat2,lon2,arc_angle)
+!$$$  subprogram documentation block
+!
+! function:   arc_distance                 compute arc distance
+!   prgmmr: gayno            org: np23           date: 2012-04-03
 !	
-!	Name: Arc_Distance
+! abstract:  This function computes the arc distance and angular distance 
+!            between two points on the earth.
 !
-!	Date: 25 March 1997
-!         25 July 2008 - convert to Fortran 90
+! program history log:
+!   2008-07-25   kleespies - initial version
+!   2014-04-03   gayno - bring up to GSI coding standards
+
+! input argument list:
+!    lat1/lon1  - latitude and longitude of point 1
+!    lat2/lon2  - latitude and longitude of point 2
 !
-!	Purpose: Computes the arc distance and angular distance between two points on the earth
-!	
-!	Input:
-!		Real Lat1,Lon1,Lat2,Lon2
-!		     location of two points on sfc of earth
-!		     Lat -90 + 90, lon -180 + 180
+! output argument list:
+!    arc_angle    - arc angle in radians
+!    arc_distance - arc distance in km (returned from function)
 !
-!	Output: Real Arc_Distance in km (function return)
-!			Real Arc_Angle    in radians
+! attributes:
+!   language: f90
+!   machine:  NCEP WCOSS
 !
-!	Author:	Thomas J. Kleespies
-!		Sensor Physics Branch
-!       Center for Satellite Applications and Research
-!		NOAA/NESDIS
-!		301-763-8136
-!
-!	Mailing Address:
-!		701 WWB E/RA-2
-!		NOAA/NESDIS
-!       5200 Auth Road
-!		Camp Springs MD 20746
-!
-!	Email:
-!		Thomas.J.Kleespies@noaa.gov
-!
+!$$$ end documentation block
 
-	Implicit None
+ use constants, only : deg2rad
+ use kinds, only : r_kind
 
-	Real Lat1,Lon1,Lat2,Lon2,ss
-	Real Colat1,Colat2,DelLon
-	Real s
-	Real DTR
-	Real Arc_Angle
+ implicit none
 
+ real(r_kind), intent(in)      :: lat1,lon1,lat2,lon2
+ real(r_kind), intent(out)     :: arc_angle
+ real(r_kind), parameter       :: rearth=6371._r_kind
+ real(r_kind)                  :: colat1,colat2,dellon,s
 
-	DTR = ACOS(-1.)/180.
+ colat1 = (90._r_kind - lat1)*deg2rad
+ colat2 = (90._r_kind - lat2)*deg2rad
+ dellon = abs(lon2 - lon1)*deg2rad
 
-	Colat1 = (90. - Lat1)*DTR
-	Colat2 = (90. - Lat2)*DTR
-	DelLon = Abs(Lon2 - Lon1)*DTR 
+ s = cos(colat1)*cos(colat2) + sin(colat1)*sin(colat2)*cos(dellon)
 
-	S = Cos(Colat1)*Cos(Colat2) + Sin(Colat1)*Sin(Colat2)*Cos(DelLon)
+ arc_angle = acos(s)
 
-	Arc_Angle = Acos(S)
+ arc_distance = rearth * arc_angle
 
-	Arc_Distance = 6371. * Arc_Angle
+ return
 
-	Return
-
-End Function Arc_Distance
+ end function arc_distance

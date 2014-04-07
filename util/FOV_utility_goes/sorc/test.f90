@@ -1,5 +1,7 @@
  program test
 
+ use constants
+
  implicit none
 
  character(len=8)  :: stnid
@@ -21,6 +23,9 @@
  real :: end_lat, end_lon
  real :: lats(npoly),lons(npoly)
  real, allocatable :: lats_edge_fov(:,:), lons_edge_fov(:,:)
+
+ call init_constants_derived
+ call init_constants(.false.)
 
  instr = 31       ! imager
  ichan_tot = 5    ! imager has 5 channels
@@ -90,7 +95,7 @@
      lon_mdl = start_lon - (dlon * 2.0)
      do while (lon_mdl < (end_lon + (dlon*2.1)))
 
-       call inside_fov_ellipse_flat_earth_geo(instr,ichan,sublat,sublon, &
+       call inside_fov_geo(instr,ichan,sublat,sublon, &
               lat_fov, lon_fov, lat_mdl, lon_mdl, expansion, power)
 
        if (power>=0.005) then

@@ -3,27 +3,33 @@ FCOMP  = ifort
 FFLAGS = -check all -traceback -fpe0 -ftrapuv -g -r8
 EXE= test.exe
 
-OBJS = FOVGeoAngleSizes.o \
-       FOV_Geo_Ellipse_SAVE.o \
+OBJS = fov_geo_angle_sizes.o \
+       calc_fov_geo.o \
        arc_distance.o \
-       FOV_Ellipse_Geo.o \
-       Inside_FOV_Ellipse_Flat_Earth_Geo.o \
+       kinds.o \
+       constants.o \
+       fov_ellipse_geo.o \
+       inside_fov_geo.o \
        test.o
 
 $(EXE):	$(OBJS)
 	$(FCOMP) $(FFLAGS) -o $(EXE) $(OBJS) 
 
-test.o: test.f90
+test.o: constants.o test.f90
 	$(FCOMP) $(FFLAGS) -c test.f90
-arc_distance.o:  arc_distance.f90
+constants.o:  kinds.o constants.f90
+	$(FCOMP) $(FFLAGS) -c constants.f90
+kinds.o:   kinds.F90
+	$(FCOMP) $(FFLAGS) -D_REAL8_ -c kinds.F90
+fov_geo_angle_sizes.o: constants.o kinds.o fov_geo_angle_sizes.f90
+	$(FCOMP) $(FFLAGS) -c fov_geo_angle_sizes.f90
+calc_fov_geo.o: kinds.o calc_fov_geo.f90
+	$(FCOMP) $(FFLAGS) -c calc_fov_geo.f90
+arc_distance.o: arc_distance.f90
 	$(FCOMP) $(FFLAGS) -c arc_distance.f90
-FOVGeoAngleSizes.o: FOVGeoAngleSizes.f90
-	$(FCOMP) $(FFLAGS) -c FOVGeoAngleSizes.f90
-FOV_Geo_Ellipse_SAVE.o: FOV_Geo_Ellipse_SAVE.f90
-	$(FCOMP) $(FFLAGS) -c FOV_Geo_Ellipse_SAVE.f90
-FOV_Ellipse_Geo.o: FOV_Ellipse_Geo.f90
-	$(FCOMP) $(FFLAGS) -c FOV_Ellipse_Geo.f90
-Inside_FOV_Ellipse_Flat_Earth_Geo.o: Inside_FOV_Ellipse_Flat_Earth_Geo.f90
-	$(FCOMP) $(FFLAGS) -c Inside_FOV_Ellipse_Flat_Earth_Geo.f90
+fov_ellipse_geo.o: kinds.o fov_ellipse_geo.f90
+	$(FCOMP) $(FFLAGS) -c fov_ellipse_geo.f90
+inside_fov_geo.o: constants.o kinds.o inside_fov_geo.f90
+	$(FCOMP) $(FFLAGS) -c inside_fov_geo.f90
 clean:
 	rm -f *.o *.mod $(EXE)
