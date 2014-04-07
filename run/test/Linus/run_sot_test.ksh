@@ -46,7 +46,7 @@
 # COMPILER=intel,pgi
 # GSI_TEST=con,rad,gpsro,radar
 # GSI_ROOT=/d1/stark/GSI
-  GSI_TEST=gpsro
+  GSI_TEST=sot
   GSI_DIR=${COMPILER}/${GSI_TEST_DIR}
   WORK_ROOT=${GSI_ROOT}/run/${GSI_DIR}/${GSI_TEST}_${ANAL_TIME}_${CORE_DIR}_${TEST_DIR_SUFFIX}
   DATA_DIR=${GSI_ROOT}/data
@@ -211,8 +211,7 @@ ln -s ${PREPBUFR} ./prepbufr
 # ln -s ${OBS_ROOT}/gdas1.t12z.1bhrs3.tm00.bufr_d hirs3bufr
 # ln -s ${OBS_ROOT}/gdas1.t12z.1bhrs4.tm00.bufr_d hirs4bufr
 # ln -s ${OBS_ROOT}/gdas1.t12z.1bmhs.tm00.bufr_d mhsbufr
-  ln -s ${OBS_ROOT}/gdas1.t12z.gpsro.tm00.bufr_d gpsrobufr
-
+# ln -s ${OBS_ROOT}/gdas1.t12z.gpsro.tm00.bufr_d gpsrobufr
 #
 ##################################################################################
 
@@ -254,7 +253,6 @@ else
   fi
 fi
 
-
 SATANGL=${FIX_ROOT}/global_satangbias.txt
 SATINFO=${FIX_ROOT}/global_satinfo.txt
 CONVINFO=${FIX_ROOT}/global_convinfo.txt
@@ -272,11 +270,6 @@ emiscoef_VISwater=${CRTM_ROOT}/EmisCoeff/VIS_Water/SEcategory/${BYTE_ORDER}/NPOE
 emiscoef_MWwater=${CRTM_ROOT}/EmisCoeff/MW_Water/${BYTE_ORDER}/FASTEM5.MWwater.EmisCoeff.bin
 aercoef=${CRTM_ROOT}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
 cldcoef=${CRTM_ROOT}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
-
-#Possible deletion
-#RTMEMIS=${CRTM_ROOT}/EmisCoeff/${BYTE_ORDER}/EmisCoeff.bin
-#RTMAERO=${CRTM_ROOT}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
-#RTMCLDS=${CRTM_ROOT}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
 
 #  copy Fixed fields to working directory
  cp $ANAVINFO anavinfo
@@ -341,8 +334,8 @@ cat << EOF > gsiparm.anl
    write_diag(1)=.true.,write_diag(2)=.false.,write_diag(3)=.true.,
    gencode=78,qoption=2,
    factqmin=0.0,factqmax=0.0,deltim=1200,
-   ndat=87,iguess=-1,
-   oneobtest=.false.,retrieval=.false.,
+   ndat=77,iguess=-1,
+   oneobtest=.true.,retrieval=.false.,
    nhr_assimilation=3,l_foto=.false.,
    use_pbl=.false.,
  /
@@ -363,8 +356,6 @@ cat << EOF > gsiparm.anl
  &JCOPTS
  /
  &STRONGOPTS
-   reg_tlnmc_type=1,nstrong=0,nvmodes_keep=20,period_max=3.,
-   baldiag_full=.true.,baldiag_inc=.true.,
  /
  &OBSQC
    dfact=0.75,dfact1=3.0,noiqc=.false.,c_varqc=0.02,vadfile='prepbufr',
@@ -464,7 +455,7 @@ cat << EOF > gsiparm.anl
  /
  &SINGLEOB_TEST
    maginnov=1.0,magoberr=0.8,oneob_type='t',
-   oblat=38.,oblon=279.,obpres=500.,obdattim=${ANAL_TIME},
+   oblat=37.,oblon=285.,obpres=500.,obdattim=${ANAL_TIME},
    obhourset=0.,
  /
 

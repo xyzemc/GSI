@@ -365,8 +365,6 @@ cat << EOF > gsiparm.anl
  &JCOPTS
  /
  &STRONGOPTS
-   reg_tlnmc_type=1,nstrong=0,nvmodes_keep=20,period_max=3.,
-   baldiag_full=.true.,baldiag_inc=.true.,
  /
  &OBSQC
    dfact=0.75,dfact1=3.0,noiqc=.false.,c_varqc=0.02,vadfile='prepbufr',

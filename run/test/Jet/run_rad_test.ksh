@@ -1,28 +1,18 @@
-#!/bin/ksh 
+#!/bin/ksh
 #####################################################
 # machine set up (users should change this part)
 #####################################################
-
 #
 # GSIPROC = processor number used for GSI analysis
 #------------------------------------------------
-# GSIPROC=1,2,4
-  if [ $GSIPROC = 1 ] ; then
-     TEST_DIR_SUFFIX='np1'
-  elif [ $GSIPROC = 2 ] ; then
-     TEST_DIR_SUFFIX='np2'
-  elif [ $GSIPROC = 4 ] ; then
-     TEST_DIR_SUFFIX='np4'
-  else
-     echo "ERROR: GSIPROC $GSIPRO is not = 1,2, or 4."
-     exit 1
-  fi 
+# Defined in GSI test wrapper
+# GSIPROC=1,4
 
-ARCH='LINUX'
-# Supported configurations:
+# Supported configurations: Defined in GSI test Wrapper
             # IBM_LSF,IBM_LoadLevel
             # LINUX, LINUX_LSF, LINUX_PBS,
             # DARWIN_PGI
+# ARCH='LINUX'
 #
 #####################################################
 # case set up (users should change this part)
@@ -30,7 +20,8 @@ ARCH='LINUX'
 # bk_core= which WRF core is used as background (NMM or ARW)
 # bkcv_option= which background error covariance and parameter will be used 
 #              (GLOBAL or NAM)
-# bk_core=ARW
+# Defined in GSI test wrapper
+# bk_core=ARW, NMM
   if [ ${bk_core} = NMM ] ; then
     CORE_DIR=nmm
   else
@@ -38,97 +29,80 @@ ARCH='LINUX'
   fi
   bkcv_option=NAM
 
-#------------------------------------------------
-#
-# ANAL_TIME= analysis time  (YYYYMMDDHH)
-# WORK_ROOT= working directory, where GSI runs
-# PREPBURF = path of PreBUFR conventional obs
-# BK_FILE  = path and name of background file
-# OBS_ROOT = path of observations files
-# FIX_ROOT = path of fix files
-# GSI_EXE  = path and name of the gsi executable 
-  ANAL_TIME=2011060212
-# COMPILER=pgi
-  GSI_TEST=sot
-# GSI_TEST=con
-# GSI_TEST=rad
-# GSI_TEST=gpsro
-# GSI_TEST=radar
+#####################################################
+# ANAL_TIME = analysis time  (YYYYMMDDHH)
+# COMPILER  = fortran compiler
+# GSI_TEST  = path to GSI test source code
+# GSI_ROOT  = root path to GSI workspace
+# WORK_ROOT = working directory, where GSI runs
+# DATA_DIR  = path to obs data and CRTM fixed files 
+# PREPBURF  = path of PreBUFR conventional obs
+# BK_FILE   = path and name of background file
+# OBS_ROOT  = path of observations files
+# FIX_ROOT  = path of fix files
+# GSI_EXE   = path and name of the gsi executable 
+#####################################################
+# ANAL_TIME=2011060212
+# COMPILER=intel,pgi
+# GSI_TEST=con,rad,gpsro,radar
 # GSI_ROOT=/d1/stark/GSI
+  GSI_TEST=rad
   GSI_DIR=${COMPILER}/${GSI_TEST_DIR}
   WORK_ROOT=${GSI_ROOT}/run/${GSI_DIR}/${GSI_TEST}_${ANAL_TIME}_${CORE_DIR}_${TEST_DIR_SUFFIX}
   DATA_DIR=${GSI_ROOT}/data
 #
+#####################################################
+#    PATHS
+#####################################################
   BK_FILE=${DATA_DIR}/${ANAL_TIME}/${CORE_DIR}/wrfinput_d01_2011-06-02_12:00:00
   OBS_ROOT=${DATA_DIR}/${ANAL_TIME}/obs
   PREPBUFR=${OBS_ROOT}/nam.t12z.prepbufr.tm00.nr.le
-  CRTM_ROOT=${DATA_DIR}/fix/CRTM_Coefficients-2.0.5
+  CRTM_ROOT=${DATA_DIR}/fix/CRTM_Coefficients-2.1.3
   FIX_ROOT=${GSI_ROOT}/src/${GSI_DIR}/fix
   GSI_EXE=${GSI_ROOT}/src/${GSI_DIR}/run/gsi.exe
 
+#####################################################
 # if_clean = clean  : delete temperal files in working directory (default)
 #            no     : leave running directory as is (this is for debug only)
   if_clean=clean
-#
-#------------------------------------------------
-# GSI hybrid options
-# if_hybrid = .true. then turn on hybrid data analysis 
-# ntotmem = number of ensemble members used for hybrid
-# mempath = path of ensemble members
-# 
-# please note that we assume the ensemble member are located
-#          under ${mempath} with name wrfout_d01_${iiimem}.
-#          If this is not the case, please change the following lines:
-#
-#      if [ -r  ${mempath}/wrfout_d01_${iiimem} ]; then
-#         ln -sf ${mempath}/wrfout_d01_${iiimem} ./wrf_en${iiimem}
-#      else
-#         echo "member ${mempath}/wrfout_d01_${iiimem} is not exit"
-#      fi
-#
-# 
-  if_hybrid=.false.
-  ntotmem=40
-  mempath=/ensemble/wrfprd
-#
+
 #####################################################
 # Users should NOT change script after this point
 #####################################################
 #
+BYTE_ORDER=Big_Endian
 case $ARCH in
    'IBM_LSF')
       ###### IBM LSF (Load Sharing Facility)
-      BYTE_ORDER=Big_Endian
       RUN_COMMAND="mpirun.lsf " ;;
 
    'IBM_LoadLevel')
       ###### IBM LoadLeve 
-      BYTE_ORDER=Big_Endian
       RUN_COMMAND="poe " ;;
 
    'LINUX')
-      BYTE_ORDER=Little_Endian
       if [ $GSIPROC = 1 ]; then
          #### Linux workstation - single processor
          RUN_COMMAND=""
       else
-         ###### Linux workstation -  mpi run
-        RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile /home/stark/mach "
+         ###### Linux workstation -  using mpi run and with machfile 
+        RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile /home/${USER}/mach "
       fi ;;
 
    'LINUX_LSF')
       ###### LINUX LSF (Load Sharing Facility)
-      BYTE_ORDER=Little_Endian
       RUN_COMMAND="mpirun.lsf " ;;
 
    'LINUX_PBS')
-      BYTE_ORDER=Little_Endian
       #### Linux cluster PBS (Portable Batch System)
       RUN_COMMAND="mpirun -np ${GSIPROC} " ;;
 
+   'LINUX_TORQUE')
+      #### Linux cluster Torque (Torque Batch System)
+      RUN_COMMAND="mpiexec -np ${GSIPROC} " ;;
+
    'DARWIN_PGI')
       ### Mac - mpi run
-      BYTE_ORDER=Little_Endian
       if [ $GSIPROC = 1 ]; then
          #### Mac workstation - single processor
          RUN_COMMAND=""
@@ -232,44 +206,16 @@ cp ${GSI_EXE} gsi.exe
 # Bring over background field (it's modified by GSI so we can't link to it)
 cp ${BK_FILE} ./wrf_inout
 
-# Link ensember members if use hybrid
-if [ ${if_hybrid} = .true. ] ; then
-   echo " link ensemble members to working directory"
-
-   let imem=1
-
-   while (( $imem <= $ntotmem )); do
-
-      if [[ $imem -lt 10 ]]; then
-         export iiimem=00${imem}
-         export iimem=0${imem}
-      else
-         export iiimem=0${imem}
-         export iimem=${imem}
-      fi
-
-      let imem="imem + 1"
-
-      if [ -r  ${mempath}/wrfout_d01_${iiimem} ]; then
-         ln -sf ${mempath}/wrfout_d01_${iiimem} ./wrf_en${iiimem}
-      else
-         echo "member ${mempath}/wrfout_d01_${iiimem} is not exit"
-         exit 1
-      fi
-
-   done
-fi
-
 # Link to the prepbufr data
 ln -s ${PREPBUFR} ./prepbufr
 
 # Link to the radiance data
-# ln -s ${OBS_ROOT}/le_gdas1.t12z.1bamua.tm00.bufr_d amsuabufr
-# ln -s ${OBS_ROOT}/le_gdas1.t12z.1bamub.tm00.bufr_d amsubbufr
-# ln -s ${OBS_ROOT}/le_gdas1.t12z.1bhrs3.tm00.bufr_d hirs3bufr
-# ln -s ${OBS_ROOT}/le_gdas1.t12z.1bhrs4.tm00.bufr_d hirs4bufr
-# ln -s ${OBS_ROOT}/le_gdas1.t12z.1bmhs.tm00.bufr_d mhsbufr
-# ln -s ${OBS_ROOT}/le_gdas1.t12z.gpsro.tm00.bufr_d gpsrobufr
+  ln -s ${OBS_ROOT}/gdas1.t12z.1bamua.tm00.bufr_d amsuabufr
+  ln -s ${OBS_ROOT}/gdas1.t12z.1bamub.tm00.bufr_d amsubbufr
+# ln -s ${OBS_ROOT}/gdas1.t12z.1bhrs3.tm00.bufr_d hirs3bufr
+  ln -s ${OBS_ROOT}/gdas1.t12z.1bhrs4.tm00.bufr_d hirs4bufr
+  ln -s ${OBS_ROOT}/gdas1.t12z.1bmhs.tm00.bufr_d mhsbufr
+# ln -s ${OBS_ROOT}/gdas1.t12z.gpsro.tm00.bufr_d gpsrobufr
 
 #
 ##################################################################################
@@ -294,27 +240,24 @@ echo " Copy fixed files and link CRTM coefficient files to working directory"
 
 if [ ${bkcv_option} = GLOBAL ] ; then
   echo ' Use global background error covariance'
-  if [ ${BYTE_ORDER} = Little_Endian ] ; then
-    BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv_Little_Endian
-  else
-    BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv
-  fi
+  BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv
   OBERROR=${FIX_ROOT}/prepobs_errtable.global
+  if [ ${bk_core} = NMM ] ; then
+    ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf_glbe
+  else
+    ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf_glbe
+  fi
 else
   echo ' Use NAM background error covariance'
-  if [ ${BYTE_ORDER} = Little_Endian ] ; then
-    BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv_Little_Endian
-  else
-    BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv
-  fi
+  BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv
   OBERROR=${FIX_ROOT}/nam_errtable.r3dv
+  if [ ${bk_core} = NMM ] ; then
+    ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf
+  else
+    ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf
+  fi
 fi
 
-if [ ${bk_core} = NMM ] ; then
-  ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf
-else
-  ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf
-fi
 
 SATANGL=${FIX_ROOT}/global_satangbias.txt
 SATINFO=${FIX_ROOT}/global_satinfo.txt
@@ -322,15 +265,28 @@ CONVINFO=${FIX_ROOT}/global_convinfo.txt
 OZINFO=${FIX_ROOT}/global_ozinfo.txt
 PCPINFO=${FIX_ROOT}/global_pcpinfo.txt
 
-RTMFIX=${CRTM_ROOT}
-RTMEMIS=${RTMFIX}/EmisCoeff/${BYTE_ORDER}/EmisCoeff.bin
-RTMAERO=${RTMFIX}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
-RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
+emiscoef_IRwater=${CRTM_ROOT}/EmisCoeff/IR_Water/${BYTE_ORDER}/Nalli.IRwater.EmisCoeff.bin
+emiscoef_IRice=${CRTM_ROOT}/EmisCoeff/IR_Ice/SEcategory/${BYTE_ORDER}/NPOESS.IRice.EmisCoeff.bin
+emiscoef_IRland=${CRTM_ROOT}/EmisCoeff/IR_Land/SEcategory/${BYTE_ORDER}/NPOESS.IRland.EmisCoeff.bin
+emiscoef_IRsnow=${CRTM_ROOT}/EmisCoeff/IR_Snow/SEcategory/${BYTE_ORDER}/NPOESS.IRsnow.EmisCoeff.bin
+emiscoef_VISice=${CRTM_ROOT}/EmisCoeff/VIS_Ice/SEcategory/${BYTE_ORDER}/NPOESS.VISice.EmisCoeff.bin
+emiscoef_VISland=${CRTM_ROOT}/EmisCoeff/VIS_Land/SEcategory/${BYTE_ORDER}/NPOESS.VISland.EmisCoeff.bin
+emiscoef_VISsnow=${CRTM_ROOT}/EmisCoeff/VIS_Snow/SEcategory/${BYTE_ORDER}/NPOESS.VISsnow.EmisCoeff.bin
+emiscoef_VISwater=${CRTM_ROOT}/EmisCoeff/VIS_Water/SEcategory/${BYTE_ORDER}/NPOESS.VISwater.EmisCoeff.bin
+emiscoef_MWwater=${CRTM_ROOT}/EmisCoeff/MW_Water/${BYTE_ORDER}/FASTEM5.MWwater.EmisCoeff.bin
+aercoef=${CRTM_ROOT}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
+cldcoef=${CRTM_ROOT}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
+
+#Possible deletion
+#RTMEMIS=${CRTM_ROOT}/EmisCoeff/${BYTE_ORDER}/EmisCoeff.bin
+#RTMAERO=${CRTM_ROOT}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
+#RTMCLDS=${CRTM_ROOT}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
 
 #  copy Fixed fields to working directory
  cp $ANAVINFO anavinfo
  cp $BERROR   berror_stats
- cp $SATANGL  satbias_angle
+#cp $SATANGL  satbias_angle
+ cp ${OBS_ROOT}/gdas1.t12z.satang satbias_angle
  cp $SATINFO  satinfo
  cp $CONVINFO convinfo
  cp $OZINFO   ozinfo
@@ -338,40 +294,35 @@ RTMCLDS=${RTMFIX}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
  cp $OBERROR  errtable
 #
 ## CRTM Spectral and Transmittance coefficients
- ln -s $RTMEMIS  EmisCoeff.bin
- ln -s $RTMAERO  AerosolCoeff.bin
- ln -s $RTMCLDS  CloudCoeff.bin
- nsatsen=`cat satinfo | wc -l`
- isatsen=1
- while [[ $isatsen -le $nsatsen ]]; do
-    flag=`head -n $isatsen satinfo | tail -1 | cut -c1-1`
-    if [[ "$flag" != "!" ]]; then
-       satsen=`head -n $isatsen satinfo | tail -1 | cut -f 2 -d" "`
-       spccoeff=${satsen}.SpcCoeff.bin
-       if  [[ ! -s $spccoeff ]]; then
-          ln -s $RTMFIX/SpcCoeff/${BYTE_ORDER}/$spccoeff $spccoeff
-          ln -s $RTMFIX/TauCoeff/${BYTE_ORDER}/${satsen}.TauCoeff.bin ${satsen}.TauCoeff.bin
-       fi
-    fi
-    isatsen=` expr $isatsen + 1 `
- done
+ln -s $emiscoef_IRwater ./Nalli.IRwater.EmisCoeff.bin
+ln -s $emiscoef_IRice ./NPOESS.IRice.EmisCoeff.bin
+ln -s $emiscoef_IRsnow ./NPOESS.IRsnow.EmisCoeff.bin
+ln -s $emiscoef_IRland ./NPOESS.IRland.EmisCoeff.bin
+ln -s $emiscoef_VISice ./NPOESS.VISice.EmisCoeff.bin
+ln -s $emiscoef_VISland ./NPOESS.VISland.EmisCoeff.bin
+ln -s $emiscoef_VISsnow ./NPOESS.VISsnow.EmisCoeff.bin
+ln -s $emiscoef_VISwater ./NPOESS.VISwater.EmisCoeff.bin
+ln -s $emiscoef_MWwater ./FASTEM5.MWwater.EmisCoeff.bin
+ln -s $aercoef  ./AerosolCoeff.bin
+ln -s $cldcoef  ./CloudCoeff.bin
+# Copy CRTM coefficient files based on entries in satinfo file
+for file in `awk '{if($1!~"!"){print $1}}' ./satinfo | sort | uniq` ;do
+   ln -s ${CRTM_ROOT}/SpcCoeff/${BYTE_ORDER}/${file}.SpcCoeff.bin ./
+   ln -s ${CRTM_ROOT}/TauCoeff/${BYTE_ORDER}/${file}.TauCoeff.bin ./
+done
 
 # Only need this file for single obs test
  bufrtable=${FIX_ROOT}/prepobs_prep.bufrtable
  cp $bufrtable ./prepobs_prep.bufrtable
 
 # for satellite bias correction
-cp ${DATA_DIR}/fix/sample.satbias ./satbias_in
+#cp ${DATA_DIR}/fix/sample.satbias ./satbias_in
+cp ${OBS_ROOT}/gdas1.t12z.abias ./satbias_in
 
 #
 ##################################################################################
 # Set some parameters for use by the GSI executable and to build the namelist
 echo " Build the namelist "
-
-export JCAP=62
-export LEVS=60
-export JCAP_B=62
-export DELTIM=${DELTIM:-$((3600/($JCAP/20)))}
 
 if [ ${bkcv_option} = GLOBAL ] ; then
    vs_op='0.7,'
@@ -384,11 +335,9 @@ fi
 if [ ${bk_core} = NMM ] ; then
    bk_core_arw='.false.'
    bk_core_nmm='.true.'
-   ensbk_option=2
 else
    bk_core_arw='.true.'
    bk_core_nmm='.false.'
-   ensbk_option=3
 fi
 
 # Build the GSI namelist on-the-fly
@@ -397,14 +346,14 @@ cat << EOF > gsiparm.anl
    miter=2,niter(1)=10,niter(2)=10,
    write_diag(1)=.true.,write_diag(2)=.false.,write_diag(3)=.true.,
    gencode=78,qoption=2,
-   factqmin=0.0,factqmax=0.0,deltim=$DELTIM,
-   ndat=77,iguess=-1,
-   oneobtest=.true.,retrieval=.false.,
+   factqmin=0.0,factqmax=0.0,deltim=1200,
+   ndat=87,iguess=-1,
+   oneobtest=.false.,retrieval=.false.,
    nhr_assimilation=3,l_foto=.false.,
    use_pbl=.false.,
  /
  &GRIDOPTS
-   JCAP=$JCAP,JCAP_B=$JCAP_B,NLAT=$NLAT,NLON=$LONA,nsig=$LEVS,hybrid=.true.,
+   JCAP=62,JCAP_B=62,NLAT=60,NLON=60,nsig=60,regional=.true.,
    wrf_nmm_regional=${bk_core_nmm},wrf_mass_regional=${bk_core_arw},
    diagnostic_reg=.false.,
    filled_grid=.false.,half_grid=.true.,netcdf=.true.,
@@ -415,15 +364,11 @@ cat << EOF > gsiparm.anl
    bw=0.,fstat=.true.,
  /
  &ANBKGERR
-   anisotropic=.false.,an_vs=1.0,ngauss=1,
-   an_flen_u=-5.,an_flen_t=3.,an_flen_z=-200.,
-   ifilt_ord=2,npass=3,normal=-200,grid_ratio=4.,nord_f2a=4,
+   anisotropic=.false.,
  /
  &JCOPTS
  /
  &STRONGOPTS
-   jcstrong=.false.,jcstrong_option=3,nstrong=0,nvmodes_keep=20,period_max=3.,
-   baldiag_full=.true.,baldiag_inc=.true.,
  /
  &OBSQC
    dfact=0.75,dfact1=3.0,noiqc=.false.,c_varqc=0.02,vadfile='prepbufr',
@@ -515,11 +460,7 @@ cat << EOF > gsiparm.anl
  &LAG_DATA
  /
  &HYBRID_ENSEMBLE
-   l_hyb_ens=${if_hybrid},uv_hyb_ens=.true.,
-   aniso_a_en=.false.,generate_ens=.false.,
-   n_ens=${ntotmem},
-   beta1_inv=0.5,s_ens_h=110,s_ens_v=-0.3,
-   regional_ensemble_option=${ensbk_option},
+   l_hyb_ens=.false.,
  /
  &RAPIDREFRESH_CLDSURF
  /
@@ -527,7 +468,7 @@ cat << EOF > gsiparm.anl
  /
  &SINGLEOB_TEST
    maginnov=1.0,magoberr=0.8,oneob_type='t',
-   oblat=37.,oblon=285.,obpres=500.,obdattim=${ANAL_TIME},
+   oblat=38.,oblon=279.,obpres=500.,obdattim=${ANAL_TIME},
    obhourset=0.,
  /
 
