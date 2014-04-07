@@ -1,0 +1,125 @@
+Subroutine FOVGeoAnglesSizes(Instr,Chan,NadirAngle,AlongTrackAngle,CrossTrackAngle,AlongTrackFOVSize,CrossTrackFOVSize)
+
+! computes the cross track and along track angles of a geosynchronous instrument FOV as viewed
+! from the center of the earth, and cross track and along track FOV size in km.
+! presumes a spherical earth
+!
+! Thomas J. Kleespies  NOAA/NESDIS  17 February 2004
+!									15 September 2004
+!                                   Convert from IDL to FORTRAN90
+!                      Revised       8 April 2005
+!                      Adapted from cross track  25 July 2008
+! Reference:
+!
+!
+! Input:
+!		  int   Instr 	Instrument number
+!
+!                31      GOES Imager
+!                32      GOES Sounder
+!               
+!         int   Chan     Channel number
+!
+!         Real   NadirAngle  Angle from subsatellite point to observation point
+!
+! Output:
+!         real   AlongTrackAngle
+!         real   CrossTrackAngle
+!         real   AlongTrackFOVSize
+!         real   CrossTrackFOVSize
+!
+
+
+! Internal Variables
+!
+!	fovangle	angular dimension of the FOV
+!	rtd			radians to degree conversion factor
+!	radius		nominal earth radius
+!   height      nominal geosynchronous altitude
+!
+! e.g. for aqua amsu-a
+!fovangle = 3.3
+!radius   = 6371.22
+!height   = 705.
+!rtd      = 57.29577951
+!
+!
+ Implicit None
+
+ Integer Instr
+ Integer Chan
+ Integer fov
+ Real AlongTrackAngle,CrossTrackAngle,AlongTrackFOVSize,CrossTrackFOVSize
+
+ Integer , Parameter :: MaxChan=19
+ Integer , Parameter :: MaxInstr = 2
+ Integer , Parameter :: InstrumentRange(2) = (/31 , 32/)
+
+
+ Real , Dimension(MaxChan,InstrumentRange(1):InstrumentRange(2)) :: fovangle  =  Reshape(  &
+ (/ 1.604282E-03, 6.417127E-03, 1.283425E-02, 6.417127E-03, 6.417127E-03 ,  &
+	0.0,          0.0,          0.0,          0.0,          0.0,            &
+    0.0,          0.0,          0.0,          0.0,          0.0,            &
+	0.0,          0.0,          0.0,          0.0,                          &
+	1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02,   &
+	1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02,   &
+	1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02,   &
+	1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02  /) ,            &
+	(/ MaxChan,MaxInstr /) )
+
+
+ Real  :: rtd      = 57.29577951
+ Real  :: radius   = 6371.22
+ Real  :: PI	   = 3.14159263589793  ! YEAH, YEAH, I know this is more precision than necessary, but so what?
+ Real  :: Height   = 35786.0           ! geosynchronous altitude 
+
+ Real NadirAngle
+ Real NadirAngle_m
+ Real NadirAngle_p
+ Real CompZACenter
+ Real CompZA_m
+ Real CompZA_p
+ Real DistanceToFOV
+ Real Delta         ! 
+ Real Gamma         ! cross track fov angle viewed from center of earth
+
+! initialize to bad value
+ AlongTrackAngle = -999.
+ CrossTrackAngle = -999.
+
+! test for Instr in range
+ if ((Instr < InstrumentRange(1)) .or. (Instr > InstrumentRange(2))) then 
+  Write(6,*) "Instr ",Instr," OUT OF RANGE (1 - ",MaxInstr,")"
+!cggg
+  stop
+ endif
+
+!Nadir angles of center and crosstrack extremes of fov
+
+ NadirAngle_m = NadirAngle - fovangle(Chan,Instr)*.5 
+ NadirAngle_p = NadirAngle + fovangle(Chan,Instr)*.5 
+
+!Complement of zenith angle for center and crosstrack extremes of fov
+ CompZaCenter = 180.-ASIN((radius+height)/radius * SIN(NadirAngle  /rtd))*rtd
+ CompZa_m     = 180.-ASIN((radius+height)/radius * SIN(NadirAngle_m/rtd))*rtd
+ CompZa_p     = 180.-ASIN((radius+height)/radius * SIN(NadirAngle_p/rtd))*rtd
+
+!cross track angle of the fov as viewed from center of the earth
+ CrossTrackAngle = ABS(NadirAngle_p + CompZa_p - NadirAngle_m - CompZa_m)
+
+!cross track fov size in km
+ CrossTrackFOVSize = ABS(CrossTrackAngle*2*PI*radius/360)
+
+!distance from satellite to the center of the fov in km
+ DistanceToFOV = (radius+height)*SIN( (180-NadirAngle-CompZaCenter)/rtd)/SIN((CompZaCenter)/rtd)
+ If(DistanceToFOV <= 0) DistanceToFOV = height ! for nadir fov
+  
+!along track fov size in km
+! the following is an approximation, but it is close.  It underestimates the FOV by a smidge
+ AlongTrackFOVSize = 2*DistanceToFOV*TAN(fovangle(Chan,Instr)*0.5/rtd)
+
+
+!along track angle of the fov as viewed from center of the earth
+ AlongTrackAngle = 360*AlongTrackFOVSize/(2*PI*radius)
+
+End Subroutine FOVGeoAnglesSizes
