@@ -505,7 +505,7 @@ subroutine read_obs(ndata,mype)
          ltosi,ltosj,displs_g,strip,reorder
     use obsmod, only: iadate,ndat,time_window,dplat,dsfcalc,dfile,dthin, &
            dtype,dval,dmesh,obsfile_all,ref_obs,nprof_gps,dsis,ditype,&
-           oberrflg,perturb_obs,lobserver,lread_obs_save,obs_input_common,reduce_diag
+           oberrflg,bflag,perturb_obs,lobserver,lread_obs_save,obs_input_common,reduce_diag
     use gsi_4dvar, only: l4dvar
     use satthin, only: super_val,super_val1,superp,makegvals,getsfc,destroy_sfc,getnst,create_nst,destroy_nst
     use mpimod, only: ierror,mpi_comm_world,mpi_sum,mpi_rtype,mpi_integer,npe,&
@@ -516,6 +516,10 @@ subroutine read_obs(ndata,mype)
     use converr_t, only: converr_t_read
     use converr_uv, only: converr_uv_read
     use converr_pw, only: converr_pw_read
+    use convb_ps,only: convb_ps_read 
+    use convb_q,only:convb_q_read 
+    use convb_t,only:convb_t_read 
+    use convb_uv,only:convb_uv_read 
     use guess_grids, only: ges_prsl,geop_hgtl,ntguessig
     use radinfo, only: nusis,iuse_rad,jpch_rad,diag_rad,nst_gsi
     use insitu_info, only: mbuoy_info,read_ship_info
@@ -596,6 +600,11 @@ subroutine read_obs(ndata,mype)
        call converr_pw_read(mype)
 !    endif
 
+       call convb_ps_read(mype)
+       call convb_q_read(mype)
+       call convb_t_read(mype)
+       call convb_uv_read(mype)
+       call converr_pw_read(mype)
 
 !   Optionally set random seed to perturb observations
     if (perturb_obs) then

@@ -243,6 +243,10 @@ clean:
 	converr_t.f90 \
 	converr_uv.f90 \
 	converr_pw.f90 \
+        convb_ps.f90 \
+        convb_q.f90 \
+        convb_t.f90 \
+        convb_uv.f90 \
 	convinfo.f90 \
 	convthin.f90 \
 	crtm_interface.f90 \

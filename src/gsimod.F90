@@ -14,7 +14,7 @@
 
   use kinds, only: i_kind,r_kind
   use obsmod, only: dmesh,dval,dthin,dtype,dfile,dplat,dsfcalc,ndat,&
-     init_obsmod_dflts,create_obsmod_vars,write_diag,reduce_diag,oberrflg,&
+     init_obsmod_dflts,create_obsmod_vars,write_diag,reduce_diag,oberrflg,bflag,&
      time_window,perturb_obs,perturb_fact,sfcmodel,destroy_obsmod_vars,dsis,ndatmax,&
      dtbduv_on,time_window_max,offtime_data,init_directories,oberror_tune,ext_sonde, &
      blacklst,init_obsmod_vars,lobsdiagsave,lobskeep,lobserver,hilbert_curve,&
@@ -595,6 +595,7 @@
 !     tdrerr_inflate - logical for tdr obs error inflation
 !     tdrgross_fact - factor applies to tdr gross error
 !     oberrflg - logical for reading in new obs error table (if set to true)
+!     bflag - logical for reading in b table (if set to true)
 !     vadfile  - character(10) variable holding name of vadwnd bufr file
 !     noiqc    - logical flag to bypass OIQC (if set to true)
 !     c_varqc - constant number to control var. qc turnning on speed

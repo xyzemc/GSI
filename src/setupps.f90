@@ -116,7 +116,7 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 
 ! Declare local variables
   real(r_double) rstation_id
-  real(r_kind) tges,tges2,drbx,pob,pges,psges,psges2,dlat,dlon,dtime
+  real(r_kind) tges,tges2,drbx,pob,pges,psges,psges2,dlat,dlon,dtime,var_jb
   real(r_kind) rdelz,rdp,halfpi,obserror,obserrlm,drdp,residual,ratio
   real(r_kind) errinv_input,errinv_adjst,errinv_final
   real(r_kind) err_input,err_adjst,err_final,tfact
@@ -130,7 +130,7 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   real(r_kind),dimension(nele,nobs):: data
   real(r_single),allocatable,dimension(:,:)::rdiagbuf
 
-  integer(i_kind) ier,ilon,ilat,ipres,ihgt,itemp,id,itime,ikx,iqc,iptrb
+  integer(i_kind) ier,ilon,ilat,ipres,ihgt,itemp,id,itime,ikx,iqc,iptrb,ijb
   integer(i_kind) ier2,iuse,ilate,ilone,istnelv,isfcr,iff10,idomsfc,izz,iprvd,isprvd
   integer(i_kind) ikxx,nn,istat,iskint,ibin,ioff
   integer(i_kind) i,nchar,nreal,ii,jj,k,l,mm1
@@ -183,7 +183,8 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   izz=20      ! index of surface height
   iprvd=21    ! index of observation provider
   isprvd=22   ! index of observation subprovider
-  iptrb=23    ! index of ps perturbation
+  ijb=23      ! index for non linear qc b parameter
+  iptrb=24    ! index of ps perturbation
 
 ! Declare local constants
   halfpi = half*pi
@@ -194,6 +195,7 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   tmax=350.0_r_kind
   half_tlapse=0.00325_r_kind  ! half of 6.5K/1km
   mm1=mype+1
+  var_jb=zero
 
 !  Check to see if observation should be used or monitored
 !  muse = true  then used

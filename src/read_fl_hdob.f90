@@ -50,10 +50,16 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
          id_bias_ps,id_bias_t,conv_bias_ps,conv_bias_t,use_prepb_satwnd
      use obsmod, only: iadate,oberrflg,perturb_obs,perturb_fact,ran01dom,hilbert_curve
      use obsmod, only: blacklst,offtime_data,bmiss
-     use converr_ps,only: etabl_ps
-     use converr_q,only: etabl_q
-     use converr_t,only: etabl_t
-     use converr_uv,only: etabl_uv
+     use converr_ps,only: etabl_ps,isuble_ps,maxsub_ps
+     use converr_q,only: etabl_q,isuble_q,maxsub_q
+     use converr_t,only: etabl_t,isuble_t,maxsub_t
+     use converr_uv,only: etabl_uv,isuble_uv,maxsub_uv
+     use converr_pw,only: etabl_pw,isuble_pw,maxsub_pw
+     use convb_ps,only: btabl_ps
+     use convb_q,only: btabl_q
+     use convb_t,only: btabl_t
+     use convb_uv,only: btabl_uv
+
      use gsi_4dvar, only: l4dvar,iwinbgn,time_4dvar,winlen
      use qcmod, only: errormod
      use convthin, only: make3grids,map3grids,del3grids,use_all
@@ -109,7 +115,7 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
      integer(i_kind) :: nmsg   
      integer(i_kind) :: maxobs 
      integer(i_kind) :: itype,iobsub,itypey 
-     integer(i_kind) :: iecol 
+     integer(i_kind) :: ierr_ps,ierr_q,ierr_t,ierr_uv 
      integer(i_kind) :: qcm,lim_qm
      integer(i_kind) :: p_qm,g_qm,t_qm,q_qm,uv_qm,wspd_qm,ps_qm
      integer(i_kind) :: ntest,nvtest
@@ -220,27 +226,31 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
      lqob   = obstype == 'q'
 
      nreal  = 0
-     iecol  = 0
+     ierr_ps  = 0
+     ierr_q  = 0
+     ierr_t  = 0
+     ierr_uv  = 0
+     
      lim_qm = 4
      if (ltob) then
         nreal  = 24
-!        iecol  =  2 
+!        ierr  =  2 
         errmin = half      ! set lower bound of ob error for T or Tv
      else if (luvob) then
         nreal  = 24
-!        iecol  =  4  
+!        ierr  =  4  
         errmin = one       ! set lower bound of ob error for u,v winds
      else if (lspdob) then
         nreal  = 23
-!        iecol  =  4  
+!        ierr  =  4  
         errmin = one
      else if (lqob) then   ! set lower bound of ob err for surface wind speed
         nreal  = 25
-!        iecol  =  3 
+!        ierr  =  3 
         errmin = half      ! set lower bound of ob error for moisture (RH) 
      else if (lpsob) then  
         nreal  = 22 
-!        iecol  =  5 
+!        ierr  =  5 
         errmin = one_tenth ! set lower bound of ob error for moisture (RH) 
      else 
         write(6,*) ' illegal obs type in read_fl_hdob '
@@ -577,10 +587,9 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
 !              del = huge_r_kind
 !           endif
 !           del    = max(zero,min(del,one))
-!           obserr = (one-del)*etabl(itype,k1,iecol)+del*etabl(itype,k2,iecol)
+!           obserr = (one-del)*etabl(itype,k1,ierr)+del*etabl(itype,k2,ierr)
 !           obserr = max(obserr,errmin)
 !
-           iecol=index_sub(nc)
 !          Read extrapolated surface pressure [pa] and convert to [cb]
            if (lpsob) then
               call ufbint(lunin,obspsf,1,1,nlv,psfstr)
@@ -596,6 +605,13 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
 !             Get observation error from error table
               ppb = max(zero,min(pob_mb,r2000))
               itypey=itype-99
+              ierr_ps=index_sub(nc)+1
+              if(ierr_ps >maxsub_ps) ierr_ps=2
+              if( iobsub /= isuble_ps(itypey,ierr_ps)) then
+                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
+                         in the errortable,iobsub=',iobsub,isuble_ps(itypey,ierr_ps)
+                 call stop2(49)
+              endif
               if(ppb >= etabl_ps(itypey,1,1)) k1 = 1
               do kl = 1,32
                  if(ppb >= etabl_ps(itypey,kl+1,1) .and. ppb <= etabl_ps(itypey,kl,1)) k1 = kl
@@ -609,7 +625,7 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
                  del = huge_r_kind
               endif
               del    = max(zero,min(del,one))
-              obserr = (one-del)*etabl_ps(itypey,k1,iecol)+del*etabl_ps(itypey,k2,iecol)
+              obserr = (one-del)*etabl_ps(itypey,k1,ierr_ps)+del*etabl_ps(itypey,k2,ierr_ps)
               obserr = max(obserr,errmin)
            endif
 
@@ -655,6 +671,14 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
 !             Get observation error from error table
               ppb = max(zero,min(pob_mb,r2000))
               itypey=itype-99
+              ierr_t=index_sub(nc)+1
+              if(ierr_t >maxsub_t) ierr_t=2
+              if( iobsub /= isuble_t(itypey,ierr_t)) then
+                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
+                         in the errortable,iobsub=',iobsub,isuble_t(itypey,ierr_t)
+                 call stop2(49)
+              endif
+
               if(ppb >= etabl_t(itypey,1,1)) k1 = 1
               do kl = 1,32
                  if(ppb >= etabl_t(itypey,kl+1,1) .and. ppb <= etabl_t(itypey,kl,1)) k1 = kl
@@ -668,7 +692,7 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
                  del = huge_r_kind
               endif
               del    = max(zero,min(del,one))
-              obserr = (one-del)*etabl_t(itypey,k1,iecol)+del*etabl_t(itypey,k2,iecol)
+              obserr = (one-del)*etabl_t(itypey,k1,ierr_t)+del*etabl_t(itypey,k2,ierr_t)
               obserr = max(obserr,errmin)
            endif
 
@@ -707,6 +731,14 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
 !             Get observation error from error table
               ppb = max(zero,min(pob_mb,r2000))
               itypey=itype-99
+              ierr_q=index_sub(nc)+1
+              if(ierr_q >maxsub_q) ierr_q=2
+              if( iobsub /= isuble_q(itypey,ierr_q)) then
+                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
+                         in the errortable,iobsub=',iobsub,isuble_q(itypey,ierr_q)
+                 call stop2(49)
+              endif
+
               if(ppb >= etabl_q(itypey,1,1)) k1 = 1
               do kl = 1,32
                  if(ppb >= etabl_q(itypey,kl+1,1) .and. ppb <= etabl_q(itypey,kl,1)) k1 = kl
@@ -720,7 +752,7 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
                  del = huge_r_kind
               endif
               del    = max(zero,min(del,one))
-              obserr = (one-del)*etabl_q(itypey,k1,iecol)+del*etabl_q(itypey,k2,iecol)
+              obserr = (one-del)*etabl_q(itypey,k1,ierr_q)+del*etabl_q(itypey,k2,ierr_q)
               obserr = max(obserr,errmin)
            endif
 
@@ -753,6 +785,14 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
 !             Get observation error from error table
               ppb = max(zero,min(pob_mb,r2000))
               itypey=itype-199
+              ierr_uv=index_sub(nc)+1
+              if(ierr_uv >maxsub_uv) ierr_uv=2
+              if( iobsub /= isuble_q(itypey,ierr_uv)) then
+                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
+                         in the errortable,iobsub=',iobsub,isuble_q(itypey,ierr_uv)
+                 call stop2(49)
+              endif
+
               if(ppb >= etabl_uv(itypey,1,1)) k1 = 1
               do kl = 1,32
                  if(ppb >= etabl_uv(itypey,kl+1,1) .and. ppb <= etabl_uv(itypey,kl,1)) k1 = kl
@@ -766,7 +806,7 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
                  del = huge_r_kind
               endif
               del    = max(zero,min(del,one))
-              obserr = (one-del)*etabl_uv(itypey,k1,iecol)+del*etabl_uv(itypey,k2,iecol)
+              obserr = (one-del)*etabl_uv(itypey,k1,ierr_uv)+del*etabl_uv(itypey,k2,ierr_uv)
            endif
 
 !          Obtain information necessary for conventional data assimilation 

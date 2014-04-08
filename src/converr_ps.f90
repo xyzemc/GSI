@@ -19,6 +19,7 @@ module converr_ps
 ! Variable Definitions:
 !   def etabl_ps             -  the array to hold the error table
 !   def ptabl_ps             -  the array to have vertical pressure values
+!   def isuble_ps            -  the array to have subtype  
 !
 ! attributes:
 !   language: f90
@@ -37,11 +38,12 @@ implicit none
   public :: converr_ps_read
   public :: converr_ps_destroy
 ! set passed variables as public
-  public :: etabl_ps,ptabl_ps
+  public :: etabl_ps,ptabl_ps,isuble_ps,maxsub_ps
 
-  integer(i_kind),save:: ietabl,itypex,itypey,lcount,iflag,k,m
+  integer(i_kind),save:: ietabl,itypex,itypey,lcount,iflag,k,m,n,maxsub_ps
   real(r_single),save,allocatable,dimension(:,:,:) :: etabl_ps
   real(r_kind),save,allocatable,dimension(:)  :: ptabl_ps
+  integer(i_kind),save,allocatable,dimension(:,:)  :: isuble_ps
 
 contains
 
@@ -76,15 +78,16 @@ contains
      integer(i_kind),intent(in   ) :: mype
 
      integer(i_kind):: ier
-
+     maxsub_ps=5
      allocate(etabl_ps(100,33,6))
+     allocate(isuble_ps(100,6))
 
      etabl_ps=1.e9_r_kind
       
      ietabl=19
      open(ietabl,file='errtable_ps',form='formatted',status='old',iostat=ier)
      if(ier/=0) then
-        write(6,*)'CONVERR:  ***WARNING*** obs error table ("errtable") not available to 3dvar.'
+        write(6,*)'CONVERR_PS:  ***WARNING*** obs error table ("errtable") not available to 3dvar.'
         lcount=0
         oberrflg=.false.
         return
@@ -99,6 +102,8 @@ contains
 100     format(1x,i3)
         lcount=lcount+1
         itypey=itypex-99
+        read(ietabl,105,IOSTAT=iflag,end=120) (isuble_ps(itypey,n),n=1,6)  
+105     format(8x,6i12)
         do k=1,33
            read(ietabl,110)(etabl_ps(itypey,k,m),m=1,6)
 110        format(1x,6e12.5)
@@ -107,10 +112,10 @@ contains
 120  continue
 
      if(lcount<=0 .and. mype==0) then
-        write(6,*)'CONVERR:  ***WARNING*** obs error table not available to 3dvar.'
+        write(6,*)'CONVERR_PS:  ***WARNING*** obs error table not available to 3dvar.'
         oberrflg=.false.
      else
-        if(mype == 0) write(6,*)'CONVERR:  using observation errors from user provided table'
+        if(mype == 0) write(6,*)'CONVERR_PS:  using observation errors from user provided table'
         allocate(ptabl_ps(34))
         ptabl_ps=zero
         ptabl_ps(1)=etabl_ps(20,1,1)
@@ -148,7 +153,7 @@ subroutine converr_ps_destroy
 !$$$
      implicit none
 
-     deallocate(etabl_ps,ptabl_ps)
+     deallocate(etabl_ps,ptabl_ps,isuble_ps)
      return
   end subroutine converr_ps_destroy
 

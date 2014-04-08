@@ -38,11 +38,12 @@ implicit none
   public :: converr_t_read
   public :: converr_t_destroy
 ! set passed variables as public
-  public :: etabl_t,ptabl_t
+  public :: etabl_t,ptabl_t,isuble_t,maxsub_t
 
-  integer(i_kind),save:: ietabl_t,itypex,itypey,lcount,iflag,k,m
+  integer(i_kind),save:: ietabl_t,itypex,itypey,lcount,iflag,k,m,n,maxsub_t
   real(r_single),save,allocatable,dimension(:,:,:) :: etabl_t
   real(r_kind),save,allocatable,dimension(:)  :: ptabl_t
+  integer(i_kind),save,allocatable,dimension(:,:)  :: isuble_t
 
 contains
 
@@ -78,7 +79,8 @@ contains
 
      integer(i_kind):: ier
 
-     allocate(etabl_t(100,33,6))
+     maxsub_t=5
+     allocate(etabl_t(100,33,6),isuble_t(100,6))
 
      etabl_t=1.e9_r_kind
       
@@ -100,6 +102,8 @@ contains
 100     format(1x,i3)
         lcount=lcount+1
         itypex=itypey-99
+        read(ietabl_t,105,IOSTAT=iflag,end=120) (isuble_t(itypey,n),n=1,6)
+105     format(8x,6i12)
         do k=1,33
            read(ietabl_t,110)(etabl_t(itypex,k,m),m=1,6)
 110        format(1x,6e12.5)
@@ -108,10 +112,10 @@ contains
 120  continue
 
      if(lcount<=0 .and. mype==0) then
-        write(6,*)'CONVERR:  ***WARNING*** obs error table not available to 3dvar.'
+        write(6,*)'CONVERR_T:  ***WARNING*** obs error table not available to 3dvar.'
         oberrflg=.false.
      else
-        if(mype == 0) write(6,*)'CONVERR:  using observation errors from user provided table'
+        if(mype == 0) write(6,*)'CONVERR_T:  using observation errors from user provided table'
         allocate(ptabl_t(34))
         ptabl_t=zero
         ptabl_t(1)=etabl_t(20,1,1)
@@ -149,7 +153,7 @@ subroutine converr_t_destroy
 !$$$
      implicit none
 
-     deallocate(etabl_t,ptabl_t)
+     deallocate(etabl_t,ptabl_t,isuble_t)
      return
   end subroutine converr_t_destroy
 

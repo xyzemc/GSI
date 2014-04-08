@@ -112,6 +112,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
 !   2013-06-07  zhu  - read aircraft data from prepbufr_profl when aircraft_t_bc=.true.
 !   2013-09-08  s.liu  - increase nmsgmax to 100000 to read NESDIS cloud product
 !   2013-12-08  s.liu  - identify VAD wind based on sub type
+!   2014-04-02   su     - modify to add non linear qc b parameter
 !
 !
 !   input argument list:
@@ -144,15 +145,19 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
       ithin_conv,rmesh_conv,pmesh_conv,index_sub, &
       id_bias_ps,id_bias_t,conv_bias_ps,conv_bias_t,use_prepb_satwnd
 
-  use obsmod, only: iadate,oberrflg,perturb_obs,perturb_fact,ran01dom,hilbert_curve
+  use obsmod, only: iadate,oberrflg,bflag,perturb_obs,perturb_fact,ran01dom,hilbert_curve
   use obsmod, only: blacklst,offtime_data,bmiss,ext_sonde
   use aircraftinfo, only: aircraft_t_bc,aircraft_t_bc_pof,ntail,taillist,idx_tail,npredt,predt, &
       ntail_update,max_tail,nsort,itail_sort,idx_sort,timelist
-  use converr_ps,only: etabl_ps
-  use converr_q,only: etabl_q
-  use converr_t,only: etabl_t
-  use converr_uv,only: etabl_uv
-  use converr_pw,only: etabl_pw
+  use converr_ps,only: etabl_ps,isuble_ps,maxsub_ps
+  use converr_q,only: etabl_q,isuble_q,maxsub_q
+  use converr_t,only: etabl_t,isuble_t,maxsub_t
+  use converr_uv,only: etabl_uv,isuble_uv,maxsub_uv
+  use converr_pw,only: etabl_pw,isuble_pw,maxsub_pw
+  use convb_ps,only: btabl_ps
+  use convb_q,only: btabl_q
+  use convb_t,only: btabl_t
+  use convb_uv,only: btabl_uv
   use gsi_4dvar, only: l4dvar,time_4dvar,winlen
   use qcmod, only: errormod,noiqc,newvad
   use convthin, only: make3grids,map3grids,del3grids,use_all
@@ -239,7 +244,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   integer(i_kind) ntmp,iout
   integer(i_kind) pflag
   integer(i_kind) ntest,nvtest,iosub,ixsub,isubsub,iobsub
-  integer(i_kind) kl,k1,k2
+  integer(i_kind) kl,k1,k2,k1_ps,k1_q,k1_t,k1_uv,k1_pw,k2_q,k2_t,k2_uv,k2_pw,k2_ps
   integer(i_kind) itypex,itypey
   integer(i_kind) minobs,minan
   integer(i_kind) ntb,ntmatch,ncx
@@ -254,17 +259,18 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   integer(i_kind),dimension(nconvtype)::ntxall
   integer(i_kind),dimension(nconvtype+1)::ntx
   integer(i_kind),allocatable,dimension(:):: isort,iloc
-  integer(i_kind) ierr                           !  the position of error table collum
+  integer(i_kind) ierr_ps,ierr_q,ierr_t,ierr_uv,ierr_pw                           !  the position of error table collum
 
   real(r_kind) time,timex,time_drift,timeobs,toff,t4dv,zeps
-  real(r_kind) qtflg,tdry,rmesh,ediff,usage
+  real(r_kind) qtflg,tdry,rmesh,ediff,usage,ediff_ps,ediff_q,ediff_t,ediff_uv,ediff_pw
   real(r_kind) u0,v0,uob,vob,dx,dy,dx1,dy1,w00,w10,w01,w11
   real(r_kind) qoe,qobcon,pwoe,pwmerr,dlnpob,ppb,poe,gustoe,visoe,qmaxerr
   real(r_kind) toe,woe,errout,oelev,dlat,dlon,sstoe,dlat_earth,dlon_earth
   real(r_kind) selev,elev,stnelev
   real(r_kind) cdist,disterr,disterrmax,rlon00,rlat00
   real(r_kind) vdisterrmax,u00,v00
-  real(r_kind) del,terrmin,werrmin,perrmin,qerrmin,pwerrmin
+  real(r_kind) del,terrmin,werrmin,perrmin,qerrmin,pwerrmin,del_ps,del_q,del_t,del_uv,del_pw
+  real(r_kind) pjbmin,qjbmin,tjbmin,wjbmin
   real(r_kind) tsavg,ff10,sfcr,zz
   real(r_kind) crit1,timedif,xmesh,pmesh
   real(r_kind) time_correction
@@ -279,7 +285,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   real(r_double) vtcd
   real(r_double),dimension(8):: hdr,hdrtsb
   real(r_double),dimension(3,255):: hdr3
-  real(r_double),dimension(8,255):: drfdat,qcmark,obserr
+  real(r_double),dimension(8,255):: drfdat,qcmark,obserr,var_jb
   real(r_double),dimension(11,255):: obsdat
   real(r_double),dimension(8,1):: sstdat
   real(r_double),dimension(2,10):: metarcld
@@ -348,6 +354,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   pflag=0                  !  dparrish debug compile run flags pflag as not defined ???????????
   nreal=0
   satqc=zero
+  var_jb=zero
   tob = obstype == 't'
   uvob = obstype == 'uv'
   spdob = obstype == 'spd'
@@ -362,15 +369,15 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   newvad=.false.
   convobs = tob .or. uvob .or. spdob .or. qob .or. gustob
   if(tob)then
-     nreal=24
+     nreal=25
   else if(uvob) then 
-     nreal=24
+     nreal=25
   else if(spdob) then
      nreal=23
   else if(psob) then
-     nreal=22
+     nreal=23
   else if(qob) then
-     nreal=25
+     nreal=26
   else if(pwob) then
      nreal=20
   else if(sstob) then
@@ -424,7 +431,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   ntxall=0
   do nc=1,nconvtype
      if(trim(ioctype(nc)) == trim(obstype))then
-       if(.not.use_prepb_satwnd .and. trim(ioctype(nc)) == 'uv' .and. ictype(nc) >=241 &
+       if(.not.use_prepb_satwnd .and. trim(ioctype(nc)) == 'uv' .and. ictype(nc) >=240 &
           .and. ictype(nc) <260) then 
           cycle
        else
@@ -868,54 +875,157 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
               call ufbevn(lunin,tpc,1,255,20,levs,'TPC')
 
 !          If available, get obs errors from error table
-           if(oberrflg)then
+!           if(oberrflg)then
 
-!             Set lower limits for observation errors
-              terrmin=half
-              werrmin=one
-              perrmin=half
-              qerrmin=one_tenth
-              pwerrmin=one
-
-              ierr=index_sub(nc)
-              do k=1,levs
-                 itypey=kx
-                 if (itypey >=200) then
-                    itypex=itypey-199
-                 else if( pwob) then
-                    itypex=itypey-149
-                 else
-                    itypex=itypey-99
-                 endif
-                 ppb=obsdat(1,k)
-                 if(kx==153)ppb=obsdat(11,k)*0.01_r_kind
-                 ppb=max(zero,min(ppb,r2000))
-                 if(ppb>=etabl_t(itypex,1,1)) k1=1
-                 do kl=1,32
-                    if(ppb>=etabl_t(itypex,kl+1,1).and.ppb<=etabl_t(itypex,kl,1)) k1=kl
-                 end do
-                 if(ppb<=etabl_t(itypex,33,1)) k1=5
-                 k2=k1+1
-                 ediff = etabl_t(itypex,k2,1)-etabl_t(itypex,k1,1)
-                 if (abs(ediff) > tiny_r_kind) then
-                    del = (ppb-etabl_t(itypex,k1,1))/ediff
-                 else
-                    del = huge_r_kind
-                 endif
-                 del=max(zero,min(del,one))
-                 obserr(3,k)=(one-del)*etabl_t(itypex,k1,ierr)+del*etabl_t(itypex,k2,ierr) ! Temperature error
-                 obserr(2,k)=(one-del)*etabl_q(itypex,k1,ierr)+del*etabl_q(itypex,k2,ierr) ! Humidity error
-                 obserr(5,k)=(one-del)*etabl_uv(itypex,k1,ierr)+del*etabl_uv(itypex,k2,ierr) ! Wind error 
-                 obserr(1,k)=(one-del)*etabl_ps(itypex,k1,ierr)+del*etabl_ps(itypex,k2,ierr) ! Surface pressure error
-                 obserr(7,k)=(one-del)*etabl_pw(itypex,k1,ierr)+del*etabl_pw(itypex,k2,ierr) ! Total precipitable water
-
-                 obserr(3,k)=max(obserr(3,k),terrmin)
-                 obserr(2,k)=max(obserr(2,k),qerrmin)
-                 obserr(5,k)=max(obserr(5,k),werrmin)
-                 obserr(1,k)=max(obserr(1,k),perrmin)
-                 obserr(7,k)=max(obserr(7,k),pwerrmin)
-              enddo
+!          Set lower limits for observation errors
+           terrmin=half
+           werrmin=one
+           perrmin=half
+           qerrmin=one_tenth
+           pwerrmin=one
+           tjbmin=zero
+           pjbmin=zero
+           wjbmin=zero
+           qjbmin=zero
+           itypey=kx 
+           if (psob)  then
+              itypex=itypey-99
+              ierr_ps=index_sub(nc)+1
+              if(ierr_ps >maxsub_ps) ierr_ps=2 
+              if( iobsub /= isuble_ps(itypey,ierr_ps)) then
+                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
+                         in the errortable,iobsub=',iobsub,isuble_ps(itypey,ierr_ps)
+                 call stop2(49)
+              endif
            endif
+           if (tob) then
+              itypex=itypey-99
+              ierr_t=index_sub(nc)+1
+              if(ierr_t >maxsub_t) ierr_t=2 
+              if( iobsub /= isuble_t(itypey,ierr_t)) then
+                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
+                         in the errortable,iobsub=',iobsub,isuble_t(itypey,ierr_t)
+                 call stop2(49)
+              endif
+           endif
+           if (qob) then
+              itypex=itypey-99
+              ierr_q=index_sub(nc)+1
+              if(ierr_q >maxsub_q) ierr_q=2
+              if( iobsub /= isuble_q(itypey,ierr_q)) then
+                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
+                         in the errortable,iobsub=',iobsub,isuble_q(itypey,ierr_q)
+                 call stop2(49)
+              endif
+           endif
+           if (uvob) then
+              itypex=itypey-199
+              ierr_uv=index_sub(nc)+1
+              if(ierr_uv >maxsub_uv) ierr_uv=2
+              if( iobsub /= isuble_q(itypey,ierr_uv)) then
+                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
+                         in the errortable,iobsub=',iobsub,isuble_q(itypey,ierr_uv)
+                 call stop2(49)
+              endif
+           endif
+           if (pwob)  then
+              itypex=itypey-149
+              ierr_pw=index_sub(nc)+1
+              if(ierr_pw >maxsub_pw) ierr_pw=2 
+              if( iobsub /= isuble_pw(itypey,ierr_pw)) then
+                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
+                         in the errortable,iobsub=',iobsub,isuble_pw(itypey,ierr_pw)
+                 call stop2(49)
+              endif
+           endif
+
+           do k=1,levs
+              ppb=obsdat(1,k)
+              if(kx==153)ppb=obsdat(11,k)*0.01_r_kind
+              ppb=max(zero,min(ppb,r2000))
+              if(ppb>=etabl_ps(itypex,1,1)) k1_ps=1
+              if(ppb>=etabl_q(itypex,1,1)) k1_q=1
+              if(ppb>=etabl_t(itypex,1,1)) k1_t=1
+              if(ppb>=etabl_uv(itypex,1,1)) k1_uv=1
+              if(ppb>=etabl_pw(itypex,1,1)) k1_pw=1
+              do kl=1,32
+                 if(ppb>=etabl_ps(itypex,kl+1,1).and.ppb<=etabl_ps(itypex,kl,1)) k1_ps=kl
+                 if(ppb>=etabl_q(itypex,kl+1,1).and.ppb<=etabl_q(itypex,kl,1)) k1_q=kl
+                 if(ppb>=etabl_t(itypex,kl+1,1).and.ppb<=etabl_t(itypex,kl,1)) k1_t=kl
+                 if(ppb>=etabl_uv(itypex,kl+1,1).and.ppb<=etabl_uv(itypex,kl,1)) k1_uv=kl
+                 if(ppb>=etabl_pw(itypex,kl+1,1).and.ppb<=etabl_pw(itypex,kl,1)) k1_pw=kl
+              end do
+              if(ppb<=etabl_ps(itypex,33,1)) k1_ps=5
+              if(ppb<=etabl_q(itypex,33,1)) k1_q=5
+              if(ppb<=etabl_t(itypex,33,1)) k1_t=5
+              if(ppb<=etabl_uv(itypex,33,1)) k1_uv=5
+              if(ppb<=etabl_pw(itypex,33,1)) k1_pw=5
+              k2_ps=k1_ps+1
+              k2_q=k1_q+1
+              k2_t=k1_t+1
+              k2_uv=k1_uv+1
+              k2_pw=k1_pw+1
+              ediff_ps = etabl_ps(itypex,k2_ps,1)-etabl_ps(itypex,k1_ps,1)
+              ediff_q = etabl_q(itypex,k2_q,1)-etabl_q(itypex,k1_q,1)
+              ediff_t = etabl_t(itypex,k2_t,1)-etabl_t(itypex,k1_t,1)
+              ediff_uv = etabl_uv(itypex,k2_uv,1)-etabl_uv(itypex,k1_uv,1)
+              ediff_pw = etabl_pw(itypex,k2_pw,1)-etabl_pw(itypex,k1_pw,1)
+              if (abs(ediff_ps) > tiny_r_kind) then
+                 del_ps = (ppb-etabl_ps(itypex,k1,1))/ediff_ps
+              else
+                 del_ps = huge_r_kind
+              endif
+              if (abs(ediff_q) > tiny_r_kind) then
+                 del_q = (ppb-etabl_q(itypex,k1,1))/ediff_q
+              else
+                 del_q = huge_r_kind
+              endif
+              if (abs(ediff_t) > tiny_r_kind) then
+                 del_t = (ppb-etabl_t(itypex,k1,1))/ediff_t
+              else
+                 del_t = huge_r_kind
+              endif
+              if (abs(ediff_uv) > tiny_r_kind) then
+                 del_uv = (ppb-etabl_uv(itypex,k1,1))/ediff_uv
+              else
+                 del_uv = huge_r_kind
+              endif
+              if (abs(ediff_pw) > tiny_r_kind) then
+                 del_pw = (ppb-etabl_pw(itypex,k1,1))/ediff_pw
+              else
+                 del_pw = huge_r_kind
+              endif
+              del_ps=max(zero,min(del_ps,one))
+              del_q=max(zero,min(del_q,one))
+              del_t=max(zero,min(del_t,one))
+              del_uv=max(zero,min(del_uv,one))
+              del_pw=max(zero,min(del_pw,one))
+           if(oberrflg)then
+              obserr(3,k)=(one-del_t)*etabl_t(itypex,k1_t,ierr_t)+del_t*etabl_t(itypex,k2_t,ierr_t) ! Temperature error
+              obserr(2,k)=(one-del_q)*etabl_q(itypex,k1_q,ierr_q)+del_q*etabl_q(itypex,k2_q,ierr_q) ! Humidity error
+              obserr(5,k)=(one-del_uv)*etabl_uv(itypex,k1_uv,ierr_uv)+del_uv*etabl_uv(itypex,k2_uv,ierr_uv) ! Wind error 
+              obserr(1,k)=(one-del_ps)*etabl_ps(itypex,k1_ps,ierr_ps)+del_ps*etabl_ps(itypex,k2_ps,ierr_ps) ! Surface pressure error
+              obserr(7,k)=(one-del_pw)*etabl_pw(itypex,k1_pw,ierr_pw)+del_pw*etabl_pw(itypex,k2_pw,ierr_pw) ! Total precipitable water
+
+              obserr(3,k)=max(obserr(3,k),terrmin)
+              obserr(2,k)=max(obserr(2,k),qerrmin)
+              obserr(5,k)=max(obserr(5,k),werrmin)
+              obserr(1,k)=max(obserr(1,k),perrmin)
+              obserr(7,k)=max(obserr(7,k),pwerrmin)
+           endif
+           var_jb(3,k)=(one-del_t)*btabl_t(itypex,k1_t,ierr_t)+del_t*btabl_t(itypex,k2_t,ierr_t) ! Temperature error
+           var_jb(2,k)=(one-del_q)*btabl_q(itypex,k1_q,ierr_q)+del_q*btabl_q(itypex,k2_q,ierr_q) ! Humidity error
+           var_jb(5,k)=(one-del_uv)*btabl_uv(itypex,k1_uv,ierr_uv)+del_uv*btabl_uv(itypex,k2_uv,ierr_uv) ! Wind error
+           var_jb(1,k)=(one-del_ps)*btabl_ps(itypex,k1_ps,ierr_ps)+del_ps*btabl_ps(itypex,k2_ps,ierr_ps) ! Surface pressure error
+
+           var_jb(3,k)=max(var_jb(3,k),tjbmin)
+           var_jb(2,k)=max(var_jb(2,k),qjbmin)
+           var_jb(5,k)=max(var_jb(5,k),wjbmin)
+           var_jb(1,k)=max(var_jb(1,k),pjbmin)
+     
+        enddo
+
+
 
 !          If data with drift position, get drift information
            if(driftl)call ufbint(lunin,drfdat,8,255,iret,drift)
@@ -1420,12 +1530,13 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  cdata_all(22,iout)=r_prvstg(1,1)          ! provider name
                  cdata_all(23,iout)=r_sprvstg(1,1)         ! subprovider name
                  cdata_all(24,iout)=obsdat(10,k)            ! cat
+                 cdata_all(25,iout)=var_jb(3,k)            !  non linear qc parameter
                  if (aircraft_t_bc_pof .or. aircraft_t_bc) then
-                    cdata_all(25,iout)=aircraftwk(1,k)     ! phase of flight
-                    cdata_all(26,iout)=aircraftwk(2,k)     ! vertical velocity
-                    cdata_all(27,iout)=idx                 ! index of temperature bias
+                    cdata_all(26,iout)=aircraftwk(1,k)     ! phase of flight
+                    cdata_all(27,iout)=aircraftwk(2,k)     ! vertical velocity
+                    cdata_all(28,iout)=idx                 ! index of temperature bias
                  end if
-                 if(perturb_obs)cdata_all(nreal,iout)=ran01dom()*perturb_fact ! t perturbation
+                 if(perturb_obs)cdata_all(29,iout)=ran01dom()*perturb_fact ! t perturbation
                  if (twodvar_regional) &
                     call adjust_error(cdata_all(17,iout),cdata_all(18,iout),cdata_all(11,iout),cdata_all(1,iout))
 
@@ -1541,9 +1652,10 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  cdata_all(22,iout)=r_prvstg(1,1)          ! provider name
                  cdata_all(23,iout)=r_sprvstg(1,1)         ! subprovider name
                  cdata_all(24,iout)=obsdat(10,k)            ! cat
+                 cdata_all(25,iout)=var_jb(5,k)            ! non linear qc parameter 
                  if(perturb_obs)then
-                    cdata_all(25,iout)=ran01dom()*perturb_fact ! u perturbation
-                    cdata_all(26,iout)=ran01dom()*perturb_fact ! v perturbation
+                    cdata_all(26,iout)=ran01dom()*perturb_fact ! u perturbation
+                    cdata_all(27,iout)=ran01dom()*perturb_fact ! v perturbation
                  endif
  
               else if(spdob) then 
@@ -1576,6 +1688,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  cdata_all(21,iout)=zz                     ! terrain height at ob location
                  cdata_all(22,iout)=r_prvstg(1,1)          ! provider name
                  cdata_all(23,iout)=r_sprvstg(1,1)         ! subprovider name
+                 cdata_all(24,iout)=var_jb(5,k)            ! non linear qc parameter 
 
 !             Surface pressure 
               else if(psob) then
@@ -1606,7 +1719,8 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  cdata_all(20,iout)=zz                     ! terrain height at ob location
                  cdata_all(21,iout)=r_prvstg(1,1)          ! provider name
                  cdata_all(22,iout)=r_sprvstg(1,1)         ! subprovider name
-                 if(perturb_obs)cdata_all(23,iout)=ran01dom()*perturb_fact ! ps perturbation
+                 cdata_all(23,iout)=var_jb(1,k)            ! non linear qc b parameter 
+                 if(perturb_obs)cdata_all(24,iout)=ran01dom()*perturb_fact ! ps perturbation
                  if (twodvar_regional) &
                     call adjust_error(cdata_all(17,iout),cdata_all(18,iout),cdata_all(11,iout),cdata_all(1,iout))
 
@@ -1646,7 +1760,8 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  cdata_all(23,iout)=r_prvstg(1,1)          ! provider name
                  cdata_all(24,iout)=r_sprvstg(1,1)         ! subprovider name
                  cdata_all(25,iout)=obsdat(10,k)            ! cat
-                 if(perturb_obs)cdata_all(26,iout)=ran01dom()*perturb_fact ! q perturbation
+                 cdata_all(26,iout)=obsdat(2,k)            ! non linear qc b parameter 
+                 if(perturb_obs)cdata_all(27,iout)=ran01dom()*perturb_fact ! q perturbation
                  if (twodvar_regional) &
                     call adjust_error(cdata_all(18,iout),cdata_all(19,iout),cdata_all(12,iout),cdata_all(1,iout))
  

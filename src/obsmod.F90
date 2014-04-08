@@ -216,6 +216,9 @@ module obsmod
 !   def oberrflg     - logical for reading in new observation error table
 !                      .true.  will read in obs errors from file 'errtable'
 !                      .false. will not read in new obs errors
+!   def bflg         - logical for reading in new observation b table
+!                      .true.  will read in obs errors from file 'btable'
+!                      .false. will not read in b table
 !   def blacklst     - logical for reading in station blacklist table
 !                      .true.  will read in blacklist from file 'blacklist'
 !                      .false. will not read in blacklist
@@ -276,7 +279,7 @@ module obsmod
   public :: destroy_genstats_gps
   public :: inquire_obsdiags
 ! set passed variables to public
-  public :: iout_pcp,iout_rad,iadate,write_diag,reduce_diag,oberrflg,ndat,dthin,dmesh,l_do_adjoint
+  public :: iout_pcp,iout_rad,iadate,write_diag,reduce_diag,oberrflg,bflag,ndat,dthin,dmesh,l_do_adjoint
   public :: lsaveobsens,lag_ob_type,o3l_ob_type,oz_ob_type,colvk_ob_type,pcp_ob_type,dw_ob_type
   public :: sst_ob_type,srw_ob_type,spd_ob_type,rw_ob_type,gps_ob_type,gps_all_ob_type,tcp_ob_type
   public :: gust_ob_type,vis_ob_type,pblh_ob_type
@@ -1219,7 +1222,7 @@ module obsmod
   character(20),dimension(ndatmax):: dsis
   character(len=20) :: cobstype(nobs_type)
 
-  logical oberrflg,oberror_tune,perturb_obs,ref_obs,sfcmodel,dtbduv_on
+  logical oberrflg,bflag,oberror_tune,perturb_obs,ref_obs,sfcmodel,dtbduv_on
   logical blacklst,lobsdiagsave,lobsdiag_allocated,lobskeep,lsaveobsens
   logical lobserver,l_do_adjoint
   logical,dimension(0:50):: write_diag
@@ -1259,6 +1262,7 @@ contains
 !   2007-05-03  todling - use values def above as indexes to cobstype
 !   2008-11-25  todling - remove line-by-line adj triggers
 !   2011-02-09  zhu     - add gust,vis and pblh
+!   2014-03-28  su      -add non linear qc b flag
 !
 !   input argument list:
 !
@@ -1291,6 +1295,7 @@ contains
     lsaveobsens=.false.
     l_do_adjoint=.true.     ! .true. = apply H^T when in int routines
     oberrflg  = .false.
+    bflag  = .false.
     sfcmodel  = .false.     ! .false. = do not use boundary layer model 
     dtbduv_on = .true.      ! .true. = use microwave dTb/duv in inner loop
     if (l4dvar) then

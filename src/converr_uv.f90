@@ -36,11 +36,12 @@ implicit none
   public :: converr_uv_read
   public :: converr_uv_destroy
 ! set passed variables as public
-  public :: etabl_uv,ptabl_uv
+  public :: etabl_uv,ptabl_uv,isuble_uv,maxsub_uv
 
-  integer(i_kind),save:: ietabl_uv,itypex,itypey,lcount,iflag,k,m
+  integer(i_kind),save:: ietabl_uv,itypex,itypey,lcount,iflag,k,m,n,maxsub_uv
   real(r_single),save,allocatable,dimension(:,:,:) :: etabl_uv
   real(r_kind),save,allocatable,dimension(:)  :: ptabl_uv
+  real(r_kind),save,allocatable,dimension(:,:)  :: isuble_uv
 
 contains
 
@@ -76,14 +77,15 @@ contains
 
      integer(i_kind):: ier
 
-     allocate(etabl_uv(100,33,6))
+     allocate(etabl_uv(100,33,6),isuble_uv(100,6))
 
      etabl_uv=1.e9_r_kind
+     maxsub_uv=5
       
      ietabl_uv=19
      open(ietabl_uv,file='errtable_uv',form='formatted',status='old',iostat=ier)
      if(ier/=0) then
-        write(6,*)'CONVERR:  ***WARNING*** obs error table ("errtable") not available to 3dvar.'
+        write(6,*)'CONVERR_UV:  ***WARNING*** obs error table ("errtable") not available to 3dvar.'
         lcount=0
         oberrflg=.false.
         return
@@ -98,6 +100,8 @@ contains
 100     format(1x,i3)
         lcount=lcount+1
         itypex=itypey-199
+        read(ietabl_uv,105,IOSTAT=iflag,end=120) (isuble_uv(itypey,n),n=1,6)
+105     format(8x,6i12)
         do k=1,33
            read(ietabl_uv,110)(etabl_uv(itypex,k,m),m=1,6)
 110        format(1x,6e12.5)
@@ -106,10 +110,10 @@ contains
 120  continue
 
      if(lcount<=0 .and. mype==0) then
-        write(6,*)'CONVERR:  ***WARNING*** obs error table not available to 3dvar.'
+        write(6,*)'CONVERR_UV:  ***WARNING*** obs error table not available to 3dvar.'
         oberrflg=.false.
      else
-        if(mype == 0) write(6,*)'CONVERR:  using observation errors from user provided table'
+        if(mype == 0) write(6,*)'CONVERR_UV:  using observation errors from user provided table'
         allocate(ptabl_uv(34))
         ptabl_uv=zero
         ptabl_uv(1)=etabl_uv(20,1,1)
@@ -147,7 +151,7 @@ subroutine converr_uv_destroy
 !$$$
      implicit none
 
-     deallocate(etabl_uv,ptabl_uv)
+     deallocate(etabl_uv,ptabl_uv,isuble_uv)
      return
   end subroutine converr_uv_destroy
 

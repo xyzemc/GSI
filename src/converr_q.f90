@@ -18,6 +18,7 @@ module converr_q
 ! Variable Definitions:
 !   def etabl_q             -  the array to hold the error table
 !   def ptabl_q             -  the array to have vertical pressure values
+!   def isuble_q            -  the array to have subtype values 
 !
 ! attributes:
 !   language: f90
@@ -36,11 +37,12 @@ implicit none
   public :: converr_q_read
   public :: converr_q_destroy
 ! set passed variables as public
-  public :: etabl_q,ptabl_q
+  public :: etabl_q,ptabl_q,isuble_q,maxsub_q
 
-  integer(i_kind),save:: ietabl_q,itypex,itypey,lcount,iflag,k,m
+  integer(i_kind),save:: ietabl_q,itypex,itypey,lcount,iflag,k,m,n,maxsub_q
   real(r_single),save,allocatable,dimension(:,:,:) :: etabl_q
   real(r_kind),save,allocatable,dimension(:)  :: ptabl_q
+  integer(i_kind),save,allocatable,dimension(:,:)  :: isuble_q
 
 contains
 
@@ -76,7 +78,8 @@ contains
 
      integer(i_kind):: ier
 
-     allocate(etabl_q(100,33,6))
+     maxsub_q=5
+     allocate(etabl_q(100,33,6),isuble_q(100,6))
 
      etabl_q=1.e9_r_kind
       
@@ -98,6 +101,8 @@ contains
 100     format(1x,i3,2x,i3)
         lcount=lcount+1
         itypex=itypey-99
+        read(ietabl_q,105,IOSTAT=iflag,end=120) (isuble_q(itypey,n),n=1,6)
+105     format(8x,6i12)
         do k=1,33
            read(ietabl_q,110)(etabl_q(itypex,k,m),m=1,6)
 110        format(1x,6e12.5)
@@ -147,7 +152,7 @@ subroutine converr_q_destroy
 !$$$
      implicit none
 
-     deallocate(etabl_q,ptabl_q)
+     deallocate(etabl_q,ptabl_q,isuble_q)
      return
   end subroutine converr_q_destroy
 
