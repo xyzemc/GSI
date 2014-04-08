@@ -1,6 +1,7 @@
  program test
 
  use constants
+ use calc_fov_geo
 
  implicit none
 
@@ -27,10 +28,10 @@
  call init_constants_derived
  call init_constants(.false.)
 
- instr = 31       ! imager
- ichan_tot = 5    ! imager has 5 channels
-!instr = 32       ! sounder
-!ichan_tot = 19    ! sounder has 19 channels
+!instr = 31       ! imager
+!ichan_tot = 5    ! imager has 5 channels
+ instr = 32       ! sounder
+ ichan_tot = 19    ! sounder has 19 channels
  expansion = 1.0
 
  sublat = 0.0
