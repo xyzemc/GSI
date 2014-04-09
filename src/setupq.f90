@@ -135,7 +135,7 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   
   real(r_double) rstation_id
   real(r_kind) qob,qges,qsges
-  real(r_kind) ratio_errors,dlat,dlon,dtime,dpres,rmaxerr,error
+  real(r_kind) ratio_errors,dlat,dlon,dtime,dpres,rmaxerr,error,var_jb
   real(r_kind) rsig,dprpx,rlow,rhgh,presq,tfact,ramp
   real(r_kind) psges,sfcchk,ddiff,errorx
   real(r_kind) cg_q,wgross,wnotgross,wgt,arg,exp_arg,term,rat_err2,qcgross
@@ -151,7 +151,7 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   real(r_single),allocatable,dimension(:,:)::rdiagbuf
 
   integer(i_kind) i,nchar,nreal,j,ii,l,jj,mm1,itemp
-  integer(i_kind) jsig,itype,k,nn,ikxx,iptrb,ibin,ioff,icat
+  integer(i_kind) jsig,itype,k,nn,ikxx,iptrb,ibin,ioff,icat,ijb
   integer(i_kind) ier,ilon,ilat,ipres,iqob,id,itime,ikx,iqmax,iqc
   integer(i_kind) ier2,iuse,ilate,ilone,istnelv,iobshgt,istat,izz,iprvd,isprvd
   integer(i_kind) idomsfc,iskint,isfcr,iff10,iderivative
@@ -207,8 +207,10 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   iprvd=23    ! index of observation provider
   isprvd=24   ! index of observation subprovider
   icat =25    ! index of data level category
-  iptrb=26    ! index of q perturbation
+  ijb=26      !  index of non linear qc parameter b
+  iptrb=27    ! index of q perturbation
 
+  var_jb=zero
   do i=1,nobs
      muse(i)=nint(data(iuse,i)) <= jiter
   end do
@@ -274,8 +276,8 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
          itype=ictype(ikx)
          rstation_id     = data(id,i)
         error=data(ier2,i)
-        
         prest=r10*exp(dpres)     ! in mb
+        var_jb=data(ijb,i)
      endif ! (in_curbin)
 
 !    Link observation to appropriate observation bin
@@ -478,12 +480,24 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            term =log((arg+wgross)/(one+wgross))
            wgt  = one-wgross/(arg+wgross)
            rwgt = wgt/wgtlim
+           valqc = -two*rat_err2*term
+        else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind) then
+           if(exp_arg  == zero) then
+              wgt=one
+           else
+              wgt=ddiff*error*ratio_errors/sqrt(two*var_jb)
+              rwgt=tanh(wgt)/wgt
+           endif
+           term=-two*var_jb*log(cosh((val*ratio_errors)/sqrt(two*var_jb)))
+           wgt  = wgtlim
+           rwgt = wgt/wgtlim
+           valqc = -two*term
         else
            term = exp_arg
            wgt  = wgtlim
            rwgt = wgt/wgtlim
+           valqc = -two*rat_err2*term
         endif
-        valqc = -two*rat_err2*term
         
 !       Accumulate statistics for obs belonging to this task
         if(muse(i))then
@@ -546,6 +560,7 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         qtail(ibin)%head%err2   = error**2
         qtail(ibin)%head%raterr2= ratio_errors**2   
         qtail(ibin)%head%time   = dtime
+        qtail(ibin)%head%jb      = var_jb
         qtail(ibin)%head%b      = cvar_b(ikx)
         qtail(ibin)%head%pg     = cvar_pg(ikx)
         qtail(ibin)%head%luse   = luse(i)
@@ -712,6 +727,7 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            qtail(ibin)%head%err2    = error**2
            qtail(ibin)%head%raterr2 = ratio_errors**2
            qtail(ibin)%head%time    = dtime
+           qtail(ibin)%head%jb       = var_jb
            qtail(ibin)%head%b       = cvar_b(ikx)
            qtail(ibin)%head%pg      = cvar_pg(ikx)
            qtail(ibin)%head%luse    = luse(i)

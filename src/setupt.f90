@@ -171,7 +171,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   real(r_kind) psges,sfcchk,pres_diff,rlow,rhgh,ramp
   real(r_kind) pof_idx,poaf,effective
   real(r_kind) tges
-  real(r_kind) obserror,ratio,val2,obserrlm
+  real(r_kind) obserror,ratio,val2,obserrlm,var_jb
   real(r_kind) residual,ressw2,scale,ress,ratio_errors,tob,ddiff
   real(r_kind) val,valqc,dlon,dlat,dtime,dpres,error,prest,rwgt
   real(r_kind) errinv_input,errinv_adjst,errinv_final
@@ -193,7 +193,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   integer(i_kind) i,j,nchar,nreal,k,ii,jj,l,nn,ibin,idia,ix
   integer(i_kind) mm1,jsig,iqt
   integer(i_kind) itype,msges
-  integer(i_kind) ier,ilon,ilat,ipres,itob,id,itime,ikx,iqc,iptrb,icat,ipof,ivvlc,idx
+  integer(i_kind) ier,ilon,ilat,ipres,itob,id,itime,ikx,iqc,iptrb,icat,ipof,ivvlc,idx,ijb
   integer(i_kind) ier2,iuse,ilate,ilone,ikxx,istnelv,iobshgt,izz,iprvd,isprvd
   integer(i_kind) regime,istat
   integer(i_kind) idomsfc,iskint,iff10,isfcr
@@ -257,15 +257,17 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   iprvd=22    ! index of observation provider
   isprvd=23   ! index of observation subprovider
   icat=24     ! index of data level category
+  ijb=25      ! index of non linear qc b
   if (aircraft_t_bc_pof .or. aircraft_t_bc) then
-     ipof=25     ! index of data pof
-     ivvlc=26    ! index of data vertical velocity
-     idx=27      ! index of tail number
-     iptrb=28    ! index of t perturbation
+     ipof=26     ! index of data pof
+     ivvlc=27    ! index of data vertical velocity
+     idx=28      ! index of tail number
+     iptrb=29    ! index of t perturbation
   else
-     iptrb=25    ! index of t perturbation
+     iptrb=26    ! index of t perturbation
   end if
 
+  var_jb=zero
   do i=1,nobs
      muse(i)=nint(data(iuse,i)) <= jiter
   end do
@@ -327,6 +329,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 !       Load observation value and observation error into local variables
         tob=data(itob,i)
         obserror = max(cermin(ikx),min(cermax(ikx),data(ier,i)))
+        var_jb=data(ijb,i)
      endif
 
 !    Link observation to appropriate observation bin
@@ -624,12 +627,23 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            term =log((arg+wgross)/(one+wgross))
            wgt  = one-wgross/(arg+wgross)
            rwgt = wgt/wgtlim
+           valqc = -two*rat_err2*term
+       else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind) then
+           if(exp_arg  == zero) then
+              wgt=one
+           else
+              wgt=ddiff*error*ratio_errors/sqrt(two*var_jb)
+              wgt=tanh(wgt)/wgt
+           endif
+           term=-two*var_jb*log(cosh((val*ratio_errors)/sqrt(two*var_jb)))
+           rwgt = wgt/wgtlim
+           valqc = -two*term
         else
            term = exp_arg
            wgt  = wgtlim
            rwgt = wgt/wgtlim
+           valqc = -two*rat_err2*term
         endif
-        valqc = -two*rat_err2*term
 
 !       Accumulate statistics for obs belonging to this task
         if(muse(i))then
@@ -697,6 +711,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         ttail(ibin)%head%err2    = error**2
         ttail(ibin)%head%raterr2 = ratio_errors**2      
         ttail(ibin)%head%time    = dtime
+        ttail(ibin)%head%jb       = var_jb
         ttail(ibin)%head%b       = cvar_b(ikx)
         ttail(ibin)%head%pg      = cvar_pg(ikx)
         ttail(ibin)%head%use_sfc_model = sfctype.and.sfcmodel
@@ -923,6 +938,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            ttail(ibin)%head%err2    = error**2
            ttail(ibin)%head%raterr2 = ratio_errors**2
            ttail(ibin)%head%time    = dtime
+           ttail(ibin)%head%jb       = var_jb
            ttail(ibin)%head%b       = cvar_b(ikx)
            ttail(ibin)%head%pg      = cvar_pg(ikx)
            ttail(ibin)%head%use_sfc_model = sfctype.and.sfcmodel

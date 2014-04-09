@@ -247,6 +247,7 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         dhgt=data(ihgt,i)
         dtemp=data(itemp,i)
         ikx  = nint(data(ikxx,i))
+        var_jb=data(ijb,i)
      endif
  
 !    Link observation to appropriate observation bin
@@ -454,12 +455,24 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            term =log((arg+wgross)/(one+wgross))
            wgt  = one-wgross/(arg+wgross)
            rwgt = wgt/wgtlim
+           valqc = -two*rat_err2*term
+        else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind) then
+           if(exp_arg  == zero) then
+              wgt=one
+            else
+              wgt=ddiff*error*ratio_errors/sqrt(two*var_jb)
+              wgt=tanh(wgt)/wgt
+           endif
+           term=-two*var_jb*log(cosh((val*ratio_errors)/sqrt(two*var_jb)))
+
+           rwgt = wgt/wgtlim
+           valqc = -two*term
         else
            term = exp_arg
            wgt  = wgtlim
            rwgt = wgt/wgtlim
+           valqc = -two*rat_err2*term
         endif
-        valqc = -two*rat_err2*term
  
 
         if (muse(i)) then
@@ -523,6 +536,7 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         pstail(ibin)%head%err2     = error**2
         pstail(ibin)%head%raterr2  = ratio_errors**2     
         pstail(ibin)%head%time     = dtime
+        pstail(ibin)%head%jb        = var_jb
         pstail(ibin)%head%b        = cvar_b(ikx)
         pstail(ibin)%head%pg       = cvar_pg(ikx)
         pstail(ibin)%head%luse     = luse(i)

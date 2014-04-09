@@ -1760,7 +1760,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  cdata_all(23,iout)=r_prvstg(1,1)          ! provider name
                  cdata_all(24,iout)=r_sprvstg(1,1)         ! subprovider name
                  cdata_all(25,iout)=obsdat(10,k)            ! cat
-                 cdata_all(26,iout)=obsdat(2,k)            ! non linear qc b parameter 
+                 cdata_all(26,iout)=var_jb(2,k)            ! non linear qc b parameter 
                  if(perturb_obs)cdata_all(27,iout)=ran01dom()*perturb_fact ! q perturbation
                  if (twodvar_regional) &
                     call adjust_error(cdata_all(18,iout),cdata_all(19,iout),cdata_all(12,iout),cdata_all(1,iout))

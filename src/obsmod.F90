@@ -410,6 +410,7 @@ module obsmod
      real(r_kind)    :: raterr2       !  square of ratio of final obs error 
                                       !  to original obs error
      real(r_kind)    :: time          !  observation time in sec     
+     real(r_kind)    :: jb            !  variational quality control parameter(Purser's scheme)
      real(r_kind)    :: b             !  variational quality control parameter
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: wij(4)        !  horizontal interpolation weights
@@ -460,6 +461,7 @@ module obsmod
      real(r_kind)    :: raterr2       !  square of ratio of final obs error 
                                       !  to original obs error
      real(r_kind)    :: time          !  observation time in sec     
+     real(r_kind)    :: jb            !  variational quality control parameter(Purser's scheme)
      real(r_kind)    :: b             !  variational quality control parameter
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: tlm_tsfc(6)   !  sensitivity vector for sfc temp 
@@ -495,6 +497,7 @@ module obsmod
      real(r_kind)    :: raterr2       !  square of ratio of final obs error 
                                       !  to original obs error
      real(r_kind)    :: time          !  observation time in sec     
+     real(r_kind)    :: jb            !  variational quality control parameter(Purser's scheme)
      real(r_kind)    :: b             !  variational quality control parameter
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: wij(8)        !  horizontal interpolation weights
@@ -522,6 +525,7 @@ module obsmod
      real(r_kind)    :: raterr2       !  square of ratio of final obs error 
                                       !  to original obs error
      real(r_kind)    :: time          !  observation time in sec     
+     real(r_kind)    :: jb            !  variational quality control parameter(Purser's scheme)
      real(r_kind)    :: b             !  variational quality control parameter
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: wij(8)        !  horizontal interpolation weights
