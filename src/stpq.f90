@@ -75,7 +75,7 @@ subroutine stpq(qhead,rval,sval,out,sges,nstep)
 !$$$
   use kinds, only: r_kind,i_kind,r_quad
   use obsmod, only: q_ob_type
-  use qcmod, only: nlnqc_iter,varqc_iter
+  use qcmod, only: nlnqc_iter,varqc_iter,nlnvqc_iter
   use gridmod, only: latlon1n
   use constants, only: half,one,two,tiny_r_kind,cg_term,zero_quad,r3600
   use jfunc, only: l_foto,dhat_dt,xhat_dt
@@ -172,11 +172,17 @@ subroutine stpq(qhead,rval,sval,out,sges,nstep)
               pen(kk)= -two*log((exp(-half*pen(kk))+wgross)/(one+wgross))
            end do
         endif
-     
-        out(1) = out(1)+pen(1)*qptr%raterr2
-        do kk=2,nstep
-           out(kk) = out(kk)+(pen(kk)-pen(1))*qptr%raterr2
-        end do
+        if(nlnvqc_iter .and. qptr%jb  > tiny_r_kind) then
+          out(1) = out(1)+pen(1)
+          do kk=2,nstep
+             out(kk) = out(kk)+(pen(kk)-pen(1))
+          end do
+       else
+          out(1) = out(1)+pen(1)*qptr%raterr2
+          do kk=2,nstep
+             out(kk) = out(kk)+(pen(kk)-pen(1))*qptr%raterr2
+          end do
+       endif
      end if
 
      qptr => qptr%llpoint
