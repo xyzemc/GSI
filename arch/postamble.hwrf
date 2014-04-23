@@ -27,7 +27,6 @@ WRF_LIB2        =  -L$(WRF_DIR)/external/atm_pom -latm_pom
 NETCDFPATH      =  CONFIGURE_NETCDF_PATH
 NETCDFLIBS      =  CONFIGURE_NETCDF_LIBS $(NETCDF_PATH)
 WRF_DIR         =  CONFIGURE_WRF_PATH
-SED_FTN         =  $(WRF_DIR)/tools/standard.exe
 
 
 

@@ -3,7 +3,6 @@
 #
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  BIG_ENDIAN
 SFC            =  xlf_r 
 SF90           =  xlf90  -qfree
 SCC            =  xlc_r
@@ -34,7 +33,7 @@ FFLAGS_SP      =  $(FFLAGS) $(FFLAGS_i4r8)
 FFLAGS_W3      =  $(FFLAGS) 
 #
 CPP            =  /usr/ccs/lib/cpp 
-CPP_FLAGS      =  -C -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DIBM8 -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
+CPP_FLAGS      =  -C -D_REAL8_ -DWRF -DIBM8 -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
 CPP_F90FLAGS   =  
 
 DM_FC          =  mpxlf_r  
@@ -60,7 +59,6 @@ AFLAGS         =  -x32
 
 COREDIR        =   CONFIGURE_CORE_PATH
 INC_DIR        =   $(COREDIR)/include
-BYTE_ORDER     =   BIG_ENDIAN
 SFC            =   xlf_r  -q32
 SF90           =   xlf90  -qfree  -q32
 SCC            =   xlc_r  -q32
@@ -91,7 +89,7 @@ FFLAGS_SP      =  $(FFLAGS) $(FFLAGS_i4r8) -DIBM4
 FFLAGS_W3      =  $(FFLAGS) 
 #
 CPP            =  /usr/ccs/lib/cpp
-CPP_FLAGS      =  -C -D$(BYTE_ORDER) -D_REAL8_ -DWRF -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
+CPP_FLAGS      =  -C -D_REAL8_ -DWRF -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
 CPP_F90FLAGS   =  
 
 DM_FC          =  mpxlf_r  -q32 
@@ -116,7 +114,6 @@ LDFLAGS        =  -Wl,-noinhibit-exec
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  LITTLE_ENDIAN
 SFC            =  pgf90
 SF90           =  pgf90 -Mfree
 SCC            =  pgcc
@@ -146,11 +143,11 @@ FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
 #
 CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX -DPGI
-CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
+CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX -DPGI
+CPP_F90FLAGS   =  -traditional-cpp 
 
-DM_FC          =  mpif90 
-DM_F90         =  mpif90 -Mfree
+DM_FC          =  mpif90 -f90=$(SFC)
+DM_F90         =  mpif90 -Mfree -f90=$(SFC)
 DM_CC          =  mpicc 
 
 FC             =  CONFIGURE_FC
@@ -171,7 +168,6 @@ LDFLAGS        =  -Wl,-noinhibit-exec
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  LITTLE_ENDIAN
 SFC            =  pgf90
 SF90           =  pgf90 -Mfree
 SCC            =  pgcc
@@ -201,11 +197,11 @@ FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT)
 #
 CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX -DPGI 
-CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
+CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX -DPGI 
+CPP_F90FLAGS   =  -traditional-cpp 
 
-DM_FC          =  mpif90 
-DM_F90         =  mpif90 -Mfree 
+DM_FC          =  mpif90 -f90=$(SFC)
+DM_F90         =  mpif90 -Mfree -f90=$(SFC)
 DM_CC          =  mpicc 
 
 FC             =  CONFIGURE_FC
@@ -226,7 +222,6 @@ LDFLAGS        =  -Wl,-noinhibit-exec
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  LITTLE_ENDIAN
 SFC            =  pgf90
 SF90           =  pgf90 -Mfree
 SCC            =  gcc
@@ -256,11 +251,11 @@ FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT)
 #
 CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX -DPGI
-CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
+CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX -DPGI
+CPP_F90FLAGS   =  -traditional-cpp 
 
-DM_FC          =  mpif90 
-DM_F90         =  mpif90 -Mfree 
+DM_FC          =  mpif90 -f90=$(SFC)
+DM_F90         =  mpif90 -Mfree -f90=$(SFC)
 DM_CC          =  gcc 
 
 FC             =  CONFIGURE_FC
@@ -282,7 +277,6 @@ LDFLAGS        =  -Wl,-noinhibit-exec
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  LITTLE_ENDIAN
 SFC            =  gfortran
 SF90           =  gfortran -ffree-form
 SCC            =  gcc
@@ -312,11 +306,11 @@ FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT)
 #
 CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX -DPGI
-CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
+CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX -DPGI
+CPP_F90FLAGS   =  -traditional-cpp 
 
-DM_FC          =  mpif90 
-DM_F90         =  mpif90 -Mfree 
+DM_FC          =  mpif90 -f90=$(SFC)
+DM_F90         =  mpif90 -Mfree -f90=$(SFC)
 DM_CC          =  gcc 
 
 FC             =  CONFIGURE_FC
@@ -334,11 +328,10 @@ NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
 ###########################################################
 #ARCH	Linux i486 i586 i686, Intel compiler (ifort & icc) # (dmpar,optimize)
 #
-LDFLAGS        =  -Wl,-noinhibit-exec -ftz -openmp
+LDFLAGS        =  -Wl,-noinhibit-exec -openmp
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  LITTLE_ENDIAN
 SFC            =  ifort
 SF90           =  ifort -free
 SCC            =  icc
@@ -368,11 +361,11 @@ FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
 #
 CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX 
-CPP_F90FLAGS   =  -traditional-cpp -lang-fortran 
+CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX 
+CPP_F90FLAGS   =  -traditional-cpp
 
-DM_FC          =  mpif90  
-DM_F90         =  mpif90 -free
+DM_FC          =  mpif90  -f90=$(SFC)
+DM_F90         =  mpif90 -free -f90=$(SFC)
 DM_CC          =  icc
 
 FC             =  CONFIGURE_FC
@@ -393,7 +386,6 @@ LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -openmp
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  LITTLE_ENDIAN
 SFC            =  ifort
 SF90           =  ifort -free
 SCC            =  icc
@@ -423,11 +415,11 @@ FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
 #
 CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX 
-CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
+CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX 
+CPP_F90FLAGS   =  -traditional-cpp 
 
-DM_FC          =  mpif90  
-DM_F90         =  mpif90 -free
+DM_FC          =  mpif90  -f90=$(SFC)
+DM_F90         =  mpif90 -free -f90=$(SFC)
 DM_CC          =  icc
 
 FC             =  CONFIGURE_FC
@@ -448,7 +440,6 @@ LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -openmp
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  LITTLE_ENDIAN
 SFC            =  ifort
 SF90           =  ifort -free
 SCC            =  gcc
@@ -478,11 +469,11 @@ FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
 #
 CPP            =  cpp 
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX 
-CPP_F90FLAGS   =  -traditional-cpp -lang-fortran
+CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX 
+CPP_F90FLAGS   =  -traditional-cpp 
 
-DM_FC          =  mpif90
-DM_F90         =  mpif90 -free
+DM_FC          =  mpif90 -f90=$(SFC)
+DM_F90         =  mpif90 -free -f90=$(SFC)
 DM_CC          =  gcc
 
 FC             =  CONFIGURE_FC
@@ -542,7 +533,6 @@ LDFLAGS        =  -Wl,-noinhibit-exec
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  LITTLE_ENDIAN
 SFC            =  ifort
 SF90           =  ifort -free
 SCC            =  icc
@@ -570,8 +560,8 @@ FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
 #
 CPP            =  /lib/cpp
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER)  -D_REAL8_ -DWRF -DLINUX 
-# CPP_F90FLAGS =  -traditional-cpp -lang-fortran
+CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX 
+# CPP_F90FLAGS =  -traditional-cpp 
 
 DM_FC          =  ifort
 DM_F90         =  ifort -free
@@ -592,7 +582,6 @@ NETCDF_PATH    =
 #
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
-BYTE_ORDER     =  LITTLE_ENDIAN
 SFC            =  pgf90
 SF90           =  pgf90 -Mfree 
 SCC            =  pgcc
@@ -620,11 +609,11 @@ FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
 #
 CPP            =  cpp
-CPP_FLAGS      =  -C -P -D$(BYTE_ORDER) -D_REAL8_ -DWRF -DLINUX -DPGI
+CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX -DPGI
 CPP_F90FLAGS   =  
 
-DM_FC          =  mpif90 -f90=pgf90
-DM_F90         =  mpif90 -Mfree -f90=pgf90
+DM_FC          =  mpif90 -f90=$(SFC)
+DM_F90         =  mpif90 -Mfree -f90=$(SFC)
 DM_CC          =  mpicc
 
 FC             =  CONFIGURE_FC
