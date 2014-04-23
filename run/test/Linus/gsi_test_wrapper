@@ -5,7 +5,7 @@
 ######################################################################
 #   NOTES:                                                           #
 #                                                                    #
-#   Author: DRS Oct 17, 2012                                         #
+#   Author: DRS April 22, 2014                                       #
 ######################################################################
 
 ######################################################################
@@ -13,20 +13,21 @@
 ######################################################################
 ulimit -s 512000
 export GSI_ROOT=/d1/stark/GSI
-export GSI_TEST_ROOT=${GSI_ROOT}/run/run
-export TEST_SRCS=/tickets/com_trunk
+export TEST_SRCS=release/release_V3.3
+export VERSION=20140422
 #export COMPILER=pgi intel
 export COMPILER=intel
 export ARCH=LINUX
 export ANAL_TIME=2011060212
 
+#----------------------------------------#
 for TEST_SRC in ${TEST_SRCS}
 do
 export GSI_TEST_DIR=${TEST_SRC}
 
 for PE in 1 4
 do
-   for ACORE in ARW NMM
+   for ACORE in arw nmm
    do
       export GSIPROC=${PE}
       # GSIPROC = processor number used for GSI analysis
@@ -42,25 +43,25 @@ do
       echo '-------------------------------------------------------------'
       echo "- running single obs test with ${PE} pe on ${ACORE} core."
       echo '                                                             '
-      . ${GSI_TEST_ROOT}/run/test/run_sot_test.ksh
+#     . /d1/stark/GSI/run/run/${VERSION}/run_sot_test.ksh
       echo '- run with single obs test completed'
       echo '                                                             '
       echo '-------------------------------------------------------------'
       echo "- running conventional obs test with ${PE} pe on ${ACORE} core."
       echo '                                                             '
-      . ${GSI_TEST_ROOT}/run/test/run_con_test.ksh
+      . /d1/stark/GSI/run/run/${VERSION}/run_con_test.ksh
       echo '- run with conventional obs completed'
       echo '                                                             '
       echo '-------------------------------------------------------------'
       echo "- running radiance test with ${PE} pe on ${ACORE} core."
       echo '                                                             '
-      . ${GSI_TEST_ROOT}/run/test/run_rad_test.ksh
+      . /d1/stark/GSI/run/run/${VERSION}/run_rad_test.ksh
       echo '- run with radiance completed'
       echo '                                                             '
       echo '-------------------------------------------------------------'
       echo "running gpsro test with ${PE} pe on ${ACORE} core."
       echo '                                                             '
-      . ${GSI_TEST_ROOT}/run/test/run_gpsro_test.ksh
+      . /d1/stark/GSI/run/run/${VERSION}/run_gpsro_test.ksh
       echo 'run with gpsro completed'
    done
 done

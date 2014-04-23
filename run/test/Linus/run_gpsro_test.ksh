@@ -5,58 +5,46 @@
 #
 # GSIPROC = processor number used for GSI analysis
 #------------------------------------------------
-# Defined in GSI test wrapper
-# GSIPROC=1,4
+# GSIPROC defined in GSI test wrapper
 
 # Supported configurations: Defined in GSI test Wrapper
             # IBM_LSF,IBM_LoadLevel
             # LINUX, LINUX_LSF, LINUX_PBS,
-            # DARWIN_PGI
-# ARCH='LINUX'
 #
 #####################################################
 # case set up (users should change this part)
 #####################################################
-# bk_core= which WRF core is used as background (NMM or ARW)
-# bkcv_option= which background error covariance and parameter will be used 
-#              (GLOBAL or NAM)
+# bk_core    = which WRF core type for background (nmm or arw)
+# bkcv_option= which background error covariance & parameter to use (GLOBAL or NAM)
+# ANAL_TIME  = analysis time  (YYYYMMDDHH)
+# GSI_ROOT   = root path to GSI workspace
+# DATA_ROOT  = path to obs data and CRTM fixed files
+# OBS_ROOT   = path of observations files
+# FIX_ROOT   = path of fix files
+# WORK_ROOT  = working directory, where GSI runs
+# PREPBURF   = path of PreBUFR conventional obs
+# BK_FILE    = path and name of background file
+# CRTM_ROOT  = path to CRTM fixed files
+# GSI_EXE    = path and name of the gsi executable
+#####################################################
 # Defined in GSI test wrapper
-# bk_core=ARW, NMM
-  if [ ${bk_core} = NMM ] ; then
-    CORE_DIR=nmm
-  else
-    CORE_DIR=arw
-  fi
-  bkcv_option=NAM
-
-#####################################################
-# ANAL_TIME = analysis time  (YYYYMMDDHH)
-# COMPILER  = fortran compiler
-# GSI_TEST  = path to GSI test source code
-# GSI_ROOT  = root path to GSI workspace
-# WORK_ROOT = working directory, where GSI runs
-# DATA_DIR  = path to obs data and CRTM fixed files 
-# PREPBURF  = path of PreBUFR conventional obs
-# BK_FILE   = path and name of background file
-# OBS_ROOT  = path of observations files
-# FIX_ROOT  = path of fix files
-# GSI_EXE   = path and name of the gsi executable 
-#####################################################
+# bk_core=arw, nmm
 # ANAL_TIME=2011060212
 # COMPILER=intel,pgi
 # GSI_TEST=con,rad,gpsro,radar
 # GSI_ROOT=/d1/stark/GSI
+  bkcv_option=NAM
   GSI_TEST=gpsro
   GSI_DIR=${COMPILER}/${GSI_TEST_DIR}
-  WORK_ROOT=${GSI_ROOT}/run/${GSI_DIR}/${GSI_TEST}_${ANAL_TIME}_${CORE_DIR}_${TEST_DIR_SUFFIX}
+  WORK_ROOT=${GSI_ROOT}/run/${GSI_DIR}/${GSI_TEST}_${ANAL_TIME}_${bk_core}_${TEST_DIR_SUFFIX}
   DATA_DIR=${GSI_ROOT}/data
 #
 #####################################################
 #    PATHS
 #####################################################
-  BK_FILE=${DATA_DIR}/${ANAL_TIME}/${CORE_DIR}/wrfinput_d01_2011-06-02_12:00:00
+  BK_FILE=${DATA_DIR}/${ANAL_TIME}/${bk_core}/wrfinput_d01_2011-06-02_12:00:00
   OBS_ROOT=${DATA_DIR}/${ANAL_TIME}/obs
-  PREPBUFR=${OBS_ROOT}/nam.t12z.prepbufr.tm00.nr.le
+  PREPBUFR=${OBS_ROOT}/nam.t12z.prepbufr.tm00.nr
   CRTM_ROOT=${DATA_DIR}/fix/CRTM_Coefficients-2.1.3
   FIX_ROOT=${GSI_ROOT}/src/${GSI_DIR}/fix
   GSI_EXE=${GSI_ROOT}/src/${GSI_DIR}/run/gsi.exe
@@ -74,38 +62,28 @@ BYTE_ORDER=Big_Endian
 case $ARCH in
    'IBM_LSF')
       ###### IBM LSF (Load Sharing Facility)
-      RUN_COMMAND="mpirun.lsf " ;;
+      RUN_COMMAND="mpirun.lsf ./gsi.exe " ;;
 
    'IBM_LoadLevel')
-      ###### IBM LoadLeve 
-      RUN_COMMAND="poe " ;;
+      ###### IBM LoadLeveler 
+      RUN_COMMAND="poe ./gsi.exe " ;;
 
    'LINUX')
       if [ $GSIPROC = 1 ]; then
          #### Linux workstation - single processor
-         RUN_COMMAND=""
+         RUN_COMMAND="./gsi.exe "
       else
          ###### Linux workstation -  using mpi run and with machfile 
-        RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile /home/${USER}/mach "
+        RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile /home/${USER}/mach ./gsi.exe "
       fi ;;
 
    'LINUX_LSF')
       ###### LINUX LSF (Load Sharing Facility)
-      RUN_COMMAND="mpirun.lsf " ;;
+      RUN_COMMAND="mpirun.lsf ./gsi.exe -proc ${GSIPROC} " ;;
 
    'LINUX_PBS')
       #### Linux cluster PBS (Portable Batch System)
-      RUN_COMMAND="mpirun -np ${GSIPROC} " ;;
-
-   'DARWIN_PGI')
-      ### Mac - mpi run
-      if [ $GSIPROC = 1 ]; then
-         #### Mac workstation - single processor
-         RUN_COMMAND=""
-      else
-         ###### Mac workstation -  mpi run
-         RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile ~/mach "
-      fi ;;
+      RUN_COMMAND="mpiexec -np ${GSIPROC} ./gsi.exe " ;;
 
    * )
      print "error: $ARCH is not a supported platform configuration."
@@ -238,7 +216,7 @@ if [ ${bkcv_option} = GLOBAL ] ; then
   echo ' Use global background error covariance'
   BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv
   OBERROR=${FIX_ROOT}/prepobs_errtable.global
-  if [ ${bk_core} = NMM ] ; then
+  if [ ${bk_core} = nmm ] ; then
     ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf_glbe
   else
     ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf_glbe
@@ -247,7 +225,7 @@ else
   echo ' Use NAM background error covariance'
   BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv
   OBERROR=${FIX_ROOT}/nam_errtable.r3dv
-  if [ ${bk_core} = NMM ] ; then
+  if [ ${bk_core} = nmm ] ; then
     ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf
   else
     ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf
@@ -272,11 +250,6 @@ emiscoef_VISwater=${CRTM_ROOT}/EmisCoeff/VIS_Water/SEcategory/${BYTE_ORDER}/NPOE
 emiscoef_MWwater=${CRTM_ROOT}/EmisCoeff/MW_Water/${BYTE_ORDER}/FASTEM5.MWwater.EmisCoeff.bin
 aercoef=${CRTM_ROOT}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
 cldcoef=${CRTM_ROOT}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
-
-#Possible deletion
-#RTMEMIS=${CRTM_ROOT}/EmisCoeff/${BYTE_ORDER}/EmisCoeff.bin
-#RTMAERO=${CRTM_ROOT}/AerosolCoeff/${BYTE_ORDER}/AerosolCoeff.bin
-#RTMCLDS=${CRTM_ROOT}/CloudCoeff/${BYTE_ORDER}/CloudCoeff.bin
 
 #  copy Fixed fields to working directory
  cp $ANAVINFO anavinfo
@@ -311,7 +284,7 @@ done
  cp $bufrtable ./prepobs_prep.bufrtable
 
 # for satellite bias correction
- cp ${DATA_DIR}/fix/sample.satbias ./satbias_in
+ cp ${FIX_ROOT}/sample.satbias ./satbias_in
 
 #
 ##################################################################################
@@ -326,7 +299,7 @@ else
    hzscl_op='0.373,0.746,1.50,'
 fi
 
-if [ ${bk_core} = NMM ] ; then
+if [ ${bk_core} = nmm ] ; then
    bk_core_arw='.false.'
    bk_core_nmm='.true.'
 else
@@ -476,10 +449,10 @@ echo ' Run GSI with' ${bk_core} 'background'
 
 case $ARCH in
    'IBM_LSF'|'IBM_LoadLevel')
-      ${RUN_COMMAND} ./gsi.exe < gsiparm.anl > stdout 2>&1  ;;
+      ${RUN_COMMAND} < gsiparm.anl > stdout 2>&1  ;;
 
    * )
-      ${RUN_COMMAND} ./gsi.exe > stdout 2>&1  ;;
+      ${RUN_COMMAND} > stdout 2>&1  ;;
 esac
 
 ##################################################################
