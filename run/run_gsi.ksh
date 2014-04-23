@@ -7,42 +7,44 @@
 # GSIPROC = processor number used for GSI analysis
 #------------------------------------------------
   GSIPROC=1
-  ARCH='LINUX_PGI' 
+  ARCH='LINUX' 
 # Supported configurations:
-            # IBM_LSF,
-            # LINUX_Intel, LINUX_Intel_LSF, LINUX_Intel_PBS,
-            # LINUX_PGI, LINUX_PGI_LSF, LINUX_PGI_PBS,
-            # DARWIN_PGI
+            # IBM_LSF, IBM_LoadLevel
+            # LINUX, LINUX_LSF, LINUX_PBS, LINUX_MPT
 #
 #####################################################
 # case set up (users should change this part)
 #####################################################
+# bk_core    = which WRF core type for background (nmm or arw)
+# bkcv_option= which background error covariance & parameter to use (GLOBAL or NAM)
+# ANAL_TIME  = analysis time  (YYYYMMDDHH)
+# GSI_ROOT   = root path to GSI workspace
+# DATA_ROOT  = path to obs data and CRTM fixed files 
+# OBS_ROOT   = path of observations files
+# FIX_ROOT   = path of fix files
+# WORK_ROOT  = working directory, where GSI runs
+# PREPBURF   = path of PreBUFR conventional obs
+# BK_FILE    = path and name of background file
+# CRTM_ROOT  = path to CRTM fixed files
+# GSI_EXE    = path and name of the gsi executable 
+#####################################################
+  bk_core=arw
+  bkcv_option=NAM
 #
-# ANAL_TIME= analysis time  (YYYYMMDDHH)
-# WORK_ROOT= working directory, where GSI runs
-# PREPBURF = path of PreBUFR conventional obs
-# BK_FILE  = path and name of background file
-# OBS_ROOT = path of observations files
-# FIX_ROOT = path of fix files
-# GSI_EXE  = path and name of the gsi executable 
-  ANAL_TIME=2008051112
-  WORK_ROOT=./gsiprd_${ANAL_TIME}_arw
-  PREPBUFR=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs/newgblav.20080511.ruc2a.t12z.prepbufr
-  BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkARW/wrfout_d01_2008-05-11_12:00:00
-##  BK_FILE=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/bkNMM/wrfinput_d01_2008-05-11_12:00:00
-  OBS_ROOT=/mnt/lfs0/projects/wrfruc/mhu/save/regrssion_test/DTC/obs
-  FIX_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk_r580/fix
-  CRTM_ROOT=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/crtm/CRTM_Coefficients
-  GSI_EXE=/mnt/lfs0/projects/wrfruc/mhu/GSI/comGSI/testport/trunk_r580/run/gsi.exe
+  ANAL_TIME=2011060212
+  GSI_ROOT=/glade/scratch/${USER}/GSI/comGSI_v3.3
+  DATA_ROOT=/glade/p/ral/jnt/GSI_DTC/data
+  OBS_ROOT=${DATA_ROOT}/${ANAL_TIME}/obs
+  FIX_ROOT=${GSI_ROOT}/fix
+  WORK_ROOT=${GSI_ROOT}/results
+  PREPBUFR=${OBS_ROOT}/nam.t12z.prepbufr.tm00.nr
+  BK_FILE=${DATA_ROOT}/${ANAL_TIME}/${bk_core}/wrfinput_d01_2011-06-02_12:00:00
+  CRTM_ROOT=${DATA_ROOT}/fix/CRTM_Coefficients-2.1.3
+  GSI_EXE=${GSI_ROOT}/run/gsi.exe
 
 #------------------------------------------------
-# bk_core= which WRF core is used as background (NMM or ARW)
-# bkcv_option= which background error covariance and parameter will be used 
-#              (GLOBAL or NAM)
 # if_clean = clean  : delete temperal files in working directory (default)
 #            no     : leave running directory as is (this is for debug only)
-  bk_core=ARW
-  bkcv_option=NAM
   if_clean=clean
 #
 #
@@ -51,56 +53,36 @@
 #####################################################
 #
 BYTE_ORDER=Big_Endian
-BYTE_ORDER_CRTM=Big_Endian
 
 case $ARCH in
    'IBM_LSF')
       ###### IBM LSF (Load Sharing Facility)
-      RUN_COMMAND="mpirun.lsf " ;;
+      RUN_COMMAND="mpirun.lsf ./gsi.exe" ;;
 
-   'LINUX_Intel')
+   'IBM_LoadLevel')
+      ###### IBM LoadLeveler 
+      RUN_COMMAND="poe ./gsi.exe" ;;
+
+   'LINUX')
       if [ $GSIPROC = 1 ]; then
          #### Linux workstation - single processor
-         RUN_COMMAND=""
+         RUN_COMMAND="./gsi.exe"
       else
          ###### Linux workstation -  mpi run
-        RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile ~/mach "
+        RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile /home/${USER}/mach ./gsi.exe "
       fi ;;
 
-   'LINUX_Intel_LSF')
+   'LINUX_LSF')
       ###### LINUX LSF (Load Sharing Facility)
-      RUN_COMMAND="mpirun.lsf " ;;
+      RUN_COMMAND="mpirun.lsf  ./gsi.exe -proc ${GSIPROC}" ;;
 
-   'LINUX_Intel_PBS')
+   'LINUX_PBS')
       #### Linux cluster PBS (Portable Batch System)
-      RUN_COMMAND="mpirun -np ${GSIPROC} " ;;
+      RUN_COMMAND="mpiexec -np ${GSIPROC} ./gsi.exe" ;;
 
-   'LINUX_PGI')
-      if [ $GSIPROC = 1 ]; then
-         #### Linux workstation - single processor
-         RUN_COMMAND=""
-      else
-         ###### Linux workstation -  mpi run
-         RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile ~/mach "
-      fi ;;
-
-   'LINUX_PGI_LSF')
-      ###### LINUX LSF (Load Sharing Facility)
-      RUN_COMMAND="mpirun.lsf " ;;
-
-   'LINUX_PGI_PBS')
+   'LINUX_MPT')
       ###### Linux cluster PBS (Portable Batch System)
-      RUN_COMMAND="mpirun -np ${GSIPROC} " ;;
-
-   'DARWIN_PGI')
-      ### Mac - mpi run
-      if [ $GSIPROC = 1 ]; then
-         #### Mac workstation - single processor
-         RUN_COMMAND=""
-      else
-         ###### Mac workstation -  mpi run
-         RUN_COMMAND="mpirun -np ${GSIPROC} -machinefile ~/mach "
-      fi ;;
+      RUN_COMMAND="mpiexec_mpt -np ${GSIPROC} ./gsi.exe " ;;
 
    * )
      print "error: $ARCH is not a supported platform configuration."
@@ -233,7 +215,7 @@ if [ ${bkcv_option} = GLOBAL ] ; then
   echo ' Use global background error covariance'
   BERROR=${FIX_ROOT}/nam_glb_berror.f77.gcv
   OBERROR=${FIX_ROOT}/prepobs_errtable.global
-  if [ ${bk_core} = NMM ] ; then
+  if [ ${bk_core} = nmm ] ; then
      ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf_glbe
   else
     ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf_glbe
@@ -242,7 +224,7 @@ else
   echo ' Use NAM background error covariance'
   BERROR=${FIX_ROOT}/nam_nmmstat_na.gcv
   OBERROR=${FIX_ROOT}/nam_errtable.r3dv
-  if [ ${bk_core} = NMM ] ; then
+  if [ ${bk_core} = nmm ] ; then
      ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf
   else
      ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf
@@ -300,7 +282,7 @@ done
  cp $bufrtable ./prepobs_prep.bufrtable
 
 # for satellite bias correction
-cp ${FIX_ROOT}/ndas.t06z.satbias.tm03 ./satbias_in
+cp ${FIX_ROOT}/sample.satbias ./satbias_in
 
 #
 ##################################################################################
@@ -313,16 +295,14 @@ export JCAP_B=62
 export DELTIM=${DELTIM:-$((3600/($JCAP/20)))}
 
 if [ ${bkcv_option} = GLOBAL ] ; then
-   as_op='0.6,0.6,0.75,0.75,0.75,0.75,1.0,1.0'
    vs_op='0.7,'
    hzscl_op='1.7,0.8,0.5,'
 else
-   as_op='1.0,1.0,0.5 ,0.7,0.7,0.5,1.0,1.0,'
    vs_op='1.0,'
    hzscl_op='0.373,0.746,1.50,'
 fi
 
-if [ ${bk_core} = NMM ] ; then
+if [ ${bk_core} = nmm ] ; then
    bk_core_arw='.false.'
    bk_core_nmm='.true.'
 else
@@ -337,13 +317,13 @@ cat << EOF > gsiparm.anl
    write_diag(1)=.true.,write_diag(2)=.false.,write_diag(3)=.true.,
    gencode=78,qoption=2,
    factqmin=0.0,factqmax=0.0,deltim=$DELTIM,
-   ndat=62,iguess=-1,
+   ndat=87,iguess=-1,
    oneobtest=.false.,retrieval=.false.,
    nhr_assimilation=3,l_foto=.false.,
    use_pbl=.false.,
  /
  &GRIDOPTS
-   JCAP=$JCAP,JCAP_B=$JCAP_B,NLAT=$NLAT,NLON=$LONA,nsig=$LEVS,hybrid=.true.,
+   JCAP=$JCAP,JCAP_B=$JCAP_B,NLAT=$NLAT,NLON=$LONA,nsig=$LEVS,regional=.true.,
    wrf_nmm_regional=${bk_core_nmm},wrf_mass_regional=${bk_core_arw},
    diagnostic_reg=.false.,
    filled_grid=.false.,half_grid=.true.,netcdf=.true.,
@@ -354,15 +334,11 @@ cat << EOF > gsiparm.anl
    bw=0.,fstat=.true.,
  /
  &ANBKGERR
-   anisotropic=.false.,an_vs=1.0,ngauss=1,
-   an_flen_u=-5.,an_flen_t=3.,an_flen_z=-200.,
-   ifilt_ord=2,npass=3,normal=-200,grid_ratio=4.,nord_f2a=4,
+   anisotropic=.false.,
  /
  &JCOPTS
  /
  &STRONGOPTS
-   reg_tlnmc_type=1,nstrong=0,nvmodes_keep=20,period_max=3.,
-   baldiag_full=.true.,baldiag_inc=.true.,
  /
  &OBSQC
    dfact=0.75,dfact1=3.0,noiqc=.false.,c_varqc=0.02,vadfile='prepbufr',
@@ -460,11 +436,11 @@ EOF
 echo ' Run GSI with' ${bk_core} 'background'
 
 case $ARCH in
-   'IBM_LSF')
-      ${RUN_COMMAND} ./gsi.exe < gsiparm.anl > stdout 2>&1  ;;
+   'IBM_LSF'|'IBM_LoadLevel')
+      ${RUN_COMMAND} < gsiparm.anl > stdout 2>&1  ;;
 
    * )
-      ${RUN_COMMAND} ./gsi.exe > stdout 2>&1  ;;
+      ${RUN_COMMAND}  > stdout 2>&1  ;;
 esac
 
 ##################################################################
@@ -502,7 +478,7 @@ ln -s fort.207    fit_rad1.${ANAL_TIME}
 #        write_diag(1)=.true. turns on creation of o-g
 #        innovation files.
 #
-
+ls -l pe0*.* > listpe
 loops="01 03"
 for loop in $loops; do
 
@@ -525,10 +501,7 @@ esac
           amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 \
           ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16"
    for type in $listall; do
-      count=0
-      if [[ -f pe0000.${type}_${loop} ]]; then
-         count=`ls pe*${type}_${loop}* | wc -l`
-      fi
+      count=`grep pe*${type}_${loop}* listpe | wc -l`
       if [[ $count -gt 0 ]]; then
          cat pe*${type}_${loop}* > diag_${type}_${string}.${ANAL_TIME}
       fi
@@ -536,14 +509,16 @@ esac
 done
 
 #  Clean working directory to save only important files 
+ls -l * > list_run_directory
 if [ ${if_clean} = clean ]; then
   echo ' Clean working directory after GSI run'
   rm -f *Coeff.bin     # all CRTM coefficient files
-  rm -f pe0*           # diag files on each processor
+  rm -f fsize_*        # delete temperal file for bufr size
+  rm -f listpe         # list of diag files on each processor
   rm -f obs_input.*    # observation middle files
+  rm -f pe0*           # diag files on each processor
   rm -f siganl sigf03  # background middle files
   rm -f xhatsave.*     # some information on each processor
-  rm -f fsize_*        # delete temperal file for bufr size
 fi
 
 exit 0
