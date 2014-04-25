@@ -1,0 +1,69 @@
+#!/usr/bin/env ksh93 
+######################################################################
+#                gsi regression test wrapper script                          
+######################################################################
+######################################################################
+#   NOTES:                                                           #
+#                                                                    #
+#   Author: DRS Oct 17, 2012                                         #
+######################################################################
+
+######################################################################
+#   Definitions
+######################################################################
+ulimit -s 512000
+export GSI_ROOT=/glade/scratch/stark/GSI/
+export TEST_SRCS=release/release_V3.3_intel13.0.1
+export VERSION=20140422
+#export COMPILER=pgi intel
+export COMPILER=intel
+export ARCH=LINUX_LSF
+export ANAL_TIME=2011060212
+
+for TEST_SRC in ${TEST_SRCS}
+do
+export GSI_TEST_DIR=${TEST_SRC}
+
+for PE in 4
+do
+   for ACORE in arw nmm
+   do
+      export GSIPROC=${PE}
+      # GSIPROC = processor number used for GSI analysis
+      if [ $GSIPROC = 1 ] ; then
+         export TEST_DIR_SUFFIX='np1'
+      elif [ $GSIPROC = 2 ] ; then
+         export TEST_DIR_SUFFIX='np2'
+      elif [ $GSIPROC = 4 ] ; then
+         export TEST_DIR_SUFFIX='np4'
+      fi
+      export bk_core=${ACORE}
+      echo '                                                             '
+      echo '-------------------------------------------------------------'
+      echo "- running single obs test with ${PE} pe on ${ACORE} core."
+      echo '                                                             '
+      . ${GSI_ROOT}/run/run/${VERSION}/run_sot_test.ksh
+      echo '- run with single obs test completed'
+      echo '                                                             '
+      echo '-------------------------------------------------------------'
+      echo "- running conventional obs test with ${PE} pe on ${ACORE} core."
+      echo '                                                             '
+      . ${GSI_ROOT}/run/run/${VERSION}/run_con_test.ksh
+      echo '- run with conventional obs completed'
+      echo '                                                             '
+      echo '-------------------------------------------------------------'
+      echo "- running radiance test with ${PE} pe on ${ACORE} core."
+      echo '                                                             '
+      . ${GSI_ROOT}/run/run/${VERSION}/run_rad_test.ksh
+      echo '- run with radiance completed'
+      echo '                                                             '
+      echo '-------------------------------------------------------------'
+      echo "running gpsro test with ${PE} pe on ${ACORE} core."
+      echo '                                                             '
+      . ${GSI_ROOT}/run/run/${VERSION}/run_gpsro_test.ksh
+      echo 'run with gpsro completed'
+   done
+done
+
+done
+
