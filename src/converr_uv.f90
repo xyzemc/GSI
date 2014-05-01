@@ -77,7 +77,7 @@ contains
 
      integer(i_kind):: ier
 
-     allocate(etabl_uv(100,33,6),isuble_uv(100,6))
+     allocate(etabl_uv(100,33,8),isuble_uv(100,8))
 
      etabl_uv=1.e9_r_kind
      maxsub_uv=5

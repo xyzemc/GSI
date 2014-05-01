@@ -792,6 +792,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
 !  get non linear qc parameter from b table
            var_jb=(one-del)*btabl_uv(itypey,k1,ierr)+del*btabl_uv(itypey,k2,ierr)
            var_jb=max(obserr,wjbmin)
+           if (var_jb >10.0_r_kind) var_jb=zero
 
 !  for GOES hourly winds, set error doubled
             if(itype==245 .or. itype==246) then

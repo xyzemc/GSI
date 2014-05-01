@@ -1022,6 +1022,10 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            var_jb(2,k)=max(var_jb(2,k),qjbmin)
            var_jb(5,k)=max(var_jb(5,k),wjbmin)
            var_jb(1,k)=max(var_jb(1,k),pjbmin)
+           if (var_jb(3,k) >=10.0_r_kind) var_jb(3,k)=zero
+           if (var_jb(2,k) >=10.0_r_kind) var_jb(2,k)=zero
+           if (var_jb(5,k) >=10.0_r_kind) var_jb(5,k)=zero
+           if (var_jb(1,k) >=10.0_r_kind) var_jb(1,k)=zero
      
         enddo
 
