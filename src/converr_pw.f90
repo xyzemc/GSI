@@ -4,8 +4,7 @@ module converr_pw
 ! module:    converr_pw
 !   prgmmr: su          org: np2                date: 2007-03-15
 ! abstract:  This module contains variables and routines related
-!            to the assimilation of conventional observations error for surface
-!            pressure
+!            to the assimilation of conventional observations error
 !
 ! program history log:
 !   2007-03-15  su  - original code - move reading observation error table 
@@ -19,7 +18,7 @@ module converr_pw
 ! Variable Definitions:
 !   def etabl_pw             -  the array to hold the error table
 !   def ptabl_pw             -  the array to have vertical pressure values
-!   def isuble_pw            -  the array to have subtype  
+!   def isuble_pw            -  the array to have subtype values 
 !
 ! attributes:
 !   language: f90
@@ -40,7 +39,7 @@ implicit none
 ! set passed variables as public
   public :: etabl_pw,ptabl_pw,isuble_pw,maxsub_pw
 
-  integer(i_kind),save:: ietabl,itypex,itypey,lcount,iflag,k,m,n,maxsub_pw
+  integer(i_kind),save:: ietabl_pw,itypex,itypey,lcount,iflag,k,m,n,maxsub_pw
   real(r_single),save,allocatable,dimension(:,:,:) :: etabl_pw
   real(r_kind),save,allocatable,dimension(:)  :: ptabl_pw
   integer(i_kind),save,allocatable,dimension(:,:)  :: isuble_pw
@@ -78,44 +77,44 @@ contains
      integer(i_kind),intent(in   ) :: mype
 
      integer(i_kind):: ier
+
      maxsub_pw=5
-     allocate(etabl_pw(100,33,6))
-     allocate(isuble_pw(100,6))
+     allocate(etabl_pw(50,33,6),isuble_pw(50,6))
 
      etabl_pw=1.e9_r_kind
       
-     ietabl=19
-     open(ietabl,file='errtable_pw',form='formatted',status='old',iostat=ier)
+     ietabl_pw=19
+     open(ietabl_pw,file='errtable_pw',form='formatted',status='old',iostat=ier)
      if(ier/=0) then
-        write(6,*)'CONVERR_PS:  ***WARNING*** obs error table ("errtable") not available to 3dvar.'
+        write(6,*)'CONVERR:  ***WARNING*** obs error table ("errtable") not available to 3dvar.'
         lcount=0
         oberrflg=.false.
         return
      endif
 
-     rewind ietabl
+     rewind ietabl_pw
      etabl_pw=1.e9_r_kind
      lcount=0
      loopd : do 
-        read(ietabl,100,IOSTAT=iflag,end=120) itypex
+        read(ietabl_pw,100,IOSTAT=iflag,end=120) itypey
         if( iflag /= 0 ) exit loopd
-100     format(1x,i3)
+100     format(1x,i3,2x,i3)
         lcount=lcount+1
-        itypey=itypex-145
-        read(ietabl,105,IOSTAT=iflag,end=120) (isuble_pw(itypey,n),n=1,6)  
+        itypex=itypey-149
+        read(ietabl_pw,105,IOSTAT=iflag,end=120) (isuble_pw(itypey,n),n=1,6)
 105     format(8x,6i12)
         do k=1,33
-           read(ietabl,110)(etabl_pw(itypey,k,m),m=1,6)
+           read(ietabl_pw,110)(etabl_pw(itypex,k,m),m=1,6)
 110        format(1x,6e12.5)
         end do
      end do   loopd
 120  continue
 
      if(lcount<=0 .and. mype==0) then
-        write(6,*)'CONVERR_PS:  ***WARNING*** obs error table not available to 3dvar.'
+        write(6,*)'CONVERR:  ***WARNING*** obs error table not available to 3dvar.'
         oberrflg=.false.
      else
-        if(mype == 0) write(6,*)'CONVERR_PS:  using observation errors from user provided table'
+        if(mype == 0) write(6,*)'CONVERR:  using observation errors from user provided table'
         allocate(ptabl_pw(34))
         ptabl_pw=zero
         ptabl_pw(1)=etabl_pw(20,1,1)
@@ -125,7 +124,7 @@ contains
         ptabl_pw(34)=etabl_pw(20,33,1)
      endif
 
-     close(ietabl)
+     close(ietabl_pw)
 
      return
   end subroutine converr_pw_read
@@ -137,7 +136,7 @@ subroutine converr_pw_destroy
 ! subprogram:    converr_pw_destroy      destroy conventional information file
 !     prgmmr:    su    org: np2                date: 2007-03-15
 !
-! abstract:  This routine destroys arrays from converr file
+! abstract:  This routine destroys arrays from converr_pw file
 !
 ! program history log:
 !   2007-03-15  su 

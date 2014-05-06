@@ -1,18 +1,17 @@
 #!/bin/ksh
 #=======================================================
 ## Below are LSF (WCOSS queueing system) commands
-#BSUB -a poe
-#BSUB -e gsi_global.o%J
 #BSUB -o gsi_global.o%J
+#BSUB -e gsi_global.o%J
 #BSUB -J gsi_global
-#BSUB -network type=sn_all:mode=US
-#BSUB -q dev
+#BSUB -x
 #BSUB -n 32
 #BSUB -R span[ptile=8]
 #BSUB -R affinity[core(2):distribute=balance]
-#BSUB -x
 #BSUB -W 01:00
-#BSUB -P GFS-T2O
+#BSUB -q dev
+#BSUB -a poe
+#BSUB -P GDAS-T2O 
 #=======================================================
 ## Below are PBS (Linux queueing system) commands
 #PBS -o gsi_global.e${jobid} 
@@ -23,13 +22,33 @@
 #PBS -j eo                
 #PBS -A ada
 #PBS -V
+#-------------------------------------------------------                        
+## Below are LoadLeveler (IBM queueing system) commands
+#@ job_name=gsi_global
+#@ error=gsi_global.e$(jobid)
+#@ job_type=parallel
+#@ network.MPI=sn_all,shared,us
+#@ node_usage = not_shared
+#@ tasks_per_node = 32
+#@ node = 1
+#@ task_affinity = core(1)
+#@ parallel_threads = 1
+#@ node_resources = ConsumableMemory (110 GB)
+#@ class= dev
+#@ group= dev
+#@ account_no = GDAS-T2O
+#@ wall_clock_limit = 0:40:00
+#@ startdate = 07/06/09 10:15
+#@ notification=error
+#@ queue
 #=======================================================
 
 set -x
 
-arch="`uname -s | awk '{print $1}'`"        
 echo "Time starting the job is `date` "
 # Set default top-level directory
+#if [ -d /globall ]; then
+#  TOPDIR=/global   # This would be the WCOSS
 if [ -d /da ]; then
   TOPDIR=/da   # This would be the WCOSS
   MACHINE=WCOSS
@@ -46,16 +65,18 @@ fi
 #=================================================================================================
 
 # Set experiment name and analysis date
-adate=2013090100
+adate=2014050500
 expnm=globalprod    
 exp=globalprod.$adate
 expid=${expnm}.$adate.wcoss
 
 # Set path/file for gsi executable
-gsiexec=/da/save/$USER/trunk/src/global_gsi
+#gsiexec=/global/save/$USER/svn/gsi/trunk/src/global_gsi
+gsiexec=/u/Xiujuan.Su/home/gsi/xsu_nqc/src/global_gsi
 
 # Specify GSI fixed field
-fixgsi=/da/save/$USER/trunk/fix
+#fixgsi=/global/save/$USER/svn/gsi/trunk/fix
+fixgsi=/u/Xiujuan.Su/home/gsi/xsu_nqc/fix
 
 # Set the JCAP resolution which you want.
 # All resolutions use LEVS=64
@@ -67,16 +88,15 @@ export lrun_subdirs=.true.
 
 # Set data, runtime and save directories
 if [ $MACHINE = WCOSS ]; then
-   datdir=/ptmp/$USER/data_sigmap/${exp}
-   tmpdir=/ptmp/$USER/tmp${JCAP}_sigmap/${expid}  
-   savdir=/ptmp/$USER/out${JCAP}/sigmap/${expid}  
-   fixcrtm=/usrx/local/nceplibs/fix/crtm_v2.1.3
+   datdir=/ptmpp1/$USER/data_sigmap/${exp}
+   tmpdir=/ptmpp1/$USER/tmp${JCAP}_sigmap/${expid}  
+   savdir=/ptmpp1/$USER/out${JCAP}/sigmap/${expid}  
+   fixcrtm=/nceplibs/fix/crtm_v2.1.3
    endianness=Big_Endian
-   COMPRESS=gzip 
-   UNCOMPRESS=gunzip
-   DIAG_COMPRESS=YES 
-   DIAG_SUFFIX="" 
-   DIAG_TARBALL=YES 
+   COMPRESS=gzip
+   DIAG_COMPRESS=YES
+   DIAG_SUFFIX=""
+   DIAG_TARBALL=YES
 elif [ $MACHINE = ZEUS ]; then
    datdir=/scratch2/portfolios/NCEPDEV/ptmp/$USER/data_sigmap/${exp}
    tmpdir=/scratch2/portfolios/NCEPDEV/ptmp/$USER/tmp${JCAP}_sigmap/${expid}  
@@ -85,9 +105,8 @@ elif [ $MACHINE = ZEUS ]; then
    endianness=Big_Endian
 #  endianness=Little_Endian - once all background fields are available in little endian format, uncomment this option and remove Big_Endian
    COMPRESS=gzip
-   UNCOMPRESS=gunzip
-   DIAG_COMPRESS=YES 
-   DIAG_SUFFIX="" 
+   DIAG_COMPRESS=YES
+   DIAG_SUFFIX=""
    DIAG_TARBALL=YES
 else
   echo "Unsupported machine $MACHINE (not sure how you got to here)"
@@ -121,7 +140,7 @@ export gps_dtype="gps_ref"
 
 
 if [[  $MACHINE = WCOSS  ]]; then
-  export MP_EAGER_LIMIT=65536 
+  export MP_EAGER_LIMIT=65536
   export MP_COREFILE_FORMAT=lite
   export MP_MPILIB=mpich2
   export MP_LABELIO=yes
@@ -361,7 +380,7 @@ SINGLEOB=""
 cat << EOF > gsiparm.anl
  &SETUP
    miter=2,niter(1)=100,niter(2)=150,
-   niter_no_qc(1)=50,niter_no_qc(2)=0,
+   niter_no_qc(1)=150,niter_no_qc(2)=200,
    write_diag(1)=.true.,write_diag(2)=.false.,write_diag(3)=.true.,
    qoption=2,
    gencode=$IGEN,factqmin=5.0,factqmax=5.0,deltim=$DELTIM,
@@ -369,9 +388,6 @@ cat << EOF > gsiparm.anl
    oneobtest=.false.,retrieval=.false.,l_foto=.false.,
    use_pbl=.false.,use_compress=.true.,nsig_ext=12,gpstop=50.,
    use_gfs_nemsio=.false.,lrun_subdirs=${lrun_subdirs},
-   newpc4pred=.true.,adp_anglebc=.true.,angord=4,
-   passive_bc=.true.,use_edges=.false.,diag_precon=.true.,
-   step_start=1.e-3,emiss_bc=.true.,
    $SETUP
  /
  &GRIDOPTS
@@ -401,7 +417,7 @@ cat << EOF > gsiparm.anl
    $STRONGOPTS
  /
  &OBSQC
-   dfact=0.75,dfact1=3.0,noiqc=.true.,oberrflg=.false.,c_varqc=0.02,
+   dfact=0.75,dfact1=3.0,noiqc=.true.,oberrflg=.true.,c_varqc=0.02,
    use_poq7=.true.,
    $OBSQC
  /
@@ -528,13 +544,21 @@ aercoef=$fixcrtm/AerosolCoeff.bin
 cldcoef=$fixcrtm/CloudCoeff.bin
 satinfo=$fixgsi/global_satinfo.txt
 scaninfo=$fixgsi/global_scaninfo.txt
-#satangl=$fixgsi/global_satangbias.txt
+satangl=$fixgsi/global_satangbias.txt
 pcpinfo=$fixgsi/global_pcpinfo.txt
 ozinfo=$fixgsi/global_ozinfo.txt
 convinfo=$fixgsi/global_convinfo.txt
 atmsbeamdat=$fixgsi/atms_beamwidth.txt
 
-errtable=$fixgsi/prepobs_errtable.global
+#errtable=$fixgsi/prepobs_errtable.global
+errtable_ps=$fixgsi/prepobs_errtable_ps.global
+errtable_q=$fixgsi/prepobs_errtable_q.global
+errtable_t=$fixgsi/prepobs_errtable_t.global
+errtable_uv=$fixgsi/prepobs_errtable_uv.global
+btable_uv=$fixgsi/nqc_b_uv.global
+btable_ps=$fixgsi/nqc_b_ps.global
+btable_q=$fixgsi/nqc_b_q.global
+btable_t=$fixgsi/nqc_b_t.global
 
 
 # Only need this file for single obs test
@@ -560,14 +584,22 @@ $ncp $emiscoef_VISwater ./NPOESS.VISwater.EmisCoeff.bin
 $ncp $emiscoef_MWwater ./FASTEM5.MWwater.EmisCoeff.bin
 $ncp $aercoef  ./AerosolCoeff.bin
 $ncp $cldcoef  ./CloudCoeff.bin
-#$ncp $satangl  ./satbias_angle
+$ncp $satangl  ./satbias_angle
 $ncp $satinfo  ./satinfo
 $ncp $scaninfo ./scaninfo
 $ncp $pcpinfo  ./pcpinfo
 $ncp $ozinfo   ./ozinfo
 $ncp $convinfo ./convinfo
 $ncp $atmsbeamdat ./atms_beamwidth.txt
-$ncp $errtable ./errtable
+#$ncp $errtable ./errtable
+$ncp $errtable_ps ./errtable_ps 
+$ncp $errtable_q ./errtable_q 
+$ncp $errtable_t ./errtable_t 
+$ncp $errtable_uv ./errtable_uv 
+$ncp $btable_ps ./btable_ps 
+$ncp $btable_q ./btable_q 
+$ncp $btable_t ./btable_t 
+$ncp $btable_uv ./btable_uv 
 
 $ncp $bufrtable ./prepobs_prep.bufrtable
 $ncp $bftab_sst ./bftab_sstphr
@@ -590,7 +622,8 @@ else
   exit 1
 fi
 
-$ncp $datobs/${prefix_obs}satwnd.${suffix}   ./satwndbufr
+#$ncp $datobs/${prefix_obs}satwnd.${suffix}   ./satwndbufr
+$ncp /meso/noscrub/Yangrong.Ling/hourly_satwnd_dumps/com/gfs/prod/gdas.$adate0/${prefix_obs}satwnd.${suffix} ./satwndbufr
 $ncp $datobs/${prefix_obs}gpsro.${suffix}    ./gpsrobufr
 $ncp $datobs/${prefix_obs}spssmi.${suffix}   ./ssmirrbufr
 $ncp $datobs/${prefix_obs}sptrmm.${suffix}   ./tmirrbufr
@@ -620,26 +653,8 @@ $ncp $datobs/${prefix_obs}syndata.tcvitals.tm00 ./tcvitl
 
 
 # Copy bias correction, atmospheric and surface files
-$ncp $datges/${prefix_tbc}.abias              ./satbias_in
-#ln -s -f $datges/${prefix_tbc}.abias_pc           ./satbias_pc
-$ncp $datges/${prefix_tbc}.satang             ./satbias_angle
-$ncp $datges/${prefix_tbc}.radstat            ./radstat.gdas
-
-/da/save/$USER/trunk/util/Radiance_bias_correction_Utilities/write_biascr_option.x -newpc4pred -adp_anglebc 4
-
-cp satbias_in satbias_in.orig
-cp satbias_in.new satbias_in
-
-listdiag=`tar xvf radstat.gdas | cut -d' ' -f2 | grep _ges`
-for type in $listdiag; do
-   diag_file=`echo $type | cut -d',' -f1`
-   fname=`echo $diag_file | cut -d'.' -f1`
-   date=`echo $diag_file | cut -d'.' -f2`
-   $UNCOMPRESS $diag_file
-   fnameanl=$(echo $fname|sed 's/_ges//g')
-   mv $fname.$date $fnameanl
-done
-
+ln -s -f $datges/${prefix_tbc}.abias              ./satbias_in
+ln -s -f $datges/${prefix_tbc}.satang             ./satbias_angle
 
 # Determine resolution of the guess files
 JCAP_GUESS=`$SIGHDR $datprep/${prefix_atm}.sgesprep JCAP`
@@ -789,86 +804,87 @@ RADSTAT=$savdir/radstat.$dumpobs.$adate
 #        innovation files.
 #
 
-cd $tmpdir    # we should already be in $DATA, but extra cd to be sure. 
+cd $tmpdir    # we should already be in $DATA, but extra cd to be sure.
 
-# Set up lists and variables for various types of diagnostic files. 
-ntype=3 
+# Set up lists and variables for various types of diagnostic files.
+ntype=3
 
-diagtype[0]="conv" 
-diagtype[1]="pcp_ssmi_dmsp pcp_tmi_trmm" 
-diagtype[2]="sbuv2_n16 sbuv2_n17 sbuv2_n18 sbuv2_n19 gome_metop-a omi_aura mls_aura" 
-diagtype[3]="hirs2_n14 msu_n14 sndr_g08 sndr_g11 sndr_g12 sndr_g13 sndr_g08_prep sndr_g11_prep sndr_g12_prep sndr_g13_prep sndrd1_g11 sndrd2_g11 sndrd3_g11 sndrd4_g11 sndrd1_g12 sndrd2_g12 sndrd3_g12 sndrd4_g12 sndrd1_g13 sndrd2_g13 sndrd3_g13 sndrd4_g13 sndrd1_g14 sndrd2_g14 sndrd3_g14 sndrd4_g14 sndrd1_g15 sndrd2_g15 sndrd3_g15 sndrd4_g15 hirs3_n15 hirs3_n16 hirs3_n17 amsua_n15 amsua_n16 amsua_n17 amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua imgr_g08 imgr_g11 imgr_g12 imgr_g14 imgr_g15 ssmi_f13 ssmi_f14 ssmi_f15 hirs4_n18 hirs4_metop-a amsua_n18 amsua_metop-a mhs_n18 mhs_metop-a amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16 ssmis_las_f17 ssmis_uas_f17 ssmis_img_f17 ssmis_env_f17 ssmis_las_f18 ssmis_uas_f18 ssmis_img_f18 ssmis_env_f18 ssmis_las_f19 ssmis_uas_f19 ssmis_img_f19 ssmis_env_f19 ssmis_las_f20 ssmis_uas_f20 ssmis_img_f20 ssmis_env_f20 iasi_metop-a hirs4_n19 amsua_n19 mhs_n19 seviri_m08 seviri_m09 seviri_m10 cris_npp atms_npp hirs4_metop-b amsua_metop-b mhs_metop-b iasi_metop-b gome_metop-b" 
+diagtype[0]="conv"
+diagtype[1]="pcp_ssmi_dmsp pcp_tmi_trmm"
+diagtype[2]="sbuv2_n16 sbuv2_n17 sbuv2_n18 sbuv2_n19 gome_metop-a omi_aura mls_aura"
+diagtype[3]="hirs2_n14 msu_n14 sndr_g08 sndr_g11 sndr_g12 sndr_g13 sndr_g08_prep sndr_g11_prep sndr_g12_prep sndr_g13_prep sndrd1_g11 sndrd2_g11 sndrd3_g11 sndrd4_g11 sndrd1_g12 sndrd2_g12 sndrd3_g12 sndrd4_g12 sndrd1_g13 sndrd2_g13 sndrd3_g13 sndrd4_g13 sndrd1_g14 sndrd2_g14 sndrd3_g14 sndrd4_g14 sndrd1_g15 sndrd2_g15 sndrd3_g15 sndrd4_g15 hirs3_n15 hirs3_n16 hirs3_n17 amsua_n15 amsua_n16 amsua_n17 amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua imgr_g08 imgr_g11 imgr_g12 imgr_g14 imgr_g15 ssmi_f13 ssmi_f14 ssmi_f15 hirs4_n18 hirs4_metop-a amsua_n18 amsua_metop-a mhs_n18 mhs_metop-a amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16 ssmis_las_f17 ssmis_uas_f17 ssmis_img_f17 ssmis_env_f17 ssmis_las_f18 ssmis_uas_f18 ssmis_img_f18 ssmis_env_f18 ssmis_las_f19 ssmis_uas_f19 ssmis_img_f19 ssmis_env_f19 ssmis_las_f20 ssmis_uas_f20 ssmis_img_f20 ssmis_env_f20 iasi_metop-a hirs4_n19 amsua_n19 mhs_n19 seviri_m08 seviri_m09 seviri_m10 cris_npp atms_npp hirs4_metop-b amsua_metop-b mhs_metop-b iasi_metop-b gome_metop-b"
 
-diaglist[0]=listcnv 
-diaglist[1]=listpcp 
-diaglist[2]=listozn 
-diaglist[3]=listrad 
+diaglist[0]=listcnv
+diaglist[1]=listpcp
+diaglist[2]=listozn
+diaglist[3]=listrad
 
-diagfile[0]=$CNVSTAT 
-diagfile[1]=$PCPSTAT 
-diagfile[2]=$OZNSTAT 
-diagfile[3]=$RADSTAT 
+diagfile[0]=$CNVSTAT
+diagfile[1]=$PCPSTAT
+diagfile[2]=$OZNSTAT
+diagfile[3]=$RADSTAT
 
-numfile[0]=0 
-numfile[1]=0 
-numfile[2]=0 
-numfile[3]=0 
+numfile[0]=0
+numfile[1]=0
+numfile[2]=0
+numfile[3]=0
 
 
-# Set diagnostic file prefix based on lrun_subdirs variable 
-if [ $lrun_subdirs = ".true." ]; then 
-   prefix=" dir.*/" 
-else 
-   prefix="pe*" 
-fi 
+# Set diagnostic file prefix based on lrun_subdirs variable
+if [ $lrun_subdirs = ".true." ]; then
+   prefix=" dir.*/"
+else
+   prefix="pe*"
+fi
 
-# Collect diagnostic files as a function of loop and type. 
+# Collect diagnostic files as a function of loop and type.
 loops="01 03"
 for loop in $loops; do
-   case $loop in 
-      01) string=ges;; 
-      03) string=anl;; 
-       *) string=$loop;; 
-   esac 
-   n=-1 
-   while [ $((n+=1)) -le $ntype ] ;do 
-      for type in `echo ${diagtype[n]}`; do 
-         count=`ls ${prefix}${type}_${loop}* | $wc -l` 
-         if [ $count -gt 0 ]; then 
-            cat ${prefix}${type}_${loop}* > diag_${type}_${string}.${adate}${DIAG_SUFFIX} 
-            echo "diag_${type}_${string}.${adate}*" >> ${diaglist[n]} 
-            numfile[n]=`expr ${numfile[n]} + 1` 
-         fi 
-      done 
-   done 
-done 
+   case $loop in
+      01) string=ges;;
+      03) string=anl;;
+       *) string=$loop;;
+   esac
+   n=-1
+   while [ $((n+=1)) -le $ntype ] ;do
+      for type in `echo ${diagtype[n]}`; do
+         count=`ls ${prefix}${type}_${loop}* | $wc -l`
+         if [ $count -gt 0 ]; then
+            cat ${prefix}${type}_${loop}* > diag_${type}_${string}.${adate}${DIAG_SUFFIX}
+            echo "diag_${type}_${string}.${adate}*" >> ${diaglist[n]}
+            numfile[n]=`expr ${numfile[n]} + 1`
+         fi
+      done
+   done
+done
 
-cd $tmpdir    # we should already be in $DATA, but extra cd to be sure. 
+cd $tmpdir    # we should already be in $DATA, but extra cd to be sure.
 
-# If requested, compress diagnostic files 
-if [[ $DIAG_COMPRESS = YES ]]; then 
-   for file in `ls diag_*${adate}${DIAG_SUFFIX}`; do 
-      $COMPRESS $file 
-   done 
-fi 
+# If requested, compress diagnostic files
+if [[ $DIAG_COMPRESS = YES ]]; then
+   for file in `ls diag_*${adate}${DIAG_SUFFIX}`; do
+      $COMPRESS $file
+   done
+fi
 
-# If requested, create diagnostic file tarballs 
-if [[ $DIAG_TARBALL = YES ]]; then 
-   n=-1 
-   while [ $((n+=1)) -le $ntype ] ;do 
-      TAROPTS="-uvf" 
-      if [ ! -s ${diagfile[n]} ]; then 
+# If requested, create diagnostic file tarballs
+if [[ $DIAG_TARBALL = YES ]]; then
+   n=-1
+   while [ $((n+=1)) -le $ntype ] ;do
+      TAROPTS="-uvf"
+      if [ ! -s ${diagfile[n]} ]; then
          TAROPTS="-cvf"
       fi
-      if [ ${numfile[n]} -gt 0 ]; then 
+      if [ ${numfile[n]} -gt 0 ]; then
          tar $TAROPTS ${diagfile[n]} `cat ${diaglist[n]}`
       fi
    done
 
-#  Restrict CNVSTAT 
-   chmod 750 $CNVSTAT 
-   chgrp rstprod $CNVSTAT 
+#  Restrict CNVSTAT
+   chmod 750 $CNVSTAT
+   chgrp rstprod $CNVSTAT
 fi
+
 
 # If requested, clean up $tmpdir
 if [[ "$CLEAN" = "YES" ]];then
