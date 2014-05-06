@@ -102,7 +102,7 @@ contains
 100     format(1x,i3)
         lcount=lcount+1
         itypex=itypey-99
-        read(ietabl_t,105,IOSTAT=iflag,end=120) (isuble_t(itypey,n),n=1,6)
+        read(ietabl_t,105,IOSTAT=iflag,end=120) (isuble_t(itypex,n),n=1,6)
 105     format(8x,6i12)
         do k=1,33
            read(ietabl_t,110)(etabl_t(itypex,k,m),m=1,6)
@@ -121,8 +121,10 @@ contains
         ptabl_t(1)=etabl_t(20,1,1)
         do k=2,33
            ptabl_t(k)=half*(etabl_t(120,k-1,1)+etabl_t(120,k,1))
+           write(6,110) (etabl_t(21,k,m),m=1,6)
         enddo
         ptabl_t(34)=etabl_t(20,33,1)
+        write(6,105) (isuble_t(21,m),m=1,6)
      endif
 
      close(ietabl_t)

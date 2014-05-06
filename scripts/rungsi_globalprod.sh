@@ -593,6 +593,7 @@ $ncp $convinfo ./convinfo
 $ncp $atmsbeamdat ./atms_beamwidth.txt
 #$ncp $errtable ./errtable
 $ncp $errtable_ps ./errtable_ps 
+$ncp $errtable_pw ./errtable_pw 
 $ncp $errtable_q ./errtable_q 
 $ncp $errtable_t ./errtable_t 
 $ncp $errtable_uv ./errtable_uv 

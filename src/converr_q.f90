@@ -101,7 +101,7 @@ contains
 100     format(1x,i3,2x,i3)
         lcount=lcount+1
         itypex=itypey-99
-        read(ietabl_q,105,IOSTAT=iflag,end=120) (isuble_q(itypey,n),n=1,6)
+        read(ietabl_q,105,IOSTAT=iflag,end=120) (isuble_q(itypex,n),n=1,6)
 105     format(8x,6i12)
         do k=1,33
            read(ietabl_q,110)(etabl_q(itypex,k,m),m=1,6)
@@ -114,14 +114,16 @@ contains
         write(6,*)'CONVERR:  ***WARNING*** obs error table not available to 3dvar.'
         oberrflg=.false.
      else
-        if(mype == 0) write(6,*)'CONVERR:  using observation errors from user provided table'
+        if(mype == 0) write(6,*)'CONVERR_Q:  using observation errors from user provided table'
         allocate(ptabl_q(34))
         ptabl_q=zero
         ptabl_q(1)=etabl_q(20,1,1)
         do k=2,33
            ptabl_q(k)=half*(etabl_q(20,k-1,1)+etabl_q(20,k,1))
+           write(6,110) (etabl_q(21,k,m),m=1,6)
         enddo
         ptabl_q(34)=etabl_q(20,33,1)
+        write(6,105) (isuble_q(21,m),m=1,6)
      endif
 
      close(ietabl_q)

@@ -893,7 +893,7 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
 
 !-------------------------------------------------------------------------------------------------          
 !          Write data into output arrays
-
+           if (var_jb >10.0_r_kind) var_jb=zero 
            if (qcm == 3) inflate_error = .true.
 
            if (lpsob) then

@@ -77,7 +77,7 @@ contains
 
      integer(i_kind):: ier
 
-     allocate(btabl_uv(100,33,6))
+     allocate(btabl_uv(100,33,8))
 
      btabl_uv=1.e9_r_kind
       
@@ -100,8 +100,8 @@ contains
         lcount=lcount+1
         itypex=itypey-199
         do k=1,33
-           read(ibtabl_uv,110)(btabl_uv(itypex,k,m),m=1,6)
-110        format(1x,6e12.5)
+           read(ibtabl_uv,110)(btabl_uv(itypex,k,m),m=1,8)
+110        format(1x,8e12.5)
         end do
      end do   loopd
 120  continue

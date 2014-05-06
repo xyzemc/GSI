@@ -121,8 +121,11 @@ contains
         ptabl_ps(1)=etabl_ps(20,1,1)
         do k=2,33
            ptabl_ps(k)=half*(etabl_ps(20,k-1,1)+etabl_ps(20,k,1))
+           write(6,110) (etabl_ps(21,k,m),m=1,6)
         enddo
+           write(6,105) (isuble_ps(21,m),m=1,6)
         ptabl_ps(34)=etabl_ps(20,33,1)
+       
      endif
 
      close(ietabl)
