@@ -79,14 +79,14 @@ contains
      integer(i_kind):: ier
 
      maxsub_pw=5
-     allocate(etabl_pw(50,33,6),isuble_pw(50,6))
+     allocate(etabl_pw(50,33,6),isuble_pw(50,5))
 
      etabl_pw=1.e9_r_kind
       
      ietabl_pw=19
      open(ietabl_pw,file='errtable_pw',form='formatted',status='old',iostat=ier)
      if(ier/=0) then
-        write(6,*)'CONVERR:  ***WARNING*** obs error table ("errtable") not available to 3dvar.'
+        write(6,*)'CONVERR_pw:  ***WARNING*** obs error table ("errtable") not available to 3dvar.'
         lcount=0
         oberrflg=.false.
         return
@@ -101,8 +101,8 @@ contains
 100     format(1x,i3,2x,i3)
         lcount=lcount+1
         itypex=itypey-149
-        read(ietabl_pw,105,IOSTAT=iflag,end=120) (isuble_pw(itypex,n),n=1,6)
-105     format(8x,6i12)
+        read(ietabl_pw,105,IOSTAT=iflag,end=120) (isuble_pw(itypex,n),n=1,5)
+105     format(8x,5i12)
         do k=1,33
            read(ietabl_pw,110)(etabl_pw(itypex,k,m),m=1,6)
 110        format(1x,6e12.5)
@@ -111,19 +111,23 @@ contains
 120  continue
 
      if(lcount<=0 .and. mype==0) then
-        write(6,*)'CONVERR:  ***WARNING*** obs error table not available to 3dvar.'
+        write(6,*)'CONVERR_PW:  ***WARNING*** obs error table not available to 3dvar.'
         oberrflg=.false.
      else
-        if(mype == 0) write(6,*)'CONVERR_PW:  using observation errors from user provided table'
+        if(mype == 0)  then
+           write(6,*)'CONVERR_PW:  using observation errors from user provided table'
+           write(6,105) (isuble_pw(20,m),m=1,5)
+           do k=1,33
+              write(6,110) (etabl_pw(20,k,m),m=1,6)
+           enddo
+        endif
         allocate(ptabl_pw(34))
         ptabl_pw=zero
         ptabl_pw(1)=etabl_pw(20,1,1)
         do k=2,33
            ptabl_pw(k)=half*(etabl_pw(20,k-1,1)+etabl_pw(20,k,1))
-           write(6,110) (etabl_pw(3,k,m),m=1,6)
         enddo
         ptabl_pw(34)=etabl_pw(20,33,1)
-           write(6,105) (isuble_pw(3,m),m=1,6)
      endif
 
      close(ietabl_pw)

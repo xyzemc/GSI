@@ -79,14 +79,14 @@ contains
      integer(i_kind):: ier
 
      maxsub_q=5
-     allocate(etabl_q(100,33,6),isuble_q(100,6))
+     allocate(etabl_q(100,33,6),isuble_q(100,5))
 
      etabl_q=1.e9_r_kind
       
      ietabl_q=19
      open(ietabl_q,file='errtable_q',form='formatted',status='old',iostat=ier)
      if(ier/=0) then
-        write(6,*)'CONVERR:  ***WARNING*** obs error table ("errtable") not available to 3dvar.'
+        write(6,*)'CONVERR_q:  ***WARNING*** obs error table ("errtable") not available to 3dvar.'
         lcount=0
         oberrflg=.false.
         return
@@ -101,8 +101,8 @@ contains
 100     format(1x,i3,2x,i3)
         lcount=lcount+1
         itypex=itypey-99
-        read(ietabl_q,105,IOSTAT=iflag,end=120) (isuble_q(itypex,n),n=1,6)
-105     format(8x,6i12)
+        read(ietabl_q,105,IOSTAT=iflag,end=120) (isuble_q(itypex,n),n=1,5)
+105     format(8x,5i12)
         do k=1,33
            read(ietabl_q,110)(etabl_q(itypex,k,m),m=1,6)
 110        format(1x,6e12.5)
@@ -111,19 +111,23 @@ contains
 120  continue
 
      if(lcount<=0 .and. mype==0) then
-        write(6,*)'CONVERR:  ***WARNING*** obs error table not available to 3dvar.'
+        write(6,*)'CONVERR_Q:  ***WARNING*** obs error table not available to 3dvar.'
         oberrflg=.false.
      else
-        if(mype == 0) write(6,*)'CONVERR_Q:  using observation errors from user provided table'
+        if(mype == 0) then
+           write(6,*)'CONVERR_Q:  using observation errors from user provided table'
+           write(6,105) (isuble_q(21,m),m=1,5)
+           do k=1,33
+              write(6,110) (etabl_q(21,k,m),m=1,6)
+           enddo
+        endif
         allocate(ptabl_q(34))
         ptabl_q=zero
         ptabl_q(1)=etabl_q(20,1,1)
         do k=2,33
            ptabl_q(k)=half*(etabl_q(20,k-1,1)+etabl_q(20,k,1))
-           write(6,110) (etabl_q(21,k,m),m=1,6)
         enddo
         ptabl_q(34)=etabl_q(20,33,1)
-        write(6,105) (isuble_q(21,m),m=1,6)
      endif
 
      close(ietabl_q)

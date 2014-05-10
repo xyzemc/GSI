@@ -73,7 +73,7 @@ contains
 
      btabl_ps=1.e9_r_kind
       
-     ibtabl=19
+     ibtabl=11
      open(ibtabl,file='btable_ps',form='formatted',status='old',iostat=ier)
      if(ier/=0) then
         write(6,*)'CONVB_PS:  ***WARNING*** obs b table ("btable") not available to 3dvar.'
@@ -102,13 +102,17 @@ contains
         write(6,*)'CONVB_PS:  ***WARNING*** obs b table not available to 3dvar.'
         bflag=.false.
      else
-        if(mype == 0) write(6,*)'CONVB_PS:  using observation b from user provided table'
+        if(mype == 0) then
+           write(6,*)'CONVB_PS:  using observation b from user provided table'
+           do k=1,33
+              write(6,110) (btabl_ps(21,k,m),m=1,6)
+           enddo
+        endif
         allocate(bptabl_ps(34))
         bptabl_ps=zero
         bptabl_ps(1)=btabl_ps(20,1,1)
         do k=2,33
            bptabl_ps(k)=half*(btabl_ps(20,k-1,1)+btabl_ps(20,k,1))
-           write(6,110) (btabl_ps(21,k,m),m=1,6)
         enddo
         bptabl_ps(34)=btabl_ps(20,33,1)
      endif

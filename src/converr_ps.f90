@@ -80,14 +80,14 @@ contains
      integer(i_kind):: ier
      maxsub_ps=5
      allocate(etabl_ps(100,33,6))
-     allocate(isuble_ps(100,6))
+     allocate(isuble_ps(100,5))
 
      etabl_ps=1.e9_r_kind
       
      ietabl=19
      open(ietabl,file='errtable_ps',form='formatted',status='old',iostat=ier)
      if(ier/=0) then
-        write(6,*)'CONVERR_PS:  ***WARNING*** obs error table ("errtable") not available to 3dvar.'
+        write(6,*)'CONVERR_ps:  ***WARNING*** obs error table ("errtable") not available to 3dvar.'
         lcount=0
         oberrflg=.false.
         return
@@ -102,8 +102,8 @@ contains
 100     format(1x,i3)
         lcount=lcount+1
         itypey=itypex-99
-        read(ietabl,105,IOSTAT=iflag,end=120) (isuble_ps(itypey,n),n=1,6)  
-105     format(8x,6i12)
+        read(ietabl,105,IOSTAT=iflag,end=120) (isuble_ps(itypey,n),n=1,5)  
+105     format(8x,5i12)
         do k=1,33
            read(ietabl,110)(etabl_ps(itypey,k,m),m=1,6)
 110        format(1x,6e12.5)
@@ -115,15 +115,19 @@ contains
         write(6,*)'CONVERR_PS:  ***WARNING*** obs error table not available to 3dvar.'
         oberrflg=.false.
      else
-        if(mype == 0) write(6,*)'CONVERR_PS:  using observation errors from user provided table'
+        if(mype == 0)  then
+           write(6,*)'CONVERR_PS:  using observation errors from user provided table'
+           write(6,105) (isuble_ps(21,m),m=1,5)
+           do k=1,33
+              write(6,110) (etabl_ps(21,k,m),m=1,6)
+           enddo
+        endif
         allocate(ptabl_ps(34))
         ptabl_ps=zero
         ptabl_ps(1)=etabl_ps(20,1,1)
         do k=2,33
            ptabl_ps(k)=half*(etabl_ps(20,k-1,1)+etabl_ps(20,k,1))
-           write(6,110) (etabl_ps(21,k,m),m=1,6)
         enddo
-           write(6,105) (isuble_ps(21,m),m=1,6)
         ptabl_ps(34)=etabl_ps(20,33,1)
        
      endif
