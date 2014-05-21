@@ -79,13 +79,13 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   use constants, only: deg2rad,zero,rad2deg,one_tenth,&
         tiny_r_kind,huge_r_kind,r60inv,one_tenth,&
         one,two,three,four,five,half,quarter,r60inv,r100,r2000
-  use convb_uv,only: btabl_uv,bptabl_uv
-  use converr_uv,only: etabl_uv,ptabl_uv,isuble_uv,maxsub_uv
   use obsmod, only: iadate,oberrflg,perturb_obs,perturb_fact,ran01dom,bmiss
   use convinfo, only: nconvtype,ctwind, &
        ncmiter,ncgroup,ncnumgrp,icuse,ictype,icsubtype,ioctype, &
        ithin_conv,rmesh_conv,pmesh_conv, index_sub,&
        id_bias_ps,id_bias_t,conv_bias_ps,conv_bias_t,use_prepb_satwnd
+  use converr_uv,only: etabl_uv,ptabl_uv,isuble_uv,maxsub_uv
+  use convb_uv,only: btabl_uv
   use gsi_4dvar, only: l4dvar,iwinbgn,winlen,time_4dvar
   use deter_sfc_mod, only: deter_sfc_type,deter_sfc2
   implicit none
@@ -143,9 +143,9 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   integer(i_kind) ntb,ntmatch,ncx,ncsave,ntread
   integer(i_kind) kk,klon1,klat1,klonp1,klatp1
   integer(i_kind) nmind,lunin,idate,ilat,ilon,iret,k
-  integer(i_kind) nreal,ithin,iout,ntmp,icount,iiout,icntpnt,ii,icntpnt2
+  integer(i_kind) nreal,ithin,iout,ntmp,icount,iiout,icntpnt,ii,icntpnt2,jj
   integer(i_kind) itype,iosub,ixsub,isubsub,iobsub,itypey 
-  integer(i_kind) qm,ierr
+  integer(i_kind) qm,ierr,ierr2
   integer(i_kind) nlevp         ! vertical level for thinning
   integer(i_kind) pflag
   integer(i_kind) ntest,nvtest
@@ -767,11 +767,13 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
 !!  first to get observation error from PREPBUFR observation error table
            ppb=max(zero,min(ppb,r2000))
            itypey=itype-199 
-           ierr=index_sub(nc)+1
+           ierr=index_sub(nc)
+           ierr2=ierr-1
            if (ierr >maxsub_uv) ierr=2
-           if( iobsub /= isuble_uv(itypey,ierr)) then
+!           write(6,*) ' READ_SATWND:itypey,ierr2=',itypey,ierr2,ierr,index_sub(nc),isuble_uv(itypey,ierr2)
+           if( iobsub /= isuble_uv(itypey,ierr2)) then
               write(6,*) ' READ_SATWND: the subtypes do not match subtype &
-                         in the errortable,iobsub=',iobsub,isuble_uv(itypey,ierr) 
+                         in the errortable,iobsub=',iobsub,isuble_uv(itypey,ierr2),isuble_uv(46,2),itype,itypey,nc,ierr
               call stop2(49)
             endif
            if(ppb>=etabl_uv(itypey,1,1)) k1=1          
@@ -1014,6 +1016,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   write(6,*) 'READ_SATWND,nread,ndata,nreal,nodata=',nread,ndata,nreal,nodata
 
   close(lunin)
+ close(99)
 
 ! End of routine
   return

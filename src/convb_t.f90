@@ -83,7 +83,7 @@ contains
      btabl_t=1.e9_r_kind
       
      ibtabl_t=19
-     open(ibtabl_t,file='btabl_t',form='formatted',status='old',iostat=ier)
+     open(ibtabl_t,file='btable_t',form='formatted',status='old',iostat=ier)
      if(ier/=0) then
         write(6,*)'CONVB_T:  ***WARNING*** obs b table ("btabl") not available to 3dvar.'
         lcount=0

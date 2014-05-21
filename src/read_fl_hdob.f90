@@ -602,11 +602,11 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
 !             Get observation error from error table
               ppb = max(zero,min(pob_mb,r2000))
               itypey=itype-99
-              ierr_ps=index_sub(nc)+1
+              ierr_ps=index_sub(nc)
               if(ierr_ps >maxsub_ps) ierr_ps=2
-              if( iobsub /= isuble_ps(itypey,ierr_ps)) then
-                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
-                         in the errortable,iobsub=',iobsub,isuble_ps(itypey,ierr_ps)
+              if( icsubtype(nc) /= isuble_ps(itypey,ierr_ps-1)) then
+                 write(6,*) ' READ_FL_HDOB: the subtypes do not match subtype &
+                         in the errortable,iobsub=',iobsub,isuble_ps(itypey,ierr_ps-1),itypey,itype
                  call stop2(49)
               endif
               if(ppb >= etabl_ps(itypey,1,1)) k1 = 1
@@ -670,11 +670,11 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
 !             Get observation error from error table
               ppb = max(zero,min(pob_mb,r2000))
               itypey=itype-99
-              ierr_t=index_sub(nc)+1
+              ierr_t=index_sub(nc)
               if(ierr_t >maxsub_t) ierr_t=2
-              if( iobsub /= isuble_t(itypey,ierr_t)) then
-                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
-                         in the errortable,iobsub=',iobsub,isuble_t(itypey,ierr_t)
+              if( icsubtype(nc) /= isuble_t(itypey,ierr_t-1)) then
+                 write(6,*) ' READ_FL_HDOB: the subtypes do not match subtype &
+                         in the errortable,iobsub=',iobsub,isuble_t(itypey,ierr_t-1),itypey,itype
                  call stop2(49)
               endif
 
@@ -732,11 +732,11 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
 !             Get observation error from error table
               ppb = max(zero,min(pob_mb,r2000))
               itypey=itype-99
-              ierr_q=index_sub(nc)+1
+              ierr_q=index_sub(nc)
               if(ierr_q >maxsub_q) ierr_q=2
-              if( iobsub /= isuble_q(itypey,ierr_q)) then
-                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
-                         in the errortable,iobsub=',iobsub,isuble_q(itypey,ierr_q)
+              if( icsubtype(nc)  /= isuble_q(itypey,ierr_q-1)) then
+                 write(6,*) ' READ_FL_HDOB: the subtypes do not match subtype &
+                         in the errortable,iobsub=',iobsub,isuble_q(itypey,ierr_q-1),itypey,itype
                  call stop2(49)
               endif
 
@@ -788,11 +788,11 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
 !             Get observation error from error table
               ppb = max(zero,min(pob_mb,r2000))
               itypey=itype-199
-              ierr_uv=index_sub(nc)+1
+              ierr_uv=index_sub(nc)
               if(ierr_uv >maxsub_uv) ierr_uv=2
-              if( iobsub /= isuble_q(itypey,ierr_uv)) then
-                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
-                         in the errortable,iobsub=',iobsub,isuble_q(itypey,ierr_uv)
+              if( icsubtype(nc) /= isuble_q(itypey,ierr_uv-1)) then
+                 write(6,*) ' READ_FL_HDOB: the subtypes do not match subtype &
+                         in the errortable,iobsub=',iobsub,isuble_q(itypey,ierr_uv-1),itypey,itype
                  call stop2(49)
               endif
 

@@ -41,7 +41,7 @@ implicit none
   integer(i_kind),save:: ietabl_uv,itypex,itypey,lcount,iflag,k,m,n,maxsub_uv
   real(r_single),save,allocatable,dimension(:,:,:) :: etabl_uv
   real(r_kind),save,allocatable,dimension(:)  :: ptabl_uv
-  real(r_kind),save,allocatable,dimension(:,:)  :: isuble_uv
+  integer(i_kind),save,allocatable,dimension(:,:)  :: isuble_uv
 
 contains
 
@@ -115,9 +115,9 @@ contains
      else
         if(mype == 0) then
            write(6,*)'CONVERR_UV:  using observation errors from user provided table'
-           write(6,105) (isuble_uv(21,m),m=1,7)
+           write(6,105) (isuble_uv(92,m),m=1,7)
            do k=1,33
-              write(6,110) (etabl_uv(21,k,m),m=1,8)
+              write(6,110) (etabl_uv(46,k,m),m=1,8)
            enddo
         endif
         allocate(ptabl_uv(34))

@@ -604,7 +604,6 @@ subroutine read_obs(ndata,mype)
        call convb_q_read(mype)
        call convb_t_read(mype)
        call convb_uv_read(mype)
-       call converr_pw_read(mype)
 
 !   Optionally set random seed to perturb observations
     if (perturb_obs) then

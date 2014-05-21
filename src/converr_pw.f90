@@ -116,6 +116,7 @@ contains
      else
         if(mype == 0)  then
            write(6,*)'CONVERR_PW:  using observation errors from user provided table'
+           write(6,*)'CONVERR_PW:  end of reading etable_pw',itypey
            write(6,105) (isuble_pw(20,m),m=1,5)
            do k=1,33
               write(6,110) (etabl_pw(20,k,m),m=1,6)
@@ -123,11 +124,11 @@ contains
         endif
         allocate(ptabl_pw(34))
         ptabl_pw=zero
-        ptabl_pw(1)=etabl_pw(20,1,1)
+        ptabl_pw(1)=etabl_pw(10,1,1)
         do k=2,33
-           ptabl_pw(k)=half*(etabl_pw(20,k-1,1)+etabl_pw(20,k,1))
+           ptabl_pw(k)=half*(etabl_pw(20,k-1,1)+etabl_pw(10,k,1))
         enddo
-        ptabl_pw(34)=etabl_pw(20,33,1)
+        ptabl_pw(34)=etabl_pw(10,33,1)
      endif
 
      close(ietabl_pw)

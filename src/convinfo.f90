@@ -144,7 +144,6 @@ contains
     stndev_conv_ps =one
     stndev_conv_spd =one
     stndev_conv_pm2_5=one
-    index_sub=2           !  the position in prepbufr error table, the first collum is pressure
 
     id_bias_ps = 0            ! prepbufr id to have conv_bias added for testing 
     id_bias_t  = 0            ! prepbufr id to have conv_bias added for testing 
@@ -249,6 +248,7 @@ contains
        rmesh_conv(i)=99999.0_r_kind
        pmesh_conv(i)=zero
        stndev_conv(i)=one
+       index_sub(i)=2
     enddo
     nc=zero
 
@@ -296,8 +296,8 @@ contains
        
        if(mype == 0)write(6,1031)ioctype(nc),ictype(nc),icsubtype(nc),icuse(nc),ctwind(nc),ncnumgrp(nc), &
             ncgroup(nc),ncmiter(nc),cgross(nc),cermax(nc),cermin(nc),cvar_b(nc),cvar_pg(nc) &
-            ,ithin_conv(nc),rmesh_conv(nc),pmesh_conv(nc),npred_conv(nc)
-1031   format('READ_CONVINFO: ',a7,1x,i3,1x,i4,1x,i2,1x,g13.6,1x,3(I3,1x),5g13.6,i5,2g13.6,i5)
+            ,ithin_conv(nc),rmesh_conv(nc),pmesh_conv(nc),npred_conv(nc),index_sub(nc)
+1031   format('READ_CONVINFO: ',a7,1x,i3,1x,i4,1x,i2,1x,g13.6,1x,3(I3,1x),5g13.6,i5,2g13.6,i5,i5)
        if (npred_conv_max > 0 ) then
           read(iunit,*,iostat=ier) cob,iob,isub,np,(predx_conv(nc,n),n=1,np)
           if (ier /= 0 ) then

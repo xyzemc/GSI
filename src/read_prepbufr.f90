@@ -259,7 +259,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
   integer(i_kind),dimension(nconvtype)::ntxall
   integer(i_kind),dimension(nconvtype+1)::ntx
   integer(i_kind),allocatable,dimension(:):: isort,iloc
-  integer(i_kind) ierr_ps,ierr_q,ierr_t,ierr_uv,ierr_pw                           !  the position of error table collum
+  integer(i_kind) ierr_ps,ierr_q,ierr_t,ierr_uv,ierr2_uv,ierr_pw                           !  the position of error table collum
 
   real(r_kind) time,timex,time_drift,timeobs,toff,t4dv,zeps
   real(r_kind) qtflg,tdry,rmesh,ediff,usage,ediff_ps,ediff_q,ediff_t,ediff_uv,ediff_pw
@@ -890,145 +890,182 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
            itypey=kx 
            if (psob)  then
               itypex=itypey-99
-              ierr_ps=index_sub(nc)+1
+              ierr_ps=index_sub(nc)
               if(ierr_ps >maxsub_ps) ierr_ps=2 
-              if( iobsub /= isuble_ps(itypey,ierr_ps)) then
-                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
-                         in the errortable,iobsub=',iobsub,isuble_ps(itypey,ierr_ps)
+              if( icsubtype(nc) /= isuble_ps(itypex,ierr_ps-1)) then
+                 write(6,*) ' READ_PREPBUFR_PSOB: the subtypes do not match subtype &
+                         in the errortable,iobsub=',icsubtype(nc),nc,ierr_ps,isuble_ps(itypex,ierr_ps-1),itypey,itypex
                  call stop2(49)
               endif
+              do k=1,levs
+                 ppb=obsdat(1,k)
+                 if(kx==153)ppb=obsdat(11,k)*0.01_r_kind
+                 ppb=max(zero,min(ppb,r2000))
+                 if(ppb>=etabl_ps(itypex,1,1)) k1_ps=1
+                 do kl=1,32
+                    if(ppb>=etabl_ps(itypex,kl+1,1).and.ppb<=etabl_ps(itypex,kl,1)) k1_ps=kl
+                 end do
+                 if(ppb<=etabl_ps(itypex,33,1)) k1_ps=5
+                 k2_ps=k1_ps+1
+                 ediff_ps = etabl_ps(itypex,k2_ps,1)-etabl_ps(itypex,k1_ps,1)
+                 if (abs(ediff_ps) > tiny_r_kind) then
+                    del_ps = (ppb-etabl_ps(itypex,k1_ps,1))/ediff_ps
+                 else
+                   del_ps = huge_r_kind
+                 endif
+                 del_ps=max(zero,min(del_ps,one))
+                 if(oberrflg)then
+!                    write(6,*) 'READ_PREPBUFR_PS:',itypex,k1_ps,ierr_ps,k2_ps,ierr_ps
+                    obserr(1,k)=(one-del_ps)*etabl_ps(itypex,k1_ps,ierr_ps)+del_ps*etabl_ps(itypex,k2_ps,ierr_ps) ! Surface pressure error
+                    obserr(1,k)=max(obserr(1,k),perrmin)
+                 endif
+                 var_jb(1,k)=(one-del_ps)*btabl_ps(itypex,k1_ps,ierr_ps)+del_ps*btabl_ps(itypex,k2_ps,ierr_ps) ! Surface pressure b 
+                 var_jb(1,k)=max(var_jb(1,k),pjbmin)
+                 if (var_jb(1,k) >=10.0_r_kind) var_jb(1,k)=zero
+              enddo
            endif
            if (tob) then
               itypex=itypey-99
-              ierr_t=index_sub(nc)+1
+              ierr_t=index_sub(nc)
               if(ierr_t >maxsub_t) ierr_t=2 
-              if( iobsub /= isuble_t(itypey,ierr_t)) then
-                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
-                         in the errortable,iobsub=',iobsub,isuble_t(itypey,ierr_t)
+              if( icsubtype(nc) /= isuble_t(itypex,ierr_t-1)) then
+                 write(6,*) ' READ_PREPBUFR_TOB: the subtypes do not match subtype &
+                         in the errortable,iobsub=',icsubtype(nc),nc,ierr_t,isuble_t(itypex,ierr_t-1),itypey,itypex
                  call stop2(49)
               endif
+              do k=1,levs
+                 ppb=obsdat(1,k)
+                 if(kx==153)ppb=obsdat(11,k)*0.01_r_kind
+                 ppb=max(zero,min(ppb,r2000))
+                 if(ppb>=etabl_t(itypex,1,1)) k1_t=1
+                 do kl=1,32
+                    if(ppb>=etabl_t(itypex,kl+1,1).and.ppb<=etabl_t(itypex,kl,1)) k1_t=kl
+                 end do
+                 if(ppb<=etabl_t(itypex,33,1)) k1_t=5
+                 k2_t=k1_t+1
+                 ediff_t = etabl_t(itypex,k2_t,1)-etabl_t(itypex,k1_t,1)
+                 if (abs(ediff_t) > tiny_r_kind) then
+                    del_t = (ppb-etabl_t(itypex,k1_t,1))/ediff_t
+                 else
+                   del_t = huge_r_kind
+                 endif
+                 del_t=max(zero,min(del_t,one))
+                 if(oberrflg)then
+!                    write(6,*) 'READ_PREPBUFR_T:',itypex,k1_t,itypey,k2_t,ierr_t,nc,kx,ppb
+                    obserr(3,k)=(one-del_t)*etabl_t(itypex,k1_t,ierr_t)+del_t*etabl_t(itypex,k2_t,ierr_t) ! Temperature error
+                    obserr(3,k)=max(obserr(3,k),terrmin)
+                 endif
+                 var_jb(3,k)=(one-del_t)*btabl_t(itypex,k1_t,ierr_t)+del_t*btabl_t(itypex,k2_t,ierr_t) !Temperature b 
+                 var_jb(3,k)=max(var_jb(3,k),tjbmin)
+                 if (var_jb(3,k) >=10.0_r_kind) var_jb(3,k)=zero
+              enddo 
            endif
            if (qob) then
               itypex=itypey-99
-              ierr_q=index_sub(nc)+1
+              ierr_q=index_sub(nc)
               if(ierr_q >maxsub_q) ierr_q=2
-              if( iobsub /= isuble_q(itypey,ierr_q)) then
-                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
-                         in the errortable,iobsub=',iobsub,isuble_q(itypey,ierr_q)
+              if( icsubtype(nc) /= isuble_q(itypex,ierr_q-1)) then
+                 write(6,*) ' READ_PREPBUFR_QOB: the subtypes do not match subtype &
+                         in the errortable,iobsub=',icsubtype(nc),nc,ierr_q,isuble_q(itypex,ierr_q-1),itypey,itypex
                  call stop2(49)
               endif
+              do k=1,levs
+                 ppb=obsdat(1,k)
+                 if(kx==153)ppb=obsdat(11,k)*0.01_r_kind
+                 ppb=max(zero,min(ppb,r2000))
+                 if(ppb>=etabl_q(itypex,1,1)) k1_q=1
+                 do kl=1,32
+                    if(ppb>=etabl_q(itypex,kl+1,1).and.ppb<=etabl_q(itypex,kl,1)) k1_q=kl
+                 end do
+                 if(ppb<=etabl_q(itypex,33,1)) k1_q=5
+                 k2_q=k1_q+1
+                 ediff_q = etabl_q(itypex,k2_q,1)-etabl_q(itypex,k1_q,1)
+                 if (abs(ediff_q) > tiny_r_kind) then
+                    del_q = (ppb-etabl_q(itypex,k1_q,1))/ediff_q
+                 else
+                   del_q = huge_r_kind
+                 endif
+                 del_q=max(zero,min(del_q,one))
+                 if(oberrflg)then
+!                    write(6,*) 'READ_PREPBUFR_Q:',itypex,k1_q,itypey,k2_q,ierr_q,nc,kx,ppb
+                    obserr(2,k)=(one-del_q)*etabl_q(itypex,k1_q,ierr_q)+del_q*etabl_q(itypex,k2_q,ierr_q) ! Humidity error
+                    obserr(2,k)=max(obserr(2,k),qerrmin)
+                 endif
+                 var_jb(2,k)=(one-del_q)*btabl_q(itypex,k1_q,ierr_q)+del_q*btabl_q(itypex,k2_q,ierr_q) !Humidity b 
+                 var_jb(2,k)=max(var_jb(2,k),qjbmin)
+                 if (var_jb(2,k) >=10.0_r_kind) var_jb(2,k)=zero
+              enddo 
            endif
            if (uvob) then
               itypex=itypey-199
-              ierr_uv=index_sub(nc)+1
+              ierr_uv=index_sub(nc)
+              ierr2_uv=ierr_uv-1
               if(ierr_uv >maxsub_uv) ierr_uv=2
-              if( iobsub /= isuble_q(itypey,ierr_uv)) then
-                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
-                         in the errortable,iobsub=',iobsub,isuble_q(itypey,ierr_uv)
+              if( icsubtype(nc) /= isuble_uv(itypex,ierr2_uv)) then
+                 write(6,*) ' READ_PEPBUFR_UV: the subtypes do not match subtype &
+                         in the errortable,iobsub=',icsubtype(nc),nc,ierr2_uv,isuble_uv(itypex,ierr2_uv),itypey,itypex
                  call stop2(49)
               endif
+              do k=1,levs
+                 ppb=obsdat(1,k)
+                 if(kx==153)ppb=obsdat(11,k)*0.01_r_kind
+                 ppb=max(zero,min(ppb,r2000))
+                 if(ppb>=etabl_uv(itypex,1,1)) k1_uv=1
+                 do kl=1,32
+                    if(ppb>=etabl_uv(itypex,kl+1,1).and.ppb<=etabl_uv(itypex,kl,1)) k1_uv=kl
+                 end do
+                 if(ppb<=etabl_uv(itypex,33,1)) k1_uv=5
+                 k2_uv=k1_uv+1
+                 ediff_uv = etabl_uv(itypex,k2_uv,1)-etabl_uv(itypex,k1_uv,1)
+                 if (abs(ediff_uv) > tiny_r_kind) then
+                    del_uv = (ppb-etabl_uv(itypex,k1_uv,1))/ediff_uv
+                 else
+                   del_uv = huge_r_kind
+                 endif
+                 del_uv=max(zero,min(del_uv,one))
+                 if(oberrflg)then
+!                    write(6,*) 'READ_PREPBUFR_UV:',itypex,k1_uv,itypey,k2_uv,ierr_uv,nc,kx,ppb
+                    obserr(5,k)=(one-del_uv)*etabl_uv(itypex,k1_uv,ierr_uv)+del_uv*etabl_uv(itypex,k2_uv,ierr_uv) ! Wind error
+                    obserr(5,k)=max(obserr(5,k),werrmin)
+                 endif
+                 var_jb(5,k)=(one-del_uv)*btabl_uv(itypex,k1_uv,ierr_uv)+del_uv*btabl_uv(itypex,k2_uv,ierr_uv) !Wind b 
+                 var_jb(5,k)=max(var_jb(5,k),wjbmin)
+                 if (var_jb(5,k) >=10.0_r_kind) var_jb(5,k)=zero
+              enddo 
            endif
            if (pwob)  then
               itypex=itypey-149
-              ierr_pw=index_sub(nc)+1
+              ierr_pw=index_sub(nc)
               if(ierr_pw >maxsub_pw) ierr_pw=2 
-              if( iobsub /= isuble_pw(itypey,ierr_pw)) then
-                 write(6,*) ' READ_SATWND: the subtypes do not match subtype &
-                         in the errortable,iobsub=',iobsub,isuble_pw(itypey,ierr_pw)
+              if( icsubtype(nc) /= isuble_pw(itypex,ierr_pw-1)) then
+                 write(6,*) ' READ_PREPBUFR_PW: the subtypes do not match subtype &
+                         in the errortable,iobsub=',icsubtype(nc),nc,ierr_pw,isuble_pw(itypex,ierr_pw-1),itypey,itypex
                  call stop2(49)
               endif
+              do k=1,levs
+                 ppb=obsdat(1,k)
+                 if(kx==153)ppb=obsdat(11,k)*0.01_r_kind
+                 ppb=max(zero,min(ppb,r2000))
+                 if(ppb>=etabl_pw(itypex,1,1)) k1_pw=1
+                 do kl=1,32
+                    if(ppb>=etabl_pw(itypex,kl+1,1).and.ppb<=etabl_pw(itypex,kl,1)) k1_pw=kl
+                 end do
+                 if(ppb<=etabl_pw(itypex,33,1)) k1_pw=5
+                 k2_pw=k1_pw+1
+                 ediff_pw = etabl_pw(itypex,k2_pw,1)-etabl_pw(itypex,k1_pw,1)
+                 if (abs(ediff_pw) > tiny_r_kind) then
+                    del_pw = (ppb-etabl_pw(itypex,k1_pw,1))/ediff_pw
+                 else
+                   del_pw = huge_r_kind
+                 endif
+                 del_pw=max(zero,min(del_pw,one))
+                 if(oberrflg)then
+!                    write(6,*) 'READ_PREPBUFR_Pw:',itypex,itypey,ierr_pw,k2_pw,ierr_pw,nc,kx,ppb
+                    obserr(7,k)=(one-del_pw)*etabl_pw(itypex,k1_pw,ierr_pw)+del_pw*etabl_pw(itypex,k2_pw,ierr_pw) ! Precip water error
+                    obserr(7,k)=max(obserr(7,k),pwerrmin)
+                 endif
+              enddo 
            endif
-
-           do k=1,levs
-              ppb=obsdat(1,k)
-              if(kx==153)ppb=obsdat(11,k)*0.01_r_kind
-              ppb=max(zero,min(ppb,r2000))
-              if(ppb>=etabl_ps(itypex,1,1)) k1_ps=1
-              if(ppb>=etabl_q(itypex,1,1)) k1_q=1
-              if(ppb>=etabl_t(itypex,1,1)) k1_t=1
-              if(ppb>=etabl_uv(itypex,1,1)) k1_uv=1
-              if(ppb>=etabl_pw(itypex,1,1)) k1_pw=1
-              do kl=1,32
-                 if(ppb>=etabl_ps(itypex,kl+1,1).and.ppb<=etabl_ps(itypex,kl,1)) k1_ps=kl
-                 if(ppb>=etabl_q(itypex,kl+1,1).and.ppb<=etabl_q(itypex,kl,1)) k1_q=kl
-                 if(ppb>=etabl_t(itypex,kl+1,1).and.ppb<=etabl_t(itypex,kl,1)) k1_t=kl
-                 if(ppb>=etabl_uv(itypex,kl+1,1).and.ppb<=etabl_uv(itypex,kl,1)) k1_uv=kl
-                 if(ppb>=etabl_pw(itypex,kl+1,1).and.ppb<=etabl_pw(itypex,kl,1)) k1_pw=kl
-              end do
-              if(ppb<=etabl_ps(itypex,33,1)) k1_ps=5
-              if(ppb<=etabl_q(itypex,33,1)) k1_q=5
-              if(ppb<=etabl_t(itypex,33,1)) k1_t=5
-              if(ppb<=etabl_uv(itypex,33,1)) k1_uv=5
-              if(ppb<=etabl_pw(itypex,33,1)) k1_pw=5
-              k2_ps=k1_ps+1
-              k2_q=k1_q+1
-              k2_t=k1_t+1
-              k2_uv=k1_uv+1
-              k2_pw=k1_pw+1
-              ediff_ps = etabl_ps(itypex,k2_ps,1)-etabl_ps(itypex,k1_ps,1)
-              ediff_q = etabl_q(itypex,k2_q,1)-etabl_q(itypex,k1_q,1)
-              ediff_t = etabl_t(itypex,k2_t,1)-etabl_t(itypex,k1_t,1)
-              ediff_uv = etabl_uv(itypex,k2_uv,1)-etabl_uv(itypex,k1_uv,1)
-              ediff_pw = etabl_pw(itypex,k2_pw,1)-etabl_pw(itypex,k1_pw,1)
-              if (abs(ediff_ps) > tiny_r_kind) then
-                 del_ps = (ppb-etabl_ps(itypex,k1,1))/ediff_ps
-              else
-                 del_ps = huge_r_kind
-              endif
-              if (abs(ediff_q) > tiny_r_kind) then
-                 del_q = (ppb-etabl_q(itypex,k1,1))/ediff_q
-              else
-                 del_q = huge_r_kind
-              endif
-              if (abs(ediff_t) > tiny_r_kind) then
-                 del_t = (ppb-etabl_t(itypex,k1,1))/ediff_t
-              else
-                 del_t = huge_r_kind
-              endif
-              if (abs(ediff_uv) > tiny_r_kind) then
-                 del_uv = (ppb-etabl_uv(itypex,k1,1))/ediff_uv
-              else
-                 del_uv = huge_r_kind
-              endif
-              if (abs(ediff_pw) > tiny_r_kind) then
-                 del_pw = (ppb-etabl_pw(itypex,k1,1))/ediff_pw
-              else
-                 del_pw = huge_r_kind
-              endif
-              del_ps=max(zero,min(del_ps,one))
-              del_q=max(zero,min(del_q,one))
-              del_t=max(zero,min(del_t,one))
-              del_uv=max(zero,min(del_uv,one))
-              del_pw=max(zero,min(del_pw,one))
-           if(oberrflg)then
-              obserr(3,k)=(one-del_t)*etabl_t(itypex,k1_t,ierr_t)+del_t*etabl_t(itypex,k2_t,ierr_t) ! Temperature error
-              obserr(2,k)=(one-del_q)*etabl_q(itypex,k1_q,ierr_q)+del_q*etabl_q(itypex,k2_q,ierr_q) ! Humidity error
-              obserr(5,k)=(one-del_uv)*etabl_uv(itypex,k1_uv,ierr_uv)+del_uv*etabl_uv(itypex,k2_uv,ierr_uv) ! Wind error 
-              obserr(1,k)=(one-del_ps)*etabl_ps(itypex,k1_ps,ierr_ps)+del_ps*etabl_ps(itypex,k2_ps,ierr_ps) ! Surface pressure error
-              obserr(7,k)=(one-del_pw)*etabl_pw(itypex,k1_pw,ierr_pw)+del_pw*etabl_pw(itypex,k2_pw,ierr_pw) ! Total precipitable water
-
-              obserr(3,k)=max(obserr(3,k),terrmin)
-              obserr(2,k)=max(obserr(2,k),qerrmin)
-              obserr(5,k)=max(obserr(5,k),werrmin)
-              obserr(1,k)=max(obserr(1,k),perrmin)
-              obserr(7,k)=max(obserr(7,k),pwerrmin)
-           endif
-           var_jb(3,k)=(one-del_t)*btabl_t(itypex,k1_t,ierr_t)+del_t*btabl_t(itypex,k2_t,ierr_t) ! Temperature error
-           var_jb(2,k)=(one-del_q)*btabl_q(itypex,k1_q,ierr_q)+del_q*btabl_q(itypex,k2_q,ierr_q) ! Humidity error
-           var_jb(5,k)=(one-del_uv)*btabl_uv(itypex,k1_uv,ierr_uv)+del_uv*btabl_uv(itypex,k2_uv,ierr_uv) ! Wind error
-           var_jb(1,k)=(one-del_ps)*btabl_ps(itypex,k1_ps,ierr_ps)+del_ps*btabl_ps(itypex,k2_ps,ierr_ps) ! Surface pressure error
-
-           var_jb(3,k)=max(var_jb(3,k),tjbmin)
-           var_jb(2,k)=max(var_jb(2,k),qjbmin)
-           var_jb(5,k)=max(var_jb(5,k),wjbmin)
-           var_jb(1,k)=max(var_jb(1,k),pjbmin)
-           if (var_jb(3,k) >=10.0_r_kind) var_jb(3,k)=zero
-           if (var_jb(2,k) >=10.0_r_kind) var_jb(2,k)=zero
-           if (var_jb(5,k) >=10.0_r_kind) var_jb(5,k)=zero
-           if (var_jb(1,k) >=10.0_r_kind) var_jb(1,k)=zero
-     
-        enddo
-
 
 
 !          If data with drift position, get drift information

@@ -92,7 +92,7 @@ contains
         lcount=lcount+1
         itypey=itypex-99
         do k=1,33
-           read(ibtabl,110)(btabl_ps(itypex,k,m),m=1,6)
+           read(ibtabl,110)(btabl_ps(itypey,k,m),m=1,6)
 110        format(1x,6e12.5)
         end do
      end do   loopd
