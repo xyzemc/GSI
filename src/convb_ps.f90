@@ -34,11 +34,12 @@ implicit none
   public :: convb_ps_read
   public :: convb_ps_destroy
 ! set passed variables as public
-  public :: btabl_ps,bptabl_ps
+  public :: btabl_ps,bptabl_ps,isuble_bps
 
-  integer(i_kind),save:: ibtabl,itypex,itypey,lcount,iflag,k,m
+  integer(i_kind),save:: ibtabl,itypex,itypey,lcount,iflag,k,m,n
   real(r_single),save,allocatable,dimension(:,:,:) :: btabl_ps
   real(r_kind),save,allocatable,dimension(:)  :: bptabl_ps
+  integer(i_kind),save,allocatable,dimension(:,:)  :: isuble_bps
 
 contains
 
@@ -70,6 +71,7 @@ contains
      integer(i_kind):: ier
 
      allocate(btabl_ps(100,33,6))
+     allocate(isuble_bps(100,5))
 
      btabl_ps=1.e9_r_kind
       
@@ -91,6 +93,8 @@ contains
 100     format(1x,i3)
         lcount=lcount+1
         itypey=itypex-99
+        read(ibtabl,105,IOSTAT=iflag,end=120) (isuble_bps(itypey,n),n=1,5)
+105     format(8x,5i12)
         do k=1,33
            read(ibtabl,110)(btabl_ps(itypey,k,m),m=1,6)
 110        format(1x,6e12.5)
@@ -104,6 +108,7 @@ contains
      else
         if(mype == 0) then
            write(6,*)'CONVB_PS:  using observation b from user provided table'
+           write(6,105) (isuble_bps(21,m),m=1,5)
            do k=1,33
               write(6,110) (btabl_ps(21,k,m),m=1,6)
            enddo
@@ -145,7 +150,7 @@ subroutine convb_ps_destroy
 !$$$
      implicit none
 
-     deallocate(btabl_ps,bptabl_ps)
+     deallocate(btabl_ps,bptabl_ps,isuble_bps)
      return
   end subroutine convb_ps_destroy
 

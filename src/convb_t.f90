@@ -38,11 +38,12 @@ implicit none
   public :: convb_t_read
   public :: convb_t_destroy
 ! set passed variables as public
-  public :: btabl_t,bptabl_t
+  public :: btabl_t,bptabl_t,isuble_bt
 
-  integer(i_kind),save:: ibtabl_t,itypex,itypey,lcount,iflag,k,m
+  integer(i_kind),save:: ibtabl_t,itypex,itypey,lcount,iflag,k,m,n
   real(r_single),save,allocatable,dimension(:,:,:) :: btabl_t
   real(r_kind),save,allocatable,dimension(:)  :: bptabl_t
+  integer(i_kind),save,allocatable,dimension(:,:)  :: isuble_bt
 
 contains
 
@@ -78,7 +79,7 @@ contains
 
      integer(i_kind):: ier
 
-     allocate(btabl_t(100,33,6))
+     allocate(btabl_t(100,33,6),isuble_bt(100,5))
 
      btabl_t=1.e9_r_kind
       
@@ -100,6 +101,8 @@ contains
 100     format(1x,i3)
         lcount=lcount+1
         itypex=itypey-99
+        read(ibtabl_t,105,IOSTAT=iflag,end=120) (isuble_bt(itypex,n),n=1,5)
+105     format(8x,5i12)
         do k=1,33
            read(ibtabl_t,110)(btabl_t(itypex,k,m),m=1,6)
 110        format(1x,6e12.5)
@@ -149,7 +152,7 @@ subroutine convb_t_destroy
 !$$$
      implicit none
 
-     deallocate(btabl_t,bptabl_t)
+     deallocate(btabl_t,bptabl_t,isuble_bt)
      return
   end subroutine convb_t_destroy
 

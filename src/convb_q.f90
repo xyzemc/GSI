@@ -36,11 +36,12 @@ implicit none
   public :: convb_q_read
   public :: convb_q_destroy
 ! set passed variables as public
-  public :: btabl_q,bptabl_q
+  public :: btabl_q,bptabl_q,isuble_bq
 
-  integer(i_kind),save:: ibtabl_q,itypex,itypey,lcount,iflag,k,m
+  integer(i_kind),save:: ibtabl_q,itypex,itypey,lcount,iflag,k,m,n
   real(r_single),save,allocatable,dimension(:,:,:) :: btabl_q
   real(r_kind),save,allocatable,dimension(:)  :: bptabl_q
+  integer(i_kind),save,allocatable,dimension(:,:)  :: isuble_bq
 
 contains
 
@@ -76,7 +77,8 @@ contains
 
      integer(i_kind):: ier
 
-     allocate(btabl_q(100,33,6))
+     allocate(btabl_q(100,33,6),isuble_bq(100,5))
+     
 
      btabl_q=1.e9_r_kind
       
@@ -98,6 +100,8 @@ contains
 100     format(1x,i3,2x,i3)
         lcount=lcount+1
         itypex=itypey-99
+        read(ibtabl_q,105,IOSTAT=iflag,end=120) (isuble_bq(itypex,n),n=1,5)
+105     format(8x,5i12)
         do k=1,33
            read(ibtabl_q,110)(btabl_q(itypex,k,m),m=1,6)
 110        format(1x,6e12.5)
@@ -109,7 +113,13 @@ contains
         write(6,*)'CONVB_Q:  ***WARNING*** obs b table not available to 3dvar.'
         bflag=.false.
      else
-        if(mype == 0) write(6,*)'CONVB_Q:  using observation b from user provided table'
+        if(mype == 0) then
+           write(6,*)'CONVB_Q:  using observation b from user provided table'
+           write(6,105) (isuble_bq(21,m),m=1,5)
+           do k=1,33
+              write(6,110) (btabl_q(21,k,m),m=1,6)
+           enddo
+        endif
         allocate(bptabl_q(34))
         bptabl_q=zero
         bptabl_q(1)=btabl_q(20,1,1)
@@ -147,7 +157,7 @@ subroutine convb_q_destroy
 !$$$
      implicit none
 
-     deallocate(btabl_q,bptabl_q)
+     deallocate(btabl_q,bptabl_q,isuble_bq)
      return
   end subroutine convb_q_destroy
 
