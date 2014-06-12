@@ -339,8 +339,8 @@ INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/incl
 FFLAGS_i4r4    =  -integer-size 32 -real-size 32
 FFLAGS_i4r8    =  -integer-size 32 -real-size 64
 FFLAGS_i8r8    =  -integer-size 64 -real-size 64
-FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -ftz -convert big_endian
-FFLAGS_DEBUG   =  -O0 -g -traceback -check bounds -warn errors -fpstkchk -mp
+FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -convert big_endian
+FFLAGS_DEBUG   =  -O0 -g -traceback -check bounds -fpe0 -ftz -warn errors -fpstkchk -mp
 FFLAGS_OPT     =  -O3
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
@@ -393,8 +393,8 @@ INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/incl
 FFLAGS_i4r4    =  -integer-size 32 -real-size 32
 FFLAGS_i4r8    =  -integer-size 32 -real-size 64
 FFLAGS_i8r8    =  -integer-size 64 -real-size 64
-FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -ftz -convert big_endian
-FFLAGS_DEBUG   =  -O0 -g -traceback -check bounds -warn errors -fpstkchk -mp
+FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -convert big_endian
+FFLAGS_DEBUG   =  -O0 -g -traceback -check bounds -fpe0 -ftz -warn errors -fpstkchk -mp
 FFLAGS_OPT     =  -O3
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
@@ -447,8 +447,8 @@ INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/incl
 FFLAGS_i4r4    =  -integer-size 32 -real-size 32
 FFLAGS_i4r8    =  -integer-size 32 -real-size 64
 FFLAGS_i8r8    =  -integer-size 64 -real-size 64
-FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -fpe0 -ftz -convert big_endian
-FFLAGS_DEBUG   =  -O0 -g -traceback -check bounds -warn errors -fpstkchk -mp
+FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -convert big_endian
+FFLAGS_DEBUG   =  -O0 -g -traceback -check bounds -fpe0 -ftz -warn errors -fpstkchk -mp
 FFLAGS_OPT     =  -O3
 FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
@@ -540,7 +540,7 @@ INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR)
 FFLAGS_i4r4    =  -integer-size 32 -real-size 32
 FFLAGS_i4r8    =  -integer-size 32 -real-size 64
 FFLAGS_i8r8    =  -integer-size 64 -real-size 64
-FFLAGS_DEFAULT =  -g -C -fp-model precise -assume byterecl -fpe0 -ftz -traceback -convert big_endian
+FFLAGS_DEFAULT =  -g -C -fp-model precise -assume byterecl -traceback -convert big_endian
 FFLAGS         =  -O3 -ftz $(FFLAGS_DEFAULT)-align all -fno-alias $(INC_FLAGS) $(LDFLAGS) -DLINUX
 # Library build flags
 FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
