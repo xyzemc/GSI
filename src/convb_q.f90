@@ -78,6 +78,7 @@ contains
      integer(i_kind):: ier
 
      allocate(btabl_q(100,33,6),isuble_bq(100,5))
+        allocate(bptabl_q(34))
      
 
      btabl_q=1.e9_r_kind
@@ -120,7 +121,6 @@ contains
               write(6,110) (btabl_q(21,k,m),m=1,6)
            enddo
         endif
-        allocate(bptabl_q(34))
         bptabl_q=zero
         bptabl_q(1)=btabl_q(20,1,1)
         do k=2,33

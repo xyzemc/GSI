@@ -1322,7 +1322,7 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
 
 !             if(convobs .and. pqm(k) >=lim_qm .and. qm/=15 .and. qm/=9 )cycle loop_k_levs
 !             if(qm >=lim_qm .and. qm /=15 .and. qm /=9)cycle loop_k_levs
-              if(qm > 15 .or. qm < 0) cycle loop_k_levs
+              if(qm > 17 .or. qm < 0) cycle loop_k_levs
 
 !             extract aircraft profile information
               if (aircraft_t_bc .and. acft_profl_file) then

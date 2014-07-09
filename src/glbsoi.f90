@@ -341,10 +341,10 @@ subroutine glbsoi(mype)
      call converr_uv_destroy 
      call converr_pw_destroy 
   endif
-  call convb_ps_destroy
-  call convb_q_destroy
-  call convb_t_destroy
-  call convb_uv_destroy
+!  call convb_ps_destroy
+!  call convb_q_destroy
+!  call convb_t_destroy
+!  call convb_uv_destroy
 
   if (regional) then
      if(anisotropic) then

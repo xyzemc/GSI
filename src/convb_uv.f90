@@ -79,6 +79,7 @@ contains
      integer(i_kind):: ier
 
      allocate(btabl_uv(100,33,8),isuble_buv(100,7))
+        allocate(bptabl_uv(34))
 
      btabl_uv=1.e9_r_kind
       
@@ -114,7 +115,6 @@ contains
         bflag=.false.
      else
         if(mype == 0) write(6,*)'CONVB_UV:  using observation b from user provided table'
-        allocate(bptabl_uv(34))
         bptabl_uv=zero
         bptabl_uv(1)=btabl_uv(20,1,1)
         do k=2,33

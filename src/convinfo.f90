@@ -275,6 +275,7 @@ contains
        read(crecord,*)ictypet,icsubtypet,icuset
        if (mype==0 .and. icuset < use_limit) write(6, *) &
                 'line ignored in convinfo due to use flag ',cflg,iotype,ictypet,icsubtypet,icuset
+!       nc=nc+1
        if(icuset < use_limit)cycle
        nc=nc+1
        ioctype(nc)=iotype

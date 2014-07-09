@@ -72,6 +72,7 @@ contains
 
      allocate(btabl_ps(100,33,6))
      allocate(isuble_bps(100,5))
+     allocate(bptabl_ps(34))
 
      btabl_ps=1.e9_r_kind
       
@@ -113,7 +114,6 @@ contains
               write(6,110) (btabl_ps(21,k,m),m=1,6)
            enddo
         endif
-        allocate(bptabl_ps(34))
         bptabl_ps=zero
         bptabl_ps(1)=btabl_ps(20,1,1)
         do k=2,33

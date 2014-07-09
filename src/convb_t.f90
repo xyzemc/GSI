@@ -80,6 +80,7 @@ contains
      integer(i_kind):: ier
 
      allocate(btabl_t(100,33,6),isuble_bt(100,5))
+        allocate(bptabl_t(34))
 
      btabl_t=1.e9_r_kind
       
@@ -115,7 +116,6 @@ contains
         bflag=.false.
      else
         if(mype == 0) write(6,*)'CONVB_T:  using observation b from user provided table'
-        allocate(bptabl_t(34))
         bptabl_t=zero
         bptabl_t(1)=btabl_t(20,1,1)
         do k=2,33
