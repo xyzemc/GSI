@@ -2,13 +2,45 @@
 
 set -x
 
-mkdir -p /ptmpp1/George.Gayno/fov_goes
-cd /ptmpp1/George.Gayno/fov_goes
+EXEC=test.exe
+
+WORK=/stmpp1/George.Gayno/fov_goes
+mkdir -p $WORK
+
+cp ../sorc/$EXEC $WORK
+
+cd $WORK
 
 rm -f ellipse.ctl ellipse.map ellipse.dat
 rm -f power.ctl power.map power.dat
+rm -f config.nml
 
-/global/save/George.Gayno/gsi_fov_util_goes/util/FOV_utility_goes/sorc/test.exe 
+cat > config.nml << !
+  &SETUP
+  instr=32
+  sublat=0.0
+  sublon=0.0
+  lat_fov = -50.0
+  lon_fov = -50.0
+  /
+!
+
+$EXEC > log
+
+status=$?
+if (( status != 0 ));then
+  echo ERROR IN PROGRAM
+  echo EXIT WITH STATUS CODE $status
+  exit $status
+fi
+
+INSTR=$(grep instr config.nml)
+n=$(echo ${INSTR##*=})
+if (( n == 31 )); then
+  num_ch=5
+elif (( n == 32 )); then
+  num_ch=19
+fi
 
 cat > ellipse.ctl << !
 dset ^ellipse.dat
@@ -17,7 +49,7 @@ stnmap ^ellipse.map
 options sequential
 undef -999.0
 title junk
-tdef 5 linear jan1980 1mo
+tdef ${num_ch} linear jan1980 1mo
 vars  1
  p  0 99 fov
 endvars
@@ -32,7 +64,7 @@ stnmap ^power.map
 options sequential
 undef -999.0
 title junk
-tdef 5 linear jan1980 1mo
+tdef ${num_ch} linear jan1980 1mo
 vars  1
  p  0 99 fov
 endvars

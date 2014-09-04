@@ -25,21 +25,27 @@
  real :: lats(npoly),lons(npoly)
  real, allocatable :: lats_edge_fov(:,:), lons_edge_fov(:,:)
 
+ namelist /setup/ instr, sublat, sublon, lat_fov, lon_fov
+
  call init_constants_derived
  call init_constants(.false.)
 
-!instr = 31       ! imager
-!ichan_tot = 5    ! imager has 5 channels
- instr = 32       ! sounder
- ichan_tot = 19    ! sounder has 19 channels
+ open (81, file="./config.nml")
+ read (81, nml=setup)
+ close(81)
+
+ select case (instr)
+   case (31)
+     ichan_tot = 5
+   case (32)
+     ichan_tot = 19
+   case default
+     print*,'** ERROR. INVALID SATELLITE INSTRUMENT NUMBER: ', instr
+     print*,'** STOP.'
+     stop 11
+ end select
+
  expansion = 1.0
-
- sublat = 0.0
- sublon = 0.0
-
-! need to find out how close to horizon we get goes data
- lat_fov=10.0
- lon_fov=10.0
 
  allocate(lats_edge_fov(ichan_tot,npoly))
  allocate(lons_edge_fov(ichan_tot,npoly))
