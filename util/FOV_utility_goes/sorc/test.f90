@@ -7,11 +7,11 @@
 
  character(len=8)  :: stnid
 
- integer, parameter :: npoly = 120
-
  integer :: i, j
  integer :: instr, ichan, ichan_tot
  integer :: nlev, nflag
+
+ logical :: valid
 
  real(kind=4) :: tim
  real :: dlat, dlon
@@ -47,6 +47,15 @@
 
  expansion = 1.0
 
+ call instrument_init(instr, lat_fov, lon_fov, sublat, sublon, expansion, valid)
+
+ if (.not. valid) then
+   print*,'error in instrument_init'
+   stop
+ else
+   print*,'init complete'
+ end if
+
  allocate(lats_edge_fov(ichan_tot,npoly))
  allocate(lons_edge_fov(ichan_tot,npoly))
 
@@ -57,9 +66,7 @@
 
  do ichan = 1, ichan_tot
 
-   call fov_ellipse_geo (instr, ichan, sublat, sublon, &
-                         lat_fov, lon_fov, expansion, &
-                         lats, lons)
+   call fov_ellipse_geo (ichan, lat_fov, lon_fov, lats, lons)
 
    lats_edge_fov(ichan,:)=lats
    lons_edge_fov(ichan,:)=lons
@@ -102,7 +109,7 @@
      lon_mdl = start_lon - (dlon * 2.0)
      do while (lon_mdl < (end_lon + (dlon*2.1)))
 
-       call inside_fov_geo(instr,ichan,sublat,sublon, &
+       call inside_fov_geo(instr,ichan, &
               lat_fov, lon_fov, lat_mdl, lon_mdl, expansion, power)
 
        if (power>=0.005) then
