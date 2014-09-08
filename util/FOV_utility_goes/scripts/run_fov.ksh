@@ -20,8 +20,8 @@ cat > config.nml << !
   instr=32
   sublat=0.0
   sublon=0.0
-  lat_fov = -50.0
-  lon_fov = -50.0
+  lat_fov = 72.0
+  lon_fov = 0.0
   /
 !
 
@@ -29,6 +29,7 @@ $EXEC > log
 
 status=$?
 if (( status != 0 ));then
+  set +x
   echo ERROR IN PROGRAM
   echo EXIT WITH STATUS CODE $status
   exit $status

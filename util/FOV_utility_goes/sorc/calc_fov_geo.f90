@@ -29,6 +29,8 @@
 !   def satellite_azimuth_rot - satellite_azimuth rotated 90 degrees
 !   def rmax                  - cross track semi-axes for each channel
 !   def eccen                 - fov eccentricity for each channel
+!   def fovangle_31           - angular dimension of imager fovs
+!   def fovangle_32           - angular dimension of sounder fovs
 !
 ! attributes:
 !   language: f90
@@ -53,9 +55,21 @@
  real(r_kind),allocatable           :: rmax (:)
  real(r_kind),allocatable           :: eccen (:)
 
+! Angular dimension of the fov for imager.
+ real(r_kind), dimension(5), target      :: fovangle_31 =  &
+  (/1.604282E-03, 6.417127E-03, 1.283425E-02, 6.417127E-03, 6.417127E-03/)
+
+! Angular dimension of the fov for sounder.
+ real(r_kind), dimension(19), target     :: fovangle_32 =  &
+  (/1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02,   &
+    1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02,   &
+    1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02,   &
+    1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02/)
+
  public instrument_init
  public inside_fov_geo
  public fov_ellipse_geo
+ public cleanup
 
  contains
 
@@ -112,7 +126,7 @@
 
 ! Declare local variables.
  integer(i_kind)                 :: ichan, nchan
- real(r_kind)                    :: rmin 
+ real(r_kind)                    :: ang_dim, rmin 
  real(r_kind)                    :: nadir_angle
  real(r_kind)                    :: arc_angle, adist, cc, a
  real(r_kind)                    :: along_track_angle 
@@ -121,17 +135,23 @@
  real(r_kind)                    :: cross_track_fov_size 
  real(r_kind)                    :: ratio ! local ratio for eccentricity calculation
  real(r_kind)                    :: coss, dellon, s, sinalpha
+ real(r_kind)                    :: prod1, prod2, prod3
 
  valid=.true.
 
  if (instr < 31 .or. instr > 32) then
-    write(6,*) "INSTRUMENT_INIT: INSTRUMENT NUMBER OF: ", instr, " IS OUT OF RANGE."
-    valid=.false.
-    return
+   write(6,*) "INSTRUMENT_INIT: INSTRUMENT NUMBER OF: ", instr, " IS OUT OF RANGE."
+   valid=.false.
+   return
  end if
 
- if (instr == 31) nchan = 5
- if (instr == 32) nchan = 19
+ if (instr == 31) then
+   nchan = 5
+   ang_dim=maxval(fovangle_31)  ! angular dimension of fov
+ elseif (instr == 32) then
+   nchan = 19
+   ang_dim=maxval(fovangle_32)
+ endif
 
  if(lat == sublat .and. lon == sublon) then
    nadir_angle = 0.0
@@ -140,6 +160,21 @@
    a = sqrt( geosynch*geosynch + earth*earth - 2.0_r_kind*geosynch*earth*cos(arc_angle) )
    cc = acos( (a*a + geosynch*geosynch - earth*earth) / (2.0_r_kind*a*geosynch) )
    nadir_angle = cc*rad2deg  ! this is our scan angle
+ endif
+
+! The arcsin of prod3 is the complement of the zenith angle for a fov.
+! Prod3 can be greater than one when the fov is far away from the sub-satellite
+! point.  This check used to be in routine fov_geo_angles_sizes.
+! Do the check once here.  The angular dimension is really channel
+! specific, but for simplicity the largest value was picked.
+
+ prod1 = geosynch/earth
+ prod2 = sin((nadir_angle+0.5_r_kind*ang_dim)/rad2deg)
+ prod3 = prod1 * prod2
+ if (prod3 > 0.99) then
+   write(6,*) "INSTRUMENT_INIT: INVALID ZENITH ANGLE"
+   valid=.false.
+   return
  endif
 
  call cleanup
@@ -450,17 +485,6 @@
 
 ! Declare local variables.
 
-! Angular dimension of the fov for imager.
- real(r_kind), dimension(5), target      :: fovangle_31 =  &
-  (/1.604282E-03, 6.417127E-03, 1.283425E-02, 6.417127E-03, 6.417127E-03/)
-
-! Angular dimension of the fov for sounder.
- real(r_kind), dimension(19), target     :: fovangle_32 =  &
-  (/1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02,   &
-    1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02,   &
-    1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02,   &
-    1.386558E-02, 1.386558E-02, 1.386558E-02, 1.386558E-02/)
-
  real(r_kind)                            :: comp_za_center
  real(r_kind)                            :: comp_za_p
  real(r_kind)                            :: comp_za_m
@@ -489,30 +513,15 @@
 
  prod2=sin(nadir_angle/rad2deg)
  prod3=prod1*prod2
- if (prod3 > 1.0_r_kind) then
-   print*,'too far ', prod3
-   stop
- else
-   comp_za_center = 180.0_r_kind-asin(prod3)*rad2deg
- endif
+ comp_za_center = 180.0_r_kind-asin(prod3)*rad2deg
 
  prod2=sin(nadir_angle_m/rad2deg)
  prod3=prod1*prod2
- if (prod3 > 1.0_r_kind) then
-   print*,'too far ', prod3
-   stop
- else
-   comp_za_m = 180.0_r_kind-asin(prod3)*rad2deg
- end if
+ comp_za_m = 180.0_r_kind-asin(prod3)*rad2deg
 
  prod2=sin(nadir_angle_p/rad2deg)
  prod3=prod1*prod2
- if (prod3 > 1.0_r_kind) then
-   print*,'too far ', prod3
-   stop
- else
-   comp_za_p = 180.0_r_kind-asin(prod3)*rad2deg
- end if
+ comp_za_p = 180.0_r_kind-asin(prod3)*rad2deg
 
 ! Cross track angle of the fov as viewed from center of the earth.
  cross_track_angle = abs(nadir_angle_p + comp_za_p - nadir_angle_m - comp_za_m)

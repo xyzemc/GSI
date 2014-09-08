@@ -34,27 +34,23 @@
  read (81, nml=setup)
  close(81)
 
- select case (instr)
-   case (31)
-     ichan_tot = 5
-   case (32)
-     ichan_tot = 19
-   case default
-     print*,'** ERROR. INVALID SATELLITE INSTRUMENT NUMBER: ', instr
-     print*,'** STOP.'
-     stop 11
- end select
-
  expansion = 1.0
 
  call instrument_init(instr, lat_fov, lon_fov, sublat, sublon, expansion, valid)
 
  if (.not. valid) then
    print*,'error in instrument_init'
-   stop
+   stop 3
  else
    print*,'init complete'
  end if
+
+ select case (instr)
+   case (31)
+     ichan_tot = 5
+   case (32)
+     ichan_tot = 19
+ end select
 
  allocate(lats_edge_fov(ichan_tot,npoly))
  allocate(lons_edge_fov(ichan_tot,npoly))
