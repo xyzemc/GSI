@@ -128,7 +128,7 @@
  integer(i_kind)                 :: ichan, nchan
  real(r_kind)                    :: ang_dim, rmin 
  real(r_kind)                    :: nadir_angle
- real(r_kind)                    :: arc_angle, adist, cc, a
+ real(r_kind)                    :: arc_angle, cc, a
  real(r_kind)                    :: along_track_angle 
  real(r_kind)                    :: cross_track_angle 
  real(r_kind)                    :: along_track_fov_size 
@@ -156,7 +156,7 @@
  if(lat == sublat .and. lon == sublon) then
    nadir_angle = 0.0
  else
-   adist = arc_distance(sublat,sublon,lat,lon,arc_angle)
+   call arch_angle(sublat,sublon,lat,lon,arc_angle)
    a = sqrt( geosynch*geosynch + earth*earth - 2.0_r_kind*geosynch*earth*cos(arc_angle) )
    cc = acos( (a*a + geosynch*geosynch - earth*earth) / (2.0_r_kind*a*geosynch) )
    nadir_angle = cc*rad2deg  ! this is our scan angle
@@ -544,14 +544,13 @@
 
  end subroutine fov_geo_angles_sizes
 
- real(r_kind) function arc_distance(lat1,lon1,lat2,lon2,arc_angle)
+ subroutine arch_angle(lat1,lon1,lat2,lon2,arc_angle)
 !$$$  subprogram documentation block
 !
-! function:   arc_distance                 compute arc distance
+! subprogram:   arch_angle                compute arch angle
 !   prgmmr: gayno            org: np23           date: 2012-04-03
 !	
-! abstract:  This function computes the arc distance and angular distance 
-!            between two points on the earth.
+! abstract:  Computes the arch angle between two points on the earth.
 !
 ! program history log:
 !   2008-07-25   kleespies - initial version
@@ -562,8 +561,7 @@
 !    lat2/lon2  - latitude and longitude of point 2
 !
 ! output argument list:
-!    arc_angle    - arc angle in radians
-!    arc_distance - arc distance in km (returned from function)
+!    arc_angle  - arc angle in radians
 !
 ! attributes:
 !   language: f90
@@ -576,10 +574,12 @@
 
  implicit none
 
- real(r_kind), intent(in)      :: lat1,lon1,lat2,lon2
- real(r_kind), intent(out)     :: arc_angle
- real(r_kind), parameter       :: rearth=6371._r_kind
- real(r_kind)                  :: colat1,colat2,dellon,s
+! Declare passed variables.
+ real(r_kind), intent(in   ) :: lat1,lon1,lat2,lon2
+ real(r_kind), intent(  out) :: arc_angle
+
+! Declare local variables.
+ real(r_kind)                :: colat1,colat2,dellon,s
 
  colat1 = (90._r_kind - lat1)*deg2rad
  colat2 = (90._r_kind - lat2)*deg2rad
@@ -589,11 +589,9 @@
 
  arc_angle = acos(s)
 
- arc_distance = rearth * arc_angle
-
  return
 
- end function arc_distance
+ end subroutine arch_angle
 
  subroutine cleanup
 !$$$  subprogram documentation block
