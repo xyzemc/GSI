@@ -206,10 +206,7 @@
 
    dellon = lon - sublon
 
-   coss = cos((90.0_r_kind-lat)/rad2deg)*cos((90.0_r_kind-sublat)/rad2deg) &
-        + sin((90.0_r_kind-lat)/rad2deg)*sin((90.0_r_kind-sublat)/rad2deg)*cos((dellon/rad2deg))
-
-   s = acos(coss)
+   call arch_angle(lat, lon, sublat, sublon, s)
 
    sinalpha = sin((90.0_r_kind - sublat)/rad2deg)*sin(dellon/rad2deg)/sin(s)
 
