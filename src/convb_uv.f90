@@ -122,6 +122,13 @@ contains
         enddo
         bptabl_uv(34)=btabl_uv(20,33,1)
      endif
+     if (mype == 0) then
+        write(6,100) itypey
+        write(6,105) (isuble_buv(50,n),n=1,7)
+        do k=1,33
+          write(1005,110) (btabl_uv(50,k,m),m=1,8)
+        enddo
+     endif
 
      close(ibtabl_uv)
 

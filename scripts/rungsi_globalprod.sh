@@ -21,7 +21,7 @@
 #PBS -l walltime=00:30:00 
 #PBS -l nodes=2:ppn=12
 #PBS -j eo                
-#PBS -A ada
+#PBS -A cloud 
 #PBS -V
 #=======================================================
 
@@ -46,7 +46,7 @@ fi
 #=================================================================================================
 
 # Set experiment name and analysis date
-adate=2014050700
+adate=2014092600
 expnm=globalprod    
 exp=globalprod.$adate
 expid=${expnm}.$adate.wcoss

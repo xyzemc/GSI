@@ -24,6 +24,8 @@ subroutine read_cris(mype,val_cris,ithin,isfcalc,rmesh,jsatid,gstime,&
 !   2011-12-13  collard Replace find_edges code to speed up execution.
 !   2013-01-26  parrish - change from grdcrd to grdcrd1 (to allow successful debug compile on WCOSS)
 !   2013-01-27  parrish - assign initial value to pred (to allow successful debug compile on WCOSS)
+!   2014-01-24  Li - Change nreal to be maxinfo in itt=nint(data_all(maxinfo,n))
+! i             to make it work for NSST (when nstinfo > 0) 
 !
 !   input argument list:
 !     mype     - mpi task id
@@ -62,8 +64,9 @@ subroutine read_cris(mype,val_cris,ithin,isfcalc,rmesh,jsatid,gstime,&
       finalcheck,checkob,score_crit
   use radinfo, only:iuse_rad,nusis,jpch_rad,crtm_coeffs_path,use_edges, &
                radedge1,radedge2,radstart,radstep,nstinfo, nst_gsi
-  use crtm_module, only: crtm_destroy,crtm_init,crtm_channelinfo_type, success, &
+  use crtm_module, only: success, &
       crtm_kind => fp,  max_sensor_zenith_angle
+  use crtm_spccoeff, only: sc,crtm_spccoeff_load,crtm_spccoeff_destroy
   use crtm_planck_functions, only: crtm_planck_temperature
   use gridmod, only: diagnostic_reg,regional,nlat,nlon,&
       tll2xy,txy2ll,rlats,rlons
@@ -164,8 +167,6 @@ subroutine read_cris(mype,val_cris,ithin,isfcalc,rmesh,jsatid,gstime,&
   character(len=20),dimension(1):: sensorlist
 
 
-  type(crtm_channelinfo_type),dimension(1) :: channelinfo
-
 ! Set standard parameters
   character(8),parameter:: fov_flag="crosstrk"
   integer(i_kind),parameter:: ichan=-999  ! fov-based surface code is not channel specific for cris 
@@ -223,29 +224,25 @@ subroutine read_cris(mype,val_cris,ithin,isfcalc,rmesh,jsatid,gstime,&
   
   sensorlist(1)=sis
   if( crtm_coeffs_path /= "" ) then
-     if(mype_sub==mype_root) write(6,*)'READ_CRIS: crtm_init() on path "'//trim(crtm_coeffs_path)//'"'
-     error_status = crtm_init(sensorlist,channelinfo,&
-        Process_ID=mype_sub,Output_Process_ID=mype_root, &
-        Load_CloudCoeff=.FALSE.,Load_AerosolCoeff=.FALSE., &
+     if(mype_sub==mype_root) write(6,*)'READ_CRIS: crtm_spccoeff_load() on path "'//trim(crtm_coeffs_path)//'"'
+     error_status = crtm_spccoeff_load(sensorlist,&
         File_Path = crtm_coeffs_path )
   else
-     error_status = crtm_init(sensorlist,channelinfo,&
-        Process_ID=mype_sub,Output_Process_ID=mype_root, &
-        Load_CloudCoeff=.FALSE.,Load_AerosolCoeff=.FALSE.)
+     error_status = crtm_spccoeff_load(sensorlist)
   endif
   if (error_status /= success) then
-     write(6,*)'READ_CRIS:  ***ERROR*** crtm_init error_status=',error_status,&
+     write(6,*)'READ_CRIS:  ***ERROR*** crtm_spccoeff_load error_status=',error_status,&
         '   TERMINATE PROGRAM EXECUTION'
      call stop2(71)
   endif
 
 !  find CRIS sensorindex
   sensorindex = 0
-  if ( channelinfo(1)%sensor_id(1:4) == 'cris' )then
-     sensorindex = 1
+  if ( sc(1)%sensor_id(1:4) == 'cris' )then
+      sensorindex = 1
   else
      write(6,*)'READ_CRIS: sensorindex not set  NO CRIS DATA USED'
-     write(6,*)'READ_CRIS: We are looking for ', channelinfo(1)%sensor_id
+     write(6,*)'READ_CRIS: We are looking for ', sc(1)%sensor_id
      return
   end if
   ioff=jpch_rad
@@ -308,7 +305,7 @@ subroutine read_cris(mype,val_cris,ithin,isfcalc,rmesh,jsatid,gstime,&
 ! Allocate arrays to hold data
 ! The number of channels is obtained from the CRTM initialisation and is checked 
 ! against the BUFR contents later.
-  nchanl = ChannelInfo(1) % n_channels
+  nchanl = sc(1) % n_channels
   nele=nreal+nchanl
   allocate(data_all(nele,itxmax),nrec(itxmax))
   allocate(temperature(nchanl))
@@ -328,9 +325,9 @@ subroutine read_cris(mype,val_cris,ithin,isfcalc,rmesh,jsatid,gstime,&
         call ufbint(lnbufr,linele,7,1,iret,'FOVN SLNM QMRKH MJFC HMSL FORN  (CRCHN)')
 
 !    Check that the number of channels in BUFR is what we are expecting
-        if (nint(linele(7)) /= ChannelInfo(1) % n_channels) then 
+        if (nint(linele(7)) /= sc(1) % n_channels) then 
            if (mype_sub==mype_root) write(6,*)'READ_CRIS:  ***ERROR*** CrIS BUFR contains ',&
-                nint(linele(7)),' channels, but CRTM expects ',ChannelInfo(1) % n_channels
+                nint(linele(7)),' channels, but CRTM expects ',sc(1) % n_channels
            exit message_loop
         endif 
        
@@ -573,8 +570,9 @@ subroutine read_cris(mype,val_cris,ithin,isfcalc,rmesh,jsatid,gstime,&
 !  Check that channel radiance is within reason and channel number is consistent with CRTM initialisation
 !  Negative radiance values are entirely possible for shortwave channels due to the high noise, but for
 !  now such spectra are rejected.  
+           temperature(i)=zero
            if (( allchan(1,i) > zero .and. allchan(1,i) < 99999._r_kind) .and. &  ! radiance bounds
-               (allchan(2,i) == ChannelInfo(1) % Sensor_Channel(i) )) then        ! chan # check
+               (allchan(2,i) == sc(1) % Sensor_Channel(i) )) then        ! chan # check
 !         radiance to BT calculation
               radiance = allchan(1,i) * 1000.0_r_kind    ! Conversion from W to mW
               call crtm_planck_temperature(sensorindex,i,radiance,temperature(i))
@@ -673,9 +671,9 @@ subroutine read_cris(mype,val_cris,ithin,isfcalc,rmesh,jsatid,gstime,&
   call closbf(lnbufr)
 
 ! deallocate crtm info
-  error_status = crtm_destroy(channelinfo)
+  error_status = crtm_spccoeff_destroy()
   if (error_status /= success) &
-     write(6,*)'OBSERVER:  ***ERROR*** crtm_destroy error_status=',error_status
+     write(6,*)'OBSERVER:  ***ERROR*** crtm_spccoeff_destroy error_status=',error_status
 
 ! If multiple tasks read input bufr file, allow each tasks to write out
 ! information it retained and then let single task merge files together
@@ -696,7 +694,7 @@ subroutine read_cris(mype,val_cris,ithin,isfcalc,rmesh,jsatid,gstime,&
            if(data_all(i+nreal,n) > tbmin .and. &
               data_all(i+nreal,n) < tbmax)nodata=nodata+1
         end do
-        itt=nint(data_all(nreal,n))
+        itt=nint(data_all(maxinfo,n))
         super_val(itt)=super_val(itt)+val_cris
      end do
 

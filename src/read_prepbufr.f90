@@ -550,7 +550,14 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
 
 ! temporary specify iobsub until put in bufr file
         iobsub = 0                                                  
-        if(kx == 280) iobsub=hdr(3)                                            
+!        if(kx == 280) iobsub=hdr(3)                                            
+        if(kx == 280 .or. kx ==180) then
+          if ( hdr(3) >555.0_r_kind .and. hdr(3) <565.0_r_kind ) then
+            iobsub=00
+          else
+            iobsub=01
+          endif
+        endif
         if(kx == 290) iobsub=hdr(2)
         if(use_prepb_satwnd .and. (kx >= 240 .and. kx <=260 )) iobsub = hdr(2)
 
@@ -922,6 +929,10 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  var_jb(1,k)=(one-del_ps)*btabl_ps(itypex,k1_ps,ierr_ps)+del_ps*btabl_ps(itypex,k2_ps,ierr_ps) ! Surface pressure b 
                  var_jb(1,k)=max(var_jb(1,k),pjbmin)
                  if (var_jb(1,k) >=10.0_r_kind) var_jb(1,k)=zero
+                 if(itypey==120) then
+                   write(6,*) 'READ_PREPBUFR:120_ps,obserr,var_jb=',obserr(1,k),var_jb(1,k)
+                 endif
+   
               enddo
            endif
            if (tob) then
@@ -958,6 +969,9 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  var_jb(3,k)=(one-del_t)*btabl_t(itypex,k1_t,ierr_t)+del_t*btabl_t(itypex,k2_t,ierr_t) !Temperature b 
                  var_jb(3,k)=max(var_jb(3,k),tjbmin)
                  if (var_jb(3,k) >=10.0_r_kind) var_jb(3,k)=zero
+                 if(itypey==120) then
+                   write(6,*) 'READ_PREPBUFR:120_t,obserr,var_jb=',obserr(3,k),var_jb(3,k)
+                 endif
               enddo 
            endif
            if (qob) then
@@ -994,6 +1008,10 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  var_jb(2,k)=(one-del_q)*btabl_q(itypex,k1_q,ierr_q)+del_q*btabl_q(itypex,k2_q,ierr_q) !Humidity b 
                  var_jb(2,k)=max(var_jb(2,k),qjbmin)
                  if (var_jb(2,k) >=10.0_r_kind) var_jb(2,k)=zero
+                 if(itypey==120) then
+                   write(6,*) 'READ_PREPBUFR:120_q,obserr,var_jb=',obserr(2,k),var_jb(2,k)
+                 endif
+
               enddo 
            endif
            if (uvob) then
@@ -1031,6 +1049,9 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
                  var_jb(5,k)=(one-del_uv)*btabl_uv(itypex,k1_uv,ierr_uv)+del_uv*btabl_uv(itypex,k2_uv,ierr_uv) !Wind b 
                  var_jb(5,k)=max(var_jb(5,k),wjbmin)
                  if (var_jb(5,k) >=10.0_r_kind) var_jb(5,k)=zero
+                 if(itypey==220) then
+                   write(6,*) 'READ_PREPBUFR:220_uv,obserr,var_jb=',obserr(5,k),var_jb(5,k)
+                 endif
               enddo 
            endif
            if (pwob)  then

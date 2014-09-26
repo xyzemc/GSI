@@ -115,7 +115,13 @@ contains
         write(6,*)'CONVB_T:  ***WARNING*** obs b table not available to 3dvar.'
         bflag=.false.
      else
-        if(mype == 0) write(6,*)'CONVB_T:  using observation b from user provided table'
+        if(mype == 0) then
+           write(6,*)'CONVB_T:  using observation b from user provided table'
+           write(6,105) (isuble_bt(21,m),m=1,5)
+           do k=1,33
+              write(6,110) (btabl_t(21,k,m),m=1,6)
+           enddo
+        endif
         bptabl_t=zero
         bptabl_t(1)=btabl_t(20,1,1)
         do k=2,33

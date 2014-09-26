@@ -799,6 +799,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
 !  for GOES hourly winds, set error doubled
             if(itype==245 .or. itype==246) then
 !               obserr=obserr*two
+             write(6,*) 'READ_SATWND:obserr,var_jb=',obserr,var_jb
 !  using  Santek quality control method,calculate the original ee value
                if(ee <105.0_r_kind) then
                   ree=(ee-r100)/(-10.0_r_kind)

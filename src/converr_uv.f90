@@ -97,13 +97,17 @@ contains
      loopd : do 
         read(ietabl_uv,100,IOSTAT=iflag,end=120) itypey
         if( iflag /= 0 ) exit loopd
+        if (mype == 0) write(6,*)'CONVERR_UV:itypey=',itypey
 100     format(1x,i3)
         lcount=lcount+1
         itypex=itypey-199
         read(ietabl_uv,105,IOSTAT=iflag,end=120) (isuble_uv(itypex,n),n=1,7)
+        if (mype == 0) write(6,*)'CONVERR_UV:itypex,itypey=',itypex,itypey
+        if (mype == 0) write(6,*)'CONVERR_UV:isuble_uv',(isuble_uv(itypex,n),n=1,7)
 105     format(8x,7i12)
         do k=1,33
            read(ietabl_uv,110)(etabl_uv(itypex,k,m),m=1,8)
+           write(6,110) (etabl_uv(itypex,k,m),m=1,8)
 110        format(1x,8e12.5)
         end do
      end do   loopd
@@ -115,9 +119,9 @@ contains
      else
         if(mype == 0) then
            write(6,*)'CONVERR_UV:  using observation errors from user provided table'
-           write(6,105) (isuble_uv(92,m),m=1,7)
+           write(6,105) (isuble_uv(51,m),m=1,7)
            do k=1,33
-              write(6,110) (etabl_uv(46,k,m),m=1,8)
+              write(6,110) (etabl_uv(51,k,m),m=1,8)
            enddo
         endif
         allocate(ptabl_uv(34))
@@ -150,7 +154,7 @@ subroutine converr_uv_destroy
 !
 !   output argument list:
 !
-! attributes:
+! atte#ibutes:
 !   language: f90
 !   machine:  ibm rs/6000 sp
 !

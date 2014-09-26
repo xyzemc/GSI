@@ -383,6 +383,10 @@ subroutine glbsoi(mype)
 
 ! Finalize observer
   call observer_finalize
+  call convb_ps_destroy
+  call convb_q_destroy
+  call convb_t_destroy
+  call convb_uv_destroy
 
 ! Finalize timer for this procedure
   call timer_fnl('glbsoi')
