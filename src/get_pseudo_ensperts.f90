@@ -62,16 +62,15 @@ subroutine get_pseudo_ensperts
   real(r_single),allocatable,dimension(:,:) :: outwork
   real(r_kind),allocatable::temp(:)
 
-  integer(i_kind) iret,i,j,k,n,istatus,mm1
+  integer(i_kind) i,j,k,n,istatus,mm1
   character(120) filename,infofile
-  character(24) fileout
+! character(24) fileout
   logical(4) fexist
 
   integer(i_kind) regional_time(6)
   integer(i_kind) nlon_regional,nlat_regional
   real(r_single) dlmd,dphd,dlmd_ens,dphd_ens,dlmd_lib,dphd_lib
 
-  real(r_kind) pt,pdtop
   real(r_kind) dlmd2,dphd2
   integer(i_kind) nlon_regional_lib,nlat_regional_lib,nsig,nlon_lib,nlat_lib
   integer(i_kind) inner_vars,num_fields
@@ -758,6 +757,7 @@ subroutine read_wrf_nmm_tclib(grd,filename,mype,ps,u,v,tv,rh)
   use constants, only: one,ten,one_tenth,half,fv
   use gsi_io, only: lendian_in
   use general_sub2grid_mod, only: sub2grid_info
+  use hybrid_ensemble_parameters, only: q_hyb_ens
   implicit none
 
 ! Declare passed variables here
@@ -778,7 +778,7 @@ subroutine read_wrf_nmm_tclib(grd,filename,mype,ps,u,v,tv,rh)
 ! NMM variable names stuck in here
 
 ! other internal variables
-  integer(i_kind) nlon_regional,nlat_regional,nsig,nlon,nlat
+  integer(i_kind) nlon_regional,nlat_regional,nsig
   real(r_single) dlmd,dphd
   real(r_single)pt,pdtop
   real(r_single),allocatable:: aeta1(:),aeta2(:)
@@ -792,13 +792,13 @@ subroutine read_wrf_nmm_tclib(grd,filename,mype,ps,u,v,tv,rh)
   integer(i_kind) irc_s_reg(npe),ird_s_reg(npe)
   integer(i_kind) ifld,im,jm,lm,num_nmm_fields
   integer(i_kind) num_all_fields,num_loc_groups,num_all_pad
-  integer(i_kind) i,icount,icount_prev,j,k,i0,j0
+  integer(i_kind) i,icount,icount_prev,j,k
   integer(i_kind) i_0,i_pd,i_t,i_q,i_u,i_v
   integer(i_kind) iderivative
   real(r_kind) pd,psfc_this
   integer(i_kind) ireturn
   logical ice
-  character(24) fileout
+! character(24) fileout
 
   lm=grd%nsig
 
@@ -962,17 +962,27 @@ subroutine read_wrf_nmm_tclib(grd,filename,mype,ps,u,v,tv,rh)
      end do
   end do
 
-  ice=.true.
-  iderivative=0
-  call genqsat(rh,tsen,prsl,grd%lat2,grd%lon2,grd%nsig,ice,iderivative)
+  if (.not.q_hyb_ens) then
+     ice=.true.
+     iderivative=0
+     call genqsat(rh,tsen,prsl,grd%lat2,grd%lon2,grd%nsig,ice,iderivative)
 
-  do k=1,grd%nsig
-     do i=1,grd%lon2
-        do j=1,grd%lat2
-           rh(j,i,k)=q(j,i,k)/rh(j,i,k)
+     do k=1,grd%nsig
+        do i=1,grd%lon2
+           do j=1,grd%lat2
+              rh(j,i,k)=q(j,i,k)/rh(j,i,k)
+           end do
         end do
      end do
-  end do
+  else
+     do k=1,grd%nsig
+        do i=1,grd%lon2
+           do j=1,grd%lat2
+              rh(j,i,k)=q(j,i,k)
+           end do
+        end do
+     end do
+  end if
 
 ! test
 !  write(fileout,'("tclib",i3.3)') 0
@@ -1019,7 +1029,7 @@ subroutine get_bgtc_center(bc_lon,bc_lat)
   integer(i_kind) iclat,iclon
   character*1 sn,ew
   real(r_kind),parameter:: r360=360.0_r_kind
-  real(r_kind) clat,clon,dist,distmin
+  real(r_kind) clat,clon
   real(r_kind) bc_lon,bc_lat
   logical outside
 
