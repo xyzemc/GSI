@@ -86,7 +86,6 @@ FFLAGS_SFCIO   =  -O -qnosave $(FFLAGS_i4r4)
 FFLAGS_SIGIO   =  -O3 -qnosave $(FFLAGS_i4r4)
 ARFLAGS_SIGIO  =  -X32
 FFLAGS_SP      =  $(FFLAGS) $(FFLAGS_i4r8) -DIBM4
-FFLAGS_W3      =  $(FFLAGS) 
 #
 CPP            =  /usr/ccs/lib/cpp
 CPP_FLAGS      =  -C -D_REAL8_ -DWRF -Dibm_sp -I/usr/lpp/ppe.poe/include/thread
