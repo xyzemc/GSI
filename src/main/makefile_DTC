@@ -101,15 +101,14 @@ LIBsys          = $(MYLIBsys)
         blendmod.o \
 	calc_fov_conical.o \
 	calc_fov_crosstrk.o \
-	cal_tztr.o \
 	calctends.o \
 	calctends_ad.o \
 	calctends_tl.o \
 	calctends_no_ad.o \
 	calctends_no_tl.o \
 	chemmod.o \
-	cloud_efr.o \
 	clw_mod.o \
+	cloud_efr_mod.o \
 	cmaq_routines.o \
         co_mop_ak.o  \
 	coinfo.o \
@@ -125,17 +124,18 @@ LIBsys          = $(MYLIBsys)
 	converr.o \
 	convinfo.o \
 	convthin.o \
+        correlated_obsmod.o \
 	crtm_interface.o \
 	cwhydromod.o \
 	cvsection.o \
-	deter_nst.o \
+	derivsmod.o \
 	deter_sfc_mod.o \
 	dtast.o \
 	egrid2agrid_mod.o \
 	enorm_state.o \
+	ensctl2model.o \
 	ensctl2state.o \
 	evaljgrad.o \
-	evaljcdfi.o \
 	evaljo.o \
 	evalqlim.o \
 	fgrid2agrid_mod.o \
@@ -182,7 +182,9 @@ LIBsys          = $(MYLIBsys)
 	gsi_4dcouplermod.o \
 	gsi_bundlemod.o \
 	gsi_chemguess_mod.o \
+	gsi_enscouplermod.o \
 	gsi_metguess_mod.o \
+	gsi_nstcouplermod.o \
 	gsi_io.o \
 	gsi_nemsio_mod.o \
 	gsimod.o \
@@ -197,6 +199,7 @@ LIBsys          = $(MYLIBsys)
 	insitu_info.o \
 	int3dvar.o \
 	intall.o \
+	intaod.o \
         intco.o \
 	intdw.o \
 	intgps.o \
@@ -238,6 +241,7 @@ LIBsys          = $(MYLIBsys)
 	m_dgeevx.o \
 	m_distance.o  \
 	m_dtime.o	\
+	m_extOzone.o \
 	m_find.o   \
 	m_gpsrhs.o \
 	m_gsiBiases.o \
@@ -257,6 +261,7 @@ LIBsys          = $(MYLIBsys)
 	model_ad.o \
 	model_tl.o \
 	model2control.o \
+	model2ensctl.o \
 	mp_compact_diffs_mod1.o \
 	mp_compact_diffs_support.o \
 	mpimod.o \
@@ -272,6 +277,7 @@ LIBsys          = $(MYLIBsys)
 	obs_ferrscale.o \
 	obs_para.o \
 	obs_sensitivity.o \
+	obserr_allsky_mw.o \
 	observer.o \
 	obsmod.o \
 	omegas_ad.o \
@@ -356,6 +362,7 @@ LIBsys          = $(MYLIBsys)
 	satthin.o \
         set_crtm_aerosolmod.o \
         set_crtm_cloudmod.o \
+	setupaod.o \
         setupbend.o \
         setupco.o \
 	setupdw.o \
@@ -384,7 +391,6 @@ LIBsys          = $(MYLIBsys)
 	sfcobsqc.o \
 	simpin1.o \
 	simpin1_init.o \
-	skindepth.o \
 	smooth_polcarf.o \
 	smoothrf.o \
 	smoothwwrf.o \
@@ -430,6 +436,8 @@ LIBsys          = $(MYLIBsys)
 	strong_fast_global_mod.o \
 	sub2fslab_mod.o \
 	support_2dvar.o \
+	stub_ensmod.o \
+	stub_nstmod.o \
 	stub_set_crtm_aerosol.o \
 	stub_pertmod.o \
         stub_timermod.o \
