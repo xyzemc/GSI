@@ -460,7 +460,6 @@ LIBsys          = $(MYLIBsys)
 	unhalf_nmm_grid2.o \
 	update_guess.o \
 	update_geswtend.o \
-	ut_gsibundle.o \
 	wind_fft.o \
 	wrf_binary_interface.o \
 	wrf_mass_guess_mod.o \
