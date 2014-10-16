@@ -379,6 +379,60 @@ NETCDF_PATH    =
 
 
 ###########################################################
+#ARCH	Linux x86_64, Intel/gnu compiler (ifort & gcc)	# (dmpar,optimize)
+#
+LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -openmp
+
+COREDIR        =  CONFIGURE_CORE_PATH
+INC_DIR        =  $(COREDIR)/include
+SFC            =  ifort
+SF90           =  ifort -free
+SCC            =  gcc
+INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
+FFLAGS_i4r4    =  -integer-size 32 -real-size 32
+FFLAGS_i4r8    =  -integer-size 32 -real-size 64
+FFLAGS_i8r8    =  -integer-size 64 -real-size 64
+FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -convert big_endian
+FFLAGS_DEBUG   =  -O0 -g -traceback -check bounds -fpe0 -ftz -warn errors -fpstkchk -mp
+FFLAGS_OPT     =  -O3
+FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
+# Library build flags
+FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
+ARFLAGS_BACIO  =
+FFLAGS_BUFR    =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+CFLAGS_BUFR    =  -O3 -DUNDERSCORE
+ARFLAGS_BUFR   =  
+FFLAGS_CLOUD   =  -O3 $(FFLAGS_DEFAULT)
+FFLAGS_CRTM    =  -O2 $(FFLAGS_DEFAULT)
+LFLAGS_CRTM    =  
+FFLAGS_GFSIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+ARFLAGS_GFSIO  =
+FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+ARFLAGS_SIGIO  =
+FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
+#
+CPP            =  cpp 
+CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX 
+CPP_F90FLAGS   =  -traditional-cpp 
+
+DM_FC          =  mpif90 -f90=$(SFC)
+DM_F90         =  mpif90 -free -f90=$(SFC)
+DM_CC          =  gcc
+
+FC             =  CONFIGURE_FC
+F90            =  CONFIGURE_F90
+CC             =  CONFIGURE_CC
+
+CFLAGS         =  -O0 -DLINUX -DUNDERSCORE
+CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
+
+MYLIBsys       =  -L$(LAPACK_PATH) -mkl=sequential
+NETCDF_PATH    =  
+
+
+###########################################################
 #ARCH	Linux x86_64, Intel compiler (ifort & icc) # (dmpar,optimize)
 #
 LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -openmp
@@ -432,16 +486,17 @@ MYLIBsys       = -L$(LAPACK_PATH) -mkl=sequential
 NETCDF_PATH    = 
 
 
+
 ###########################################################
-#ARCH	Linux x86_64, Intel/gnu compiler (ifort & gcc)	# (dmpar,optimize)
+#ARCH	Linux x86_64, Intel compiler (ifort & icc), IBM POE (EXPERIMENTAL)  # (dmpar,optimize)
 #
-LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -openmp
+LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -L$MPI_ROOT/lib -openmp
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
 SFC            =  ifort
 SF90           =  ifort -free
-SCC            =  gcc
+SCC            =  icc
 INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =  -integer-size 32 -real-size 32
 FFLAGS_i4r8    =  -integer-size 32 -real-size 64
@@ -449,7 +504,7 @@ FFLAGS_i8r8    =  -integer-size 64 -real-size 64
 FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -convert big_endian
 FFLAGS_DEBUG   =  -O0 -g -traceback -check bounds -fpe0 -ftz -warn errors -fpstkchk -mp
 FFLAGS_OPT     =  -O3
-FFLAGS         =  -O3 $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX
+FFLAGS         =  -O3 -msse2  $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX -I$MPI_ROOT/include 
 # Library build flags
 FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
 ARFLAGS_BACIO  =
@@ -471,9 +526,9 @@ CPP            =  cpp
 CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX 
 CPP_F90FLAGS   =  -traditional-cpp 
 
-DM_FC          =  mpif90 -f90=$(SFC)
-DM_F90         =  mpif90 -free -f90=$(SFC)
-DM_CC          =  gcc
+DM_FC          =  mpfort
+DM_F90         =  mpfort -free 
+DM_CC          =  mpcc
 
 FC             =  CONFIGURE_FC
 F90            =  CONFIGURE_F90
@@ -482,8 +537,62 @@ CC             =  CONFIGURE_CC
 CFLAGS         =  -O0 -DLINUX -DUNDERSCORE
 CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
 
-MYLIBsys       =  -L$(LAPACK_PATH) -mkl=sequential
-NETCDF_PATH    =  
+MYLIBsys       = -L$(LAPACK_PATH) -mkl=sequential
+NETCDF_PATH    = 
+
+
+###########################################################
+#ARCH	Linux x86_64, Intel compiler (ifort & icc), SGI MPT (EXPERIMENTAL) # (dmpar,optimize) 
+#
+LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -L$MPI_ROOT/lib -lmpi -openmp
+
+COREDIR        =  CONFIGURE_CORE_PATH
+INC_DIR        =  $(COREDIR)/include
+SFC            =  ifort
+SF90           =  ifort -free
+SCC            =  icc
+INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
+FFLAGS_i4r4    =  -integer-size 32 -real-size 32
+FFLAGS_i4r8    =  -integer-size 32 -real-size 64
+FFLAGS_i8r8    =  -integer-size 64 -real-size 64
+FFLAGS_DEFAULT =  -fp-model precise -assume byterecl -convert big_endian
+FFLAGS_DEBUG   =  -O0 -g -traceback -check bounds -fpe0 -ftz -warn errors -fpstkchk -mp
+FFLAGS_OPT     =  -O3
+FFLAGS         =  -O3 -msse2  $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS) -DLINUX -I$MPI_ROOT/include 
+# Library build flags
+FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
+ARFLAGS_BACIO  =
+FFLAGS_BUFR    =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+CFLAGS_BUFR    =  -O3 -DUNDERSCORE
+ARFLAGS_BUFR   =  
+FFLAGS_CLOUD   =  -O3 $(FFLAGS_DEFAULT)
+FFLAGS_CRTM    =  -O2 $(FFLAGS_DEFAULT)
+LFLAGS_CRTM    =  
+FFLAGS_GFSIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+ARFLAGS_GFSIO  =
+FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+ARFLAGS_SIGIO  =
+FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT) 
+#
+CPP            =  cpp 
+CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX 
+CPP_F90FLAGS   =  -traditional-cpp 
+
+DM_FC          =  ifort
+DM_F90         =  ifort -free 
+DM_CC          =  icc
+
+FC             =  CONFIGURE_FC
+F90            =  CONFIGURE_F90
+CC             =  CONFIGURE_CC
+
+CFLAGS         =  -O0 -DLINUX -DUNDERSCORE
+CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
+
+MYLIBsys       = -L$(LAPACK_PATH) -mkl=sequential
+NETCDF_PATH    = 
 
 
 ###########################################################
