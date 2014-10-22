@@ -46,17 +46,18 @@ fi
 #=================================================================================================
 
 # Set experiment name and analysis date
-adate=2014092600
+adate=2014102106
 expnm=globalprod    
 exp=globalprod.$adate
-expid=${expnm}.$adate.wcoss
+expid=${expnm}.$adate
 
 # Set path/file for gsi executable
-gsiexec=/u/Xiujuan.Su/home/gsi/xsu_nqc/src/global_gsi
+#gsiexec=/u/Xiujuan.Su/home/gsi/xsu_nqc/src/global_gsi
+gsiexec=/scratch1/portfolios/NCEPDEV/da/save/Xiujuan.Su/gsi/xsu_nqc/src/global_gsi
 
 
 # Specify GSI fixed field
-fixgsi=/u/Xiujuan.Su/home/gsi/xsu_nqc/fix
+fixgsi=/scratch1/portfolios/NCEPDEV/da/save/Xiujuan.Su/gsi/xsu_nqc/fix
 
 # Set the JCAP resolution which you want.
 # All resolutions use LEVS=64
@@ -79,7 +80,8 @@ if [ $MACHINE = WCOSS ]; then
    DIAG_SUFFIX="" 
    DIAG_TARBALL=YES 
 elif [ $MACHINE = ZEUS ]; then
-   datdir=/scratch2/portfolios/NCEPDEV/ptmp/$USER/data_sigmap/${exp}
+#   datdir=/scratch2/portfolios/NCEPDEV/ptmp/$USER/data_sigmap/${exp}
+    datdir=/scratch2/portfolios/NCEPDEV/rstprod/com/gfs/prod
    tmpdir=/scratch2/portfolios/NCEPDEV/ptmp/$USER/tmp${JCAP}_sigmap/${expid}  
    savdir=/scratch2/portfolios/NCEPDEV/ptmp/$USER/out${JCAP}/sigmap/${expid} 
    fixcrtm=/scratch1/portfolios/NCEPDEV/da/save/Michael.Lueken/nwprod/lib/sorc/CRTM_REL-2.1.3/Big_Endian
@@ -228,9 +230,9 @@ if [ $MACHINE = WCOSS ]; then
     exit 1
   fi
 elif  [ $MACHINE = ZEUS ]; then    
-  if [ -s ${datdir}/gdas1.t${hha}z.sgm3prep ]; then 
-    datobs=${datdir}
-    datges=${datdir}
+  if [ -s ${datdir}/gdas.${adate0}/gdas1.t${hha}z.sgm3prep ]; then 
+    datobs=${datdir}/gdas.${adate0}
+    datges=${datdir}/gdas.${gdate0}
     datprep=${datobs}
   elif [ -s /NCEPPROD/com/gfs/prod/gdas.${gdate0}/gdas1.t${hha}z.sgm3prep ]; then   # Not all data files are stored on /com
     datges=/NCEPPROD/com/gfs/prod/gdas.$gdate0
@@ -647,9 +649,10 @@ $ncp $datobs/${prefix_obs}syndata.tcvitals.tm00 ./tcvitl
 $ncp $datges/${prefix_tbc}.abias              ./satbias_in
 #ln -s -f $datges/${prefix_tbc}.abias_pc           ./satbias_pc
 $ncp $datges/${prefix_tbc}.satang             ./satbias_angle
-$ncp $datges/${prefix_tbc}.radstat            ./radstat.gdas
+#$ncp $datges/${prefix_tbc}.radstat            ./radstat.gdas
+$ncp /home/Xiujuan.Su/nbns/rad/radstat.${gdate} ./radstat.gdas
 
-/u/Xiujuan.Su/home/gsi/xsu_nqc/util/Radiance_bias_correction_Utilities/write_biascr_option.x -newpc4pred -adp_anglebc 4
+/scratch1/portfolios/NCEPDEV/da/save/Xiujuan.Su/gsi/xsu_nqc/util/Radiance_bias_correction_Utilities/write_biascr_option.x -newpc4pred -adp_anglebc 4
 
 cp satbias_in satbias_in.orig
 cp satbias_in.new satbias_in
