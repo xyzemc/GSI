@@ -46,7 +46,7 @@ fi
 #=================================================================================================
 
 # Set experiment name and analysis date
-adate=2014102106
+adate=2014102306
 expnm=globalprod    
 exp=globalprod.$adate
 expid=${expnm}.$adate

@@ -89,7 +89,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
        ithin_conv,rmesh_conv,pmesh_conv, index_sub,&
        id_bias_ps,id_bias_t,conv_bias_ps,conv_bias_t,use_prepb_satwnd
   use converr_uv,only: etabl_uv,ptabl_uv,isuble_uv,maxsub_uv
-  use convb_uv,only: btabl_uv
+  use convb_uv,only: btabl_uv,isuble_buv
   use gsi_4dvar, only: l4dvar,iwinbgn,winlen,time_4dvar
   use deter_sfc_mod, only: deter_sfc_type,deter_sfc2
   implicit none
@@ -212,7 +212,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
 
 
 ! Set lower limits for observation errors
-  werrmin=one
+  werrmin=zero
   wjbmin=zero
   wjbmax=5.0_r_kind
   nsattype=0
@@ -802,10 +802,16 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
             endif
            if(ppb>=etabl_uv(itypey,1,1)) k1=1          
            do kl=1,32
-              if(ppb>=etabl_uv(itypey,kl+1,1).and.ppb<=etabl_uv(itypey,kl,1)) k1=kl
+              if(ppb>=etabl_uv(itypey,kl+1,1).and.ppb<=etabl_uv(itypey,kl,1)) then
+                 k1=kl
+                 exit
+              endif
            end do
-           if(ppb<=etabl_uv(itypey,33,1)) k1=33
            k2=k1+1
+           if(ppb<=etabl_uv(itypey,33,1)) then
+              k1=33
+              k2=33
+           endif
            ediff = etabl_uv(itypey,k2,1)-etabl_uv(itypey,k1,1)
            if (abs(ediff) > tiny_r_kind) then
               del = (ppb-etabl_uv(itypey,k1,1))/ediff
@@ -817,13 +823,17 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
            obserr=max(obserr,werrmin)
 !  get non linear qc parameter from b table
            var_jb=(one-del)*btabl_uv(itypey,k1,ierr)+del*btabl_uv(itypey,k2,ierr)
-           var_jb=max(obserr,wjbmin)
+           var_jb=max(var_jb,wjbmin)
            if (var_jb >10.0_r_kind) var_jb=zero
+!           if (itype ==245 ) then
+!             write(6,*) 'READ_SATWND:obserr,var_jb,ppb,del,one,etabl_uv,btabl_uv=',&
+!             obserr,var_jb,ppb,del,one,etabl_uv(itypey,k1,ierr),btabl_uv(itypey,k1,ierr),wjbmin,werrmin
+!           endif
 
 !  for GOES hourly winds, set error doubled
             if(itype==245 .or. itype==246) then
 !               obserr=obserr*two
-             write(6,*) 'READ_SATWND:obserr,var_jb=',obserr,var_jb
+!             write(6,*) 'READ_SATWND:obserr,var_jb=',obserr,var_jb
 !  using  Santek quality control method,calculate the original ee value
                if(ee <r105) then
                   ree=(ee-r100)/(-10.0_r_kind)

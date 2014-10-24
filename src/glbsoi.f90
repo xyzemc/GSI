@@ -419,6 +419,11 @@ subroutine glbsoi(mype)
   call convb_q_destroy
   call convb_t_destroy
   call convb_uv_destroy
+  call converr_t_destroy
+  call converr_q_destroy
+  call converr_ps_destroy
+  call converr_pw_destroy
+  call converr_uv_destroy
 
 ! When applicable, finalize ensemble 
   if(l_hyb_ens) then

@@ -914,7 +914,6 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
               rwgt=tanh(wgt)/wgt
            endif
            term=-two*var_jb*log(cosh((sqrt(val)*ratio_errors)/sqrt(two*var_jb)))
-           wgt  = wgtlim
            rwgt = wgt/wgtlim
            valqc = -two*term
         else
