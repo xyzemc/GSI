@@ -139,8 +139,6 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
      real(r_kind), parameter :: r50     =   50.0_r_kind
      real(r_kind), parameter :: r1200   = 1200.0_r_kind
      real(r_kind), parameter :: emerr   =    0.2_r_kind ! RH
-     real(r_kind), parameter :: convert = 1.0e-6_r_kind
-     real(r_kind), parameter :: r999    = 999.0_r_kind
      real(r_kind), parameter :: missing = 1.0e+11_r_kind
 
      real(r_kind) :: toff,t4dv
@@ -1031,22 +1029,19 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
               cdata_all(12,iout)=obserr*one_tenth       ! original obs error (RH e.g. 0.98)       
               cdata_all(13,iout)=usage                  ! usage parameter
               cdata_all(14,iout)=idomsfc                ! dominate surface type    
-              cdata_all(15,iout)=tsavg                  ! skin temperature
-              cdata_all(16,iout)=ff10                   ! 10 meter wind factor         
-              cdata_all(17,iout)=sfcr                   ! surface roughness
-              cdata_all(18,iout)=dlon_earth*rad2deg     ! earth relative longitude (degree)        
-              cdata_all(19,iout)=dlat_earth*rad2deg     ! earth relative latitude (degree)
-              cdata_all(20,iout)=gob                    ! station elevation (m)    
-              cdata_all(21,iout)=gob                    ! observation height (m)   
-              cdata_all(22,iout)=zz                     ! terrain height at ob location             
-              cdata_all(23,iout)=r_prvstg(1,1)          ! provider name
-              cdata_all(24,iout)=r_sprvstg(1,1)         ! subprovider name
-              cdata_all(25,iout)=qcm                    ! cat
+              cdata_all(15,iout)=dlon_earth*rad2deg     ! earth relative longitude (degree)        
+              cdata_all(16,iout)=dlat_earth*rad2deg     ! earth relative latitude (degree)
+              cdata_all(17,iout)=gob                    ! station elevation (m)    
+              cdata_all(18,iout)=gob                    ! observation height (m)   
+              cdata_all(19,iout)=zz                     ! terrain height at ob location             
+              cdata_all(20,iout)=r_prvstg(1,1)          ! provider name
+              cdata_all(21,iout)=r_sprvstg(1,1)         ! subprovider name
+              cdata_all(22,iout)=qcm                    ! cat
               cdata_all(26,iout)=var_jb                 ! non linear qc 
               if(perturb_obs) &
                  cdata_all(27,iout)=ran01dom()*perturb_fact ! q perturbation         
-              write(2000,1002) nread,tdiff,tvflg,pob_mb,tob,qob,rhob,qoe,obserr*one_tenth,qcm,usage                                                  
-1002          format(i12,f8.3,f5.0,6e20.12,i5,1x,f5.0)
+!              write(2000,1002) nread,tdiff,tvflg,pob_mb,tob,qob,rhob,qoe,obserr*one_tenth,qcm,usage                                                  
+!1002          format(i12,f8.3,f5.0,6e20.12,i5,1x,f5.0)
 
            endif 
 
@@ -1064,20 +1059,20 @@ subroutine read_fl_hdob(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,si
               cdata_all( 7,iout)=rstation_id            ! station id
               cdata_all( 8,iout)=t4dv                   ! time
               cdata_all( 9,iout)=nc                     ! type
-              cdata_all(10,iout)=r10                    ! elevation of observation *emily:10-m wind      
-              cdata_all(11,iout)=qcm                    ! quality mark
-              cdata_all(12,iout)=obserr                 ! original obs error
-              cdata_all(13,iout)=usage                  ! usage parameter
-              cdata_all(14,iout)=idomsfc                ! dominate surface type       
-              cdata_all(15,iout)=tsavg                  ! skin temperature
-              cdata_all(16,iout)=ff10                   ! 10 meter wind factor    
-              cdata_all(17,iout)=sfcr                   ! surface roughness
-              cdata_all(18,iout)=dlon_earth*rad2deg     ! earth relative longitude (degree)               
-              cdata_all(19,iout)=dlat_earth*rad2deg     ! earth relative latitude (degree)                 
-              cdata_all(20,iout)=gob                    ! station elevation (m)   
-              cdata_all(21,iout)=zz                     ! terrain height at ob location       
-              cdata_all(22,iout)=r_prvstg(1,1)          ! provider name
-              cdata_all(23,iout)=r_sprvstg(1,1)         ! subprovider name
+              cdata_all(10,iout)=r10                    !  elevation of observation *emily:10-m wind       
+              cdata_all(11,iout)=qcm                    !  quality mark 
+              cdata_all(12,iout)=obserr                 !  original obs error 
+              cdata_all(13,iout)=usage                  ! usage parameter 
+              cdata_all(14,iout)=idomsfc                !  dominate surface type        
+              cdata_all(15,iout)=tsavg                  ! skin temperature 
+              cdata_all(16,iout)=ff10                   ! 10 meter wind factor     
+              cdata_all(17,iout)=sfcr                   ! surface roughness 
+              cdata_all(18,iout)=dlon_earth*rad2deg     ! earth relative longitude (degree)                
+              cdata_all(19,iout)=dlat_earth*rad2deg     ! earth relative latitude (degree)                  
+              cdata_all(20,iout)=gob                    !  station elevation (m)    
+              cdata_all(21,iout)=zz                     !  terrain height at ob location        
+              cdata_all(22,iout)=r_prvstg(1,1)          !  provider name 
+              cdata_all(23,iout)=r_sprvstg(1,1)         !  subprovider name 
            endif 
 
         end do loop_readsb2

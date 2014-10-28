@@ -388,7 +388,6 @@ module obsmod
 ! Structure for diagnostics
 
   type obs_diag
-     sequence
      type(obs_diag), pointer :: next => NULL()
      real(r_kind), pointer :: nldepart(:)    ! (miter+1)
      real(r_kind), pointer :: tldepart(:)    ! (miter)
@@ -400,7 +399,7 @@ module obsmod
      logical, pointer :: muse(:)             ! (miter)
      logical :: luse
 
-     integer(i_kind) :: idv,iob,ich	! device id and obs index for verification
+     integer(i_kind) :: idv,iob,ich   ! device id and obs index for verification
   end type obs_diag
 
   type obs_diags
@@ -410,14 +409,12 @@ module obsmod
   end type obs_diags
 
   type aofp_obs_diag   ! array-of-Fortran-pointers of type(obs_diag)
-     sequence
      type(obs_diag), pointer :: ptr => NULL()
   end type aofp_obs_diag
 
 ! Main observation data structure
 
   type ps_ob_type
-     sequence
      type(ps_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: res           !  surface pressure residual
@@ -434,7 +431,7 @@ module obsmod
      integer(i_kind) :: kx            !  ob type
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type ps_ob_type
  
   type ps_ob_head
@@ -443,7 +440,6 @@ module obsmod
   end type ps_ob_head
 
   type tcp_ob_type
-     sequence
      type(tcp_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: res           !  surface pressure residual
@@ -459,7 +455,7 @@ module obsmod
      integer(i_kind) :: kx            !  ob type
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type tcp_ob_type
 
   type tcp_ob_head
@@ -468,7 +464,6 @@ module obsmod
   end type tcp_ob_head
 
   type t_ob_type
-     sequence
      type(t_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL() 
      real(r_kind)    :: res           !  temperature residual
@@ -493,7 +488,7 @@ module obsmod
      integer(i_kind) :: kx            !  ob type
      integer(i_kind) :: ij(8)         !  horizontal locations
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type t_ob_type
 
   type t_ob_head
@@ -502,7 +497,6 @@ module obsmod
   end type t_ob_head
   
   type w_ob_type
-     sequence
      type(w_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diagu => NULL()
      type(obs_diag), pointer :: diagv => NULL()
@@ -523,7 +517,7 @@ module obsmod
      integer(i_kind) :: kx            !  ob type
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type w_ob_type
 
   type w_ob_head
@@ -532,7 +526,6 @@ module obsmod
   end type w_ob_head
 
   type q_ob_type
-     sequence
      type(q_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL() 
      real(r_kind)    :: res           !  moisture residual
@@ -550,7 +543,7 @@ module obsmod
      integer(i_kind) :: kx            !  ob type
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type q_ob_type
 
   type q_ob_head
@@ -559,7 +552,6 @@ module obsmod
   end type q_ob_head
 
   type spd_ob_type
-     sequence
      type(spd_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: res           !  speed observation
@@ -575,7 +567,7 @@ module obsmod
      integer(i_kind) :: ij(4)         !  horizontal locations
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type spd_ob_type
 
   type spd_ob_head
@@ -584,7 +576,6 @@ module obsmod
   end type spd_ob_head
 
   type srw_ob_type
-     sequence
      type(srw_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diagu => NULL()
      type(obs_diag), pointer :: diagv => NULL()
@@ -603,7 +594,7 @@ module obsmod
      integer(i_kind) :: ij(8)         !  horizontal locations
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type srw_ob_type
 
   type srw_ob_head
@@ -612,7 +603,6 @@ module obsmod
   end type srw_ob_head
 
   type rw_ob_type
-     sequence
      type(rw_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()     
      real(r_kind)    :: res           !  radial wind residual
@@ -628,7 +618,7 @@ module obsmod
      integer(i_kind) :: ij(8)         !  horizontal locations
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type rw_ob_type
 
   type rw_ob_head    
@@ -637,7 +627,6 @@ module obsmod
   end type rw_ob_head
 
   type dw_ob_type
-     sequence
      type(dw_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: res           !  doppler wind residual
@@ -653,7 +642,7 @@ module obsmod
      integer(i_kind) :: ij(8)         !  horizontal locations
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type dw_ob_type
 
   type dw_ob_head
@@ -662,7 +651,6 @@ module obsmod
   end type dw_ob_head
 
   type sst_ob_type
-     sequence
      type(sst_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: res           !  sst residual
@@ -678,7 +666,7 @@ module obsmod
      real(r_kind)    :: tz_tr         !  sensitivity of tob to tref : d(Tz)/d(Tr)
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type sst_ob_type
 
   type sst_ob_head
@@ -687,7 +675,6 @@ module obsmod
   end type sst_ob_head
 
   type pw_ob_type
-     sequence
      type(pw_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: res           !  precipitable water residual
@@ -703,7 +690,7 @@ module obsmod
      integer(i_kind) :: ij(4)         !  horizontal locations
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type pw_ob_type
 
   type pw_ob_head
@@ -712,7 +699,6 @@ module obsmod
   end type pw_ob_head
 
   type oz_ob_type
-     sequence
      type(oz_ob_type),pointer :: llpoint => NULL()
      type(aofp_obs_diag), dimension(:), pointer :: diags => NULL()
      real(r_kind),dimension(:),pointer :: res => NULL()
@@ -732,7 +718,7 @@ module obsmod
      integer(i_kind) :: ij(4)         !  horizontal locations
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      real(r_kind),dimension(:),pointer :: apriori    ! OMI retrieval first guess
      real(r_kind),dimension(:),pointer :: efficiency ! OMI efficiency factor
   end type oz_ob_type
@@ -743,7 +729,6 @@ module obsmod
   end type oz_ob_head
 
   type o3l_ob_type
-     sequence
      type(o3l_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: res           !  ozone residual
@@ -757,7 +742,7 @@ module obsmod
      integer(i_kind) :: ij(8)         !  horizontal locations
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type o3l_ob_type
 
   type o3l_ob_head
@@ -766,7 +751,6 @@ module obsmod
   end type o3l_ob_head
 
   type colvk_ob_type
-     sequence
      type(colvk_ob_type),pointer :: llpoint => NULL()
      type(aofp_obs_diag), dimension(:), pointer :: diags => NULL()
      real(r_kind),dimension(:),pointer :: res => NULL()
@@ -803,7 +787,6 @@ module obsmod
   end type colvk_ob_head
 
   type aero_ob_type
-     sequence
      type(aero_ob_type),pointer :: llpoint => NULL()
      type(aofp_obs_diag), dimension(:), pointer :: diags => NULL()
      real(r_kind),dimension(:),pointer    :: res  => NULL()    !  aerosol property residual
@@ -828,7 +811,6 @@ module obsmod
   end type aero_ob_head
 
   type aerol_ob_type
-    sequence
      type(aerol_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: res           !  aerosol residual
@@ -856,7 +838,6 @@ module obsmod
 ! also surface pm2_5 may be treated differently than now for vertical
 ! interpolation
 
-     sequence
      type(pm2_5_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: res           !  pm2_5 residual
@@ -879,7 +860,6 @@ module obsmod
   end type pm2_5_ob_head
 
   type gust_ob_type
-     sequence
      type(gust_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: res           !  gust residual
@@ -902,7 +882,6 @@ module obsmod
   end type gust_ob_head
 
   type vis_ob_type
-     sequence
      type(vis_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: res           !  vis residual
@@ -925,7 +904,6 @@ module obsmod
   end type vis_ob_head
 
   type pblh_ob_type
-     sequence
      type(pblh_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: res           !  pblh residual
@@ -948,7 +926,6 @@ module obsmod
   end type pblh_ob_head
   
   type gps_ob_type
-     sequence
      type(gps_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: res           !  gps residual
@@ -969,7 +946,7 @@ module obsmod
      integer(i_kind),dimension(:,:),pointer :: ij  => NULL()
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type gps_ob_type
 
   type gps_ob_head
@@ -978,7 +955,6 @@ module obsmod
   end type gps_ob_head
 
   type gps_all_ob_type
-     sequence
      type(gps_all_ob_type),pointer :: llpoint => NULL()
      type(gps_ob_type),pointer :: mmpoint => NULL()
      real(r_kind)    :: ratio_err                        
@@ -996,7 +972,7 @@ module obsmod
      logical         :: muse          !  flag indicating if ob is used in pen.
      character(8)    :: cdiag
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type gps_all_ob_type
 
   type gps_all_ob_head
@@ -1005,7 +981,6 @@ module obsmod
   end type gps_all_ob_head
 
   type rad_ob_type
-     sequence
      type(rad_ob_type),pointer :: llpoint => NULL()
      type(aofp_obs_diag), dimension(:), pointer :: diags => NULL()
      real(r_kind),dimension(:),pointer :: res => NULL()
@@ -1025,7 +1000,7 @@ module obsmod
      integer(i_kind) :: ij(4)         !  horizontal locations
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      integer(i_kind),dimension(:),pointer :: ich => NULL()
   end type rad_ob_type
 
@@ -1035,7 +1010,6 @@ module obsmod
   end type rad_ob_head
 
   type pcp_ob_type
-     sequence
      type(pcp_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diags => NULL()
      real(r_kind)    :: obs           !  observed precipitation value 
@@ -1052,7 +1026,7 @@ module obsmod
      integer(i_kind) :: icxp          !  type of precipitation rate observation
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type pcp_ob_type
 
   type pcp_ob_head
@@ -1062,7 +1036,6 @@ module obsmod
  
 
   type lag_ob_type
-     sequence
      type(lag_ob_type),pointer :: llpoint => NULL()
      type(obs_diag), pointer :: diag_lon => NULL()
      type(obs_diag), pointer :: diag_lat => NULL()
@@ -1084,7 +1057,7 @@ module obsmod
      integer(i_kind) :: intnum        ! internal number of balloon
      logical         :: luse          ! flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob	      ! device id and obs index for sorting
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type lag_ob_type
 
   type lag_ob_head
@@ -1094,7 +1067,6 @@ module obsmod
   ! lfm --------------------------------------------------------------------
 
   type obs_handle
-     sequence
      type(ps_ob_type),pointer    :: ps  => NULL() 
      type(t_ob_type),pointer     :: t   => NULL()
      type(w_ob_type),pointer     :: w   => NULL()
@@ -1323,13 +1295,12 @@ contains
     bflag  = .false.
     sfcmodel  = .false.     ! .false. = do not use boundary layer model 
     dtbduv_on = .true.      ! .true. = use microwave dTb/duv in inner loop
-    if (l4dvar) then
-       offtime_data = .true.   ! .true. = ignore difference in obs ref time
-                               !            and analysis time
-    else
-       offtime_data = .false.  ! .false. = code fails if data files contain ref time
-                               !            different from analysis time
-    endif
+    offtime_data = .false.  ! .false. = code fails if data files contain ref time
+                            !            different from analysis time
+! moved to create_obsmod_var since l4dvar since before namelist is read
+!   if (l4dvar) then
+!      offtime_data = .true.   ! .true. = ignore difference in obs ref time
+!   endif
     blacklst  = .false.
     lobserver = .false.     ! when .t., calculate departure vectors only
     ext_sonde = .false.     ! .false. = do not use extended forward model for sonde
@@ -1504,6 +1475,10 @@ contains
 !$$$ end documentation block
     use gsi_4dvar, only: nobs_bins
     implicit none
+
+    if (l4dvar) then
+       offtime_data = .true.   ! .true. = ignore difference in obs ref time
+    endif
 
     allocate (nsat1(ndat),mype_diaghdr(ndat))
 
@@ -1682,6 +1657,7 @@ contains
   end subroutine init_obsmod_vars
 ! ----------------------------------------------------------------------
 
+
   subroutine destroyobs_ ( skipit )
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -1832,7 +1808,7 @@ contains
           deallocate(oztail(ii)%head%res, oztail(ii)%head%wij,&
                      oztail(ii)%head%err2,oztail(ii)%head%raterr2, &
                      oztail(ii)%head%prs,oztail(ii)%head%ipos, &
-                     oztail(ii)%head%apriori, &
+                     oztail(ii)%head%apriori, oztail(ii)%head%diags,&
                      oztail(ii)%head%efficiency, stat=istatus)
           if (istatus/=0) write(6,*)'DESTROYOBS:  deallocate error for oz arrays, istatus=',istatus
           deallocate(oztail(ii)%head,stat=istatus)
@@ -1857,8 +1833,8 @@ contains
         aerohead(ii)%head => aerotail(ii)%head%llpoint
         deallocate(aerotail(ii)%head%res, &
                    aerotail(ii)%head%err2,aerotail(ii)%head%raterr2, &
-                   aerotail(ii)%head%daod_dvar, &
-                   aerotail(ii)%head%ich, &
+                   aerotail(ii)%head%daod_dvar, aerotail(ii)%head%ipos, &
+                   aerotail(ii)%head%ich, aerotail(ii)%head%prs,&
                    aerotail(ii)%head%icx,stat=istatus)
         if (istatus/=0) write(6,*)'DESTROYOBS:  deallocate error for aero arrays, istatus=',istatus
         deallocate(aerotail(ii)%head,stat=istatus)
@@ -1937,7 +1913,7 @@ contains
           radhead(ii)%head => radtail(ii)%head%llpoint
           deallocate(radtail(ii)%head%res,radtail(ii)%head%err2, &
                      radtail(ii)%head%raterr2,radtail(ii)%head%pred, &
-                     radtail(ii)%head%dtb_dvar, &
+                     radtail(ii)%head%dtb_dvar,radtail(ii)%head%diags, &
                      radtail(ii)%head%ich, &
                      radtail(ii)%head%icx,stat=istatus)
           if (istatus/=0) write(6,*)'DESTROYOBS:  deallocate error for rad arrays, istatus=',istatus
@@ -1989,6 +1965,7 @@ contains
                      colvktail(ii)%head%err2,colvktail(ii)%head%raterr2, &
                      colvktail(ii)%head%prs,colvktail(ii)%head%ipos, &
                      colvktail(ii)%head%ak, colvktail(ii)%head%ap, &
+                     colvktail(ii)%head%wkk1,colvktail(ii)%head%wkk2, &
                      stat=istatus)
           if (istatus/=0) write(6,*)'DESTROYOBS:  deallocate error for co arrays, istatus=',istatus
           deallocate(colvktail(ii)%head,stat=istatus)
@@ -1998,21 +1975,19 @@ contains
     end do
 
 
-    if (l4dvar) then
-       if (.not. skipit_) then
-          do ii=1,nobs_bins
-             do jj=1,nobs_type
+    if (.not. skipit_) then
+       do ii=1,nobs_bins
+          do jj=1,nobs_type
+             obsptr => obsdiags(jj,ii)%head
+             do while (associated(obsptr))
+                obsdiags(jj,ii)%head => obsptr%next
+                deallocate(obsptr%nldepart,obsptr%tldepart,obsptr%obssen,obsptr%muse)
+                deallocate(obsptr)
                 obsptr => obsdiags(jj,ii)%head
-                do while (associated(obsptr))
-                   obsdiags(jj,ii)%head => obsptr%next
-                   deallocate(obsptr%nldepart,obsptr%tldepart,obsptr%obssen,obsptr%muse)
-                   deallocate(obsptr)
-                   obsptr => obsdiags(jj,ii)%head
-                enddo
              enddo
           enddo
-          lobsdiag_allocated=.false.
-       endif
+       enddo
+       lobsdiag_allocated=.false.
     endif
 
     if (allocated(obscounts)) deallocate(obscounts) 
@@ -2160,6 +2135,7 @@ contains
        gps_alltail(ii)%head => gps_allhead(ii)%head
        do while (associated(gps_alltail(ii)%head))
           gps_allhead(ii)%head => gps_alltail(ii)%head%llpoint
+          deallocate(gps_alltail(ii)%head%rdiag)
           deallocate(gps_alltail(ii)%head,stat=istatus)
           if (istatus/=0) write(6,*)'DESTROY_GENSTATS_GPS: deallocate error for gps_all, istatus=',istatus
           gps_alltail(ii)%head => gps_allhead(ii)%head
@@ -2235,10 +2211,10 @@ end subroutine inquire_obsdiags
 function dfile_format(dfile) result(dform)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
-! subprogram:	 function dfile_format
-!   prgmmr:	 j guo <jguo@nasa.gov>
-!      org:	 NASA/GSFC, Global Modeling and Assimilation Office, 610.1
-!     date:	 2013-02-04
+! subprogram:    function dfile_format
+!   prgmmr:      j guo <jguo@nasa.gov>
+!      org:      NASA/GSFC, Global Modeling and Assimilation Office, 610.1
+!     date:      2013-02-04
 !
 ! abstract: - check filename suffix to guess its format
 !
@@ -2259,12 +2235,12 @@ function dfile_format(dfile) result(dform)
 
   implicit none
 
-  character(len=len('unknown')):: dform	! a 2-4 byte code for a format guess,
-  	! from a list of filename suffixes, 'bufr', 'text' (also for 'txt',
-	! 'tcvitle', or 'vitl'), 'nc', or return a default value 'unknown'.  One
-	! can extend the list to other suffixes, such as 'hdf', 'hdf4', 'hdf5',
-	! etc., if they are needed in the future.
-  character(len=*),intent(in):: dfile	! a given filename
+  character(len=len('unknown')):: dform ! a 2-4 byte code for a format guess,
+  ! from a list of filename suffixes, 'bufr', 'text' (also for 'txt',
+  ! 'tcvitle', or 'vitl'), 'nc', or return a default value 'unknown'.  One
+  ! can extend the list to other suffixes, such as 'hdf', 'hdf4', 'hdf5',
+  ! etc., if they are needed in the future.
+  character(len=*),intent(in):: dfile  ! a given filename
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   character(len=*),parameter :: myname_=myname//'::dfile_format'
@@ -2273,14 +2249,14 @@ function dfile_format(dfile) result(dform)
   dform='unknown'
   l=len_trim(dfile)
 
-  i=max(0,l-6)+1	! 6 byte code?
+  i=max(0,l-6)+1      ! 6 byte code?
   select case(dfile(i:l))
   case ('tcvitl')
     dform='text'
   end select
   if(dform/='unknown') return
 
-  i=max(0,l-4)+1	! 4 byte code?
+  i=max(0,l-4)+1! 4 byte code?
   select case(dfile(i:l))
   case ('bufr')
     dform='bufr'
@@ -2289,14 +2265,14 @@ function dfile_format(dfile) result(dform)
   end select
   if(dform/='unknown') return
 
-  i=max(0,l-3)+1	! 3 byte code?
+  i=max(0,l-3)+1   ! 3 byte code?
   select case(dfile(i:l))
-  case ('txt')		! a short
+  case ('txt')    ! a short
     dform='text'
   end select
   if(dform/='unknown') return
 
-  i=max(0,l-2)+1	! 2 byte code?
+  i=max(0,l-2)+1    ! 2 byte code?
   select case(dfile(i:l))
   case ('nc')
     dform='nc'
@@ -2308,10 +2284,10 @@ end function dfile_format
 subroutine init_instr_table_ (nhr_assim,nall,iamroot,rcname)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
-! subprogram:	 function dfile_format
-!   prgmmr:	 todling
-!      org:	 NASA/GSFC, Global Modeling and Assimilation Office, 610.1
-!     date:	 2013-02-04
+! subprogram:   function dfile_format
+!   prgmmr:     todling
+!      org:     NASA/GSFC, Global Modeling and Assimilation Office, 610.1
+!     date:     2013-02-04
 !
 ! abstract: - read instrument table from file
 !

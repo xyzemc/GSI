@@ -211,6 +211,9 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   if(use_prepb_satwnd) return
 
 
+  disterrmax=zero
+  vdisterrmax=zero
+
 ! Set lower limits for observation errors
   werrmin=zero
   wjbmin=zero
