@@ -120,6 +120,8 @@ LIBsys          = $(MYLIBsys)
 	constants.o \
 	control2model.o \
 	control2state.o \
+	control2state_ad.o \
+	control2model_ad.o \
 	control_vectors.o \
 	converr.o \
 	convinfo.o \
@@ -135,6 +137,8 @@ LIBsys          = $(MYLIBsys)
 	enorm_state.o \
 	ensctl2model.o \
 	ensctl2state.o \
+	ensctl2model_ad.o \
+	ensctl2state_ad.o \
 	evaljgrad.o \
 	evaljo.o \
 	evalqlim.o \
@@ -260,8 +264,6 @@ LIBsys          = $(MYLIBsys)
         mod_wrfmass_to_a.o \
 	model_ad.o \
 	model_tl.o \
-	model2control.o \
-	model2ensctl.o \
 	mp_compact_diffs_mod1.o \
 	mp_compact_diffs_support.o \
 	mpimod.o \
@@ -398,8 +400,8 @@ LIBsys          = $(MYLIBsys)
 	sqrtmin.o \
 	ssmis_spatial_average_mod.o  \
 	sst_retrieval.o \
-	state2control.o \
-	state2ensctl.o \
+	control2model_ad.o \
+	ensctl2state_ad.o \
 	state_vectors.o \
 	statsco.o \
 	statsconv.o \
