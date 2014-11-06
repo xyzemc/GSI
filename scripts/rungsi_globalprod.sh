@@ -46,7 +46,7 @@ fi
 #=================================================================================================
 
 # Set experiment name and analysis date
-adate=2014102906
+adate=2014110600
 expnm=globalprod    
 exp=globalprod.$adate
 expid=${expnm}.$adate
@@ -649,8 +649,8 @@ $ncp $datobs/${prefix_obs}syndata.tcvitals.tm00 ./tcvitl
 $ncp $datges/${prefix_tbc}.abias              ./satbias_in
 #ln -s -f $datges/${prefix_tbc}.abias_pc           ./satbias_pc
 $ncp $datges/${prefix_tbc}.satang             ./satbias_angle
-#$ncp $datges/${prefix_tbc}.radstat            ./radstat.gdas
-$ncp /home/Xiujuan.Su/nbns/rad/radstat.${gdate} ./radstat.gdas
+$ncp $datges/${prefix_tbc}.radstat            ./radstat.gdas
+#$ncp /home/Xiujuan.Su/nbns/rad/radstat.${gdate} ./radstat.gdas
 
 /scratch1/portfolios/NCEPDEV/da/save/Xiujuan.Su/gsi/xsu_nqc/util/Radiance_bias_correction_Utilities/write_biascr_option.x -newpc4pred -adp_anglebc 4
 
