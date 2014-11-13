@@ -816,8 +816,11 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
            endif
        
 !!    convert from wind direction and speed to u,v component
-           uob=-obsdat(4)*sin(obsdat(3)*deg2rad)
-           vob=-obsdat(4)*cos(obsdat(3)*deg2rad)
+!           uob=-obsdat(4)*sin(obsdat(3)*deg2rad)
+!           vob=-obsdat(4)*cos(obsdat(3)*deg2rad)
+!  not convert to u,v component, keep it as speed and direction for super  observation
+            uob=obsdat(4)        !  wind speed
+            vob=obsdat(3)        ! wind direction
 !!!  some information only has in NESDIS satellite winds
 !          if(hdrdat(1) >=r200 .and. hdrdat(1) <= r299 ) then
 !             call ufbseq(lunin,heightdat,3,5,iret,heightr)         
@@ -926,7 +929,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
            dlnpob=log(one_tenth*ppb)  ! ln(pressure in cb)
            ppb=one_tenth*ppb         ! from mb to cb
  !         Special block for data thinning - if requested
-           if (ithin > 0 .and. iuse >=0) then
+           if (ithin > 0 .and. iuse >=0 .and. qm <4) then
               ntmp=ndata  ! counting moved to map3gridS
  !         Set data quality index for thinning
               if (l4dvar) then
