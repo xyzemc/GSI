@@ -31,12 +31,9 @@ subroutine penal(xhat)
   use constants, only: zero,one
   use gsi_4dvar, only: nobs_bins
   use obsmod, only: qhead,qptr,thead,tptr,whead,wptr,pshead,psptr
-  use converr_ps, only:etabl_ps
-  use converr_q, only:etabl_q
-  use converr_t, only:etabl_t
-  use converr_uv, only:etabl_uv
+  use converr, only:etabl
   use jfunc, only: jiterstart,jiter
-  use convinfo, only:ictype,nconvtype,ioctype,index_sub
+  use convinfo, only:ictype,nconvtype,ioctype
   use gsi_bundlemod, only: gsi_bundle
   use gsi_bundlemod, only: gsi_bundlegetpointer 
   implicit none
@@ -54,7 +51,7 @@ subroutine penal(xhat)
   integer(i_kind) i,n,k,l,m,ibin,ier,istatus
   real(r_kind) tpenalty(33,nconvtype),ttrace(33,nconvtype)
   real(r_kind) valu,valv,val,so(33,nconvtype),cat_num(33,nconvtype),sosum,tcat_num(33,nconvtype)
-  integer(i_kind) itype,ncat,k1,ltype
+  integer(i_kind) itype,ncat,k1
   real(r_kind),pointer,dimension(:):: xhat_u,xhat_v,xhat_q,xhat_t,xhat_p
 
 ! Get pointers and return if not found
@@ -321,129 +318,48 @@ subroutine penal(xhat)
         write(235,*)'sosum=',sosum
 
 !       Update etabl
-!        do i=1,nconvtype 
-!           l=ictype(i)
-!           m=index_sub(i)
-!           if(trim(ioctype(i))=='t')then
-!              do k=1,33
-!                 if( etabl_t(l-99,k,m) < 1.e8_r_single) etabl_t(l-99,k,m)=etabl_t(l-99,k,m)*so(1,i)
-!              end do
-!              if(l==120 ) then
-!                 write(235,*)l,trim(ioctype(i)),'33'
-!              else
-!                 write(235,*)l,trim(ioctype(i)),'1'
-!              endif 
-!           elseif(trim(ioctype(i))=='q')then
-!              do k=1,33
-!                 if( etabl_q(l-99,k,m) < 1.e8_r_single) etabl_q(l-99,k,m)=etabl_t(l-99,k,m)*so(1,i)
-!              end do
-!              if(l==120 ) then
-!                 write(235,*)l,trim(ioctype(i)),'33'
-!              else
-!                 write(235,*)l,trim(ioctype(i)),'1'
-!              endif 
-!           elseif(trim(ioctype(i))=='uv')then
-!             do k=1,33
-!                 if( etabl_uv(l-199,k,m) < 1.e8_r_single) etabl_uv(l-199,k,m)=etabl_uv(l-199,k,m)*so(1,i)
-!              end do
-!
-!             if(l==220 .or. l==223 .or. l==233 .or.  l==245)then
-!               write(235,*)l,trim(ioctype(i)),'33'
-!             endif
-!
-!           elseif(trim(ioctype(i))=='ps')then
-!              do k=1,33
-!                 if( etabl_ps(l-99,k,m) < 1.e8_r_single) etabl_ps(l-99,k,m)=etabl_ps(l-99,k,m)*so(1,i)
-!              end do
-!              write(235,*)l,trim(ioctype(i)),'1'
-!           else
-!              cycle
-!           endif
-!!           l=ictype(i)
-!!
-!!          Enough obs to define the vertical profile
-!!           if((l==120.and.m/=5) .or. l==220 .or. l==223 .or. l==233 .or. l==245)then
-!!              write(235,*)l,trim(ioctype(i)),'33'
-!!              do k=1,33
-!!                 if( etabl(l,k,m) < 1.e8_r_single) etabl(l,k,m)=etabl(l,k,m)*so(k,i)
-!!              end do
-!!           else
-!!              write(235,*)l,trim(ioctype(i)),'1'
-!!              do k=1,33
-!!                 if( etabl(l,k,m) < 1.e8_r_single) etabl(l,k,m)=etabl(l,k,m)*so(1,i)
-!!              end do
-!!           endif
-!        enddo
-!        
-!!       Write out err table 
-!      
-!       open(51,file='errtable_ps_out',form='formatted')
-!          rewind 51
-!          do l=1,100
-!           if(etabl_ps(l,1,1)==1100._r_single)then
-!               ltype=l+99
-!              write(51,100) ltype
-!              do k=1,33
-!                 write(51,110)(etabl_ps(l,k,i),i=1,6)
-!              end do
-!           endif !  etable1=1100
-!        end do
-!        close(51)
-!
-!       open(52,file='errtable_q_out',form='formatted')
-!          rewind 52
-!          do l=1,100
-!           if(etabl_q(l,1,1)==1100._r_single)then
-!               ltype=l+99
-!              write(52,100) ltype
-!              do k=1,33
-!                 write(52,110)(etabl_q(l,k,i),i=1,6)
-!              end do
-!           endif !  etable1=1100
-!        end do
-!        close(52)
-!
-!       open(53,file='errtable_t_out',form='formatted')
-!          rewind 53
-!          do l=1,100
-!           if(etabl_t(l,1,1)==1100._r_single)then
-!               ltype=l+99
-!              write(53,100) ltype
-!              do k=1,33
-!                 write(53,110)(etabl_t(l,k,i),i=1,6)
-!              end do
-!           endif !  etable1=1100
-!        end do
-!        close(53)
-!
-!       open(54,file='errtable_uv_out',form='formatted')
-!          rewind 54
-!          do l=1,100
-!           if(etabl_uv(l,1,1)==1100._r_single)then
-!               ltype=l+199
-!              write(54,100) ltype
-!              do k=1,33
-!                 write(54,110)(etabl_uv(l,k,i),i=1,6)
-!              end do
-!           endif !  etable1=1100
-!        end do
-!        close(54)
-!         
-!!       open(59,file='errtable_out',form='formatted')
-!!        rewind 59
-!!        do l=100,299
-!!           if(etabl(l,1,1)==1100._r_single)then
-!!              write(59,100)l      
-!!              do k=1,33
-!!                 write(59,110)(etabl(l,k,i),i=1,6)
-!!              end do
-!!           endif !  etable1=1100
-!!        end do
-!!        close(59)
-!
-!
-!100           format(1x,i3,' OBSERVATION TYPE')
-!110              format(1x,6e12.5)
+        do i=1,nconvtype 
+           if(trim(ioctype(i))=='t')then
+              m=2
+           elseif(trim(ioctype(i))=='q')then
+              m=3
+           elseif(trim(ioctype(i))=='uv')then
+              m=4
+           elseif(trim(ioctype(i))=='ps')then
+              m=5
+           else
+              cycle
+           endif
+           l=ictype(i)
+
+!          Enough obs to define the vertical profile
+           if((l==120.and.m/=5) .or. l==220 .or. l==223 .or. l==233 .or. l==245)then
+              write(235,*)l,trim(ioctype(i)),'33'
+              do k=1,33
+                 if( etabl(l,k,m) < 1.e8_r_single) etabl(l,k,m)=etabl(l,k,m)*so(k,i)
+              end do
+           else
+              write(235,*)l,trim(ioctype(i)),'1'
+              do k=1,33
+                 if( etabl(l,k,m) < 1.e8_r_single) etabl(l,k,m)=etabl(l,k,m)*so(1,i)
+              end do
+           endif
+        enddo
+        
+!       Write out err table 
+        open(59,file='errtable_out',form='formatted')
+        rewind 59
+        do l=100,299
+           if(etabl(l,1,1)==1100._r_single)then
+              write(59,100)l      
+100           format(1x,i3,' OBSERVATION TYPE')
+              do k=1,33
+                 write(59,110)(etabl(l,k,i),i=1,6)
+110              format(1x,6e12.5)
+              end do
+           endif !  etable1=1100
+        end do
+        close(59)
      endif ! mype==0
      
      call mpi_finalize(ierror)

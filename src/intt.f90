@@ -74,7 +74,6 @@ subroutine intt_(thead,rval,sval,rpred,spred)
 !                        - on-the-spot handling of non-essential vars
 !   2012-09-14  Syed RH Rizvi, NCAR/NESL/MMM/DAS  - introduced ladtest_obs         
 !   2013-05-26  zhu  - add aircraft temperature bias correction contribution
-!   2014-04-09   Su  - add non linear qc (Purser's scheme) gradient calculation
 !
 !   input argument list:
 !     thead    - obs type pointer to obs structure
@@ -108,9 +107,9 @@ subroutine intt_(thead,rval,sval,rpred,spred)
 !
 !$$$
   use kinds, only: r_kind,i_kind,r_quad
-  use constants, only: half,one,zero,tiny_r_kind,cg_term,r3600,two
+  use constants, only: half,one,zero,tiny_r_kind,cg_term,r3600
   use obsmod, only: t_ob_type,lsaveobsens,l_do_adjoint
-  use qcmod, only: nlnqc_iter,varqc_iter,nlnvqc_iter
+  use qcmod, only: nlnqc_iter,varqc_iter
   use gridmod, only: latlon1n,latlon11,latlon1n1
   use jfunc, only: jiter,l_foto,xhat_dt,dhat_dt
   use gsi_bundlemod, only: gsi_bundle
@@ -309,14 +308,6 @@ subroutine intt_(thead,rval,sval,rpred,spred)
               wgross =t_pg*cg_t/wnotgross
               p0=wgross/(wgross+exp(-half*tptr%err2*val**2))
               val=val*(one-p0)                  
-           endif
-           if (nlnvqc_iter .and. tptr%jb  > tiny_r_kind) then
-              val=sqrt(two*tptr%jb)*tanh(sqrt(tptr%err2*tptr%raterr2)*val/sqrt(two*tptr%jb))
-           endif
-           if (nlnvqc_iter .and. tptr%jb  > tiny_r_kind) then
-              grad = val*sqrt(tptr%raterr2*tptr%err2)
-           else
-              grad = val*tptr%raterr2*tptr%err2
            endif
            if( ladtest_obs) then
               grad = val

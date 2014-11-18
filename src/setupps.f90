@@ -121,7 +121,7 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 
 ! Declare local variables
   real(r_double) rstation_id
-  real(r_kind) tges,tges2,drbx,pob,pges,psges,psges2,dlat,dlon,dtime,var_jb
+  real(r_kind) tges,tges2,drbx,pob,pges,psges,psges2,dlat,dlon,dtime
   real(r_kind) rdelz,rdp,halfpi,obserror,obserrlm,drdp,residual,ratio
   real(r_kind) errinv_input,errinv_adjst,errinv_final
   real(r_kind) err_input,err_adjst,err_final,tfact
@@ -135,9 +135,9 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   real(r_kind),dimension(nele,nobs):: data
   real(r_single),allocatable,dimension(:,:)::rdiagbuf
 
-  integer(i_kind) ier,ilon,ilat,ipres,ihgt,itemp,id,itime,ikx,iqc,iptrb,ijb
+  integer(i_kind) ier,ilon,ilat,ipres,ihgt,itemp,id,itime,ikx,iqc,iptrb
   integer(i_kind) ier2,iuse,ilate,ilone,istnelv,idomsfc,izz,iprvd,isprvd
-  integer(i_kind) ikxx,nn,istat,ibin,ioff,ioff0,iskint,iff10,isfcr
+  integer(i_kind) ikxx,nn,istat,ibin,ioff,ioff0
   integer(i_kind) i,nchar,nreal,ii,jj,k,l,mm1
 
   logical,dimension(nobs):: luse,muse
@@ -184,17 +184,13 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   ier2=11     ! index of original-original obs error ratio
   iuse=12     ! index of use parameter
   idomsfc=13  ! index of dominant surface type
-  iskint=14   ! index of surface skin temperature
-  iff10=15    ! index of 10 meter wind factor
-  isfcr=16    ! index of surface roughness
-  ilone=17    ! index of longitude (degrees)
-  ilate=18    ! index of latitude (degrees)
-  istnelv=19  ! index of station elevation (m)
-  izz=20      ! index of surface height
-  iprvd=21    ! index of observation provider
-  isprvd=22   ! index of observation subprovider
-  ijb=23      ! index for non linear qc b parameter
-  iptrb=24    ! index of ps perturbation
+  ilone=14    ! index of longitude (degrees)
+  ilate=15    ! index of latitude (degrees)
+  istnelv=16  ! index of station elevation (m)
+  izz=17      ! index of surface height
+  iprvd=18    ! index of observation provider
+  isprvd=19   ! index of observation subprovider
+  iptrb=20    ! index of ps perturbation
 
 ! Declare local constants
   halfpi = half*pi
@@ -205,7 +201,6 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   tmax=350.0_r_kind
   half_tlapse=0.00325_r_kind  ! half of 6.5K/1km
   mm1=mype+1
-  var_jb=zero
 
 ! Check to see if required guess fields are available
   call check_vars_(proceed)
@@ -265,7 +260,6 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         dhgt=data(ihgt,i)
         dtemp=data(itemp,i)
         ikx  = nint(data(ikxx,i))
-        var_jb=data(ijb,i)
      endif
  
 !    Link observation to appropriate observation bin
@@ -473,24 +467,12 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            term =log((arg+wgross)/(one+wgross))
            wgt  = one-wgross/(arg+wgross)
            rwgt = wgt/wgtlim
-           valqc = -two*rat_err2*term
-        else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind) then
-           if(exp_arg  == zero) then
-              wgt=one
-            else
-              wgt=ddiff*error*ratio_errors/sqrt(two*var_jb)
-              wgt=tanh(wgt)/wgt
-           endif
-           term=-two*var_jb*log(cosh((val*ratio_errors)/sqrt(two*var_jb)))
-
-           rwgt = wgt/wgtlim
-           valqc = -two*term
         else
            term = exp_arg
            wgt  = wgtlim
            rwgt = wgt/wgtlim
-           valqc = -two*rat_err2*term
         endif
+        valqc = -two*rat_err2*term
  
 
         if (muse(i)) then
@@ -554,7 +536,6 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         pstail(ibin)%head%err2     = error**2
         pstail(ibin)%head%raterr2  = ratio_errors**2     
         pstail(ibin)%head%time     = dtime
-        pstail(ibin)%head%jb        = var_jb
         pstail(ibin)%head%b        = cvar_b(ikx)
         pstail(ibin)%head%pg       = cvar_pg(ikx)
         pstail(ibin)%head%luse     = luse(i)
@@ -595,7 +576,7 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         rdiagbuf(8,ii)  = dtime-time_offset  ! obs time (hours relative to analysis time)
 
         rdiagbuf(9,ii)  = data(iqc,i)        ! input prepbufr qc or event mark
-        rdiagbuf(10,ii) =  var_jb            ! non linear qc parameter 
+        rdiagbuf(10,ii) = rmiss_single       ! setup qc or event mark
         rdiagbuf(11,ii) = data(iuse,i)       ! read_prepbufr data usage flag
         if(muse(i)) then
            rdiagbuf(12,ii) = one             ! analysis usage flag (1=use, -1=not used)

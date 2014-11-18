@@ -7,11 +7,11 @@
 #BSUB -J gsi_global
 #BSUB -network type=sn_all:mode=US
 #BSUB -q dev
-#BSUB -n 48 
-#BSUB -R span[ptile=16]
+#BSUB -n 32
+#BSUB -R span[ptile=8]
 #BSUB -R affinity[core(2):distribute=balance]
 #BSUB -x
-#BSUB -W 05:00
+#BSUB -W 01:00
 #BSUB -P GFS-T2O
 #=======================================================
 ## Below are PBS (Linux queueing system) commands
@@ -21,7 +21,7 @@
 #PBS -l walltime=00:30:00 
 #PBS -l nodes=2:ppn=12
 #PBS -j eo                
-#PBS -A cloud 
+#PBS -A ada
 #PBS -V
 #=======================================================
 
@@ -46,18 +46,16 @@ fi
 #=================================================================================================
 
 # Set experiment name and analysis date
-adate=2014110600
+adate=2013090100
 expnm=globalprod    
 exp=globalprod.$adate
-expid=${expnm}.$adate
+expid=${expnm}.$adate.wcoss
 
 # Set path/file for gsi executable
-#gsiexec=/u/Xiujuan.Su/home/gsi/xsu_nqc/src/global_gsi
-gsiexec=/scratch1/portfolios/NCEPDEV/da/save/Xiujuan.Su/gsi/xsu_nqc/src/global_gsi
-
+gsiexec=/da/save/$USER/trunk/src/global_gsi
 
 # Specify GSI fixed field
-fixgsi=/scratch1/portfolios/NCEPDEV/da/save/Xiujuan.Su/gsi/xsu_nqc/fix
+fixgsi=/da/save/$USER/trunk/fix
 
 # Set the JCAP resolution which you want.
 # All resolutions use LEVS=64
@@ -69,9 +67,9 @@ export lrun_subdirs=.true.
 
 # Set data, runtime and save directories
 if [ $MACHINE = WCOSS ]; then
-   datdir=/ptmpp1/$USER/data_sigmap/${exp}
-   tmpdir=/ptmpp1/$USER/tmp${JCAP}_sigmap/${expid}  
-   savdir=/ptmpp1/$USER/out${JCAP}/sigmap/${expid}  
+   datdir=/ptmp/$USER/data_sigmap/${exp}
+   tmpdir=/ptmp/$USER/tmp${JCAP}_sigmap/${expid}  
+   savdir=/ptmp/$USER/out${JCAP}/sigmap/${expid}  
    fixcrtm=/usrx/local/nceplibs/fix/crtm_v2.1.3
    endianness=Big_Endian
    COMPRESS=gzip 
@@ -80,8 +78,7 @@ if [ $MACHINE = WCOSS ]; then
    DIAG_SUFFIX="" 
    DIAG_TARBALL=YES 
 elif [ $MACHINE = ZEUS ]; then
-#   datdir=/scratch2/portfolios/NCEPDEV/ptmp/$USER/data_sigmap/${exp}
-    datdir=/scratch2/portfolios/NCEPDEV/rstprod/com/gfs/prod
+   datdir=/scratch2/portfolios/NCEPDEV/ptmp/$USER/data_sigmap/${exp}
    tmpdir=/scratch2/portfolios/NCEPDEV/ptmp/$USER/tmp${JCAP}_sigmap/${expid}  
    savdir=/scratch2/portfolios/NCEPDEV/ptmp/$USER/out${JCAP}/sigmap/${expid} 
    fixcrtm=/scratch1/portfolios/NCEPDEV/da/save/Michael.Lueken/nwprod/lib/sorc/CRTM_REL-2.1.3/Big_Endian
@@ -230,9 +227,9 @@ if [ $MACHINE = WCOSS ]; then
     exit 1
   fi
 elif  [ $MACHINE = ZEUS ]; then    
-  if [ -s ${datdir}/gdas.${adate0}/gdas1.t${hha}z.sgm3prep ]; then 
-    datobs=${datdir}/gdas.${adate0}
-    datges=${datdir}/gdas.${gdate0}
+  if [ -s ${datdir}/gdas1.t${hha}z.sgm3prep ]; then 
+    datobs=${datdir}
+    datges=${datdir}
     datprep=${datobs}
   elif [ -s /NCEPPROD/com/gfs/prod/gdas.${gdate0}/gdas1.t${hha}z.sgm3prep ]; then   # Not all data files are stored on /com
     datges=/NCEPPROD/com/gfs/prod/gdas.$gdate0
@@ -364,7 +361,7 @@ SINGLEOB=""
 cat << EOF > gsiparm.anl
  &SETUP
    miter=2,niter(1)=100,niter(2)=150,
-   niter_no_qc(1)=150,niter_no_qc(2)=200,
+   niter_no_qc(1)=50,niter_no_qc(2)=0,
    write_diag(1)=.true.,write_diag(2)=.false.,write_diag(3)=.true.,
    qoption=2,
    gencode=$IGEN,factqmin=5.0,factqmax=5.0,deltim=$DELTIM,
@@ -404,7 +401,7 @@ cat << EOF > gsiparm.anl
    $STRONGOPTS
  /
  &OBSQC
-   dfact=0.75,dfact1=3.0,noiqc=.true.,oberrflg=.true.,c_varqc=0.02,
+   dfact=0.75,dfact1=3.0,noiqc=.true.,oberrflg=.false.,c_varqc=0.02,
    use_poq7=.true.,
    $OBSQC
  /
@@ -540,17 +537,7 @@ ozinfo=$fixgsi/global_ozinfo.txt
 convinfo=$fixgsi/global_convinfo.txt
 atmsbeamdat=$fixgsi/atms_beamwidth.txt
 
-#errtable=$fixgsi/prepobs_errtable.global
-errtable_ps=$fixgsi/prepobs_errtable_ps.global
-errtable_pw=$fixgsi/prepobs_errtable_pw.global
-errtable_q=$fixgsi/prepobs_errtable_q.global
-errtable_t=$fixgsi/prepobs_errtable_t.global
-errtable_uv=$fixgsi/prepobs_errtable_uv.global
-btable_uv=$fixgsi/nqc_b_uv.global
-btable_ps=$fixgsi/nqc_b_ps.global
-btable_q=$fixgsi/nqc_b_q.global
-btable_t=$fixgsi/nqc_b_t.global
-
+errtable=$fixgsi/prepobs_errtable.global
 
 
 # Only need this file for single obs test
@@ -583,17 +570,7 @@ $ncp $pcpinfo  ./pcpinfo
 $ncp $ozinfo   ./ozinfo
 $ncp $convinfo ./convinfo
 $ncp $atmsbeamdat ./atms_beamwidth.txt
-#$ncp $errtable ./errtable
-$ncp $errtable_ps ./errtable_ps
-$ncp $errtable_pw ./errtable_pw
-$ncp $errtable_q ./errtable_q
-$ncp $errtable_t ./errtable_t
-$ncp $errtable_uv ./errtable_uv
-$ncp $btable_ps ./btable_ps
-$ncp $btable_q ./btable_q
-$ncp $btable_t ./btable_t
-$ncp $btable_uv ./btable_uv
-
+$ncp $errtable ./errtable
 
 $ncp $bufrtable ./prepobs_prep.bufrtable
 $ncp $bftab_sst ./bftab_sstphr
@@ -650,9 +627,8 @@ $ncp $datges/${prefix_tbc}.abias              ./satbias_in
 #ln -s -f $datges/${prefix_tbc}.abias_pc           ./satbias_pc
 $ncp $datges/${prefix_tbc}.satang             ./satbias_angle
 $ncp $datges/${prefix_tbc}.radstat            ./radstat.gdas
-#$ncp /home/Xiujuan.Su/nbns/rad/radstat.${gdate} ./radstat.gdas
 
-/scratch1/portfolios/NCEPDEV/da/save/Xiujuan.Su/gsi/xsu_nqc/util/Radiance_bias_correction_Utilities/write_biascr_option.x -newpc4pred -adp_anglebc 4
+/da/save/$USER/trunk/util/Radiance_bias_correction_Utilities/write_biascr_option.x -newpc4pred -adp_anglebc 4
 
 cp satbias_in satbias_in.orig
 cp satbias_in.new satbias_in

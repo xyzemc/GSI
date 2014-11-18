@@ -25,8 +25,6 @@ subroutine read_cris(mype,val_cris,ithin,isfcalc,rmesh,jsatid,gstime,&
 !   2012-03-05  akella  - nst now controlled via coupler
 !   2013-01-26  parrish - change from grdcrd to grdcrd1 (to allow successful debug compile on WCOSS)
 !   2013-01-27  parrish - assign initial value to pred (to allow successful debug compile on WCOSS)
-!   2014-01-24  Li - Change nreal to be maxinfo in itt=nint(data_all(maxinfo,n))
-! i             to make it work for NSST (when nstinfo > 0) 
 !
 !   input argument list:
 !     mype     - mpi task id
@@ -570,7 +568,6 @@ subroutine read_cris(mype,val_cris,ithin,isfcalc,rmesh,jsatid,gstime,&
 !  Check that channel radiance is within reason and channel number is consistent with CRTM initialisation
 !  Negative radiance values are entirely possible for shortwave channels due to the high noise, but for
 !  now such spectra are rejected.  
-           temperature(i)=zero
            if (( allchan(1,i) > zero .and. allchan(1,i) < 99999._r_kind) .and. &  ! radiance bounds
                (allchan(2,i) == sc(1) % Sensor_Channel(i) )) then        ! chan # check
 !         radiance to BT calculation
@@ -694,7 +691,7 @@ subroutine read_cris(mype,val_cris,ithin,isfcalc,rmesh,jsatid,gstime,&
            if(data_all(i+nreal,n) > tbmin .and. &
               data_all(i+nreal,n) < tbmax)nodata=nodata+1
         end do
-        itt=nint(data_all(maxinfo,n))
+        itt=nint(data_all(nreal,n))
         super_val(itt)=super_val(itt)+val_cris
      end do
 

@@ -107,7 +107,7 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   use jfunc, only: jiter,last,jiterstart,miter
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype
   use convinfo, only: icsubtype
-  use converr_q, only: ptabl_q 
+  use converr, only: ptabl 
   use m_dtime, only: dtime_setup, dtime_check, dtime_show
   use rapidrefresh_cldsurf_mod, only: l_sfcobserror_ramp_q
   use rapidrefresh_cldsurf_mod, only: l_PBL_pseudo_SurfobsQ,pblH_ration,pps_press_incr, &
@@ -146,7 +146,7 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   
   real(r_double) rstation_id
   real(r_kind) qob,qges,qsges,q2mges
-  real(r_kind) ratio_errors,dlat,dlon,dtime,dpres,rmaxerr,error,var_jb
+  real(r_kind) ratio_errors,dlat,dlon,dtime,dpres,rmaxerr,error
   real(r_kind) rsig,dprpx,rlow,rhgh,presq,tfact,ramp
   real(r_kind) psges,sfcchk,ddiff,errorx
   real(r_kind) cg_q,wgross,wnotgross,wgt,arg,exp_arg,term,rat_err2,qcgross
@@ -163,7 +163,7 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   real(r_single),allocatable,dimension(:,:)::rdiagbuf
 
   integer(i_kind) i,nchar,nreal,ii,l,jj,mm1,itemp
-  integer(i_kind) jsig,itype,k,nn,ikxx,iptrb,ibin,ioff,ioff0,icat,ijb,iskint,iff10,isfcr
+  integer(i_kind) jsig,itype,k,nn,ikxx,iptrb,ibin,ioff,ioff0,icat
   integer(i_kind) ier,ilon,ilat,ipres,iqob,id,itime,ikx,iqmax,iqc
   integer(i_kind) ier2,iuse,ilate,ilone,istnelv,iobshgt,istat,izz,iprvd,isprvd
   integer(i_kind) idomsfc,iderivative
@@ -219,21 +219,16 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   ier2=12     ! index of original-original obs error ratio
   iuse=13     ! index of use parameter
   idomsfc=14  ! index of dominant surface type
-  iskint=15   ! index of surface skin temperature
-  iff10=16    ! index of 10 meter wind factor
-  isfcr=17    ! index of surface roughness
-  ilone=18    ! index of longitude (degrees)
-  ilate=19    ! index of latitude (degrees)
-  istnelv=20  ! index of station elevation (m)
-  iobshgt=21  ! index of observation height (m)
-  izz=22      ! index of surface height
-  iprvd=23    ! index of observation provider
-  isprvd=24   ! index of observation subprovider
-  icat =25    ! index of data level category
-  ijb=26      !  index of non linear qc parameter b
-  iptrb=27    ! index of q perturbation
+  ilone=15    ! index of longitude (degrees)
+  ilate=16    ! index of latitude (degrees)
+  istnelv=17  ! index of station elevation (m)
+  iobshgt=18  ! index of observation height (m)
+  izz=19      ! index of surface height
+  iprvd=20    ! index of observation provider
+  isprvd=21   ! index of observation subprovider
+  icat =22    ! index of data level category
+  iptrb=23    ! index of q perturbation
 
-  var_jb=zero
   do i=1,nobs
      muse(i)=nint(data(iuse,i)) <= jiter
   end do
@@ -301,8 +296,8 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
          itype=ictype(ikx)
          rstation_id     = data(id,i)
         error=data(ier2,i)
+        
         prest=r10*exp(dpres)     ! in mb
-        var_jb=data(ijb,i)
      endif ! (in_curbin)
 
 !    Link observation to appropriate observation bin
@@ -516,24 +511,12 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            term =log((arg+wgross)/(one+wgross))
            wgt  = one-wgross/(arg+wgross)
            rwgt = wgt/wgtlim
-           valqc = -two*rat_err2*term
-        else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind) then
-           if(exp_arg  == zero) then
-              wgt=one
-           else
-              wgt=ddiff*error*ratio_errors/sqrt(two*var_jb)
-              rwgt=tanh(wgt)/wgt
-           endif
-           term=-two*var_jb*log(cosh((val*ratio_errors)/sqrt(two*var_jb)))
-           wgt  = wgtlim
-           rwgt = wgt/wgtlim
-           valqc = -two*term
         else
            term = exp_arg
            wgt  = wgtlim
            rwgt = wgt/wgtlim
-           valqc = -two*rat_err2*term
         endif
+        valqc = -two*rat_err2*term
         
 !       Accumulate statistics for obs belonging to this task
         if(muse(i))then
@@ -596,7 +579,6 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         qtail(ibin)%head%err2   = error**2
         qtail(ibin)%head%raterr2= ratio_errors**2   
         qtail(ibin)%head%time   = dtime
-        qtail(ibin)%head%jb      = var_jb
         qtail(ibin)%head%b      = cvar_b(ikx)
         qtail(ibin)%head%pg     = cvar_pg(ikx)
         qtail(ibin)%head%luse   = luse(i)
@@ -604,13 +586,13 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         if(oberror_tune) then
            qtail(ibin)%head%qpertb=data(iptrb,i)/error/ratio_errors
            qtail(ibin)%head%kx=ikx
-           if(presq > ptabl_q(2))then
+           if(presq > ptabl(2))then
               qtail(ibin)%head%k1=1
-           else if( presq <= ptabl_q(33)) then
+           else if( presq <= ptabl(33)) then
               qtail(ibin)%head%k1=33
            else
               k_loop: do k=2,32
-                 if(presq > ptabl_q(k+1) .and. presq <= ptabl_q(k)) then
+                 if(presq > ptabl(k+1) .and. presq <= ptabl(k)) then
                     qtail(ibin)%head%k1=k
                     exit k_loop
                  endif
@@ -650,7 +632,7 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         rdiagbuf(8,ii)  = dtime-time_offset  ! obs time (hours relative to analysis time)
 
         rdiagbuf(9,ii)  = data(iqc,i)        ! input prepbufr qc or event mark
-        rdiagbuf(10,ii) = var_jb             !  non linear qc b parameter 
+        rdiagbuf(10,ii) = rmiss_single       ! setup qc or event mark 
         rdiagbuf(11,ii) = data(iuse,i)       ! read_prepbufr data usage flag
         if(muse(i)) then
            rdiagbuf(12,ii) = one             ! analysis usage flag (1=use, -1=not used)
@@ -763,7 +745,6 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            qtail(ibin)%head%err2    = error**2
            qtail(ibin)%head%raterr2 = ratio_errors**2
            qtail(ibin)%head%time    = dtime
-           qtail(ibin)%head%jb       = var_jb
            qtail(ibin)%head%b       = cvar_b(ikx)
            qtail(ibin)%head%pg      = cvar_pg(ikx)
            qtail(ibin)%head%luse    = luse(i)

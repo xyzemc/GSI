@@ -226,9 +226,6 @@ module obsmod
 !   def oberrflg     - logical for reading in new observation error table
 !                      .true.  will read in obs errors from file 'errtable'
 !                      .false. will not read in new obs errors
-!   def bflg         - logical for reading in new observation b table
-!                      .true.  will read in obs errors from file 'btable'
-!                      .false. will not read in b table
 !   def blacklst     - logical for reading in station blacklist table
 !                      .true.  will read in blacklist from file 'blacklist'
 !                      .false. will not read in blacklist
@@ -290,7 +287,7 @@ module obsmod
   public :: inquire_obsdiags
   public :: dfile_format
 ! set passed variables to public
-  public :: iout_pcp,iout_rad,iadate,write_diag,reduce_diag,oberrflg,bflag,ndat,dthin,dmesh,l_do_adjoint
+  public :: iout_pcp,iout_rad,iadate,write_diag,reduce_diag,oberrflg,ndat,dthin,dmesh,l_do_adjoint
   public :: lsaveobsens,lag_ob_type,o3l_ob_type,oz_ob_type,colvk_ob_type,pcp_ob_type,dw_ob_type
   public :: sst_ob_type,srw_ob_type,spd_ob_type,rw_ob_type,gps_ob_type,gps_all_ob_type,tcp_ob_type
   public :: gust_ob_type,vis_ob_type,pblh_ob_type
@@ -395,11 +392,11 @@ module obsmod
      real(r_kind) :: wgtjo
      integer(i_kind) :: indxglb
      integer(i_kind) :: nchnperobs           ! number of channels per observations
-                                             !  (dummy, expect for radiances)
+                                             !  (dummy, except for radiances)
+     integer(i_kind) :: idv,iob,ich   ! device id and obs index for verification
      logical, pointer :: muse(:)             ! (miter)
      logical :: luse
 
-     integer(i_kind) :: idv,iob,ich   ! device id and obs index for verification
   end type obs_diag
 
   type obs_diags
@@ -422,16 +419,15 @@ module obsmod
      real(r_kind)    :: raterr2       !  square of ratio of final obs error 
                                       !  to original obs error
      real(r_kind)    :: time          !  observation time in sec     
-     real(r_kind)    :: jb            !  variational quality control parameter(Purser's scheme)
      real(r_kind)    :: b             !  variational quality control parameter
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: wij(4)        !  horizontal interpolation weights
      real(r_kind)    :: ppertb        !  random number adding to the obs
      integer(i_kind) :: ij(4)         !  horizontal locations
      integer(i_kind) :: kx            !  ob type
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type ps_ob_type
  
   type ps_ob_head
@@ -453,9 +449,9 @@ module obsmod
      real(r_kind)    :: ppertb        !  random number adding to the obs
      integer(i_kind) :: ij(4)         !  horizontal locations
      integer(i_kind) :: kx            !  ob type
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type tcp_ob_type
 
   type tcp_ob_head
@@ -471,24 +467,23 @@ module obsmod
      real(r_kind)    :: raterr2       !  square of ratio of final obs error 
                                       !  to original obs error
      real(r_kind)    :: time          !  observation time in sec     
-     real(r_kind)    :: jb            !  variational quality control parameter(Purser's scheme)
      real(r_kind)    :: b             !  variational quality control parameter
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: tlm_tsfc(6)   !  sensitivity vector for sfc temp 
                                       !  forward model
      real(r_kind)    :: wij(8)        !  horizontal interpolation weights
      real(r_kind)    :: tpertb        !  random number adding to the obs
-     logical         :: luse          !  flag indicating if ob is used in pen.
-     logical         :: use_sfc_model !  logical flag for using boundary model
-     logical         :: tv_ob         !  logical flag for virtual temperature or
-     integer(i_kind) :: idx           !  index of tail number
      real(r_kind),dimension(:),pointer :: pred => NULL() 
                                       !  predictor for aircraft temperature bias 
+     integer(i_kind) :: idx           !  index of tail number
      integer(i_kind) :: k1            !  level of errtable 1-33
      integer(i_kind) :: kx            !  ob type
      integer(i_kind) :: ij(8)         !  horizontal locations
-
      integer(i_kind) :: idv,iob       ! device id and obs index for sorting
+
+     logical         :: luse          !  flag indicating if ob is used in pen.
+     logical         :: use_sfc_model !  logical flag for using boundary model
+     logical         :: tv_ob         !  logical flag for virtual temperature or
   end type t_ob_type
 
   type t_ob_head
@@ -506,7 +501,6 @@ module obsmod
      real(r_kind)    :: raterr2       !  square of ratio of final obs error 
                                       !  to original obs error
      real(r_kind)    :: time          !  observation time in sec     
-     real(r_kind)    :: jb            !  variational quality control parameter(Purser's scheme)
      real(r_kind)    :: b             !  variational quality control parameter
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: wij(8)        !  horizontal interpolation weights
@@ -515,9 +509,9 @@ module obsmod
      integer(i_kind) :: ij(8)         !  horizontal locations
      integer(i_kind) :: k1            !  level of errtable 1-33
      integer(i_kind) :: kx            !  ob type
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type w_ob_type
 
   type w_ob_head
@@ -533,7 +527,6 @@ module obsmod
      real(r_kind)    :: raterr2       !  square of ratio of final obs error 
                                       !  to original obs error
      real(r_kind)    :: time          !  observation time in sec     
-     real(r_kind)    :: jb            !  variational quality control parameter(Purser's scheme)
      real(r_kind)    :: b             !  variational quality control parameter
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: wij(8)        !  horizontal interpolation weights
@@ -541,9 +534,9 @@ module obsmod
      integer(i_kind) :: ij(8)         !  horizontal locations
      integer(i_kind) :: k1            !  level of errtable 1-33
      integer(i_kind) :: kx            !  ob type
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type q_ob_type
 
   type q_ob_head
@@ -565,9 +558,9 @@ module obsmod
      real(r_kind)    :: uges          !  guess u value        
      real(r_kind)    :: vges          !  guess v value        
      integer(i_kind) :: ij(4)         !  horizontal locations
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type spd_ob_type
 
   type spd_ob_head
@@ -592,9 +585,9 @@ module obsmod
      real(r_kind)    :: rsrw(4)       !  forward model for radar superob wind 
      real(r_kind)    :: wij(8)        !  horizontal interpolation weights
      integer(i_kind) :: ij(8)         !  horizontal locations
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type srw_ob_type
 
   type srw_ob_head
@@ -616,9 +609,9 @@ module obsmod
      real(r_kind)    :: sinazm        !  u factor
      real(r_kind)    :: wij(8)        !  horizontal interpolation weights
      integer(i_kind) :: ij(8)         !  horizontal locations
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type rw_ob_type
 
   type rw_ob_head    
@@ -640,9 +633,9 @@ module obsmod
      real(r_kind)    :: sinazm        !  u factor
      real(r_kind)    :: wij(8)        !  horizontal interpolation weights
      integer(i_kind) :: ij(8)         !  horizontal locations
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type dw_ob_type
 
   type dw_ob_head
@@ -661,12 +654,12 @@ module obsmod
      real(r_kind)    :: b             !  variational quality control parameter
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: wij(4)        !  horizontal interpolation weights
-     integer(i_kind) :: ij(4)         !  horizontal locations
      real(r_kind)    :: zob           !  observation depth in meter
      real(r_kind)    :: tz_tr         !  sensitivity of tob to tref : d(Tz)/d(Tr)
+     integer(i_kind) :: ij(4)         !  horizontal locations
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type sst_ob_type
 
   type sst_ob_head
@@ -688,9 +681,9 @@ module obsmod
      real(r_kind),dimension(:),pointer :: dp  => NULL()
                                       !  delta pressure at mid layers at obs locations
      integer(i_kind) :: ij(4)         !  horizontal locations
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type pw_ob_type
 
   type pw_ob_head
@@ -713,14 +706,14 @@ module obsmod
                                       !  horizontal interpolation weights
      real(r_kind),dimension(:),pointer :: prs => NULL()
                                       !  pressure levels
+     real(r_kind),dimension(:),pointer :: apriori    ! OMI retrieval first guess
+     real(r_kind),dimension(:),pointer :: efficiency ! OMI efficiency factor
      integer(i_kind),dimension(:),pointer :: ipos  => NULL()
      integer(i_kind) :: nloz          ! number of levels for this profile
      integer(i_kind) :: ij(4)         !  horizontal locations
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
-     real(r_kind),dimension(:),pointer :: apriori    ! OMI retrieval first guess
-     real(r_kind),dimension(:),pointer :: efficiency ! OMI efficiency factor
   end type oz_ob_type
 
   type oz_ob_head    
@@ -740,9 +733,9 @@ module obsmod
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: wij(8)        !  horizontal interpolation weights
      integer(i_kind) :: ij(8)         !  horizontal locations
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type o3l_ob_type
 
   type o3l_ob_head
@@ -765,7 +758,6 @@ module obsmod
                                       !  horizontal interpolation weights
      real(r_kind),dimension(:),pointer :: prs => NULL()
                                       !  pressure levels
-     integer(i_kind),dimension(:),pointer :: ipos  => NULL()
      real(r_kind),dimension(:,:),pointer :: ak  => NULL()   
                                       ! MOPITT vertical averaging kernel
      real(r_kind),dimension(:),pointer :: ap  => NULL()   
@@ -774,11 +766,12 @@ module obsmod
      real(r_kind),dimension(:),pointer   :: wkk2 => NULL()
                                       ! vertical intropolation weights for MOPITT
 
+     integer(i_kind),dimension(:),pointer :: ipos  => NULL()
      integer(i_kind) :: nlco          ! number of levels for this profile
      integer(i_kind) :: ij(4)         !  horizontal locations
+     integer(i_kind) :: idv,iob         ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob         ! device id and obs index for sorting
   end type colvk_ob_type
 
   type colvk_ob_head
@@ -801,9 +794,9 @@ module obsmod
      integer(i_kind),dimension(:),pointer :: icx  => NULL()
      integer(i_kind) :: ij(4)                                  !  horizontal locations
      integer(i_kind) :: nlaero                                 !  number of channels
-     logical         :: luse                                   !  flag indicating if ob is used in pen.
      integer(i_kind) :: idv,iob                                !  device id and obs index for sorting
      integer(i_kind),dimension(:),pointer :: ich => NULL()
+     logical         :: luse                                   !  flag indicating if ob is used in pen.
   end type aero_ob_type
 
   type aero_ob_head
@@ -822,9 +815,9 @@ module obsmod
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: wij(8)        !  horizontal interpolation weights
      integer(i_kind) :: ij(8)         !  horizontal locations
+     integer(i_kind) :: idv,iob         ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob         ! device id and obs index for sorting
   end type aerol_ob_type
 
   type aerol_ob_head
@@ -849,8 +842,8 @@ module obsmod
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: wij(8)        !  horizontal interpolation weights
      integer(i_kind) :: ij(8)         !  horizontal locations
-     logical         :: luse          !  flag indicating if ob is used in pen.
      integer(i_kind) :: idv,iob       ! device id and obs index for sorting
+     logical         :: luse          !  flag indicating if ob is used in pen.
      
   end type pm2_5_ob_type
   
@@ -871,9 +864,9 @@ module obsmod
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: wij(4)        !  horizontal interpolation weights
      integer(i_kind) :: ij(4)         !  horizontal locations
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type gust_ob_type
 
   type gust_ob_head
@@ -893,9 +886,9 @@ module obsmod
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: wij(4)        !  horizontal interpolation weights
      integer(i_kind) :: ij(4)         !  horizontal locations
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type vis_ob_type
 
   type vis_ob_head
@@ -915,9 +908,9 @@ module obsmod
      real(r_kind)    :: pg            !  variational quality control parameter
      real(r_kind)    :: wij(4)        !  horizontal interpolation weights
      integer(i_kind) :: ij(4)         !  horizontal locations
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type pblh_ob_type
 
   type pblh_ob_head
@@ -944,9 +937,9 @@ module obsmod
      real(r_kind),dimension(:),pointer :: jac_p => NULL()
                                       !  p jacobian
      integer(i_kind),dimension(:,:),pointer :: ij  => NULL()
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type gps_ob_type
 
   type gps_ob_head
@@ -967,12 +960,12 @@ module obsmod
 
      real(r_kind),dimension(:),pointer :: rdiag => NULL()
      integer(i_kind) :: kprof
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
+     character(8)    :: cdiag
      logical         :: luse          !  flag indicating if ob is used in pen.
 
      logical         :: muse          !  flag indicating if ob is used in pen.
-     character(8)    :: cdiag
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type gps_all_ob_type
 
   type gps_all_ob_head
@@ -998,10 +991,10 @@ module obsmod
      integer(i_kind),dimension(:),pointer :: icx  => NULL()
      integer(i_kind) :: nchan         !  number of channels for this profile
      integer(i_kind) :: ij(4)         !  horizontal locations
-     logical         :: luse          !  flag indicating if ob is used in pen.
-
      integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      integer(i_kind),dimension(:),pointer :: ich => NULL()
+     logical         :: luse          !  flag indicating if ob is used in pen.
+
   end type rad_ob_type
 
   type rad_ob_head   
@@ -1024,9 +1017,9 @@ module obsmod
                                       !  error variances squared (nsig5)
      integer(i_kind) :: ij(4)         !  horizontal locations
      integer(i_kind) :: icxp          !  type of precipitation rate observation
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          !  flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type pcp_ob_type
 
   type pcp_ob_head
@@ -1055,9 +1048,9 @@ module obsmod
      real(r_kind)    :: pg            ! variational quality control parameter
      integer(i_kind),dimension(:),allocatable :: speci  ! TL parameter
      integer(i_kind) :: intnum        ! internal number of balloon
+     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
      logical         :: luse          ! flag indicating if ob is used in pen.
 
-     integer(i_kind) :: idv,iob       ! device id and obs index for sorting
   end type lag_ob_type
 
   type lag_ob_head
@@ -1217,8 +1210,9 @@ module obsmod
   real(r_kind) ,allocatable,dimension(:):: time_window
   character(len=20) :: cobstype(nobs_type)
 
-  logical oberrflg,bflag,oberror_tune,perturb_obs,ref_obs,sfcmodel,dtbduv_on
   logical, save :: obs_instr_initialized_=.false.
+
+  logical oberrflg,oberror_tune,perturb_obs,ref_obs,sfcmodel,dtbduv_on
   logical blacklst,lobsdiagsave,lobsdiag_allocated,lobskeep,lsaveobsens
   logical lobserver,l_do_adjoint
   logical,dimension(0:50):: write_diag
@@ -1258,7 +1252,6 @@ contains
 !   2007-05-03  todling - use values def above as indexes to cobstype
 !   2008-11-25  todling - remove line-by-line adj triggers
 !   2011-02-09  zhu     - add gust,vis and pblh
-!   2014-03-28  su      -add non linear qc b flag
 !   2013-09-27  todling - initialization of ob-instr/type move to sub init_instr_table_
 !
 !   input argument list:
@@ -1292,7 +1285,6 @@ contains
     lsaveobsens=.false.
     l_do_adjoint=.true.     ! .true. = apply H^T when in int routines
     oberrflg  = .false.
-    bflag  = .false.
     sfcmodel  = .false.     ! .false. = do not use boundary layer model 
     dtbduv_on = .true.      ! .true. = use microwave dTb/duv in inner loop
     offtime_data = .false.  ! .false. = code fails if data files contain ref time
@@ -1696,6 +1688,21 @@ contains
     if (present(skipit)) then
        skipit_=skipit
     endif
+    if (.not. skipit_) then
+       do ii=1,nobs_bins
+          do jj=1,nobs_type
+             obsptr => obsdiags(jj,ii)%head
+             do while (associated(obsptr))
+                obsdiags(jj,ii)%head => obsptr%next
+                deallocate(obsptr%nldepart,obsptr%tldepart,obsptr%obssen,obsptr%muse)
+                deallocate(obsptr)
+                obsptr => obsdiags(jj,ii)%head
+             enddo
+          enddo
+       enddo
+       lobsdiag_allocated=.false.
+    endif
+
 
     do ii=1,nobs_bins
        ttail(ii)%head => thead(ii)%head
@@ -1974,21 +1981,6 @@ contains
        end do
     end do
 
-
-    if (.not. skipit_) then
-       do ii=1,nobs_bins
-          do jj=1,nobs_type
-             obsptr => obsdiags(jj,ii)%head
-             do while (associated(obsptr))
-                obsdiags(jj,ii)%head => obsptr%next
-                deallocate(obsptr%nldepart,obsptr%tldepart,obsptr%obssen,obsptr%muse)
-                deallocate(obsptr)
-                obsptr => obsdiags(jj,ii)%head
-             enddo
-          enddo
-       enddo
-       lobsdiag_allocated=.false.
-    endif
 
     if (allocated(obscounts)) deallocate(obscounts) 
 

@@ -33,7 +33,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   use jfunc, only: jiter,last,jiterstart,miter
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype
   use convinfo, only: icsubtype
-  use converr_uv, only: ptabl_uv
+  use converr, only: ptabl
   use rapidrefresh_cldsurf_mod, only: l_PBL_pseudo_SurfobsUV, pblH_ration,pps_press_incr
 
   use m_dtime, only: dtime_setup, dtime_check, dtime_show
@@ -173,7 +173,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 
   real(r_double) rstation_id
   real(r_kind) qcu,qcv,qc_spd,qc_prs,trop5,tfact,fact
-  real(r_kind) scale,ratio,obserror,obserrlm,var_jb
+  real(r_kind) scale,ratio,obserror,obserrlm
   real(r_kind) residual,ressw,ress,val,val2,valqc2,dudiff,dvdiff
   real(r_kind) valqc,valu,valv,dx10,rlow,rhgh,drpx,prsfc
   real(r_kind) cg_w,wgross,wnotgross,wgt,arg,exp_arg,term,rat_err2,qcgross
@@ -196,7 +196,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   integer(i_kind) i,nchar,nreal,k,j,l,ii,itype
   integer(i_kind) jsig,mm1,iptrbu,iptrbv,jj,icat
   integer(i_kind) k1,k2,ikxx,nn,isli,ibin,ioff,ioff0
-  integer(i_kind) ier,ilon,ilat,ipres,iuob,ivob,id,itime,ikx,ielev,iqc,ijb
+  integer(i_kind) ier,ilon,ilat,ipres,iuob,ivob,id,itime,ikx,ielev,iqc
   integer(i_kind) ihgt,ier2,iuse,ilate,ilone,istat
   integer(i_kind) izz,iprvd,isprvd
   integer(i_kind) idomsfc,isfcr,iskint,iff10
@@ -243,7 +243,6 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 !******************************************************************************
 ! Read and reformat observations in work arrays.
   spdb=zero
-  var_jb=zero
 
   read(lunin)data,luse
 
@@ -272,9 +271,8 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   iprvd=22    ! index of observation provider
   isprvd=23   ! index of observation subprovider
   icat=24     ! index of data level category
-  ijb=25     ! index of data level category
-  iptrbu=26   ! index of u perturbation
-  iptrbv=27   ! index of v perturbation
+  iptrbu=25   ! index of u perturbation
+  iptrbv=26   ! index of v perturbation
 
   mm1=mype+1
   scale=one
@@ -330,7 +328,6 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         rstation_id     = data(id,i)
         error=data(ier2,i)
         ikx=nint(data(ikxx,i))
-        var_jb=data(ijb,i)
         if(ikx < 1 .or. ikx > nconvtype) then
            num_bad_ikx=num_bad_ikx+1
            if(num_bad_ikx<=10) write(6,*)' in setupw, bad ikx, ikx,i,nconvtype=',ikx,i,nconvtype
@@ -905,23 +902,12 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            term =log((arg+wgross)/(one+wgross))
            wgt  = one-wgross/(arg+wgross)
            rwgt = wgt/wgtlim
-           valqc = -two*rat_err2*term
-        else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind) then
-           if(exp_arg  == zero) then
-              wgt=one
-           else
-              wgt=sqrt(dudiff*dudiff+dvdiff*dvdiff)*error*ratio_errors/sqrt(two*var_jb)
-              rwgt=tanh(wgt)/wgt
-           endif
-           term=-two*var_jb*log(cosh((sqrt(val)*ratio_errors)/sqrt(two*var_jb)))
-           rwgt = wgt/wgtlim
-           valqc = -two*term
         else
            term = exp_arg
            wgt  = wgtlim
            rwgt = wgt/wgtlim
-           valqc = -two*rat_err2*term
         endif
+        valqc = -two*rat_err2*term
 
 
 !       Accumulate statistics for obs belonging to this task
@@ -1002,7 +988,6 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         wtail(ibin)%head%err2=error**2
         wtail(ibin)%head%raterr2=ratio_errors **2  
         wtail(ibin)%head%time = dtime
-        wtail(ibin)%head%jb=var_jb
         wtail(ibin)%head%b=cvar_b(ikx)
         wtail(ibin)%head%pg=cvar_pg(ikx)
         wtail(ibin)%head%luse=luse(i)
@@ -1024,13 +1009,13 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            wtail(ibin)%head%upertb=data(iptrbu,i)/error/ratio_errors
            wtail(ibin)%head%vpertb=data(iptrbv,i)/error/ratio_errors
            wtail(ibin)%head%kx=ikx
-           if(presw > ptabl_uv(2))then
+           if(presw > ptabl(2))then
               wtail(ibin)%head%k1=1
-           else if( presw <= ptabl_uv(33)) then
+           else if( presw <= ptabl(33)) then
               wtail(ibin)%head%k1=33
            else
               k_loop: do k=2,32
-                 if(presw > ptabl_uv(k+1) .and. presw <= ptabl_uv(k)) then
+                 if(presw > ptabl(k+1) .and. presw <= ptabl(k)) then
                     wtail(ibin)%head%k1=k
                     exit k_loop
                  endif
@@ -1071,7 +1056,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         rdiagbuf(8,ii)  = dtime-time_offset  ! obs time (hours relative to analysis time)
 
         rdiagbuf(9,ii)  = data(iqc,i)        ! input prepbufr qc or event mark
-        rdiagbuf(10,ii) = var_jb       ! setup qc or event mark
+        rdiagbuf(10,ii) = rmiss_single       ! setup qc or event mark
         rdiagbuf(11,ii) = data(iuse,i)       ! read_prepbufr data usage flag
         if(muse(i)) then
            rdiagbuf(12,ii) = one             ! analysis usage flag (1=use, -1=not used)
@@ -1219,7 +1204,6 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            wtail(ibin)%head%err2=error**2
            wtail(ibin)%head%raterr2=ratio_errors **2
            wtail(ibin)%head%time = dtime
-           wtail(ibin)%head%jb=var_jb
            wtail(ibin)%head%b=cvar_b(ikx)
            wtail(ibin)%head%pg=cvar_pg(ikx)
            wtail(ibin)%head%luse=luse(i)

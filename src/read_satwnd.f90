@@ -83,13 +83,12 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   use constants, only: deg2rad,zero,rad2deg,one_tenth,&
         tiny_r_kind,huge_r_kind,r60inv,one_tenth,&
         one,two,three,four,five,half,quarter,r60inv,r100,r2000
+!  use converr,only: etabl
   use obsmod, only: iadate,oberrflg,perturb_obs,perturb_fact,ran01dom,bmiss
   use convinfo, only: nconvtype,ctwind, &
        ncmiter,ncgroup,ncnumgrp,icuse,ictype,icsubtype,ioctype, &
-       ithin_conv,rmesh_conv,pmesh_conv, index_sub,&
+       ithin_conv,rmesh_conv,pmesh_conv, &
        id_bias_ps,id_bias_t,conv_bias_ps,conv_bias_t,use_prepb_satwnd
-  use converr_uv,only: etabl_uv,ptabl_uv,isuble_uv,maxsub_uv
-  use convb_uv,only: btabl_uv,isuble_buv
   use gsi_4dvar, only: l4dvar,iwinbgn,winlen,time_4dvar
   use deter_sfc_mod, only: deter_sfc_type,deter_sfc2
   implicit none
@@ -146,9 +145,9 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   integer(i_kind) ntb,ntmatch,ncx,ncsave,ntread
   integer(i_kind) kk,klon1,klat1,klonp1,klatp1
   integer(i_kind) nmind,lunin,idate,ilat,ilon,iret,k
-  integer(i_kind) nreal,ithin,iout,ntmp,icount,iiout,icntpnt,ii,icntpnt2,jj
-  integer(i_kind) itype,iosub,ixsub,isubsub,iobsub,itypey 
-  integer(i_kind) qm,ierr,ierr2
+  integer(i_kind) nreal,ithin,iout,ntmp,icount,iiout,ii
+  integer(i_kind) itype,iosub,ixsub,isubsub,iobsub 
+  integer(i_kind) qm
   integer(i_kind) nlevp         ! vertical level for thinning
   integer(i_kind) pflag
   integer(i_kind) ntest,nvtest
@@ -165,6 +164,10 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   integer(i_kind),dimension(nmsgmax):: nrep
   integer(i_kind),allocatable,dimension(:):: isort,iloc
 
+  integer(i_kind) ietabl,itypex,lcount,iflag,m
+
+  real(r_single),allocatable,dimension(:,:,:) :: etabl
+
   real(r_kind) toff,t4dv
   real(r_kind) rmesh,ediff,usage,tdiff
   real(r_kind) u0,v0,uob,vob,dx,dy,dx1,dy1,w00,w10,w01,w11
@@ -172,7 +175,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   real(r_kind) woe,dlat,dlon,dlat_earth,dlon_earth
   real(r_kind) cdist,disterr,disterrmax,rlon00,rlat00
   real(r_kind) vdisterrmax,u00,v00,uob1,vob1
-  real(r_kind) del,werrmin,obserr,ppb1,var_jb,wjbmin,wjbmax
+  real(r_kind) del,werrmin,obserr,ppb1
   real(r_kind) tsavg,ff10,sfcr,sstime,gstime,zz
   real(r_kind) crit1,timedif,xmesh,pmesh
   real(r_kind),dimension(nsig):: presl
@@ -210,16 +213,41 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
 ! Return when SATWND are coming from prepbufr file
   if(use_prepb_satwnd) return
 
+! read observation error table
 
   disterrmax=zero
   vdisterrmax=zero
+  allocate(etabl(300,33,6))
+  etabl=1.e9_r_kind
+  ietabl=19
+  open(ietabl,file='errtable',form='formatted')
+  rewind ietabl
+  etabl=1.e9_r_kind
+  lcount=0
+  pflag=0
+  loopd : do
+     read(ietabl,100,IOSTAT=iflag) itypex
+     if( iflag /= 0 ) exit loopd
+     lcount=lcount+1
+     do k=1,33
+        read(ietabl,110)(etabl(itypex,k,m),m=1,6)
+     end do
+  end do   loopd
+100     format(1x,i3)
+110        format(1x,6e12.5)
+  if(lcount<=0 ) then
+     write(6,*)'READ_SATWND:obs error table not available to 3dvar. the program will stop'
+     call stop2(49) 
+  else
+     write(6,*)'READ_SATWND:  observation errors provided by local file errtable'
+  endif
+
+  close(ietabl)
 
 ! Set lower limits for observation errors
-  werrmin=zero
-  wjbmin=zero
-  wjbmax=5.0_r_kind
+  werrmin=one
   nsattype=0
-  nreal=25
+  nreal=24
   if(perturb_obs ) nreal=nreal+2
   ntread=1
   ntmatch=0
@@ -790,53 +818,44 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
 !!    convert from wind direction and speed to u,v component
            uob=-obsdat(4)*sin(obsdat(3)*deg2rad)
            vob=-obsdat(4)*cos(obsdat(3)*deg2rad)
+!!!  some information only has in NESDIS satellite winds
+!          if(hdrdat(1) >=r200 .and. hdrdat(1) <= r299 ) then
+!             call ufbseq(lunin,heightdat,3,5,iret,heightr)         
+!             call ufbseq(lunin,derdwdat,6,4,iret,derdwtr)         
+!             write(99,*) 'heightdat ',itype
+!             write(99,101) heightdat(2,1),heightdat(2,2),heightdat(2,3),heightdat(2,4),heightdat(2,5)
+!101 format(5e10.2)
+!             uob1=-derdwdat(6,2)*sin(derdwdat(5,2)*deg2rad)    ! get originial wind info
+!             vob1=-derdwdat(6,2)*cos(derdwdat(5,2)*deg2rad)    ! get originial wind info
+!             if(itype == 245 ) then
+!                ppb1=heightdat(2,1)/r100                        ! window height assignment value
+!                ppb2=heightdat(2,4)/r100                        ! co2 height assignment value  
+!             else if(itype == 246) then
+!                ppb1=heightdat(2,3)/r100                        !  H2O height assignment value
+!                ppb2=heightdat(2,4)/r100                        ! co2 height assignment value
+!             endif
+!          endif
 
 !!  first to get observation error from PREPBUFR observation error table
            ppb=max(zero,min(ppb,r2000))
-           itypey=itype-199 
-           ierr=index_sub(nc)
-           ierr2=ierr-1
-           if (ierr >maxsub_uv) ierr=2
-!           write(6,*) ' READ_SATWND:itypey,ierr2=',itypey,ierr2,ierr,index_sub(nc),isuble_uv(itypey,ierr2)
-           if( iobsub /= isuble_uv(itypey,ierr2)) then
-              write(6,*) ' READ_SATWND: the subtypes do not match subtype &
-                         in the errortable,iobsub=',iobsub,isuble_uv(itypey,ierr2),isuble_uv(itypey,ierr2),itype,itypey,nc,ierr
-              call stop2(49)
-            endif
-           if(ppb>=etabl_uv(itypey,1,1)) k1=1          
+           if(ppb>=etabl(itype,1,1)) k1=1          
            do kl=1,32
-              if(ppb>=etabl_uv(itypey,kl+1,1).and.ppb<=etabl_uv(itypey,kl,1)) then
-                 k1=kl
-                 exit
-              endif
+              if(ppb>=etabl(itype,kl+1,1).and.ppb<=etabl(itype,kl,1)) k1=kl
            end do
+           if(ppb<=etabl(itype,33,1)) k1=33
            k2=k1+1
-           if(ppb<=etabl_uv(itypey,33,1)) then
-              k1=33
-              k2=33
-           endif
-           ediff = etabl_uv(itypey,k2,1)-etabl_uv(itypey,k1,1)
+           ediff = etabl(itype,k2,1)-etabl(itype,k1,1)
            if (abs(ediff) > tiny_r_kind) then
-              del = (ppb-etabl_uv(itypey,k1,1))/ediff
+              del = (ppb-etabl(itype,k1,1))/ediff
            else
               del = huge_r_kind
            endif
            del=max(zero,min(del,one))
-           obserr=(one-del)*etabl_uv(itypey,k1,ierr)+del*etabl_uv(itypey,k2,ierr)
+           obserr=(one-del)*etabl(itype,k1,4)+del*etabl(itype,k2,4)
            obserr=max(obserr,werrmin)
-!  get non linear qc parameter from b table
-           var_jb=(one-del)*btabl_uv(itypey,k1,ierr)+del*btabl_uv(itypey,k2,ierr)
-           var_jb=max(var_jb,wjbmin)
-           if (var_jb >10.0_r_kind) var_jb=zero
-!           if (itype ==245 ) then
-!             write(6,*) 'READ_SATWND:obserr,var_jb,ppb,del,one,etabl_uv,btabl_uv=',&
-!             obserr,var_jb,ppb,del,one,etabl_uv(itypey,k1,ierr),btabl_uv(itypey,k1,ierr),wjbmin,werrmin
-!           endif
-
 !  for GOES hourly winds, set error doubled
             if(itype==245 .or. itype==246) then
 !               obserr=obserr*two
-!             write(6,*) 'READ_SATWND:obserr,var_jb=',obserr,var_jb
 !  using  Santek quality control method,calculate the original ee value
                if(ee <r105) then
                   ree=(ee-r100)/(-10.0_r_kind)
@@ -989,11 +1008,10 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
            cdata_all(21,iout)=zz                  ! terrain height at ob location
            cdata_all(22,iout)=r_prvstg(1,1)       ! provider name
            cdata_all(23,iout)=r_sprvstg(1,1)      ! subprovider name
-           cdata_all(25,iout)=var_jb              ! non linear qc parameter 
 
            if(perturb_obs)then
-              cdata_all(26,iout)=ran01dom()*perturb_fact ! u perturbation
-              cdata_all(27,iout)=ran01dom()*perturb_fact ! v perturbation
+              cdata_all(24,iout)=ran01dom()*perturb_fact ! u perturbation
+              cdata_all(25,iout)=ran01dom()*perturb_fact ! v perturbation
            endif
 
         enddo  loop_readsb
@@ -1034,6 +1052,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
      end do
   end do
   deallocate(iloc,isort,cdata_all)
+  deallocate(etabl)
   
   write(lunout) obstype,sis,nreal,nchanl,ilat,ilon
   write(lunout) cdata_out
@@ -1055,7 +1074,6 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   write(6,*) 'READ_SATWND,nread,ndata,nreal,nodata=',nread,ndata,nreal,nodata
 
   close(lunin)
- close(99)
 
 ! End of routine
   return
