@@ -38,7 +38,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   use constants, only: huge_single,r1000,wgtlim,r10
   use constants, only: one_quad
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype,icsubtype
-  use converr, only: ptabl 
+  use converr_t, only: ptabl_t 
   use rapidrefresh_cldsurf_mod, only: l_gsd_terrain_match_surfTobs,l_sfcobserror_ramp_t
   use rapidrefresh_cldsurf_mod, only: l_PBL_pseudo_SurfobsT, pblH_ration,pps_press_incr
 
@@ -144,7 +144,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 !   2013-10-19  todling - metguess now holds background
 !   2014-01-28  todling - write sensitivity slot indicator (idia) to header of diagfile
 !   2014-03-04  sienkiewicz - implementation of option aircraft_t_bc_ext (external table)
-!
+!   2014-04-12       su - add non linear qc from Purser's scheme
 ! !REMARKS:
 !   language: f90
 !   machine:  ibm RS/6000 SP; SGI Origin 2000; Compaq/HP
@@ -180,7 +180,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   real(r_kind) tges
   real(r_kind) obserror,ratio,val2,obserrlm
   real(r_kind) residual,ressw2,scale,ress,ratio_errors,tob,ddiff
-  real(r_kind) val,valqc,dlon,dlat,dtime,dpres,error,prest,rwgt
+  real(r_kind) val,valqc,dlon,dlat,dtime,dpres,error,prest,rwgt,var_jb
   real(r_kind) errinv_input,errinv_adjst,errinv_final
   real(r_kind) err_input,err_adjst,err_final,tfact
   real(r_kind) cg_t,wgross,wnotgross,wgt,arg,exp_arg,term,rat_err2,qcgross
@@ -197,7 +197,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 
   real(r_kind),dimension(nsig):: prsltmp2
 
-  integer(i_kind) i,j,nchar,nreal,k,ii,jj,l,nn,ibin,idia,idia0,ix
+  integer(i_kind) i,j,nchar,nreal,k,ii,jj,l,nn,ibin,idia,idia0,ix,ijb
   integer(i_kind) mm1,jsig,iqt
   integer(i_kind) itype,msges
   integer(i_kind) ier,ilon,ilat,ipres,itob,id,itime,ikx,iqc,iptrb,icat,ipof,ivvlc,idx
@@ -279,19 +279,21 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   iprvd=22    ! index of observation provider
   isprvd=23   ! index of observation subprovider
   icat=24     ! index of data level category
+  ijb=25      ! index of non linear qc parameter
   if (aircraft_t_bc_pof .or. aircraft_t_bc .or. aircraft_t_bc_ext) then
-     ipof=25     ! index of data pof
-     ivvlc=26    ! index of data vertical velocity
-     idx=27      ! index of tail number
-     iptrb=28    ! index of t perturbation
+     ipof=26     ! index of data pof
+     ivvlc=27    ! index of data vertical velocity
+     idx=28      ! index of tail number
+     iptrb=29    ! index of t perturbation
   else
-     iptrb=25    ! index of t perturbation
+     iptrb=26    ! index of t perturbation
   end if
 
   do i=1,nobs
      muse(i)=nint(data(iuse,i)) <= jiter
   end do
 
+  var_jb=zero
   dup=one
   do k=1,nobs
      do l=k+1,nobs
@@ -652,12 +654,23 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            term =log((arg+wgross)/(one+wgross))
            wgt  = one-wgross/(arg+wgross)
            rwgt = wgt/wgtlim
+           else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind) then
+           if(exp_arg  == zero) then
+              wgt=one
+           else
+              wgt=ddiff*error*ratio_errors/sqrt(two*var_jb)
+              wgt=tanh(wgt)/wgt
+           endif
+           term=-two*var_jb*log(cosh((val*ratio_errors)/sqrt(two*var_jb)))
+           rwgt = wgt/wgtlim
+           valqc = -two*term
         else
            term = exp_arg
            wgt  = wgtlim
            rwgt = wgt/wgtlim
+           valqc = -two*rat_err2*term
         endif
-        valqc = -two*rat_err2*term
+
 
 !       Accumulate statistics for obs belonging to this task
         if(muse(i))then
@@ -696,7 +709,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
      obsdiags(i_t_ob_type,ibin)%tail%nldepart(jiter)=ddiff
      obsdiags(i_t_ob_type,ibin)%tail%wgtjo= (error*ratio_errors)**2
 
-!    If obs is "acceptable", load array with obs info for use
+!    If obs is "acceptabl_te", load array with obs info for use
 !    in inner loop minimization (int* and stp* routines)
 !    if ( .not. last .and. muse(i)) then
      if (muse(i)) then
@@ -727,6 +740,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         ttail(ibin)%head%time    = dtime
         ttail(ibin)%head%b       = cvar_b(ikx)
         ttail(ibin)%head%pg      = cvar_pg(ikx)
+        ttail(ibin)%head%jb       = var_jb
         ttail(ibin)%head%use_sfc_model = sfctype.and.sfcmodel
         if(ttail(ibin)%head%use_sfc_model) then
            call get_tlm_tsfc(ttail(ibin)%head%tlm_tsfc(1), &
@@ -774,13 +788,13 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         if(oberror_tune) then
            ttail(ibin)%head%kx=ikx
            ttail(ibin)%head%tpertb=data(iptrb,i)/error/ratio_errors
-           if(prest > ptabl(2))then
+           if(prest > ptabl_t(2))then
               ttail(ibin)%head%k1=1
-           else if( prest <= ptabl(33)) then
+           else if( prest <= ptabl_t(33)) then
               ttail(ibin)%head%k1=33
            else
               k_loop: do k=2,32
-                 if(prest > ptabl(k+1) .and. prest <= ptabl(k)) then
+                 if(prest > ptabl_t(k+1) .and. prest <= ptabl_t(k)) then
                     ttail(ibin)%head%k1=k
                     exit k_loop
                  endif
@@ -820,7 +834,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         rdiagbuf(8,ii)  = dtime-time_offset  ! obs time (hours relative to analysis time)
 
         rdiagbuf(9,ii)  = data(iqc,i)        ! input prepbufr qc or event mark
-        rdiagbuf(10,ii) = data(iqt,i)        ! setup qc or event mark (currently qtflg only)
+        rdiagbuf(10,ii) =  var_jb            ! non linear qc parameter 
         rdiagbuf(11,ii) = data(iuse,i)       ! read_prepbufr data usage flag
         if(muse(i)) then
            rdiagbuf(12,ii) = one             ! analysis usage flag (1=use, -1=not used)

@@ -13,6 +13,7 @@ module stpwmod
 !   2008-12-01  Todling - remove stpw_tl; add interface back
 !   2009-08-12  lueken - update documentation
 !   2010-05-13  todling - uniform interface across stp routines
+!   2014-04-12       su - add non linear qc from Purser's scheme
 !
 ! subroutines included:
 !   sub stpw
@@ -79,7 +80,7 @@ subroutine stpw(whead,rval,sval,out,sges,nstep)
 !$$$
   use kinds, only: r_kind,i_kind,r_quad
   use obsmod, only: w_ob_type
-  use qcmod, only: nlnqc_iter,varqc_iter
+  use qcmod, only: nlnqc_iter,varqc_iter,nlnvqc_iter
   use constants, only: one,half,two,tiny_r_kind,cg_term,zero_quad,r3600
   use gridmod, only: latlon1n
   use jfunc, only: l_foto,xhat_dt,dhat_dt
@@ -198,10 +199,24 @@ subroutine stpw(whead,rval,sval,out,sges,nstep)
            end do
         endif
 
-        out(1) = out(1)+pen(1)*wptr%raterr2
-        do kk=2,nstep
-           out(kk) = out(kk)+(pen(kk)-pen(1))*wptr%raterr2
-        end do
+! Purser's scheme
+        if(nlnvqc_iter .and. wptr%jb  > tiny_r_kind) then
+           do kk=1,max(1,nstep)
+              pen(kk) = two*two*wptr%jb*log(cosh(sqrt(pen(kk)*wptr%raterr2/(two*wptr%jb))))
+           enddo
+        endif
+
+        if(nlnvqc_iter .and. wptr%jb  > tiny_r_kind) then
+          out(1) = out(1)+pen(1)
+          do kk=2,nstep
+             out(kk) = out(kk)+(pen(kk)-pen(1))
+          end do
+       else
+          out(1) = out(1)+pen(1)*wptr%raterr2
+          do kk=2,nstep
+             out(kk) = out(kk)+(pen(kk)-pen(1))*wptr%raterr2
+          end do
+       endif
      end if
 
      wptr => wptr%llpoint

@@ -14,6 +14,7 @@ module stppsmod
 !   2009-08-12  lueken - update documentation
 !   2010-05-13  todling - uniform interface across stp routines
 !   2013-10-28  todling - reame p3d to prse
+!   2014-04-12       su - add non linear qc from Purser's scheme
 !
 ! subroutines included:
 !   sub stpps
@@ -76,7 +77,7 @@ subroutine stpps(pshead,rval,sval,out,sges,nstep)
 !$$$
   use kinds, only: r_kind,i_kind,r_quad
   use obsmod, only: ps_ob_type
-  use qcmod, only: nlnqc_iter,varqc_iter
+  use qcmod, only: nlnqc_iter,varqc_iter,nlnvqc_iter
   use constants, only: half,one,two,tiny_r_kind,cg_term,zero_quad,r3600
   use gridmod, only: latlon1n1
   use jfunc, only: l_foto,xhat_dt,dhat_dt
@@ -158,11 +159,24 @@ subroutine stpps(pshead,rval,sval,out,sges,nstep)
               pen(kk) = -two*log((exp(-half*pen(kk))+wgross)/(one+wgross))
            end do
         endif
-     
-        out(1) = out(1)+pen(1)*psptr%raterr2
-        do kk=2,nstep
-           out(kk) = out(kk)+(pen(kk)-pen(1))*psptr%raterr2
-        end do
+
+!   for Dr. Jim purser' non liear quality control
+        if(nlnvqc_iter .and. psptr%jb  > tiny_r_kind) then
+           do kk=1,max(1,nstep)
+              pen(kk) = two*two*psptr%jb*log(cosh(sqrt(pen(kk)*psptr%raterr2/(two*psptr%jb))))
+           enddo
+        endif
+        if(nlnvqc_iter .and. psptr%jb  > tiny_r_kind) then
+           out(1) = out(1)+pen(1)
+           do kk=2,nstep
+              out(kk) = out(kk)+(pen(kk)-pen(1))
+           end do
+        else
+           out(1) = out(1)+pen(1)*psptr%raterr2
+           do kk=2,nstep
+              out(kk) = out(kk)+(pen(kk)-pen(1))*psptr%raterr2
+           end do
+        endif
      end if
 
      psptr => psptr%llpoint

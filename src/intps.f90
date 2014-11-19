@@ -14,6 +14,7 @@ module intpsmod
 !   2009-08-13  lueken - update documentation
 !   2012-09-14  Syed RH Rizvi, NCAR/NESL/MMM/DAS  - implemented obs adjoint test  
 !   2013-10-28  todling - rename p3d to prse
+!   2014-04-12       su - add non linear qc from Purser's scheme
 !
 ! subroutines included:
 !   sub intps_
@@ -67,6 +68,7 @@ subroutine intps_(pshead,rval,sval)
 !   2008-11-28  todling  - turn FOTO optional; changed ptr%time handle
 !   2010-05-13  todling  - update to use gsi_bundlemod; update interface
 !   2012-09-14  Syed RH Rizvi, NCAR/NESL/MMM/DAS  - introduced ladtest_obs         
+
 !
 !   input argument list:
 !     pshead  - obs type pointer to obs structure
@@ -82,9 +84,9 @@ subroutine intps_(pshead,rval,sval)
 !
 !$$$
   use kinds, only: r_kind,i_kind
-  use constants, only: half,one,tiny_r_kind,cg_term,r3600
+  use constants, only: half,one,tiny_r_kind,cg_term,r3600,two
   use obsmod, only: ps_ob_type,lsaveobsens,l_do_adjoint
-  use qcmod, only: nlnqc_iter,varqc_iter
+  use qcmod, only: nlnqc_iter,varqc_iter,nlnvqc_iter
   use gridmod, only: latlon1n1
   use jfunc, only: jiter,l_foto,xhat_dt,dhat_dt
   use gsi_bundlemod, only: gsi_bundle
@@ -165,11 +167,17 @@ subroutine intps_(pshead,rval,sval)
               p0=wgross/(wgross+exp(-half*psptr%err2*val**2)) ! p0 is P in Enderson
               val=val*(one-p0)                                ! term is Wqc in Enderson
            endif
-           if( ladtest_obs) then
-              grad = val
-           else
-              grad = val*psptr%raterr2*psptr%err2
-           end if
+           if (nlnvqc_iter .and. psptr%jb  > tiny_r_kind) then
+              val=sqrt(two*psptr%jb)*tanh(sqrt(psptr%err2*psptr%raterr2)*val/sqrt(two*psptr%jb))
+           endif
+           if (nlnvqc_iter .and. psptr%jb  > tiny_r_kind) then
+              grad = val*sqrt(psptr%raterr2*psptr%err2)
+              if( ladtest_obs) then
+                 grad = val
+              else
+                 grad = val*psptr%raterr2*psptr%err2
+              end if
+           endif
         endif
 
 !       Adjoint
