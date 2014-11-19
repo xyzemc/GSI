@@ -110,7 +110,7 @@ subroutine intt_(thead,rval,sval,rpred,spred)
   use kinds, only: r_kind,i_kind,r_quad
   use constants, only: half,one,zero,tiny_r_kind,cg_term,r3600,two
   use obsmod, only: t_ob_type,lsaveobsens,l_do_adjoint
-  use qcmod, only: nlnqc_iter,varqc_iter,nlnvqc_iter
+  use qcmod, only: nlnqc_iter,varqc_iter
   use gridmod, only: latlon1n,latlon11,latlon1n1
   use jfunc, only: jiter,l_foto,xhat_dt,dhat_dt
   use gsi_bundlemod, only: gsi_bundle
@@ -310,10 +310,10 @@ subroutine intt_(thead,rval,sval,rpred,spred)
               p0=wgross/(wgross+exp(-half*tptr%err2*val**2))
               val=val*(one-p0)                  
            endif
-           if (nlnvqc_iter .and. tptr%jb  > tiny_r_kind) then
+           if ( tptr%jb  > tiny_r_kind) then
               val=sqrt(two*tptr%jb)*tanh(sqrt(tptr%err2*tptr%raterr2)*val/sqrt(two*tptr%jb))
            endif
-           if (nlnvqc_iter .and. tptr%jb  > tiny_r_kind) then
+           if ( tptr%jb  > tiny_r_kind) then
               grad = val*sqrt(tptr%raterr2*tptr%err2)
            else
               if( ladtest_obs) then

@@ -86,7 +86,7 @@ subroutine intw_(whead,rval,sval)
   use kinds, only: r_kind,i_kind
   use constants, only: half,one,tiny_r_kind,cg_term,r3600,two
   use obsmod, only: w_ob_type,lsaveobsens,l_do_adjoint
-  use qcmod, only: nlnqc_iter,varqc_iter,nlnvqc_iter
+  use qcmod, only: nlnqc_iter,varqc_iter
   use gridmod, only: latlon1n
   use jfunc, only: jiter,l_foto,xhat_dt,dhat_dt
   use gsi_bundlemod, only: gsi_bundle
@@ -200,11 +200,11 @@ subroutine intw_(whead,rval,sval)
               valu = valu*term
               valv = valv*term
            endif
-           if (nlnvqc_iter .and. wptr%jb  > tiny_r_kind) then
+           if ( wptr%jb  > tiny_r_kind) then
               valu=sqrt(two*wptr%jb)*tanh(sqrt(wptr%err2*wptr%raterr2)*valu/sqrt(two*wptr%jb))
               valv=sqrt(two*wptr%jb)*tanh(sqrt(wptr%err2*wptr%raterr2)*valv/sqrt(two*wptr%jb))
            endif
-           if (nlnvqc_iter .and. wptr%jb  > tiny_r_kind) then
+           if ( wptr%jb  > tiny_r_kind) then
               gradu = valu*sqrt(wptr%raterr2*wptr%err2)
               gradv = valv*sqrt(wptr%raterr2*wptr%err2)
            else

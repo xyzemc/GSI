@@ -85,7 +85,7 @@ subroutine intq_(qhead,rval,sval)
   use kinds, only: r_kind,i_kind
   use constants, only: half,one,tiny_r_kind,cg_term,r3600,two
   use obsmod, only: q_ob_type,lsaveobsens,l_do_adjoint
-  use qcmod, only: nlnqc_iter,varqc_iter,nlnvqc_iter
+  use qcmod, only: nlnqc_iter,varqc_iter
   use gridmod, only: latlon1n
   use jfunc, only: jiter,l_foto,xhat_dt,dhat_dt
   use gsi_bundlemod, only: gsi_bundle
@@ -177,10 +177,10 @@ subroutine intq_(qhead,rval,sval)
               p0=wgross/(wgross+exp(-half*qptr%err2*val**2))  ! p0 is P in the reference by Enderson
               val=val*(one-p0)                         ! term is Wqc in the referenc by Enderson
            endif
-           if (nlnvqc_iter .and. qptr%jb  > tiny_r_kind) then
+           if ( qptr%jb  > tiny_r_kind) then
               val=sqrt(two*qptr%jb)*tanh(sqrt(qptr%err2*qptr%raterr2)*val/sqrt(two*qptr%jb))
            endif
-           if (nlnvqc_iter .and. qptr%jb  > tiny_r_kind) then
+           if ( qptr%jb  > tiny_r_kind) then
               grad = val*sqrt(qptr%raterr2*qptr%err2)
            else
               if( ladtest_obs) then
