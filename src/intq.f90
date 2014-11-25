@@ -183,12 +183,11 @@ subroutine intq_(qhead,rval,sval)
            if ( qptr%jb  > tiny_r_kind) then
               grad = val*sqrt(qptr%raterr2*qptr%err2)
            else
-              if( ladtest_obs) then
-                 grad = val
-              else
-                 grad     = val*qptr%raterr2*qptr%err2
-              end if
+              grad = val*qptr%raterr2*qptr%err2
            endif
+           if( ladtest_obs) then
+              grad = val
+           end if
         endif
 
 !       Adjoint

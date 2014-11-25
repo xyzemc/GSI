@@ -1060,9 +1060,9 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
 !Wind b
                    var_jb(5,k)=max(var_jb(5,k),wjbmin)
                    if (var_jb(5,k) >=10.0_r_kind) var_jb(5,k)=zero
-                   if(itypey==221) then
-                      write(6,*) 'READ_PREPBUFR:221_uv,obserr,var_jb=',obserr(5,k),var_jb(5,k),ppb,k2_uv,del_uv
-                   endif
+!                   if(itypey==224) then
+!                      write(6,*) 'READ_PREPBUFR:224_uv,obserr,var_jb=',obserr(5,k),var_jb(5,k),ppb,k2_uv,del_uv
+!                   endif
                 enddo
              endif
              if (pwob)  then

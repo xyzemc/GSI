@@ -316,12 +316,11 @@ subroutine intt_(thead,rval,sval,rpred,spred)
            if ( tptr%jb  > tiny_r_kind) then
               grad = val*sqrt(tptr%raterr2*tptr%err2)
            else
-              if( ladtest_obs) then
-                 grad = val
-              else
-                 grad = val*tptr%raterr2*tptr%err2
-              end if
+              grad = val*tptr%raterr2*tptr%err2
            endif
+           if( ladtest_obs) then
+              grad = val
+           end if
         endif
 
 !       Adjoint of interpolation

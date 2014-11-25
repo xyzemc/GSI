@@ -965,6 +965,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            ttail(ibin)%head%time    = dtime
            ttail(ibin)%head%b       = cvar_b(ikx)
            ttail(ibin)%head%pg      = cvar_pg(ikx)
+           ttail(ibin)%head%jb      = var_jb 
            ttail(ibin)%head%use_sfc_model = sfctype.and.sfcmodel
            if(ttail(ibin)%head%use_sfc_model) then
               call get_tlm_tsfc(ttail(ibin)%head%tlm_tsfc(1), &

@@ -172,11 +172,11 @@ subroutine intps_(pshead,rval,sval)
            endif
            if ( psptr%jb  > tiny_r_kind) then
               grad = val*sqrt(psptr%raterr2*psptr%err2)
-              if( ladtest_obs) then
-                 grad = val
-              else
-                 grad = val*psptr%raterr2*psptr%err2
-              end if
+           else
+              grad = val*psptr%raterr2*psptr%err2
+           endif
+           if( ladtest_obs) then
+              grad = val
            endif
         endif
 

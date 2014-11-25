@@ -208,14 +208,13 @@ subroutine intw_(whead,rval,sval)
               gradu = valu*sqrt(wptr%raterr2*wptr%err2)
               gradv = valv*sqrt(wptr%raterr2*wptr%err2)
            else
-              if( ladtest_obs) then
-                 gradu = valu
-                 gradv = valv
-              else
-                 gradu = valu*wptr%raterr2*wptr%err2
-                 gradv = valv*wptr%raterr2*wptr%err2
-              end if
+              gradu = valu*wptr%raterr2*wptr%err2
+              gradv = valv*wptr%raterr2*wptr%err2
            endif
+           if( ladtest_obs) then
+              gradu = valu
+              gradv = valv
+           end if
         endif
 
 !       Adjoint
