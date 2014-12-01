@@ -35,6 +35,7 @@ module satthin
 !   2011-05-26  todling - add create_nst
 !   2012-01-31  hchuang - add read_nemsnst in sub getnst
 !   2012-03-05  akella  - remove create_nst,getnst and destroy_nst; nst fields now handled by gsi_nstcoupler
+!   2014-11-25  Li      - add to read fice from sfc file to GSI
 !
 ! Subroutines Included:
 !   sub makegvals      - set up for superob weighting
@@ -76,6 +77,7 @@ module satthin
 !   def sst_full       - skin temperature
 !   def sno_full       - snow-ice mask
 !   def zs_full        - model terrain elevation
+!   def fice_full      - ice concentration/fraction (0 to 1)
 !   def score_crit     - "best" quality obs score in thinning grid box
 !   def use_all        - parameter for turning satellite thinning algorithm off
 !
@@ -103,7 +105,7 @@ module satthin
   public :: rlat_min,rlon_min,dlat_grid,dlon_grid,superp,super_val1,super_val
   public :: veg_type_full,soil_type_full,sfc_rough_full,sno_full,sst_full
   public :: fact10_full,isli_full,soil_moi_full,veg_frac_full,soil_temp_full
-  public :: checkob,score_crit,itxmax,finalcheck,zs_full_gfs,zs_full
+  public :: checkob,score_crit,itxmax,finalcheck,zs_full_gfs,zs_full,fice_full
 
   integer(i_kind) mlat,superp,maxthin,itxmax
   integer(i_kind), save:: itx_all
@@ -121,6 +123,7 @@ module satthin
   real(r_kind),allocatable,dimension(:,:,:):: veg_frac_full,soil_temp_full
   real(r_kind),allocatable,dimension(:,:,:):: soil_moi_full,sfc_rough_full
   real(r_kind),allocatable,dimension(:,:,:):: sst_full,sno_full,fact10_full
+  real(r_kind),allocatable,dimension(:,:,:):: fice_full
 
   logical use_all
 
@@ -473,6 +476,7 @@ contains
     allocate(sst_full(nlat_sfc,nlon_sfc,nfldsfc),sno_full(nlat_sfc,nlon_sfc,nfldsfc))
     allocate(zs_full(nlat,nlon))
     allocate(sfc_rough_full(nlat_sfc,nlon_sfc,nfldsfc))
+    allocate(fice_full(nlat_sfc,nlon_sfc,nfldsfc))
 
 !  Necessary to make read_sfc routine to work properly
     if(mype == mype_io .and. .not. use_gfs_nemsio)use_sfc=.true.
@@ -529,7 +533,7 @@ contains
                    veg_type_full(1,1),veg_frac_full(1,1,it), &
                    soil_type_full(1,1),soil_temp_full(1,1,it),&
                    soil_moi_full(1,1,it),isli_full(1,1),sfc_rough_full(1,1,it),&
-                   zs_full_gfs)
+                   zs_full_gfs,fice_full(1,1,it))
              end if
           end do
        else
@@ -545,7 +549,7 @@ contains
                 call read_gfssfc(filename,mype_io,mype,&
                    fact10_full(1,1,it),sst_full(1,1,it),sno_full(1,1,it), &
                    dum,dum,dum,dum,dum,isli_full(1,1),sfc_rough_full(1,1,it),&
-                   zs_full_gfs)
+                   zs_full_gfs,fice_full(1,1,it))
              end if
           end do
           deallocate(dum)
@@ -715,6 +719,16 @@ contains
              veg_type_full(i,j)=work1(k)
           end do
        end if
+
+! fice_full
+          call strip(fice(:,:,it),zsm)
+          call mpi_allgatherv(zsm,ijn(mm1),mpi_rtype,&
+             work1,ijn,displs_g,mpi_rtype,&
+             mpi_comm_world,ierror)
+          do k=1,iglobal
+             i=ltosi(k) ; j=ltosj(k)
+             fice_full(i,j,it)=work1(k)
+          end do
 
 #ifndef HAVE_ESMF
     end if
@@ -1057,6 +1071,7 @@ contains
     if(allocated(zs_full))deallocate(zs_full)
     if(allocated(sfc_rough_full))deallocate(sfc_rough_full)
     if(allocated(zs_full_gfs)) deallocate(zs_full_gfs)
+    if(allocated(fice_full))deallocate(fice_full)
 
     return
   end subroutine destroy_sfc

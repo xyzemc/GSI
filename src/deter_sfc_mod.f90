@@ -31,8 +31,9 @@ module deter_sfc_mod
   use kinds, only: r_kind,i_kind
   use satthin, only: sno_full,isli_full,sst_full,soil_moi_full, &
       soil_temp_full,soil_type_full,veg_frac_full,veg_type_full, &
-      fact10_full,zs_full,sfc_rough_full,zs_full_gfs
-  use constants, only: zero,one,two,one_tenth,deg2rad,rad2deg
+      fact10_full,zs_full,sfc_rough_full,zs_full_gfs,fice_full 
+      
+  use constants, only: zero,one,two,one_tenth,deg2rad,rad2deg,tfrozen
   use gridmod, only: nlat,nlon,regional,tll2xy,nlat_sfc,nlon_sfc,rlats_sfc,rlons_sfc, &
       rlats,rlons,dx_gfs,txy2ll,lpl_gfs
   use guess_grids, only: nfldsfc,hrdifsfc,ntguessfc
@@ -115,9 +116,11 @@ subroutine deter_sfc(alat,alon,dlat_earth,dlon_earth,obstime,isflg, &
      real(r_kind):: dx,dy,dx1,dy1,w00,w10,w01,w11,dtsfc,dtsfcp,wgtmin
      real(r_kind):: sno00,sno01,sno10,sno11,dlat,dlon
      real(r_kind):: sst00,sst01,sst10,sst11
+     real(r_kind):: fice00,fice01,fice10,fice11
+     real(r_kind):: tice00,tice01,tice10,tice11
      real(r_kind),dimension(0:3)::wgtavg
 
-!  First do surface field since it is on model grid
+!  First do surface field (nlon, nlat) on analysis grid
      iy=int(alon); ix=int(alat)
      dy  =alon-iy; dx  =alat-ix
      dx1 =one-dx;    dy1 =one-dy
@@ -133,6 +136,9 @@ subroutine deter_sfc(alat,alon,dlat_earth,dlon_earth,obstime,isflg, &
      zz   = zs_full(ix,iy) *w00 + zs_full(ixp,iy) *w10 + &
             zs_full(ix,iyp)*w01 + zs_full(ixp,iyp)*w11
 
+!
+!  Then do surface field (nlon_sfc, nlat_sfc) on original fcst grid
+!
      if(regional)then
 !       call tll2xy(dlon_earth,dlat_earth,dlon,dlat,outside)
         dlat=alat
@@ -190,6 +196,11 @@ subroutine deter_sfc(alat,alon,dlat_earth,dlon_earth,obstime,isflg, &
      sst10= sst_full(ixp,iy ,itsfc)*dtsfc+sst_full(ixp,iy ,itsfcp)*dtsfcp
      sst11= sst_full(ixp,iyp,itsfc)*dtsfc+sst_full(ixp,iyp,itsfcp)*dtsfcp
 
+     fice00= fice_full(ix ,iy ,itsfc)*dtsfc+fice_full(ix ,iy ,itsfcp)*dtsfcp
+     fice01= fice_full(ix ,iyp,itsfc)*dtsfc+fice_full(ix ,iyp,itsfcp)*dtsfcp
+     fice10= fice_full(ixp,iy ,itsfc)*dtsfc+fice_full(ixp,iy ,itsfcp)*dtsfcp
+     fice11= fice_full(ixp,iyp,itsfc)*dtsfc+fice_full(ixp,iyp,itsfcp)*dtsfcp
+
 !    Interpolate sst to obs location
 
      tsavg=sst00*w00+sst10*w10+sst01*w01+sst11*w11
@@ -200,10 +211,50 @@ subroutine deter_sfc(alat,alon,dlat_earth,dlon_earth,obstime,isflg, &
      if(istyp11 >=1 .and. sno11 > minsnow)istyp11 = 3
 
      sfcpct = zero
-     sfcpct(istyp00)=sfcpct(istyp00)+w00
-     sfcpct(istyp01)=sfcpct(istyp01)+w01
-     sfcpct(istyp10)=sfcpct(istyp10)+w10
-     sfcpct(istyp11)=sfcpct(istyp11)+w11
+
+     if ( istyp00 == 2 .and. fice00 < one ) then
+       sfcpct(2)=sfcpct(2)+w00*fice00
+       sfcpct(0)=sfcpct(0)+w00*(one-fice00)
+     elseif ( istyp00 == 3 .and. (fice00 > zero .and. fice00 < one) ) then
+       sfcpct(3)=sfcpct(3)+w00*fice00
+       sfcpct(0)=sfcpct(0)+w00*(one-fice00)
+     else
+       sfcpct(istyp00)=sfcpct(istyp00)+w00
+     endif
+
+     if ( istyp01 == 2 .and. fice01 < one ) then
+       sfcpct(2)=sfcpct(2)+w01*fice01
+       sfcpct(0)=sfcpct(0)+w01*(one-fice01)
+     elseif ( istyp01 == 3 .and. (fice01 > zero .and. fice01 < one) ) then
+       sfcpct(3)=sfcpct(3)+w01*fice01
+       sfcpct(0)=sfcpct(0)+w01*(one-fice01)
+     else
+       sfcpct(istyp01)=sfcpct(istyp01)+w01
+     endif
+
+     if ( istyp10 == 2 .and. fice10 < one ) then
+       sfcpct(2)=sfcpct(2)+w10*fice10
+       sfcpct(0)=sfcpct(0)+w10*(one-fice10)
+     elseif ( istyp10 == 3 .and. (fice10 > zero .and. fice10 < one) ) then
+       sfcpct(3)=sfcpct(3)+w10*fice10
+       sfcpct(0)=sfcpct(0)+w10*(one-fice10)
+     else
+       sfcpct(istyp10)=sfcpct(istyp10)+w10
+     endif
+
+     if ( istyp11 == 2 .and. fice11 < one ) then
+       sfcpct(2)=sfcpct(2)+w11*fice11
+       sfcpct(0)=sfcpct(0)+w11*(one-fice11)
+     elseif ( istyp11 == 3 .and. (fice11 > zero .and. fice11 < one) ) then
+       sfcpct(3)=sfcpct(3)+w10*fice11
+       sfcpct(0)=sfcpct(0)+w10*(one-fice11)
+     else
+       sfcpct(istyp11)=sfcpct(istyp11)+w11
+     endif
+!
+!    get the dominant surface type with sfcpct
+!
+     idomsfc=lbound(sfcpct)+maxloc(sfcpct)-1
 
      isflg = 0
      if(sfcpct(0) > 0.99_r_kind)then
@@ -229,7 +280,6 @@ subroutine deter_sfc(alat,alon,dlat_earth,dlon_earth,obstime,isflg, &
      vty=zero
      sm=zero
      sn=zero
-     idomsfc=isli_full(ix ,iy )
      wgtmin = w00
      if(istyp00 == 1)then
         vty  = veg_type_full(ix ,iy)
@@ -243,12 +293,29 @@ subroutine deter_sfc(alat,alon,dlat_earth,dlon_earth,obstime,isflg, &
         sm   =sm   +w00*(soil_moi_full(ix ,iy ,itsfc ) *dtsfc+   &
                          soil_moi_full(ix ,iy ,itsfcp) *dtsfcp)
      else if(istyp00 == 2)then
-        wgtavg(2) = wgtavg(2) + w00
-        ts(2)=ts(2)+w00*sst00
+        if ( fice00 < one ) then
+          wgtavg(2) = wgtavg(2) + w00*fice00
+          wgtavg(0) = wgtavg(0) + w00*(one-fice00)
+          tice00=(sst00-tfrozen*(one-fice00))/fice00
+          ts(2)=ts(2)+w00*tice00*fice00
+          ts(0)=ts(0)+w00*tfrozen*(one-fice00)
+        else
+          wgtavg(2) = wgtavg(2) + w00
+          ts(2)=ts(2)+w00*sst00
+        endif
      else if(istyp00 == 3)then
-        wgtavg(3) = wgtavg(3) + w00
-        ts(3)=ts(3)+w00*sst00
-        sn = sn + w00*sno00
+        if ( fice00 > zero .and. fice00 < one ) then
+          wgtavg(3) = wgtavg(3) + w00*fice00
+          wgtavg(0) = wgtavg(0) + w00*(one-fice00)
+          tice00=(sst00-tfrozen*(one-fice00))/fice00
+          ts(3)=ts(3)+w00*tice00*fice00
+          sn = sn + w00*sno00*fice00
+          ts(0)=ts(0)+w00*tfrozen*(one-fice00)
+        else
+          wgtavg(3) = wgtavg(3) + w00
+          ts(3)=ts(3)+w00*sst00
+          sn = sn + w00*sno00
+        endif
      else
         wgtavg(0) = wgtavg(0) + w00
         ts(0)=ts(0)+w00*sst00
@@ -267,18 +334,34 @@ subroutine deter_sfc(alat,alon,dlat_earth,dlon_earth,obstime,isflg, &
         sm   =sm   +w01*(soil_moi_full(ix ,iyp,itsfc ) *dtsfc+   &
                          soil_moi_full(ix ,iyp,itsfcp) *dtsfcp)
      else if(istyp01 == 2)then
-        wgtavg(2) = wgtavg(2) + w01
-        ts(2)=ts(2)+w01*sst01
+        if ( fice01 < one ) then
+          wgtavg(2) = wgtavg(2) + w01*fice01
+          wgtavg(0) = wgtavg(0) + w01*(one-fice01)
+          tice01=(sst01-tfrozen*(one-fice01))/fice01
+          ts(2)=ts(2)+w01*tice01*fice01
+          ts(0)=ts(0)+w01*tfrozen*(one-fice01)
+        else
+          wgtavg(2) = wgtavg(2) + w01
+          ts(2)=ts(2)+w01*sst01
+        endif
      else if(istyp01 == 3)then
-        wgtavg(3) = wgtavg(3) + w01
-        ts(3)=ts(3)+w01*sst01
-        sn = sn + w01*sno01
+       if ( fice01 > zero .and. fice01 < one ) then
+         wgtavg(3) = wgtavg(3) + w01*fice01
+         wgtavg(0) = wgtavg(0) + w01*(one-fice01)
+         tice01=(sst01-tfrozen*(one-fice01))/fice01
+         ts(3)=ts(3)+w01*tice01*fice01
+         sn = sn + w01*sno01*fice01
+         ts(0)=ts(0)+w01*tfrozen*(one-fice01)
+       else
+         wgtavg(3) = wgtavg(3) + w01
+         ts(3)=ts(3)+w01*sst01
+         sn = sn + w01*sno01
+       endif
      else
         wgtavg(0) = wgtavg(0) + w01
         ts(0)=ts(0)+w01*sst01
      end if
      if(wgtmin < w01)then
-        idomsfc=isli_full(ix ,iyp)
         wgtmin = w01
      end if
      if(istyp10 == 1)then
@@ -295,18 +378,34 @@ subroutine deter_sfc(alat,alon,dlat_earth,dlon_earth,obstime,isflg, &
         sm   =sm   +w10*(soil_moi_full(ixp,iy ,itsfc ) *dtsfc+   &
                          soil_moi_full(ixp,iy ,itsfcp) *dtsfcp)
      else if(istyp10 == 2)then
-        wgtavg(2) = wgtavg(2) + w10
-        ts(2)=ts(2)+w10*sst10
+       if ( fice10 < one ) then
+         wgtavg(2) = wgtavg(2) + w10*fice10
+         wgtavg(0) = wgtavg(0) + w10*(one-fice10)
+         tice10=(sst10-tfrozen*(one-fice10))/fice10
+         ts(2)=ts(2)+w10*tice10*fice10
+         ts(0)=ts(0)+w10*tfrozen*(one-fice10)
+       else
+         wgtavg(2) = wgtavg(2) + w10
+         ts(2)=ts(2)+w10*sst10
+       endif
      else if(istyp10 == 3)then
-        wgtavg(3) = wgtavg(3) + w10
-        ts(3)=ts(3)+w10*sst10
-        sn = sn + w10*sno10
+       if ( fice10 > zero .and. fice10 < one ) then
+         wgtavg(3) = wgtavg(3) + w10*fice10
+         wgtavg(0) = wgtavg(0) + w10*(one-fice10)
+         tice10=(sst10-tfrozen*(one-fice10))/fice10
+         ts(3)=ts(3)+w10*tice10*fice10
+         sn = sn + w10*sno10*fice10
+         ts(0)=ts(0)+w10*tfrozen*(one-fice10)
+       else
+         wgtavg(3) = wgtavg(3) + w10
+         ts(3)=ts(3)+w10*sst10
+         sn = sn + w10*sno10
+       endif
      else
         wgtavg(0) = wgtavg(0) + w10
         ts(0)=ts(0)+w10*sst10
      end if
      if(wgtmin < w10)then
-        idomsfc=isli_full(ixp,iy )
         wgtmin = w10
      end if
      if(istyp11 == 1)then
@@ -323,18 +422,34 @@ subroutine deter_sfc(alat,alon,dlat_earth,dlon_earth,obstime,isflg, &
         sm   =sm   +w11*(soil_moi_full(ixp,iyp,itsfc ) *dtsfc+   &
                          soil_moi_full(ixp,iyp,itsfcp) *dtsfcp)
      else if(istyp11 == 2)then
-        wgtavg(2) = wgtavg(2) + w11
-        ts(2)=ts(2)+w11*sst11
+       if ( fice11 < one ) then
+         wgtavg(2) = wgtavg(2) + w11*fice11
+         wgtavg(0) = wgtavg(0) + w11*(one-fice11)
+         tice11=(sst11-tfrozen*(one-fice11))/fice11
+         ts(2)=ts(2)+w11*tice11*fice11
+         ts(0)=ts(0)+w11*tfrozen*(one-fice11)
+       else
+         wgtavg(2) = wgtavg(2) + w11
+         ts(2)=ts(2)+w11*sst11
+       endif
      else if(istyp11 == 3)then
-        wgtavg(3) = wgtavg(3) + w11
-        ts(3)=ts(3)+w11*sst11
-        sn = sn + w11*sno11
+       if ( fice11 > zero .and. fice11 < one ) then
+         wgtavg(3) = wgtavg(3) + w11*fice11
+         wgtavg(0) = wgtavg(0) + w11*(one-fice11)
+         tice11=(sst11-tfrozen*(one-fice11))/fice11
+         ts(3)=ts(3)+w11*tice11*fice11
+         sn = sn + w11*sno11*fice11
+         ts(0)=ts(0)+w11*tfrozen*(one-fice11)
+       else
+         wgtavg(3) = wgtavg(3) + w11
+         ts(3)=ts(3)+w11*sst11
+         sn = sn + w11*sno11
+       endif
      else
         wgtavg(0) = wgtavg(0) + w11
         ts(0)=ts(0)+w11*sst11
      end if
      if(wgtmin < w11)then
-        idomsfc=isli_full(ixp,iyp)
         wgtmin = w11
      end if
 
@@ -390,6 +505,156 @@ subroutine deter_sfc(alat,alon,dlat_earth,dlon_earth,obstime,isflg, &
      return
 end subroutine deter_sfc
 
+subroutine deter_sfcpct(dlat_earth,dlon_earth,obstime,sfcpct)
+!$$$  subprogram documentation block
+!                .      .    .                                       .
+! subprogram:    deter_sfcpct       determine surface type in fraction (0 ~ 1)
+! 
+!   prgmmr: Xu Li           org: np2                date: 2014-11-26
+!
+! abstract:  determines surface type fraction based on surrounding surface types
+!
+! program history log:
+!   2014-11-26 li      - based of deter_sfc_type and add to handle ice concentration
+!
+!   input argument list:
+!     dlat
+!     dlon
+!     obstime
+!
+!   output argument list:
+!     sfcpct    - surface type fraction
+!                0 sea
+!                1 land
+!                2 sea ice
+!                3 snow
+!                4 mixed
+!
+! attributes:
+!   language: f90
+!   machine:  ibm RS/6000 SP
+!
+!$$$
+
+     implicit none
+
+     real(r_kind), intent(in   ) :: dlat_earth,dlon_earth,obstime
+
+     integer(i_kind), dimension(0:3), intent(  out) :: sfcpct
+
+     logical outside
+     integer(i_kind) istyp00,istyp01,istyp10,istyp11
+     integer(i_kind):: ix,iy,ixp,iyp,j,itsfc,itsfcp
+     real(r_kind):: dx,dy,dx1,dy1,w00,w10,w01,w11,dtsfc
+     real(r_kind):: dtsfcp,dlat,dlon
+     real(r_kind):: sno00,sno01,sno10,sno11
+     real(r_kind):: fice00,fice01,fice10,fice11
+
+     if(regional)then
+        call tll2xy(dlon_earth,dlat_earth,dlon,dlat,outside)
+     else
+        dlat=dlat_earth
+        dlon=dlon_earth
+        call grdcrd1(dlat,rlats_sfc,nlat_sfc,1)
+        call grdcrd1(dlon,rlons_sfc,nlon_sfc,1)
+     end if
+
+     iy=int(dlon); ix=int(dlat)
+     dy  =dlon-iy; dx  =dlat-ix
+     dx1 =one-dx;    dy1 =one-dy
+     w00=dx1*dy1; w10=dx*dy1; w01=dx1*dy; w11=one-w00-w10-w01
+
+     ix=min(max(1,ix),nlat_sfc); iy=min(max(0,iy),nlon_sfc)
+     ixp=min(nlat_sfc,ix+1); iyp=iy+1
+     if(iy==0) iy=nlon_sfc
+     if(iyp==nlon_sfc+1) iyp=1
+
+!    Get time interpolation factors for surface files
+     if(obstime > hrdifsfc(1) .and. obstime <= hrdifsfc(nfldsfc))then
+        do j=1,nfldsfc-1
+           if(obstime > hrdifsfc(j) .and. obstime <= hrdifsfc(j+1))then
+              itsfc=j
+              itsfcp=j+1
+              dtsfc=(hrdifsfc(j+1)-obstime)/(hrdifsfc(j+1)-hrdifsfc(j))
+           end if
+        end do
+     else if(obstime <=hrdifsfc(1))then
+        itsfc=1
+        itsfcp=1
+        dtsfc=one
+     else
+        itsfc=nfldsfc
+        itsfcp=nfldsfc
+        dtsfc=one
+     end if
+     dtsfcp=one-dtsfc
+
+!    Set surface type flag.  Begin by assuming obs over ice-free water
+
+     istyp00 = isli_full(ix ,iy )
+     istyp10 = isli_full(ixp,iy )
+     istyp01 = isli_full(ix ,iyp)
+     istyp11 = isli_full(ixp,iyp)
+
+     sno00= sno_full(ix ,iy ,itsfc)*dtsfc+sno_full(ix ,iy ,itsfcp)*dtsfcp
+     sno01= sno_full(ix ,iyp,itsfc)*dtsfc+sno_full(ix ,iyp,itsfcp)*dtsfcp
+     sno10= sno_full(ixp,iy ,itsfc)*dtsfc+sno_full(ixp,iy ,itsfcp)*dtsfcp
+     sno11= sno_full(ixp,iyp,itsfc)*dtsfc+sno_full(ixp,iyp,itsfcp)*dtsfcp
+
+     fice00= fice_full(ix ,iy ,itsfc)*dtsfc+fice_full(ix ,iy ,itsfcp)*dtsfcp
+     fice01= fice_full(ix ,iyp,itsfc)*dtsfc+fice_full(ix ,iyp,itsfcp)*dtsfcp
+     fice10= fice_full(ixp,iy ,itsfc)*dtsfc+fice_full(ixp,iy ,itsfcp)*dtsfcp
+     fice11= fice_full(ixp,iyp,itsfc)*dtsfc+fice_full(ixp,iyp,itsfcp)*dtsfcp
+
+     if(istyp00 >=1 .and. sno00 > minsnow)istyp00 = 3
+     if(istyp01 >=1 .and. sno01 > minsnow)istyp01 = 3
+     if(istyp10 >=1 .and. sno10 > minsnow)istyp10 = 3
+     if(istyp11 >=1 .and. sno11 > minsnow)istyp11 = 3
+
+     sfcpct = zero
+
+     if ( istyp00 == 2 .and. fice00 < one ) then
+       sfcpct(2)=sfcpct(2)+w00*fice00
+       sfcpct(0)=sfcpct(0)+w00*(one-fice00)
+     elseif ( istyp00 == 3 .and. (fice00 > zero .and. fice00 < one) ) then
+       sfcpct(3)=sfcpct(3)+w00*fice00
+       sfcpct(0)=sfcpct(0)+w00*(one-fice00)
+     else
+       sfcpct(istyp00)=sfcpct(istyp00)+w00
+     endif
+
+     if ( istyp01 == 2 .and. fice01 < one ) then
+       sfcpct(2)=sfcpct(2)+w01*fice01
+       sfcpct(0)=sfcpct(0)+w01*(one-fice01)
+     elseif ( istyp01 == 3 .and. (fice01 > zero .and. fice01 < one) ) then
+       sfcpct(3)=sfcpct(3)+w01*fice01
+       sfcpct(0)=sfcpct(0)+w01*(one-fice01)
+     else
+       sfcpct(istyp01)=sfcpct(istyp01)+w01
+     endif
+
+     if ( istyp10 == 2 .and. fice10 < one ) then
+       sfcpct(2)=sfcpct(2)+w10*fice10
+       sfcpct(0)=sfcpct(0)+w10*(one-fice10)
+     elseif ( istyp10 == 3 .and. (fice10 > zero .and. fice10 < one) ) then
+       sfcpct(3)=sfcpct(3)+w10*fice10
+       sfcpct(0)=sfcpct(0)+w10*(one-fice10)
+     else
+       sfcpct(istyp10)=sfcpct(istyp10)+w10
+     endif
+
+     if ( istyp11 == 2 .and. fice11 < one ) then
+       sfcpct(2)=sfcpct(2)+w11*fice11
+       sfcpct(0)=sfcpct(0)+w11*(one-fice11)
+     elseif ( istyp11 == 3 .and. (fice11 > zero .and. fice11 < one) ) then
+       sfcpct(3)=sfcpct(3)+w10*fice11
+       sfcpct(0)=sfcpct(0)+w10*(one-fice11)
+     else
+       sfcpct(istyp11)=sfcpct(istyp11)+w11
+     endif
+
+end subroutine deter_sfcpct
+
 subroutine deter_sfc_type(dlat_earth,dlon_earth,obstime,isflg,tsavg)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
@@ -402,7 +667,8 @@ subroutine deter_sfc_type(dlat_earth,dlon_earth,obstime,isflg,tsavg)
 ! program history log:
 !   2005-01-27 derber
 !   2005-03-03 treadon - add implicit none, define zero
-!   2006-02-01 parrish  - change names of sno,isli,sst
+!   2006-02-01 parrish - change names of sno,isli,sst
+!   2014-11-26 li      - modify to handle ice concentration
 !
 !   input argument list:
 !     dlat
@@ -438,6 +704,7 @@ subroutine deter_sfc_type(dlat_earth,dlon_earth,obstime,isflg,tsavg)
      real(r_kind):: dtsfcp,dlat,dlon
      real(r_kind):: sst00,sst01,sst10,sst11
      real(r_kind):: sno00,sno01,sno10,sno11
+     real(r_kind):: fice00,fice01,fice10,fice11
 
      real(r_kind),parameter:: minsnow=one_tenth
 
@@ -494,11 +761,15 @@ subroutine deter_sfc_type(dlat_earth,dlon_earth,obstime,isflg,tsavg)
      sno10= sno_full(ixp,iy ,itsfc)*dtsfc+sno_full(ixp,iy ,itsfcp)*dtsfcp
      sno11= sno_full(ixp,iyp,itsfc)*dtsfc+sno_full(ixp,iyp,itsfcp)*dtsfcp
 
-
      sst00= sst_full(ix ,iy ,itsfc)*dtsfc+sst_full(ix ,iy ,itsfcp)*dtsfcp
      sst01= sst_full(ix ,iyp,itsfc)*dtsfc+sst_full(ix ,iyp,itsfcp)*dtsfcp
      sst10= sst_full(ixp,iy ,itsfc)*dtsfc+sst_full(ixp,iy ,itsfcp)*dtsfcp
      sst11= sst_full(ixp,iyp,itsfc)*dtsfc+sst_full(ixp,iyp,itsfcp)*dtsfcp
+
+     fice00= fice_full(ix ,iy ,itsfc)*dtsfc+fice_full(ix ,iy ,itsfcp)*dtsfcp
+     fice01= fice_full(ix ,iyp,itsfc)*dtsfc+fice_full(ix ,iyp,itsfcp)*dtsfcp
+     fice10= fice_full(ixp,iy ,itsfc)*dtsfc+fice_full(ixp,iy ,itsfcp)*dtsfcp
+     fice11= fice_full(ixp,iyp,itsfc)*dtsfc+fice_full(ixp,iyp,itsfcp)*dtsfcp
 
 !    Interpolate sst to obs location
 
@@ -510,10 +781,46 @@ subroutine deter_sfc_type(dlat_earth,dlon_earth,obstime,isflg,tsavg)
      if(istyp11 >=1 .and. sno11 > minsnow)istyp11 = 3
 
      sfcpct = zero
-     sfcpct(istyp00)=sfcpct(istyp00)+w00
-     sfcpct(istyp01)=sfcpct(istyp01)+w01
-     sfcpct(istyp10)=sfcpct(istyp10)+w10
-     sfcpct(istyp11)=sfcpct(istyp11)+w11
+
+     if ( istyp00 == 2 .and. fice00 < one ) then
+       sfcpct(2)=sfcpct(2)+w00*fice00
+       sfcpct(0)=sfcpct(0)+w00*(one-fice00)
+     elseif ( istyp00 == 3 .and. (fice00 > zero .and. fice00 < one) ) then
+       sfcpct(3)=sfcpct(3)+w00*fice00
+       sfcpct(0)=sfcpct(0)+w00*(one-fice00)
+     else
+       sfcpct(istyp00)=sfcpct(istyp00)+w00
+     endif
+
+     if ( istyp01 == 2 .and. fice01 < one ) then
+       sfcpct(2)=sfcpct(2)+w01*fice01
+       sfcpct(0)=sfcpct(0)+w01*(one-fice01)
+     elseif ( istyp01 == 3 .and. (fice01 > zero .and. fice01 < one) ) then
+       sfcpct(3)=sfcpct(3)+w01*fice01
+       sfcpct(0)=sfcpct(0)+w01*(one-fice01)
+     else
+       sfcpct(istyp01)=sfcpct(istyp01)+w01
+     endif
+
+     if ( istyp10 == 2 .and. fice10 < one ) then
+       sfcpct(2)=sfcpct(2)+w10*fice10
+       sfcpct(0)=sfcpct(0)+w10*(one-fice10)
+     elseif ( istyp10 == 3 .and. (fice10 > zero .and. fice10 < one) ) then
+       sfcpct(3)=sfcpct(3)+w10*fice10
+       sfcpct(0)=sfcpct(0)+w10*(one-fice10)
+     else
+       sfcpct(istyp10)=sfcpct(istyp10)+w10
+     endif
+
+     if ( istyp11 == 2 .and. fice11 < one ) then
+       sfcpct(2)=sfcpct(2)+w11*fice11
+       sfcpct(0)=sfcpct(0)+w11*(one-fice11)
+     elseif ( istyp11 == 3 .and. (fice11 > zero .and. fice11 < one) ) then
+       sfcpct(3)=sfcpct(3)+w10*fice11
+       sfcpct(0)=sfcpct(0)+w10*(one-fice11)
+     else
+       sfcpct(istyp11)=sfcpct(istyp11)+w11
+     endif
 
      isflg = 0
      if(sfcpct(0) > 0.99_r_kind)then
@@ -536,8 +843,8 @@ subroutine deter_sfc2(dlat_earth,dlon_earth,obstime,idomsfc,tsavg,ff10,sfcr,zz)
 ! subprogram:    deter_sfc                     determine land surface type
 !   prgmmr: derber           org: np2                date: 2005-01-27
 !
-! abstract:  determines land surface type based on surrounding land
-!            surface types
+! abstract:  determines dominant surface type and a few variables 
+!            based on surrounding surface types
 !
 ! program history log:
 !   2005-01-27 derber
@@ -552,11 +859,15 @@ subroutine deter_sfc2(dlat_earth,dlon_earth,obstime,idomsfc,tsavg,ff10,sfcr,zz)
 !     obstime- observation time relative to analysis time
 !
 !   output argument list:
-!     tsavg - sea surface temperature
-!     idomsfc
-!     sfcr
-!     ff10
-!     zz
+!     tsavg   - surface temperature by averaging the surounding 4 grids
+!     idomsfc - dominant surface type
+!               0 : water
+!               1 : land
+!               2 : sea ice
+!             >=3 : mixed
+!     sfcr    - surface roughness
+!     ff10    - wind factor
+!     zz      - terain
 !
 ! attributes:
 !   language: f90
@@ -577,6 +888,7 @@ subroutine deter_sfc2(dlat_earth,dlon_earth,obstime,idomsfc,tsavg,ff10,sfcr,zz)
      integer(i_kind):: ix,iy,ixp,iyp,j
      real(r_kind):: dx,dy,dx1,dy1,w00,w10,w01,w11,dtsfc,dtsfcp,wgtmin
      real(r_kind):: sst00,sst01,sst10,sst11,dlat,dlon
+     real(r_kind):: fice00,fice01,fice10,fice11
      logical outside
 
      if(regional)then
@@ -619,35 +931,82 @@ subroutine deter_sfc2(dlat_earth,dlon_earth,obstime,idomsfc,tsavg,ff10,sfcr,zz)
      end if
      dtsfcp=one-dtsfc
 
+     istyp00 = isli_full(ix ,iy )
+     istyp10 = isli_full(ixp,iy )
+     istyp01 = isli_full(ix ,iyp)
+     istyp11 = isli_full(ixp,iyp)
+
+     sno00= sno_full(ix ,iy ,itsfc)*dtsfc+sno_full(ix ,iy ,itsfcp)*dtsfcp
+     sno01= sno_full(ix ,iyp,itsfc)*dtsfc+sno_full(ix ,iyp,itsfcp)*dtsfcp
+     sno10= sno_full(ixp,iy ,itsfc)*dtsfc+sno_full(ixp,iy ,itsfcp)*dtsfcp
+     sno11= sno_full(ixp,iyp,itsfc)*dtsfc+sno_full(ixp,iyp,itsfcp)*dtsfcp
+
      sst00= sst_full(ix ,iy ,itsfc)*dtsfc+sst_full(ix ,iy ,itsfcp)*dtsfcp
      sst01= sst_full(ix ,iyp,itsfc)*dtsfc+sst_full(ix ,iyp,itsfcp)*dtsfcp
      sst10= sst_full(ixp,iy ,itsfc)*dtsfc+sst_full(ixp,iy ,itsfcp)*dtsfcp
      sst11= sst_full(ixp,iyp,itsfc)*dtsfc+sst_full(ixp,iyp,itsfcp)*dtsfcp
 
+     fice00= fice_full(ix ,iy ,itsfc)*dtsfc+fice_full(ix ,iy ,itsfcp)*dtsfcp
+     fice01= fice_full(ix ,iyp,itsfc)*dtsfc+fice_full(ix ,iyp,itsfcp)*dtsfcp
+     fice10= fice_full(ixp,iy ,itsfc)*dtsfc+fice_full(ixp,iy ,itsfcp)*dtsfcp
+     fice11= fice_full(ixp,iyp,itsfc)*dtsfc+fice_full(ixp,iyp,itsfcp)*dtsfcp
+
 !    Interpolate sst to obs location
 
      tsavg=sst00*w00+sst10*w10+sst01*w01+sst11*w11
+!
+!    Handle the snow surface type
+!
+     if(istyp00 >=1 .and. sno00 > minsnow)istyp00 = 3
+     if(istyp01 >=1 .and. sno01 > minsnow)istyp01 = 3
+     if(istyp10 >=1 .and. sno10 > minsnow)istyp10 = 3
+     if(istyp11 >=1 .and. sno11 > minsnow)istyp11 = 3
 
-     idomsfc=isli_full(ix ,iy )
-     wgtmin = w00
-     if(wgtmin < w01 )then
-        idomsfc=isli_full(ix ,iyp)
-        wgtmin = w01
-     end if
-     if(wgtmin < w10)then
-        idomsfc=isli_full(ixp,iy )
-        wgtmin = w10
-     end if
-     if(wgtmin < w11)then
-        idomsfc=isli_full(ixp,iyp)
-        wgtmin = w11
-     end if
-     if((isli_full(ix ,iy ) /= isli_full(ix ,iyp)) .or. &
-        (isli_full(ix ,iy ) /= isli_full(ixp,iy )) .or. &
-        (isli_full(ix ,iy ) /= isli_full(ixp,iyp)) .or. &
-        (isli_full(ixp,iy ) /= isli_full(ix ,iyp)) .or. &
-        (isli_full(ixp,iy ) /= isli_full(ixp,iyp)) .or. &
-        (isli_full(ix ,iyp) /= isli_full(ixp,iyp)) ) idomsfc = idomsfc+3
+     sfcpct = zero
+
+     if ( istyp00 == 2 .and. fice00 < one ) then
+       sfcpct(2)=sfcpct(2)+w00*fice00
+       sfcpct(0)=sfcpct(0)+w00*(one-fice00)
+     elseif ( istyp00 == 3 .and. (fice00 > zero .and. fice00 < one) ) then
+       sfcpct(3)=sfcpct(3)+w00*fice00
+       sfcpct(0)=sfcpct(0)+w00*(one-fice00)
+     else
+       sfcpct(istyp00)=sfcpct(istyp00)+w00
+     endif
+
+     if ( istyp01 == 2 .and. fice01 < one ) then
+       sfcpct(2)=sfcpct(2)+w01*fice01
+       sfcpct(0)=sfcpct(0)+w01*(one-fice01)
+     elseif ( istyp01 == 3 .and. (fice01 > zero .and. fice01 < one) ) then
+       sfcpct(3)=sfcpct(3)+w01*fice01
+       sfcpct(0)=sfcpct(0)+w01*(one-fice01)
+     else
+       sfcpct(istyp01)=sfcpct(istyp01)+w01
+     endif
+
+     if ( istyp10 == 2 .and. fice10 < one ) then
+       sfcpct(2)=sfcpct(2)+w10*fice10
+       sfcpct(0)=sfcpct(0)+w10*(one-fice10)
+     elseif ( istyp10 == 3 .and. (fice10 > zero .and. fice10 < one) ) then
+       sfcpct(3)=sfcpct(3)+w10*fice10
+       sfcpct(0)=sfcpct(0)+w10*(one-fice10)
+     else
+       sfcpct(istyp10)=sfcpct(istyp10)+w10
+     endif
+
+     if ( istyp11 == 2 .and. fice11 < one ) then
+       sfcpct(2)=sfcpct(2)+w11*fice11
+       sfcpct(0)=sfcpct(0)+w11*(one-fice11)
+     elseif ( istyp11 == 3 .and. (fice11 > zero .and. fice11 < one) ) then
+       sfcpct(3)=sfcpct(3)+w10*fice11
+       sfcpct(0)=sfcpct(0)+w10*(one-fice11)
+     else
+       sfcpct(istyp11)=sfcpct(istyp11)+w11
+     endif
+!
+!    get the dominant surface type with sfcpct
+!
+     idomsfc=lbound(sfcpct)+maxloc(sfcpct)-1
 
 !    Space-time interpolation of fields from surface wind speed
 
