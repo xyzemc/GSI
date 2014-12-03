@@ -347,9 +347,9 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         rstation_id     = data(id,i)
         prest=r10*exp(dpres)     ! in mb
         sfctype=(itype>179.and.itype<190).or.(itype>=192.and.itype<=199)
-  
+         
         iqtflg=nint(data(iqt,i)) == 0
-
+        var_jb=data(ijb,i)
 !       Load observation value and observation error into local variables
         tob=data(itob,i)
         obserror = max(cermin(ikx),min(cermax(ikx),data(ier,i)))
