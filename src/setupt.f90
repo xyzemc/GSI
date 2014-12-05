@@ -350,6 +350,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
          
         iqtflg=nint(data(iqt,i)) == 0
         var_jb=data(ijb,i)
+!        write(6,*) 'SETUPT:itype,var_jb,ijb=',itype,var_jb,ijb
 !       Load observation value and observation error into local variables
         tob=data(itob,i)
         obserror = max(cermin(ikx),min(cermax(ikx),data(ier,i)))
