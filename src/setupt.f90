@@ -655,7 +655,8 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            term =log((arg+wgross)/(one+wgross))
            wgt  = one-wgross/(arg+wgross)
            rwgt = wgt/wgtlim
-           else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind) then
+           valqc = -two*rat_err2*term
+        else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind) then
            if(exp_arg  == zero) then
               wgt=one
            else
