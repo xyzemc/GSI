@@ -14,7 +14,8 @@ module convinfo
 !   2007-11-03       su  - add pmesh_conv 
 !   2009-01-22  todling - add convinfo_initialized
 !   2010-09-10  pagowski - add pm2_5
-!   2013-08-20  s.liu - add reflectivity
+!   2013-11-20        su - add ptime as time dimension 
+!   2014-11-14        su - add  supob option 
 !
 ! Subroutines Included:
 !   sub init_convinfo    - initialize conventional obs related variables
@@ -45,6 +46,10 @@ module convinfo
 !   def ithin_conv     - 0, no thinning, 1 - thinning
 !   def rmesh_conv     - size of thinning mesh (km)
 !   def pmesh_conv     - size of vertical thinning mesh 
+!   def pmot_conv      - option to keep thinned data out
+!   def ptime_conv     - option to add time dimension 
+!   def isup_conv      - option to do super observation 
+
 !
 !
 !   def predx_conv     - conv obs bias correction coefficients: t,uv,q,ps,spd,sst,pw,pm2_5
@@ -61,7 +66,6 @@ module convinfo
   use kinds, only: r_kind,i_kind
   use constants, only: zero,one
   use obsmod, only: use_limit
-  use gridmod, only: use_reflectivity
   implicit none
 
 ! set default as private
@@ -77,7 +81,7 @@ module convinfo
   public :: stndev_conv_spd,stndev_conv_t,id_bias_ps,npred_conv_max,id_bias_t,conv_bias_ps,id_bias_spd
   public :: stndev_conv_pm2_5,conv_bias_pm2_5,id_bias_pm2_5,ihave_pm2_5
 
-  public :: ncgroup,ncnumgrp,ncmiter,ctwind,cermax,pmesh_conv,rmesh_conv,ithin_conv,cvar_b,cvar_pg
+  public :: ncgroup,ncnumgrp,ncmiter,ctwind,cermax,pmesh_conv,rmesh_conv,ithin_conv,isup_conv,cvar_b,cvar_pg,pmot_conv,ptime_conv
   public :: cermin,cgross
   public :: use_prepb_satwnd
 
@@ -86,9 +90,9 @@ module convinfo
   logical :: use_prepb_satwnd
   integer(i_kind) nconvtype,mype_conv
   real(r_kind),allocatable,dimension(:)::ctwind,cgross,cermax,cermin,cvar_b,cvar_pg, &
-										rmesh_conv,pmesh_conv,stndev_conv
+										rmesh_conv,pmesh_conv,stndev_conv,pmot_conv,ptime_conv
   integer(i_kind),allocatable,dimension(:):: ncmiter,ncgroup,ncnumgrp,icuse,ictype,icsubtype,&
-                                             ithin_conv,npred_conv
+                                             ithin_conv,npred_conv,isup_conv
   character(len=16),allocatable,dimension(:)::ioctype
 
   real(r_kind),allocatable,dimension(:,:) :: predx_conv
@@ -156,7 +160,6 @@ contains
     conv_bias_pm2_5= zero
 
     use_prepb_satwnd=.false.  ! allow use of satwind stored in prepbufr file
-    use_reflectivity=.false.  ! option of using reflectivity
 
     call init_pm2_5
 		  
@@ -233,8 +236,8 @@ contains
              ncnumgrp(nconvtype),icuse(nconvtype),ictype(nconvtype),icsubtype(nconvtype), &
              ioctype(nconvtype), & 
              ithin_conv(nconvtype),rmesh_conv(nconvtype),pmesh_conv(nconvtype),&
-             npred_conv(nconvtype), &
-             stndev_conv(nconvtype), &
+             npred_conv(nconvtype),isup_conv(nconvtype),&
+             stndev_conv(nconvtype), pmot_conv(nconvtype),ptime_conv(nconvtype),&
              stat=ier )
     if ( ier /= 0 )  then
        write(6,*) 'CONVINFO_READ: allocate 1 failed' 
@@ -242,10 +245,13 @@ contains
     endif
     do i=1,nconvtype
        ithin_conv(i)=0                ! 0=no thinning
+       isup_conv(i)=0                 ! 0=not supob 
        npred_conv(i)=0                ! number of bias predictors
        rmesh_conv(i)=99999.0_r_kind
        pmesh_conv(i)=zero
        stndev_conv(i)=one
+       pmot_conv(i)=zero
+       ptime_conv(i)=zero
     enddo
     nc=zero
 
@@ -286,11 +292,11 @@ contains
 
        read(crecord,*)ictype(nc),icsubtype(nc),icuse(nc),ctwind(nc),ncnumgrp(nc), &
             ncgroup(nc),ncmiter(nc),cgross(nc),cermax(nc),cermin(nc),cvar_b(nc),cvar_pg(nc) &
-            ,ithin_conv(nc),rmesh_conv(nc),pmesh_conv(nc),npred_conv(nc)
+            ,ithin_conv(nc),rmesh_conv(nc),pmesh_conv(nc),npred_conv(nc),pmot_conv(nc),ptime_conv(nc),isup_conv(nc)
        if(mype == 0)write(6,1031)ioctype(nc),ictype(nc),icsubtype(nc),icuse(nc),ctwind(nc),ncnumgrp(nc), &
             ncgroup(nc),ncmiter(nc),cgross(nc),cermax(nc),cermin(nc),cvar_b(nc),cvar_pg(nc) &
-            ,ithin_conv(nc),rmesh_conv(nc),pmesh_conv(nc),npred_conv(nc)
-1031   format('READ_CONVINFO: ',a7,1x,i3,1x,i4,1x,i2,1x,g13.6,1x,3(I3,1x),5g13.6,i5,2g13.6,i5)
+            ,ithin_conv(nc),rmesh_conv(nc),pmesh_conv(nc),npred_conv(nc),pmot_conv(nc),ptime_conv(nc),isup_conv(nc)
+1031   format('READ_CONVINFO: ',a7,1x,i3,1x,i4,1x,i2,1x,g13.6,1x,3(I3,1x),5g13.6,i5,2g13.6,i5,2g13.6,i5)
        if (npred_conv_max > 0 ) then
           read(iunit,*,iostat=ier) cob,iob,isub,np,(predx_conv(nc,n),n=1,np)
           if (ier /= 0 ) then
@@ -446,8 +452,8 @@ contains
              ncnumgrp,icuse,ictype,icsubtype, &
              ioctype, & 
              ithin_conv,rmesh_conv,pmesh_conv, &
-             npred_conv, &
-             stndev_conv, &
+             npred_conv,isup_conv, &
+             stndev_conv, pmot_conv,ptime_conv,&
              stat=ier )
     if ( ier /= 0 )  then
        write(6,*) 'CONVINFO_DESTROY: deallocate  failed' 
