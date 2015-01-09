@@ -241,6 +241,7 @@ clean:
 	convinfo.f90 \
 	convthin.f90 \
 	convthin_time.f90 \
+	convthin_supobs.f90 \
 	convthin_time_supobs.f90 \
         correlated_obsmod.F90 \
 	crtm_interface.f90 \
@@ -560,6 +561,7 @@ clean:
 	read_pcp.f90 \
 	read_prepbufr.f90 \
 	read_radar.f90 \
+        winds.f90      \
 	read_satwnd.f90 \
 	read_sfcwnd.f90 \
 	read_seviri.f90 \

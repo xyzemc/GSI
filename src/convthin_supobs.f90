@@ -1,15 +1,16 @@
-module convthin_time_supobs
+module convthin_supobs
 !$$$   module documentation block
 !                .      .    .                                   .
-! module:  convthin_time_supobs
-!  prgmmr: X.Su : adopted from convthin program to do super observation
+! module:  convthin_supobs
+!  prgmmr: X.Su : adopted from convthin program to do super observation for 3
+!  dimensions                         2014-12-22
 !
 ! abstract:
 !
 ! subroutines included:
-!   make3grids_tm_s
-!   map3grids_tm_s
-!   del3grids_tm_s
+!   make3grids_s
+!   map3grids_s
+!   del3grids_s
 !
 ! variable definitions:
 !
@@ -25,26 +26,26 @@ module convthin_time_supobs
 ! set default to private
   private
 ! set subroutines to public
-  public :: make3grids_tm_s
-  public :: map3grids_tm_s
-  public :: del3grids_tm_s
+  public :: make3grids_s
+  public :: map3grids_s
+  public :: del3grids_s
 ! set passed variables to public
-  public :: use_all_tm_s
+  public :: use_all_s
 
   integer(i_kind):: mlat
   integer(i_kind),allocatable,dimension(:):: mlon
-  integer(i_kind),allocatable,dimension(:,:,:):: icount_tm,ibest_obs_tm,ibest_save_tm
+  integer(i_kind),allocatable,dimension(:,:):: icount,ibest_obs,ibest_save
 
   real(r_kind),allocatable,dimension(:):: glat
   real(r_kind),allocatable,dimension(:,:):: glon,hll
-  logical use_all_tm_s
+  logical use_all_s
 
 contains
 
-  subroutine make3grids_tm_s(rmesh,nlevp,ntm)
+  subroutine make3grids_s(rmesh,nlevp)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
-! subprogram:    make3grids_tm
+! subprogram:    make3grids_s
 !     prgmmr:    treadon     org: np23                date: 2002-10-17
 !
 ! abstract:  This routine sets up dimensions for and allocates
@@ -57,7 +58,6 @@ contains
 !             then no thinning of the data will occur.  Instead,
 !             all data will be used without thinning.
 !     nlevp -  vertical levels
-!     ntm -  tm dimension relative to analysis tm
 !
 ! attributes:
 !   language: f90
@@ -71,7 +71,6 @@ contains
 
     real(r_kind)   ,intent(in   ) :: rmesh
     integer(i_kind),intent(in   ) :: nlevp
-    integer(i_kind),intent(in   ) :: ntm
 
     real(r_kind),parameter:: r360 = 360.0_r_kind
 
@@ -83,9 +82,9 @@ contains
     real(r_kind) factor,delon
     real(r_kind) rkm2dg,glatm
     !   If there is to be no thinning, simply return to calling routine
-    use_all_tm_s=.false.
+    use_all_s=.false.
     if(abs(rmesh) <= one)then
-       use_all_tm_s=.true.
+       use_all_s=.true.
        itxmax=2.e6_i_kind
        return
     end if
@@ -141,32 +140,30 @@ contains
     end do
 
 !   Allocate  and initialize arrays
-    allocate(icount_tm(itxmax,nlevp,ntm))
-    allocate(ibest_obs_tm(itxmax,nlevp,ntm))
-    allocate(ibest_save_tm(itxmax,nlevp,ntm))
+    allocate(icount(itxmax,nlevp))
+    allocate(ibest_obs(itxmax,nlevp))
+    allocate(ibest_save(itxmax,nlevp))
 
     do j=1,nlevp
        do i=1,itxmax
-          do it=1,ntm
-             icount_tm(i,j,it) = 0
-             ibest_obs_tm(i,j,it)= 0
-             ibest_save_tm(i,j,it)= 0
-          end do
+             icount(i,j) = 0
+             ibest_obs(i,j)= 0
+             ibest_save(i,j)= 0
        end do
     end do
 
     return
-  end subroutine make3grids_tm_s
+  end subroutine make3grids_s
 
 
 
-  subroutine map3grids_tm_s(flg,pflag,pcoord,nlevp,ntm,dlat_earth,dlon_earth,pob,itm,iobs,iobsout,iin,&
+  subroutine map3grids_s(flg,pflag,pcoord,nlevp,dlat_earth,dlon_earth,pob,iobs,iobsout,iin,&
             iiout,iuse,maxobs,usage,rusage,suob,dvob,spd,std_spd,std_dirct,pobb,slat,slon,&
             rlat_sup,rlon_sup,icount_obs,timdiff,rtime,uob,vob,ssuob,ssvob)
 !$$$  subprogram documentation block
 !                .      .    .                                       .
-! subprogram:    map3grids_tm_s
-!     prgmmr:    Xiujuan Su     org: np23                date: 2014-11-13
+! subprogram:    map3grids_s
+!     prgmmr:    Xiujuan Su     org: np23                date: 2014-12-22
 !
 ! abstract:  This routine maps convential observations to a 3d thinning grid.
 !
@@ -203,7 +200,7 @@ contains
     implicit none
     
     logical                      ,intent(  out) :: iuse
-    integer(i_kind)              ,intent(in   ) :: nlevp,pflag,flg,iin,maxobs,ntm,itm
+    integer(i_kind)              ,intent(in   ) :: nlevp,pflag,flg,iin,maxobs
     integer(i_kind)              ,intent(inout) :: iobs
     integer(i_kind)              ,intent(  out) :: iobsout,iiout
     real(r_kind)                 ,intent(in   ) :: dlat_earth,dlon_earth,pob,usage,slat,slon,suob,dvob,timdiff,uob,vob
@@ -220,7 +217,7 @@ contains
     iiout = 0
 
 !   If using all data (no thinning), simply return to calling routine
-    if(use_all_tm_s)then
+    if(use_all_s)then
        iuse=.true.
        iobs=iobs+1
        iobsout=iobs
@@ -232,7 +229,7 @@ contains
        icount_obs(iobs)=1
        rlat_sup(iobs)=slat
        rlon_sup(iobs)=slon 
-       rtime(iobs)=timdiff
+       rtime(iobs)=timdiff 
        if(suob >zero) then
           ssuob(iobs)=uob/suob
           ssvob(iobs)=vob/suob
@@ -280,14 +277,14 @@ contains
 !   Start by assuming observation will be selected.  
     iuse=.true.
 !   Case:   not the first observation 
-    if (icount_tm(itx,ip,itm) > 0 ) then
+    if (icount(itx,ip) > 0 ) then
        iobs=iobs+1
        iobsout=iobs
-       icount_tm(itx,ip,itm)=icount_tm(itx,ip,itm)+1
-       iiout = ibest_obs_tm(itx,ip,itm)
+       icount(itx,ip)=icount(itx,ip)+1
+       iiout = ibest_obs(itx,ip)
        rusage(iiout)=101.0_r_kind
-       ibest_save_tm(itx,ip,itm)=iin
-       ibest_obs_tm(itx,ip,itm)=iobs
+       ibest_save(itx,ip)=iin
+       ibest_obs(itx,ip)=iobs
        rusage(iobs)=usage
        std_spd(iobs)=suob*suob+std_spd(iiout)
        std_dirct(iobs)=dvob*dvob+std_dirct(iiout)
@@ -295,7 +292,7 @@ contains
        pobb(iobs)=pob+pobb(iiout)
        rlat_sup(iobs)=slat+rlat_sup(iiout)
        rlon_sup(iobs)=slon+rlon_sup(iiout)
-       icount_obs(iobs)=icount_tm(itx,ip,itm)
+       icount_obs(iobs)=icount(itx,ip)
        rtime(iobs)=timdiff+rtime(iiout)
        if(suob >zero) then
           ssuob(iobs)=uob/suob+ssuob(iiout)
@@ -304,22 +301,21 @@ contains
           ssuob(iobs)=uob+ssuob(iiout)
           ssvob(iobs)=vob+ssvob(iiout)
        endif
-
       
 !   Case:  first obs at this location, 
 !     -->  keep this obs as starting point
-    elseif (icount_tm(itx,ip,itm)==0) then
+    elseif (icount(itx,ip)==0) then
        iobs=iobs+1
        iobsout=iobs
-       ibest_obs_tm(itx,ip,itm) = iobs
-       icount_tm(itx,ip,itm)=icount_tm(itx,ip,itm)+1
-       ibest_save_tm(itx,ip,itm) = iin 
+       ibest_obs(itx,ip) = iobs
+       icount(itx,ip)=icount(itx,ip)+1
+       ibest_save(itx,ip) = iin 
        rusage(iobs)=usage
        std_spd(iobs)=suob*suob
        std_dirct(iobs)=dvob*dvob
        spd(iobs)=suob
        pobb(iobs)=pob
-       icount_obs(iobs)=icount_tm(itx,ip,itm)
+       icount_obs(iobs)=icount(itx,ip)
        rlat_sup(iobs)=slat
        rlon_sup(iobs)=slon
        rtime(iobs)=timdiff
@@ -330,20 +326,21 @@ contains
           ssuob(iobs)=uob
           ssvob(iobs)=vob
        endif
+
     end if
 
-!     write(6,*) 'CONVTHIN_TM_S:iobs,iobsout,ibest_obs_tm,icount_tm,ibest_save_tm,rusage,std_spd,std_dirct,spd,&
-!                 pobb,icount_obs,rlat_sup,rlon_sup=',iobs,iobsout,ibest_obs_tm(itx,ip,itm),icount_tm(itx,ip,itm),&
-!                 ibest_save_tm(itx,ip,itm),rusage(iobs),std_spd(iobs),std_dirct(iobs),spd(iobs),pobb(iobs),&
-!                 icount_obs(iobs),rlat_sup(iobs),rlon_sup(iobs),usage,suob,dvob,slat,slon
+     write(6,*) 'CONVTHIN_S:iobs,iobsout,ibest_obs,icount,ibest_save,rusage,std_spd,std_dirct,spd,dirct,&
+                 pobb,icount_obs,rlat_sup,rlon_sup=',iobs,iobsout,ibest_obs(itx,ip),icount(itx,ip),&
+                 ibest_save(itx,ip),rusage(iobs),std_spd(iobs),std_dirct(iobs),spd(iobs),pobb(iobs),&
+                 icount_obs(iobs),rlat_sup(iobs),rlon_sup(iobs),usage,suob,dvob,slat,slon
 
     return
-    end subroutine map3grids_tm_s 
+    end subroutine map3grids_s 
 
-     subroutine del3grids_tm_s
+     subroutine del3grids_s
 !$$$  subprogram documentation block
 !                .      .    .                                       .
-! subprogram:    del3grids_tm                            
+! subprogram:    del3grids                            
 !     prgmmr:    kistler     org: np23                date: 2006-01-25
 !
 ! abstract:  This routine deallocates arrays used in 3d thinning
@@ -362,12 +359,12 @@ contains
 !$$$
     implicit none
 
-    if (.not.use_all_tm_s) then
+    if (.not.use_all_s) then
        deallocate(mlon,glat,glon,hll)
-       deallocate(icount_tm)
-       deallocate(ibest_obs_tm)
-       deallocate(ibest_save_tm)
+       deallocate(icount)
+       deallocate(ibest_obs)
+       deallocate(ibest_save)
     endif
-  end subroutine del3grids_tm_s
+  end subroutine del3grids_s
 
-end module convthin_time_supobs
+end module convthin_supobs

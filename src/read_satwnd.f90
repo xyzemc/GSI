@@ -79,11 +79,12 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
        tll2xy,txy2ll,rotate_wind_ll2xy,rotate_wind_xy2ll,&
        rlats,rlons,twodvar_regional
   use qcmod, only: errormod,noiqc
-  use convthin, only: make3grids,map3grids,del3grids,use_all
+  use convthin, only: make3grids,map3grids,map3grids_m,del3grids,use_all
+  use convthin_supobs, only: make3grids_s,map3grids_s,del3grids_s,use_all_s
   use convthin_time, only: make3grids_tm,map3grids_tm, map3grids_m_tm,del3grids_tm,use_all_tm
   use convthin_time_supobs, only: make3grids_tm_s,map3grids_tm_s,del3grids_tm_s,use_all_tm_s
   use constants, only: deg2rad,zero,rad2deg,one_tenth,&
-        tiny_r_kind,huge_r_kind,r60inv,one_tenth,&
+        tiny_r_kind,huge_r_kind,r60inv,&
         one,two,three,four,five,half,quarter,r60inv,r100,r2000
 !  use converr,only: etabl
   use obsmod, only: iadate,oberrflg,perturb_obs,perturb_fact,ran01dom,bmiss
@@ -190,7 +191,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   real(r_double),dimension(1,1):: r_prvstg,r_sprvstg
   real(r_kind),allocatable,dimension(:):: presl_thin
   real(r_kind),allocatable,dimension(:,:):: cdata_all,cdata_out
-  real(r_kind),allocatable,dimension(:):: spd,dirct,std_spd,std_dirct,pobb,rlat_sup,rlon_sup,rusage 
+  real(r_kind),allocatable,dimension(:):: spd,ssuob,ssvob,std_spd,std_dirct,pobb,rlat_sup,rlon_sup,rusage,rtime 
 
   real(r_double) rstation_id
 
@@ -430,7 +431,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   enddo msg_report
 
 
-  allocate(cdata_all(nreal,maxobs),isort(maxobs),spd(maxobs),dirct(maxobs),std_spd(maxobs),icount_obs(maxobs),pobb(maxobs))
+  allocate(cdata_all(nreal,maxobs),isort(maxobs),spd(maxobs),ssuob(maxobs),ssvob(maxobs),std_spd(maxobs),std_dirct(maxobs),icount_obs(maxobs),pobb(maxobs),rtime(maxobs))
   allocate(rlat_sup(maxobs),rlon_sup(maxobs),rusage(maxobs))
   isort = 0
   cdata_all=zero
@@ -441,7 +442,8 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   ilon=2
   ilat=3
   spd=zero
-  dirct=zero
+  ssuob=zero
+  ssvob=zero
   pobb=zero
   rusage=101.0_r_kind
   rlat_sup=zero
@@ -449,6 +451,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
  std_spd=zero
  std_dirct=zero
  icount_obs=0
+ rtime=zero
 
 ! Open, then read date from bufr data
 !!  read satellite winds one type a time
@@ -456,7 +459,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   loop_convinfo: do nx=1,ntread 
      use_all = .true.
      use_all_tm = .true.
-!     use_all_s = .true.
+     use_all_s = .true.
      use_all_tm_s = .true.
      ithin=0
      isup=0
@@ -467,6 +470,8 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
         if (ithin > 0 .or. isup >0) then
            rmesh=rmesh_conv(nc)
            pmesh=pmesh_conv(nc)
+           pmot=pmot_conv(nc)
+           ptime=ptime_conv(nc)
            if(pmesh > zero) then
               pflag=1
               nlevp=r1200/pmesh
@@ -475,12 +480,6 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
               nlevp=nsig
            endif
            xmesh=rmesh
-           allocate(presl_thin(nlevp))
-              if (pflag==1) then
-                 do k=1,nlevp
-                    presl_thin(k)=(r1200-(k-1)*pmesh)*one_tenth
-                 enddo
-              endif
            if(ithin >0) then
               if( ptime >zero ) then
                  use_all_tm = .false.
@@ -495,8 +494,19 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
                  use_all_tm_s = .false.
                  ntime=6.0_r_kind/ptime                   !!  6 hour winddow
                  call make3grids_tm_s(xmesh,nlevp,ntime)
+              else
+                 use_all_s = .false.
+                 call make3grids_s(xmesh,nlevp)
               endif
            endif 
+           if (.not.use_all .or. .not.use_all_s .or. .not.use_all_tm .or. .not.use_all_tm_s) then
+              allocate(presl_thin(nlevp))
+              if (pflag==1) then
+                 do k=1,nlevp
+                    presl_thin(k)=(r1200-(k-1)*pmesh)*one_tenth
+                 enddo
+              endif
+           endif
            write(6,*)'READ_SATWND: ictype(nc),rmesh,pflag,nlevp,pmesh,nc ',&
                    ioctype(nc),ictype(nc),rmesh,pflag,nlevp,pmesh,pmot,ptime,isup,nc
         endif
@@ -527,6 +537,8 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
            itype=-1
            uob=bmiss
            vob=bmiss
+           suob=bmiss
+           dvob=bmiss
            ppb=bmiss
            ppb1=bmiss
            ppb2=bmiss
@@ -854,7 +866,6 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
            vob=-obsdat(4)*cos(obsdat(3)*deg2rad)
 !  not convert to u,v component, keep it as speed and direction for super  observation
             suob=obsdat(4)        !  wind speed
-            dvob=obsdat(3)        ! wind direction
 !!!  some information only has in NESDIS satellite winds
 !          if(hdrdat(1) >=r200 .and. hdrdat(1) <= r299 ) then
 !             call ufbseq(lunin,heightdat,3,5,iret,heightr)         
@@ -912,7 +923,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
             endif
 
 !         Set usage variable
-           usage = 0 
+           usage = zero 
            iuse=icuse(nc)
            if(iuse <= 0)usage=r100
            if(qm == 15 .or. qm == 12 .or. qm == 9)usage=r100
@@ -925,7 +936,7 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
            ithin=ithin_conv(nc)
            ithinp = ithin > 0 .and. pflag /= 0
 !          if(ithinp  .and. iuse >=0 )then
-           if(ithinp   )then
+           if(ithinp .and. isup >0  )then
 !          Interpolate guess pressure profile to observation location
               klon1= int(dlon);  klat1= int(dlat)
               dx   = dlon-klon1; dy   = dlat-klat1
@@ -1031,14 +1042,95 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
 !                write(6,*) 'READ_SATWND:itype,itime',itype,itime,tdiff,ptime
                  if (itime  == 0) itime =1
                  call map3grids_tm_s(-1,pflag,presl_thin,nlevp,ntime,dlat_earth,dlon_earth,ppb,itime,ndata,&
-                       iout,ntb,iiout,luse,maxobs,usage,rusage,suob,dvob,spd,dirct,std_spd,std_dirct,pobb,&
-                       slat,slon,rlat_sup,rlon_sup,icount_obs)
+                       iout,ntb,iiout,luse,maxobs,usage,rusage,suob,dvob,spd,std_spd,std_dirct,pobb,&
+                       slat,slon,rlat_sup,rlon_sup,icount_obs,t4dv,rtime,uob,vob,ssuob,ssvob)
+!                 if( itype ==254 .and. iobsub ==57) then
+!                   write(6,*)'read_satwnd:ndata,iout,ntb,iiout,suob,spd,std_spd,std_dirct,pobb,icount_obs=',&
+!                    ndata,iout,ntb,iiout,suob,spd(ndata),std_spd(ndata),std_dirct(ndata),&
+!                    pobb(ndata),icount_obs(ndata) 
+!                 endif
+                 if (ndata > ntmp) then
+                     nodata=nodata+2
+!                    if(uvob)nodata=nodata+1
+                 endif
+                 isort(ntb)=iout 
+!              else if(ptime <=zero) then
+               else 
+                 call map3grids_s(-1,pflag,presl_thin,nlevp,dlat_earth,dlon_earth,ppb,ndata,&
+                       iout,ntb,iiout,luse,maxobs,usage,rusage,suob,dvob,spd,std_spd,std_dirct,pobb,&
+                       slat,slon,rlat_sup,rlon_sup,icount_obs,t4dv,rtime,uob,vob,ssuob,ssvob)
+!                 if( itype ==254 .and. iobsub ==57) then
+!                   write(6,*)'read_satwnd:ndata,iout,ntb,iiout,suob,spd,std_spd,std_dirct,pobb,icount_obs=',&
+!                    ndata,iout,ntb,iiout,suob,spd(ndata),std_spd(ndata),std_dirct(ndata),&
+!                    pobb(ndata),icount_obs(ndata) 
+!                 endif
                  if (ndata > ntmp) then
                      nodata=nodata+2
 !                    if(uvob)nodata=nodata+1
                  endif
                  isort(ntb)=iout 
               endif
+              if(icount_obs(ndata) >=1) then
+                 u00=uob
+                 v00=vob
+                 ppb=(pobb(iout)/icount_obs(iout))*10.0_r_kind
+                 ppb=max(zero,min(ppb,r2000))
+!  get new observation error from new height
+                 if(ppb>=etabl(itype,1,1)) k1=1
+                 do kl=1,32
+                    if(ppb>=etabl(itype,kl+1,1).and.ppb<=etabl(itype,kl,1)) k1=kl
+                 end do
+                 if(ppb<=etabl(itype,33,1)) k1=33
+                 k2=k1+1
+                 ediff = etabl(itype,k2,1)-etabl(itype,k1,1)
+                 if (abs(ediff) > tiny_r_kind) then
+                    del = (ppb-etabl(itype,k1,1))/ediff
+                 else
+                    del = huge_r_kind
+                 endif
+                 del=max(zero,min(del,one))
+                 obserr=(one-del)*etabl(itype,k1,4)+del*etabl(itype,k2,4)
+                 obserr=max(obserr,werrmin)
+                 suob=spd(iout)/icount_obs(iout)
+                 dlat_earth=rlat_sup(iout)/icount_obs(iout)
+                 dlon_earth=rlon_sup(iout)/icount_obs(iout)
+                 t4dv=rtime(iout)/icount_obs(iout)
+                 uob=ssuob(iout)/icount_obs(iout)
+                 vob=ssvob(iout)/icount_obs(iout)
+                 call UV2DS(uob,vob)                  !  get wind speed and direction, uob is direction
+                 suob=vob
+                 dvob=uob
+                 uob=-suob*sin(dvob*deg2rad)
+                 vob=-suob*cos(dvob*deg2rad)
+                 dlat_earth=dlat_earth*deg2rad
+                 dlon_earth=dlon_earth*deg2rad
+                 dlnpob=log(one_tenth*ppb)
+                 if(regional)then
+                    call tll2xy(dlon_earth,dlat_earth,dlon,dlat,outside)
+                    if(diagnostic_reg) then
+                       call txy2ll(dlon,dlat,rlon00,rlat00)
+                       ntest=ntest+1
+                       cdist=sin(dlat_earth)*sin(rlat00)+cos(dlat_earth)*cos(rlat00)*&
+                       (sin(dlon_earth)*sin(rlon00)+cos(dlon_earth)*cos(rlon00))
+                       cdist=max(-one,min(cdist,one))
+                       disterr=acos(cdist)*rad2deg
+                       disterrmax=max(disterrmax,disterr)
+                    end if
+                    if(outside) cycle loop_readsb
+                 else
+                    dlon=dlon_earth
+                    dlat=dlat_earth
+                    call grdcrd1(dlat,rlats,nlat,1)
+                    call grdcrd1(dlon,rlons,nlon,1)
+                 endif
+
+!               write(6,*) 'READ_SATWND:itype,iobsub,ndata,woe,t4dv,uob,vob,u00,v00,ppb,dlat,dlon=',&
+!                           itype,iobsub,ndata,woe,t4dv,uob,vob,u00,v00,ppb,dlat_earth,dlon_earth,rusage(iout),icount_obs(iout)
+              else if(icount_obs(ndata) <1) then
+                 write(6,*) 'READ_SATWND:icount_obs=0,itype,iobsub,isup,ndata=',itype,iobsub,ndata,isup,ptime 
+                 call stop2(49)   
+              endif
+              
            else
 !             write(6,*) 'READ_SATWND,ndata,iout,ntb,,usage=',ndata,iout,ntb,iiout,rusage(ndata),rusage(iiout)
               ndata=ndata+1
@@ -1086,29 +1178,29 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
            cdata_all(21,iout)=zz                  ! terrain height at ob location
            cdata_all(22,iout)=r_prvstg(1,1)       ! provider name
            cdata_all(23,iout)=r_sprvstg(1,1)      ! subprovider name
-
            if(perturb_obs)then
               cdata_all(24,iout)=ran01dom()*perturb_fact ! u perturbation
               cdata_all(25,iout)=ran01dom()*perturb_fact ! v perturbation
-           endif
-
+            endif
+ 
         enddo  loop_readsb
  !   End of bufr read loop
      enddo loop_msg
 !    Close unit to bufr file
      call closbf(lunin)
 !    Deallocate arrays used for thinning data
-     if (.not.use_all) then
+     if (.not.  use_all) then
         deallocate(presl_thin)
         call del3grids
-     endif
-     if (.not.use_all_tm) then
+     else if(.not.use_all_tm) then
        deallocate(presl_thin)
        call del3grids_tm
-     endif
-     if (.not.use_all_tm_s) then
+     else if(.not.use_all_tm_s) then
        deallocate(presl_thin)
         call del3grids_tm_s
+     else if (.not.use_all_s) then
+        deallocate(presl_thin)
+        call del3grids_s
      endif
 
 
@@ -1133,7 +1225,6 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
   end if
 
   allocate(cdata_out(nreal,ndata))
-  if( isup <1) then
      do i=1,ndata
         itx=iloc(i)
         do k=1,13
@@ -1144,78 +1235,14 @@ subroutine read_satwnd(nread,ndata,nodata,infile,obstype,lunout,gstime,twind,sis
            cdata_out(k,i)=cdata_all(k,itx)
         end do
      end do
-  else
-     nvtest=0
-     do i=1,ndata
-        itx=iloc(i)
-        do k=1,13
-           cdata_out(k,i)=cdata_all(k,itx)
-        end do
-        cdata_out(14,i)=rusage(itx)
-        do k=15,nreal
-           cdata_out(k,i)=cdata_all(k,itx)
-        end do
-        if(icount_obs(itx) >0) then
-           std_spd(itx)=(icount_obs(itx)*std_spd(itx)-spd(itx)*spd(itx))/(icount_obs(itx)*icount_obs(itx))
-           std_dirct(itx)=(icount_obs(itx)*std_dirct(itx)-dirct(itx)*dirct(itx))/(icount_obs(itx)*icount_obs(itx))
-           spd(itx)=spd(itx)/icount_obs(itx)
-           dirct(itx)=dirct(itx)/icount_obs(itx) 
-           pobb(itx)=pobb(itx)/icount_obs(itx)
-           rlat_sup(itx)=rlat_sup(itx)/icount_obs(itx)
-           rlon_sup(itx)=rlon_sup(itx)/icount_obs(itx)
-           if(rusage(itx) <100.0_r_kind) then
-              uob=-spd(itx)*sin(dirct(itx)*deg2rad)
-              vob=-spd(itx)*cos(dirct(itx)*deg2rad)
-              dlat_earth=rlat_sup(itx)*deg2rad  
-              dlon_earth=rlon_sup(itx)*deg2rad  
-              dlat=dlat_earth
-              dlon=dlon_earth
-              dlnpob=log(one_tenth*pobb(itx))
-              if(regional)then
-                 u0=uob
-                 v0=vob
-                 call rotate_wind_ll2xy(u0,v0,uob,vob,dlon_earth,dlon,dlat)
-                 if(diagnostic_reg) then
-                    call rotate_wind_xy2ll(uob,vob,u00,v00,dlon_earth,dlon,dlat)
-                    nvtest=nvtest+1
-                    disterr=sqrt((u0-u00)**2+(v0-v00)**2)
-                    vdisterrmax=max(vdisterrmax,disterr)
-                 endif
-              endif
-              call deter_sfc2(dlat_earth,dlon_earth,t4dv,idomsfc,tsavg,ff10,sfcr,zz)
-              cdata_out(2,i)=dlon      
-              cdata_out(3,i)=dlat     
-              cdata_out(4,i)=dlnpob      
-              cdata_out(6,i)=uob      
-              cdata_out(7,i)=vob      
-              cdata_out(19,i)=rlon_sup(itx)
-              cdata_out(20,i)=rlat_sup(itx)
-              cdata_all(15,iout)=idomsfc
-              cdata_all(16,iout)=tsavg
-              cdata_all(17,iout)=ff10                ! 10 meter wind factor
-              cdata_all(18,iout)=sfcr                ! surface roughness
-              cdata_all(21,iout)=zz                  ! terrain height at ob location
-           endif
-        else
-           write(6,*) 'READ_SATWND:The icount_obs value is not correct,icount_obs=',&
-                     icount_obs(itx),itx,spd(itx),dirct(itx),itype,iobsub
-           call stop2(49)
-        endif 
-     enddo      
-  endif   
-  do i=1, ndata
-    if(cdata_out(14,i) <100.0) then
-        write(99,1000) cdata_out(1:nreal,i),std_spd(i),std_dirct(i)
-    endif 
-  enddo
 1000 format(12f9.2)
-  deallocate(iloc,isort,cdata_all,spd,dirct,std_spd,std_dirct,pobb,rlat_sup,rlon_sup)
+  deallocate(iloc,isort,cdata_all,spd,std_spd,std_dirct,pobb,rlat_sup,rlon_sup,rtime,ssuob,ssvob)
   deallocate(etabl)
   
   write(lunout) obstype,sis,nreal,nchanl,ilat,ilon
   write(lunout) cdata_out
 
-
+  close(99)
   deallocate(cdata_out)
 900 continue
   if(diagnostic_reg .and. ntest>0) write(6,*)'READ_SATWND:  ',&

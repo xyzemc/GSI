@@ -90,7 +90,7 @@ module convinfo
   logical :: use_prepb_satwnd
   integer(i_kind) nconvtype,mype_conv
   real(r_kind),allocatable,dimension(:)::ctwind,cgross,cermax,cermin,cvar_b,cvar_pg, &
-										rmesh_conv,pmesh_conv,stndev_conv,pmot_conv,ptime_conv
+					rmesh_conv,pmesh_conv,stndev_conv,pmot_conv,ptime_conv
   integer(i_kind),allocatable,dimension(:):: ncmiter,ncgroup,ncnumgrp,icuse,ictype,icsubtype,&
                                              ithin_conv,npred_conv,isup_conv
   character(len=16),allocatable,dimension(:)::ioctype
@@ -198,7 +198,7 @@ contains
     character(len=16) cob
     character(len=11) bias_file_in/'convbias_in'/
     character(len=7) iotype
-    character(len=120) crecord
+    character(len=130) crecord
     integer(i_kind) lunin,i,n,nc,ier,istat
     integer(i_kind) iunit,iob,isub,np,nlines
     integer(i_kind) ictypet,icsubtypet,icuset
@@ -210,7 +210,7 @@ contains
     nlines=0
     read1: do
        read(lunin,1030,iostat=istat,end=1130)cflg,iotype,crecord
-1030   format(a1,a7,2x,a120)
+1030   format(a1,a7,2x,a130)
        if (istat /= 0) exit
        nlines=nlines+1
        if(cflg == '!')cycle
@@ -226,6 +226,7 @@ contains
        call stop2(79)
     endif
 
+    if(mype ==0) print *,'CONVINFO_READ:nconvtype=',nconvtype
     if(nconvtype == 0) then
        write(6,*) 'CONVINFO_READ: NO CONVENTIONAL DATA USED'
        return
@@ -237,7 +238,7 @@ contains
              ioctype(nconvtype), & 
              ithin_conv(nconvtype),rmesh_conv(nconvtype),pmesh_conv(nconvtype),&
              npred_conv(nconvtype),isup_conv(nconvtype),&
-             stndev_conv(nconvtype), pmot_conv(nconvtype),ptime_conv(nconvtype),&
+             stndev_conv(nconvtype),pmot_conv(nconvtype),ptime_conv(nconvtype),&
              stat=ier )
     if ( ier /= 0 )  then
        write(6,*) 'CONVINFO_READ: allocate 1 failed' 
