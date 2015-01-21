@@ -76,6 +76,7 @@ LIBsys          = $(MYLIBsys)
         add_gfs_stratosphere.o \
 	adjtest.o \
 	adjtest_obs.o \
+	adjust_cloudobs_mod.o \
 	aeroinfo.o \
 	aircraftinfo.o \
         aircraftobsqc.o \
@@ -99,6 +100,7 @@ LIBsys          = $(MYLIBsys)
 	bkgvar_rewgt.o \
 	blacklist.o \
         blendmod.o \
+	buddycheck_mod.o \
 	calc_fov_conical.o \
 	calc_fov_crosstrk.o \
 	calctends.o \
@@ -208,9 +210,13 @@ LIBsys          = $(MYLIBsys)
 	intdw.o \
 	intgps.o \
 	intgust.o \
+	inthowv.o \
 	intjcmod.o \
 	intjo.o \
 	intlag.o \
+	intlcbas.o \
+	intmitm.o \
+	intmxtm.o \
 	intoz.o \
 	intpblh.o \
 	intpcp.o \
@@ -221,14 +227,18 @@ LIBsys          = $(MYLIBsys)
 	intrad.o \
 	intrp2a.o \
 	intrp3oz.o \
-        intvis.o   \
 	intrw.o \
+	intpmsl.o \
+        intvis.o   \
 	intspd.o \
 	intsrw.o \
 	intsst.o \
 	intt.o \
+	inttcamt.o \
 	inttcp.o \
+	inttd2m.o \
 	intw.o \
+	intwspd10m.o \
 	jcmod.o \
 	jfunc.o \
         jgrad.o  \
@@ -238,6 +248,7 @@ LIBsys          = $(MYLIBsys)
 	lag_traj.o \
 	lagmod.o \
 	lanczos.o \
+	loglcbas_to_lcbas.o \
 	logvis_to_vis.o \
 	looplimits.o \
 	m_berror_stats.o \
@@ -326,6 +337,7 @@ LIBsys          = $(MYLIBsys)
 	read_fl_hdob.o  \
 	read_gfs_ozone_for_regional.o \
 	read_goesimg.o \
+	read_goesimgr_skycover.o \
 	read_goesndr.o \
 	read_gps.o \
 	read_guess.o \
@@ -369,11 +381,16 @@ LIBsys          = $(MYLIBsys)
         setupco.o \
 	setupdw.o \
 	setupgust.o \
+	setuphowv.o \
 	setuplag.o \
+	setuplcbas.o \
+	setupmitm.o \
+	setupmxtm.o \
 	setupoz.o \
 	setuppblh.o \
 	setuppcp.o \
 	setuppm2_5.o \
+	setuppmsl.o \
 	setupps.o \
 	setuppw.o \
 	setupq.o \
@@ -385,9 +402,12 @@ LIBsys          = $(MYLIBsys)
 	setupsrw.o \
 	setupsst.o \
 	setupt.o \
+	setuptcamt.o \
 	setuptcp.o \
+	setuptd2m.o \
 	setupvis.o \
 	setupw.o \
+	setupwspd10m.o \
 	setupyobs.o \
 	sfc_model.o \
 	sfcobsqc.o \
@@ -417,10 +437,15 @@ LIBsys          = $(MYLIBsys)
 	stpgust.o \
 	stpjcmod.o \
 	stpjo.o \
+	stphowv.o \
+	stplcbas.o \
+	stpmitm.o \
+	stpmxtm.o \
 	stpoz.o \
 	stppblh.o \
 	stppcp.o \
 	stppm2_5.o \
+	stppmsl.o \
 	stpps.o \
 	stppw.o \
 	stpq.o \
@@ -430,9 +455,12 @@ LIBsys          = $(MYLIBsys)
 	stpsrw.o \
 	stpsst.o \
 	stpt.o \
+	stptcamt.o \
 	stptcp.o \
+	stptd2m.o \
 	stpvis.o \
 	stpw.o \
+	stpwspd10m.o \
 	strong_bal_correction.o \
 	strong_baldiag_inc.o \
 	strong_fast_global_mod.o \
