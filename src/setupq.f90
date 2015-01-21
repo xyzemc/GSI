@@ -520,10 +520,12 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            if(exp_arg  == zero) then
               wgt=one
            else
-              wgt=ddiff*error*ratio_errors/sqrt(two*var_jb)
+!              wgt=ddiff*error*ratio_errors/sqrt(two*var_jb)
+              wgt=ddiff*error/sqrt(two*var_jb)
               wgt=tanh(wgt)/wgt
            endif
-           term=-two*var_jb*log(cosh((val*ratio_errors)/sqrt(two*var_jb)))
+!           term=-two*var_jb*log(cosh((val*ratio_errors)/sqrt(two*var_jb)))
+           term=-two*var_jb*ratio_errors*log(cosh((val)/sqrt(two*var_jb)))
            wgt  = wgtlim
            rwgt = wgt/wgtlim
            valqc = -two*term
@@ -764,6 +766,7 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            qtail(ibin)%head%time    = dtime
            qtail(ibin)%head%b       = cvar_b(ikx)
            qtail(ibin)%head%pg      = cvar_pg(ikx)
+           qtail(ibin)%head%jb      = var_jb
            qtail(ibin)%head%luse    = luse(i)
 
            qtail(ibin)%head%diags => obsdiags(i_q_ob_type,ibin)%tail

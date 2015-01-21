@@ -910,10 +910,12 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            if(exp_arg  == zero) then
               wgt=one
            else
-              wgt=sqrt(dudiff*dudiff+dvdiff*dvdiff)*error*ratio_errors/sqrt(two*var_jb)
+!              wgt=sqrt(dudiff*dudiff+dvdiff*dvdiff)*error*ratio_errors/sqrt(two*var_jb)
+              wgt=sqrt(dudiff*dudiff+dvdiff*dvdiff)*error/sqrt(two*var_jb)
               wgt=tanh(wgt)/wgt
            endif
-           term=-two*var_jb*log(cosh((sqrt(val)*ratio_errors)/sqrt(two*var_jb)))
+!           term=-two*var_jb*log(cosh((sqrt(val)*ratio_errors)/sqrt(two*var_jb)))
+           term=-two*var_jb*ratio_errors*log(cosh((sqrt(val))/sqrt(two*var_jb)))
            rwgt = wgt/wgtlim
            valqc = -two*term
         else

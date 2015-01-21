@@ -311,7 +311,8 @@ subroutine intt_(thead,rval,sval,rpred,spred)
               val=val*(one-p0)                  
            endif
            if ( tptr%jb  > tiny_r_kind) then
-              val=sqrt(two*tptr%jb)*tanh(sqrt(tptr%err2*tptr%raterr2)*val/sqrt(two*tptr%jb))
+!              val=sqrt(two*tptr%jb)*tanh(sqrt(tptr%err2*tptr%raterr2)*val/sqrt(two*tptr%jb))
+              val=sqrt(two*tptr%jb)*tanh(sqrt(tptr%err2)*val/sqrt(two*tptr%jb))
            endif
            if ( tptr%jb  > tiny_r_kind) then
               grad = val*sqrt(tptr%raterr2*tptr%err2)

@@ -904,9 +904,13 @@ subroutine read_prepbufr(nread,ndata,nodata,infile,obstype,lunout,twindin,sis,&
 !             Set lower limits for observation errors
               terrmin=half
               werrmin=one
-              perrmin=half
-              qerrmin=one_tenth
+              perrmin=0.3_r_kind
+              qerrmin=0.05_r_kind
               pwerrmin=one
+              tjbmin=zero
+              qjbmin=zero
+              wjbmin=zero
+              pjbmin=zero
               itypey=kx
               if (psob)  then
                  itypex=itypey-99
