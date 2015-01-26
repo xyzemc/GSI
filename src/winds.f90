@@ -1,26 +1,11 @@
-!C---------------------------------------------------------------------
-!C  DD FF >> U V
-!C---------------------------------------------------------------------
-      SUBROUTINE UV(DD,FF,U,V)
-      DATA  CONV2R/0.017453293/
- 
-      IF(FF.LE.0.0)  THEN
-         U = 0.0
-         V = 0.0
-      ELSE
-         U = -FF * SIN(DD*CONV2R)
-         V = -FF * COS(DD*CONV2R)
-      END IF
-      RETURN
-      END
 !C-----------------------------------------------------------------------
 !C  PROGRAM TO COMPUTE WIND SPEED AND DIRECTION FROM U AND V COMPONENTS
 !C-----------------------------------------------------------------------
       SUBROUTINE UV2DS(U,V)
- 
-      DATA PI180  /.0174532/
-      DATA RAD2DG /57.29578/
-      DATA VMAX   /  99999./
+
+ use kinds, only: r_kind
+ use constants, only: deg2rad,pi,zero,rad2deg
+ real(r_kind) u,v,du,dv,dd,ds
  
 !C-----------------------------------------------------------------------
 !C-----------------------------------------------------------------------
@@ -31,17 +16,17 @@
       DU = U
       DV = V
  
-      IF(DU.EQ.0. .AND. DV.EQ.0.) THEN
-         DD = 360.
-      ELSE IF(DU.EQ.0.) THEN
-         IF(DV.GT.0.) DD = 180.
-         IF(DV.LT.0.) DD = 360.
-      ELSE IF(DV.EQ.0.) THEN
-         IF( DU.GT.0.0 ) DD = 270.
-         IF( DU.LT.0.0 ) DD = 90.
+      IF(DU == zero .AND. DV == zero) THEN
+         DD = 360.0_r_kind
+      ELSE IF(DU ==zero) THEN
+         IF(DV>zero) DD = 180.0_r_kind
+         IF(DV<zero) DD = 360.0_r_kind
+         ELSE IF(DV == zero) THEN
+         IF( DU>zero ) DD = 270.0_r_kind
+         IF( DU<zero ) DD = 90.0_r_kind
       ELSE
-         DD = ATAN2(DU,DV) * RAD2DG + 180.
-         DD = AMOD(DD,360.)
+         DD = ATAN2(DU,DV) * rad2deg + 180.0_r_kind
+         DD = dMOD(DD,360.0_r_kind)
       ENDIF
       DS = SQRT(DU**2 + DV**2)
  

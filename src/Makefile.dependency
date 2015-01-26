@@ -52,8 +52,10 @@ converr.o : converr.f90 obsmod.o constants.o kinds.o
 convinfo.o : convinfo.f90 gsi_chemguess_mod.o mpimod.o gridmod.o obsmod.o constants.o kinds.o 
 convthin.o : convthin.f90 satthin.o constants.o kinds.o 
 convthin_time.o : convthin_time.f90 satthin.o constants.o kinds.o 
-convthin_supobs.o : convthin_supobs.f90 satthin.o constants.o kinds.o 
-convthin_time_supobs.o : convthin_time_supobs.f90 satthin.o constants.o kinds.o 
+consupobs.o : convsupobs.f90 satthin.o constants.o kinds.o 
+convsupobs_time.o : convsupobs_time.f90 satthin.o constants.o kinds.o 
+convsupobs_wind.o : convsupobs_wind.f90 satthin.o constants.o kinds.o 
+convsupobs_wind_time.o : convsupobs_wind_time.f90 satthin.o constants.o kinds.o 
 correlated_obsmod.o : correlated_obsmod.F90 mpeu_util.o timermod.o mpimod.o constants.o kinds.o 
 crtm_interface.o : crtm_interface.f90 obsmod.o set_crtm_cloudmod.o set_crtm_aerosolmod.o ncepgfs_ghg.o cloud_efr_mod.o mpimod.o constants.o control_vectors.o guess_grids.o aeroinfo.o radinfo.o gsi_metguess_mod.o gsi_chemguess_mod.o gsi_bundlemod.o mpeu_util.o gridmod.o kinds.o 
 cvsection.o : cvsection.f90 control_vectors.o jfunc.o gridmod.o mpimod.o kinds.o 
@@ -275,8 +277,8 @@ read_pcp.o : read_pcp.f90 obsmod.o deter_sfc_mod.o gsi_4dvar.o constants.o gridm
 read_prepbufr.o : read_prepbufr.f90 guess_grids.o aircraftobsqc.o gsi_nstcouplermod.o deter_sfc_mod.o jfunc.o support_2dvar.o sfcobsqc.o blacklist.o convthin.o qcmod.o gsi_4dvar.o converr.o aircraftinfo.o radinfo.o obsmod.o convinfo.o gridmod.o constants.o kinds.o 
 read_radar.o : read_radar.f90 deter_sfc_mod.o convthin.o guess_grids.o convinfo.o gridmod.o gsi_4dvar.o obsmod.o qcmod.o constants.o kinds.o 
 read_RadarRef_mosaic.o : read_RadarRef_mosaic.f90 gsi_4dvar.o convinfo.o constants.o kinds.o 
-winds.o : winds.f90
-read_satwnd.o : read_satwnd.f90 deter_sfc_mod.o gsi_4dvar.o convinfo.o obsmod.o constants.o convthin.o convthin_time.o convthin_supobs.o convthin_time_supobs.o qcmod.o gridmod.o kinds.o 
+winds.o : winds.f90 constants.o kinds.o
+read_satwnd.o : read_satwnd.f90 deter_sfc_mod.o gsi_4dvar.o convinfo.o obsmod.o constants.o convthin.o convthin_time.o convsupobs_wind.o convsupobs_wind_time.o qcmod.o gridmod.o kinds.o 
 read_seviri.o : read_seviri.f90 gsi_nstcouplermod.o deter_sfc_mod.o gsi_4dvar.o radinfo.o obsmod.o constants.o gridmod.o satthin.o kinds.o 
 read_sfcwnd.o : read_sfcwnd.f90 deter_sfc_mod.o gsi_4dvar.o convinfo.o obsmod.o constants.o convthin.o qcmod.o gridmod.o kinds.o 
 read_ssmi.o : read_ssmi.f90 gsi_nstcouplermod.o deter_sfc_mod.o gsi_4dvar.o constants.o gridmod.o radinfo.o obsmod.o satthin.o kinds.o 

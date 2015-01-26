@@ -6,7 +6,7 @@
 #BSUB -o gsi_global.o%J
 #BSUB -J gsi_global
 #BSUB -network type=sn_all:mode=US
-#BSUB -q dev
+#BSUB -q batch 
 #BSUB -n 48 
 #BSUB -R span[ptile=16]
 #BSUB -R affinity[core(2):distribute=balance]
@@ -17,11 +17,11 @@
 ## Below are PBS (Linux queueing system) commands
 #PBS -o gsi_global.e${jobid} 
 #PBS -N gsi_global
-#PBS -q batch
-#PBS -l walltime=00:30:00 
+#PBS -q batch 
+#PBS -l walltime=00:40:00 
 #PBS -l nodes=2:ppn=12
 #PBS -j eo                
-#PBS -A cloud 
+#PBS -A aircraft 
 #PBS -V
 #=======================================================
 
@@ -46,8 +46,8 @@ fi
 #=================================================================================================
 
 # Set experiment name and analysis date
-adate=2014120900
-expnm=globalprod    
+adate=2015012000
+expnm=spob4d_test    
 exp=globalprod.$adate
 expid=${expnm}.$adate
 
@@ -537,19 +537,10 @@ scaninfo=$fixgsi/global_scaninfo.txt
 #satangl=$fixgsi/global_satangbias.txt
 pcpinfo=$fixgsi/global_pcpinfo.txt
 ozinfo=$fixgsi/global_ozinfo.txt
-convinfo=$fixgsi/global_convinfo.txt
+convinfo=$fixgsi/global_convinfo.txt_sup
 atmsbeamdat=$fixgsi/atms_beamwidth.txt
 
-#errtable=$fixgsi/prepobs_errtable.global
-errtable_ps=$fixgsi/prepobs_errtable_ps.global
-errtable_pw=$fixgsi/prepobs_errtable_pw.global
-errtable_q=$fixgsi/prepobs_errtable_q.global
-errtable_t=$fixgsi/prepobs_errtable_t.global
-errtable_uv=$fixgsi/prepobs_errtable_uv.global
-btable_uv=$fixgsi/nqc_b_uv.global
-btable_ps=$fixgsi/nqc_b_ps.global
-btable_q=$fixgsi/nqc_b_q.global
-btable_t=$fixgsi/nqc_b_t.global
+errtable=$fixgsi/prepobs_errtable.global
 
 
 
@@ -583,16 +574,7 @@ $ncp $pcpinfo  ./pcpinfo
 $ncp $ozinfo   ./ozinfo
 $ncp $convinfo ./convinfo
 $ncp $atmsbeamdat ./atms_beamwidth.txt
-#$ncp $errtable ./errtable
-$ncp $errtable_ps ./errtable_ps
-$ncp $errtable_pw ./errtable_pw
-$ncp $errtable_q ./errtable_q
-$ncp $errtable_t ./errtable_t
-$ncp $errtable_uv ./errtable_uv
-$ncp $btable_ps ./btable_ps
-$ncp $btable_q ./btable_q
-$ncp $btable_t ./btable_t
-$ncp $btable_uv ./btable_uv
+$ncp $errtable ./errtable
 
 
 $ncp $bufrtable ./prepobs_prep.bufrtable

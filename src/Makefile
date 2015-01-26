@@ -241,8 +241,10 @@ clean:
 	convinfo.f90 \
 	convthin.f90 \
 	convthin_time.f90 \
-	convthin_supobs.f90 \
-	convthin_time_supobs.f90 \
+	convsupobs.f90 \
+	convsupobs_time.f90 \
+	convsupobs_wind.f90 \
+	convsupobs_wind_time.f90 \
         correlated_obsmod.F90 \
 	crtm_interface.f90 \
 	cvsection.f90 \
