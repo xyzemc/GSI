@@ -1,0 +1,10 @@
+MAINTAINERCLEANFILES    = makefile.in
+lib_LTLIBRARIES = libprepdecode_i4r8.la
+libprepdecode_i4r8_la_SOURCES = fftpack.F mova2i.f
+libdir = $(abs_top_srcdir)/lib
+
+AM_FFLAGS = $(FFLAGS_BUFR)
+AM_CFLAGS = $(CFLAGS_BUFR)
+
+CLEANFILES = *.o *.mod *.a $(top_srcdir)/include/*.mod $(abs_top_srcdir)/lib/libprepdecode_i4r8.*
+

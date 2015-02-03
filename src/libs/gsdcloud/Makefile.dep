@@ -1,0 +1,94 @@
+# Module dependencies
+adaslib.o: kinds.o
+adaslib.lo: kinds.lo
+adaslib.obj: kinds.obj
+ARPS_cldLib.o: kinds.o
+ARPS_cldLib.lo: kinds.lo
+ARPS_cldLib.obj: kinds.obj
+BackgroundCld.o: constants.o kinds.o
+BackgroundCld.lo: constants.lo kinds.lo
+BackgroundCld.obj: constants.obj kinds.obj
+BckgrndCC.o: constants.o kinds.o
+BckgrndCC.lo: constants.lo kinds.lo
+BckgrndCC.obj: constants.obj kinds.obj
+build_missing_REFcone.o: kinds.o
+build_missing_REFcone.lo: kinds.lo
+build_missing_REFcone.obj: kinds.obj
+CheckCld.o: constants.o kinds.o
+CheckCld.lo: constants.lo kinds.lo
+CheckCld.obj: constants.obj kinds.obj
+cloud_saturation.o: constants.o kinds.o
+cloud_saturation.lo: constants.lo kinds.lo
+cloud_saturation.obj: constants.obj kinds.obj
+cloudCover_NESDIS.o: constants.o kinds.o
+cloudCover_NESDIS.lo: constants.lo kinds.lo
+cloudCover_NESDIS.obj: constants.obj kinds.obj
+cloudCover_radar.o: constants.o kinds.o
+cloudCover_radar.lo: constants.lo kinds.lo
+cloudCover_radar.obj: constants.obj kinds.obj
+cloudCover_Surface.o: kinds.o
+cloudCover_Surface.lo: kinds.lo
+cloudCover_Surface.obj: kinds.obj
+cloudLayers.o: kinds.o
+cloudLayers.lo: kinds.lo
+cloudLayers.obj: kinds.obj
+cloudLWC.o: constants.o kinds.o
+cloudLWC.lo: constants.lo kinds.lo
+cloudLWC.obj: constants.obj kinds.obj
+cloudType.o: constants.o kinds.o
+cloudType.lo: constants.lo kinds.lo
+cloudType.obj: constants.obj kinds.obj
+constants.o: kinds.o
+constants.lo: kinds.lo
+constants.obj: kinds.obj
+convert_lghtn2ref.o: kinds.o
+convert_lghtn2ref.lo: kinds.lo
+convert_lghtn2ref.obj: kinds.obj
+hydro_mxr_thompson.o: kinds.o
+hydro_mxr_thompson.lo: kinds.lo
+hydro_mxr_thompson.obj: kinds.obj
+map_ctp.o: constants.o kinds.o
+map_ctp.lo: constants.lo kinds.lo
+map_ctp.obj: constants.obj kinds.obj
+mthermo.o: kinds.o
+mthermo.lo: kinds.lo
+mthermo.obj: kinds.obj
+pbl_height.o: kinds.o
+pbl_height.lo: kinds.lo
+pbl_height.obj: kinds.obj
+pcp_mxr_ARPSlib.o: kinds.o
+pcp_mxr_ARPSlib.lo: kinds.lo
+pcp_mxr_ARPSlib.obj: kinds.obj
+PrecipMxr_radar.o: constants.o kinds.o
+PrecipMxr_radar.lo: constants.lo kinds.lo
+PrecipMxr_radar.obj: constants.obj kinds.obj
+PrecipType.o: constants.o kinds.o
+PrecipType.lo: constants.lo kinds.lo
+PrecipType.obj: constants.obj kinds.obj
+radar_ref2tten.o: constants.o kinds.o
+radar_ref2tten.lo: constants.lo kinds.lo
+radar_ref2tten.obj: constants.obj kinds.obj
+read_Lightning_cld.o: kinds.o
+read_Lightning_cld.lo: kinds.lo
+read_Lightning_cld.obj: kinds.obj
+read_nasalarc_cld.o: kinds.o
+read_nasalarc_cld.lo: kinds.lo
+read_nasalarc_cld.obj: kinds.obj
+read_NESDIS.o: kinds.o
+read_NESDIS.lo: kinds.lo
+read_NESDIS.obj: kinds.obj
+read_radar_ref.o: kinds.o
+read_radar_ref.lo: kinds.lo
+read_radar_ref.obj: kinds.obj
+read_Surface.o: kinds.o
+read_Surface.lo: kinds.lo
+read_Surface.obj: kinds.obj
+smooth.o: kinds.o
+smooth.lo: kinds.lo
+smooth.obj: kinds.obj
+TempAdjust.o: constants.o kinds.o
+TempAdjust.lo: constants.lo kinds.lo
+TempAdjust.obj: constants.obj kinds.obj
+vinterp_radar_ref.o: kinds.o
+vinterp_radar_ref.lo: kinds.lo
+vinterp_radar_ref.obj: kinds.obj

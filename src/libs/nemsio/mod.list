@@ -1,0 +1,5 @@
+mod_DATA = nemsio_module.mod \
+           nemsio_module_mpi.mod \
+           nemsio_openclose.mod \
+           nemsio_read.mod \
+           nemsio_write.mod

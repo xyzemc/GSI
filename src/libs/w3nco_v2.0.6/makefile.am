@@ -1,0 +1,11 @@
+MAINTAINERCLEANFILES    = makefile.in
+lib_LTLIBRARIES = libw3nco_i4r8.la
+include make.myfilelist
+
+libdir = $(abs_top_srcdir)/lib
+
+AM_FFLAGS = $(FFLAGS_W3)
+AM_CFLAGS = $(CFLAGS_W3)
+
+CLEANFILES = *.o *.mod *.a $(abs_top_srcdir)/lib/libw3nco_i4r8.*
+
