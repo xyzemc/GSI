@@ -1,0 +1,12 @@
+if BUILDLIBS
+SUBDIRS                 = libs main
+else
+SUBDIRS                 = main
+endif
+
+MAINTAINERCLEANFILES    = \
+        makefile.in \
+        aclocal.m4 \
+        configure \
+        config.h.in
+
