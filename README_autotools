@@ -181,10 +181,10 @@ libdir='/glade/p/ral/nsap/sheu/trunk/lib'
 
 8. Special notes for users on zeus and wcoss systems
 
-   There is no need to define any environment variables, as all the required
-   variables on these two systems are pre-defined in configure.ac. Therefore,
-   there is no need to supply any command-line options to "configure". However,
-   please see note 7. above about pre-defined libraries.
+   All the required variables on these two systems are either pre-defined in
+   configure.ac or assumed to be always present on these two systems.
+   Therefore, there is no need to supply any command-line options to
+   "configure". However, please see note 7. above about pre-defined libraries.
 
 ****** Section B: for developers ******
 
