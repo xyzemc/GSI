@@ -179,6 +179,12 @@ libdir='/glade/p/ral/nsap/sheu/trunk/lib'
    *** For simplicity, it is strongly recommended that the users build required
    *** libraries from this package by not defining CORELIB variable 
 
+8. Special notes for users on zeus and wcoss systems
+
+   There is no need to define any environment variables, as all the required
+   variables on these two systems are pre-defined in configure.ac. Therefore,
+   there is no need to supply any command-line options to "configure". However,
+   please see note 7. above about pre-defined libraries.
 
 ****** Section B: for developers ******
 

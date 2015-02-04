@@ -15,14 +15,27 @@ AC_ARG_VAR([WRF_DIR], [The absolute path where WRF is built.])
 AC_ARG_ENABLE([debug],[AS_HELP_STRING([--enable-debug],[Enable debug mode])],
               [:],[enable_debug=check])
 
-# Test required NETCDF env var
-if test "x${NETCDF}" = "x" ; then
-   AC_MSG_ERROR([NETCDF environment varialbe is not set. Please set it as an environment variable or run configure with "NETCDF=<path>" as a command-line option.])   
+# For the purpose of zeus and wcoss
+hostname=`uname -n`
+AM_CONDITIONAL([NOAAHPC],[test "${hostname}" = "zeus.rdhpcs.noaa.gov" -o "${hostname}" = "wcoss.rdhpcs.noaa.gov"])
+
+# On zeus and wcoss, pre-defined CORELIB:
+if test "$hostname" = "zeus.rdhpcs.noaa.gov"; then
+   CORELIB=/contrib/nceplibs/nwprod/lib
+elif test "${hostname}" = "wcoss.rdhpcs.noaa.gov"; then
+   CORELIB=/nwprod/lib
 fi
 
-# Test require WRF_DIR env var
-if test "x${WRF_DIR}" = "x" ; then
-   AC_MSG_ERROR([WRF_DIR environment varialbe is not set. Please set it as an environment variable or run configure with "WRF_DIR=<path>" as a command-line option.])   
+if test "$hostname" != "zeus.rdhpcs.noaa.gov" -a "$hostname" != "wcoss.rdhpcs.noaa.gov"; then
+   # Test required NETCDF env var
+   if test "x${NETCDF}" = "x" ; then
+      AC_MSG_ERROR([NETCDF environment varialbe is not set. Please set it as an environment variable or run configure with "NETCDF=<path>" as a command-line option.])   
+   fi
+
+   # Test require WRF_DIR env var
+   if test "x${WRF_DIR}" = "x" ; then
+      AC_MSG_ERROR([WRF_DIR environment varialbe is not set. Please set it as an environment variable or run configure with "WRF_DIR=<path>" as a command-line option.])   
+   fi
 fi
 
 # Test if libraries need to be build
@@ -41,12 +54,6 @@ AC_CONFIG_MACRO_DIR([m4])
 
 # Find out about the host we're building on.
 AC_CANONICAL_HOST
-
-# For the purpose of zeus and wcoss
-hostname=`uname -n`
-#AM_CONDITIONAL([ZEUS], [test "${hostname}" = "zeus.rdhpcs.noaa.gov"])
-#AM_CONDITIONAL([WCOSS],[test "${hostname}" = "wcoss.rdhpcs.noaa.gov"])
-AM_CONDITIONAL([NOAAHPC],[test "${hostname}" = "zeus.rdhpcs.noaa.gov" -o "${hostname}" = "wcoss.rdhpcs.noaa.gov"])
 
 AC_CONFIG_FILES([makefile
                  src/makefile
@@ -99,8 +106,10 @@ AC_PROG_FC
 AC_PROG_F77($FC)
 
 # Handle missing f77 compiler.
-if test "${F77+set}" = set && test "x$F77" = x; then
-   AC_MSG_ERROR([Can't find F77 compiler.])
+if test "$hostname" != "zeus.rdhpcs.noaa.gov" -a "$hostname" != "wcoss.rdhpcs.noaa.gov"; then
+   if test "${F77+set}" = set && test "x$F77" = x; then
+      AC_MSG_ERROR([Can't find F77 compiler.])
+   fi
 fi
 
 pgi_version=`$FC -V | grep pgf | awk '{print $2}'`
@@ -329,7 +338,7 @@ if test "$hostname" = "zeus.rdhpcs.noaa.gov"; then
    # Redefine variables for NOAA HPCS
    # ----------------------------------
    COREINC=/contrib/nceplibs/nwprod/lib/incmod
-   CORELIB=/contrib/nceplibs/nwprod/lib
+  #CORELIB=/contrib/nceplibs/nwprod/lib
    INCsfcio="$COREINC/sfcio_v1.1.0"
    INCsigio="$COREINC/sigio_4"
    INCnemsio="$COREINC/nemsio"
@@ -438,7 +447,7 @@ elif test "${hostname}" = "wcoss.rdhpcs.noaa.gov"; then
    W3NCO_VERSION=2.0.6
 
    COREINC=/nwprod/lib/incmod
-   CORELIB=/nwprod/lib
+  #CORELIB=/nwprod/lib
    INCsfcio="$COREINC/sfcio_v${SFCIO_VERSION}_4"
    INCsigio="$COREINC/sigio_v${SIGIO_VERSION}_4"
    INCnemsio="$COREINC/nemsio_v${NEMSIO_VERSION}"
