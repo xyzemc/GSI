@@ -176,7 +176,7 @@ libdir='/glade/p/ral/nsap/sheu/trunk/lib'
    If the pre-built libraries was not built by libtool, the user need to create
    libbacio.la, libnemsio.la, and libsigio_i4r4.la following the above example.
 
-   *** For simplicity, it is strongly recommended that the users build required
+   *** For simplicity, it is strongly recommended that users build required
    *** libraries from this package by not defining CORELIB variable 
 
 8. Special notes for users on zeus and wcoss systems
@@ -185,6 +185,19 @@ libdir='/glade/p/ral/nsap/sheu/trunk/lib'
    configure.ac or assumed to be always present on these two systems.
    Therefore, there is no need to supply any command-line options to
    "configure". However, please see note 7. above about pre-defined libraries.
+
+   If building gsi.exe using the "old" way is preferred, after running
+   "configure", a resource file, "Makefile.conf", is generated in src/main.
+   This resource file is used by Makefile for building the "old" way.
+   Depending on the host system, "Makefile.conf" will have different
+   contents on zeus and wcoss. In other words, this "Makefile.conf" has the
+   same contents as "Makefile.conf.zeus" if the host machine is zeus, and the
+   same contents as "Makefile.conf.wcoss" if the host machine is wcoss.
+
+   Note, after running "configure", a "makefile" is created in src/main for
+   the purpose of building the autotools way. Since "makefile" has higher
+   priority than "Makefile", in order to build the "old" way, users need to
+   run "make -f Makefile", instead of just "make".
 
 ****** Section B: for developers ******
 
