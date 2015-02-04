@@ -197,6 +197,11 @@ case $FC in
   ifort)
     AC_ARG_VAR([LAPACK_PATH], [The absolute path of the LAPACK math library. The library is required when building with Intel ifort. Typically the required path is available through a system variable such as \$MKLROOT.])
 
+   # Test require WRF_DIR env var
+   if test "x${LAPACK_PATH}" = "x" ; then
+      AC_MSG_ERROR([LAPACK_PATH environment varialbe is not set. It's the absolute path of the LAPACK math library. The library is required when building with Intel ifort. Typically the required path is available through a system variable such as \$MKLROOT. Please set it as an environment variable or run configure with "LAPACK_PATH=<path>" as a command-line option.])   
+   fi
+
     world_size_FFLAGS=
    #FFLAGS_DEFAULT="-traceback -convert big_endian -assume byterecl -g -fp-model strict"
     FFLAGS_DEFAULT="-fp-model precise -assume byterecl -convert big_endian"
