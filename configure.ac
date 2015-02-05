@@ -97,10 +97,7 @@ if test "${F77+set}" = set -a "${FC+set}" != set; then
 fi
 
 # Find fortran compiler. If FC isn't set after AC_PROG_FC, we couldn't
-# find a fortran compiler. If the user requested the fortran API, and
-# has told us not to recover from a missing compiler, then bail out
-# right here.
-AC_MSG_NOTICE([finding Fortran compiler (will not be used if Fortran API is not desired)])
+# find a fortran compiler.
 AC_PROG_FC
 
 AC_PROG_F77($FC)
@@ -238,6 +235,8 @@ case $FC in
     MYLIBsys="-L$LAPACK_PATH -mkl=sequential"
     NETCDF_PATH=""
 
+    ;;
+  *) AC_MSG_ERROR([Fortran compiler $FC is not supported. Please use either Intel (ifort) or PGI (pgf90, pgf95) compilers])
     ;;
 esac
 
