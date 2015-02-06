@@ -236,7 +236,12 @@ case $FC in
     NETCDF_PATH=""
 
     ;;
-  *) AC_MSG_ERROR([Fortran compiler $FC is not supported. Please use either Intel (ifort) or PGI (pgf90, pgf95) compilers])
+  *)
+    # Abort configure if $FC is not defined or not PGI/Intel compilers.
+    # zeus and wcoss is exempt from this check
+    if test "$hostname" != "zeus.rdhpcs.noaa.gov" -a "$hostname" != "wcoss.rdhpcs.noaa.gov"; then
+     AC_MSG_ERROR([Fortran compiler $FC is not supported. Please use either Intel (ifort) or PGI (pgf90, pgf95) compilers])
+    fi
     ;;
 esac
 

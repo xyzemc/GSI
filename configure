@@ -18084,9 +18084,14 @@ $as_echo "$as_me: error: LAPACK_PATH environment varialbe is not set. It's the a
     NETCDF_PATH=""
 
     ;;
-  *) { { $as_echo "$as_me:$LINENO: error: Fortran compiler $FC is not supported. Please use either Intel (ifort) or PGI (pgf90, pgf95) compilers" >&5
+  *)
+    # Abort configure if $FC is not defined or not PGI/Intel compilers.
+    # zeus and wcoss is exempt from this check
+    if test "$hostname" != "zeus.rdhpcs.noaa.gov" -a "$hostname" != "wcoss.rdhpcs.noaa.gov"; then
+     { { $as_echo "$as_me:$LINENO: error: Fortran compiler $FC is not supported. Please use either Intel (ifort) or PGI (pgf90, pgf95) compilers" >&5
 $as_echo "$as_me: error: Fortran compiler $FC is not supported. Please use either Intel (ifort) or PGI (pgf90, pgf95) compilers" >&2;}
    { (exit 1); exit 1; }; }
+    fi
     ;;
 esac
 
