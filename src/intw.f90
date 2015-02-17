@@ -200,15 +200,17 @@ subroutine intw_(whead,rval,sval)
               valu = valu*term
               valv = valv*term
            endif
-           if ( wptr%jb  > tiny_r_kind) then
+           if ( wptr%jb  > tiny_r_kind .and. wptr%jb <10.0_r_kind) then
 !              valu=sqrt(two*wptr%jb)*tanh(sqrt(wptr%err2*wptr%raterr2)*valu/sqrt(two*wptr%jb))
 !              valv=sqrt(two*wptr%jb)*tanh(sqrt(wptr%err2*wptr%raterr2)*valv/sqrt(two*wptr%jb))
               valu=sqrt(two*wptr%jb)*tanh(sqrt(wptr%err2)*valu/sqrt(two*wptr%jb))
               valv=sqrt(two*wptr%jb)*tanh(sqrt(wptr%err2)*valv/sqrt(two*wptr%jb))
            endif
-           if ( wptr%jb  > tiny_r_kind) then
-              gradu = valu*sqrt(wptr%raterr2*wptr%err2)
-              gradv = valv*sqrt(wptr%raterr2*wptr%err2)
+           if ( wptr%jb  > tiny_r_kind .and. wptr%jb <10.0_r_kind) then
+!              gradu = valu*sqrt(wptr%raterr2*wptr%err2)
+!              gradv = valv*sqrt(wptr%raterr2*wptr%err2)
+              gradu = valu*wptr%raterr2*wptr%err2
+              gradv = valv*wptr%raterr2*wptr%err2
            else
               gradu = valu*wptr%raterr2*wptr%err2
               gradv = valv*wptr%raterr2*wptr%err2

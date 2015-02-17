@@ -17,7 +17,7 @@
 ## Below are PBS (Linux queueing system) commands
 #PBS -o gsi_global.e${jobid} 
 #PBS -N gsi_global
-#PBS -q batch
+#PBS -q debug 
 #PBS -l walltime=00:30:00 
 #PBS -l nodes=2:ppn=12
 #PBS -j eo                
@@ -46,9 +46,9 @@ fi
 #=================================================================================================
 
 # Set experiment name and analysis date
-adate=2014120800
-expnm=globalprod    
-exp=globalprod.$adate
+adate=2015021700
+expnm=nqctest    
+exp=nqctest
 expid=${expnm}.$adate
 
 # Set path/file for gsi executable

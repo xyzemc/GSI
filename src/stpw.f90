@@ -200,17 +200,19 @@ subroutine stpw(whead,rval,sval,out,sges,nstep)
         endif
 
 ! Purser's scheme
-        if( wptr%jb  > tiny_r_kind) then
+        if( wptr%jb  > tiny_r_kind .and. wptr%jb <10.0_r_kind) then
            do kk=1,max(1,nstep)
 !              pen(kk) = two*two*wptr%jb*log(cosh(sqrt(pen(kk)*wptr%raterr2/(two*wptr%jb))))
               pen(kk) = two*two*wptr%jb*log(cosh(sqrt(pen(kk)/(two*wptr%jb))))
            enddo
         endif
 
-        if( wptr%jb  > tiny_r_kind) then
-          out(1) = out(1)+pen(1)
+        if( wptr%jb  > tiny_r_kind .and. wptr%jb <10.0_r_kind) then
+!          out(1) = out(1)+pen(1)*sqrt(wptr%raterr2)
+          out(1) = out(1)+pen(1)*wptr%raterr2
           do kk=2,nstep
-             out(kk) = out(kk)+(pen(kk)-pen(1))*sqrt(wptr%raterr2)
+!             out(kk) = out(kk)+(pen(kk)-pen(1))*sqrt(wptr%raterr2)
+             out(kk) = out(kk)+(pen(kk)-pen(1))*wptr%raterr2
           end do
        else
           out(1) = out(1)+pen(1)*wptr%raterr2

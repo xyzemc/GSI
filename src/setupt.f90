@@ -656,7 +656,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            wgt  = one-wgross/(arg+wgross)
            rwgt = wgt/wgtlim
            valqc = -two*rat_err2*term
-        else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind) then
+        else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind .and. var_jb <10.0_r_kind) then
            if(exp_arg  == zero) then
               wgt=one
            else
@@ -665,7 +665,8 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
               wgt=tanh(wgt)/wgt
            endif
 !           term=-two*var_jb*log(cosh((val*ratio_errors)/sqrt(two*var_jb)))
-           term=-two*var_jb*ratio_errors*log(cosh((val)/sqrt(two*var_jb)))
+!           term=-two*var_jb*ratio_errors*log(cosh((val)/sqrt(two*var_jb)))
+           term=-two*var_jb*rat_err2*log(cosh((val)/sqrt(two*var_jb)))
            rwgt = wgt/wgtlim
            valqc = -two*term
         else

@@ -324,17 +324,19 @@ subroutine stpt(thead,dval,xval,out,sges,nstep,rpred,spred)
 !              reduces to the linear case (no qc)
 !  Puser's non linear QC scheme
 
-       if( tptr%jb  > tiny_r_kind) then
+       if( tptr%jb  > tiny_r_kind .and. tptr%jb <10.0_r_kind) then
            do kk=1,max(1,nstep)
 !              pen(kk) = two*two*tptr%jb*log(cosh(sqrt(pen(kk)*tptr%raterr2/(two*tptr%jb))))
               pen(kk) = two*two*tptr%jb*log(cosh(sqrt(pen(kk)/(two*tptr%jb))))
            enddo
         endif
-        if( tptr%jb  > tiny_r_kind) then
-          out(1) = out(1)+pen(1)
+        if( tptr%jb  > tiny_r_kind .and. tptr%jb <10.0_r_kind) then
+          out(1) = out(1)+pen(1)**sqrt(tptr%raterr2)
+          out(1) = out(1)+pen(1)*tptr%raterr2
           do kk=2,nstep
 !             out(kk) = out(kk)+(pen(kk)-pen(1))
-             out(kk) = out(kk)+(pen(kk)-pen(1))*sqrt(tptr%raterr2)
+!             out(kk) = out(kk)+(pen(kk)-pen(1))*sqrt(tptr%raterr2)
+             out(kk) = out(kk)+(pen(kk)-pen(1))*tptr%raterr2
           end do
        else
           out(1) = out(1)+pen(1)*tptr%raterr2

@@ -177,12 +177,13 @@ subroutine intq_(qhead,rval,sval)
               p0=wgross/(wgross+exp(-half*qptr%err2*val**2))  ! p0 is P in the reference by Enderson
               val=val*(one-p0)                         ! term is Wqc in the referenc by Enderson
            endif
-           if ( qptr%jb  > tiny_r_kind) then
+           if ( qptr%jb  > tiny_r_kind .and. qptr%jb <10.0_r_kind) then
 !              val=sqrt(two*qptr%jb)*tanh(sqrt(qptr%err2*qptr%raterr2)*val/sqrt(two*qptr%jb))
               val=sqrt(two*qptr%jb)*tanh(sqrt(qptr%err2)*val/sqrt(two*qptr%jb))
            endif
-           if ( qptr%jb  > tiny_r_kind) then
-              grad = val*sqrt(qptr%raterr2*qptr%err2)
+           if ( qptr%jb  > tiny_r_kind .and. qptr%jb <10.0_r_kind) then
+!              grad = val*sqrt(qptr%raterr2*qptr%err2)
+              grad = val*qptr%raterr2*qptr%err2
            else
               grad = val*qptr%raterr2*qptr%err2
            endif
