@@ -168,11 +168,11 @@ subroutine stpps(pshead,rval,sval,out,sges,nstep)
            enddo
         endif
         if( psptr%jb  > tiny_r_kind .and. psptr%jb <10.0_r_kind) then
-!           out(1) = out(1)+pen(1)*sqrt(psptr%raterr2)
-           out(1) = out(1)+pen(1)*psptr%raterr2
+           out(1) = out(1)+pen(1)*sqrt(psptr%raterr2)
+!           out(1) = out(1)+pen(1)*psptr%raterr2
            do kk=2,nstep
-!              out(kk) = out(kk)+(pen(kk)-pen(1))*sqrt(psptr%raterr2)
-              out(kk) = out(kk)+(pen(kk)-pen(1))*psptr%raterr2
+              out(kk) = out(kk)+(pen(kk)-pen(1))*sqrt(psptr%raterr2)
+!              out(kk) = out(kk)+(pen(kk)-pen(1))*psptr%raterr2
            end do
         else
            out(1) = out(1)+pen(1)*psptr%raterr2
