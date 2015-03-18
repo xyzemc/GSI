@@ -5,7 +5,7 @@
 ######################################################################
 #   NOTES:                                                           #
 #                                                                    #
-#   Author: DRS Oct 17, 2012                                         #
+#   Author: DRS April 22, 2014                                       #
 ######################################################################
 
 ######################################################################
@@ -13,8 +13,8 @@
 ######################################################################
 ulimit -s 512000
 export GSI_ROOT=/glade/scratch/stark/GSI/
-export TEST_SRCS=release/release_V3.3_intel13.0.1
-export VERSION=20140422
+export TEST_SRCS=release/release_V3.3
+export VERSION=20140527
 #export COMPILER=pgi intel
 export COMPILER=intel
 export ARCH=LINUX_LSF
