@@ -225,6 +225,7 @@ LIBsys          = $(MYLIBsys)
 	intpw.o \
 	intq.o \
 	intrad.o \
+	intrp_msk.o  \
 	intrp2a.o \
 	intrp3oz.o \
 	intrw.o \
@@ -287,6 +288,7 @@ LIBsys          = $(MYLIBsys)
 	nlmsas_ad.o \
 	normal_rh_to_q.o \
 	nstio_module.o \
+	Nst_Var_ESMFMod.o  \
 	obs_ferrscale.o \
 	obs_para.o \
 	obs_sensitivity.o \
@@ -347,6 +349,7 @@ LIBsys          = $(MYLIBsys)
 	read_lidar.o \
 	read_Lightning.o \
 	read_modsbufr.o \
+	read_nsstbufr.o \
 	read_NASA_LaRC.o \
         read_NASA_LaRC_cloud.o \
 	read_obs.o \
