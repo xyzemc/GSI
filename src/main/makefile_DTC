@@ -136,6 +136,7 @@ LIBsys          = $(MYLIBsys)
 	deter_sfc_mod.o \
 	dtast.o \
 	egrid2agrid_mod.o \
+	en_perts_io.o  \
 	enorm_state.o \
 	ensctl2model.o \
 	ensctl2state.o \
@@ -349,8 +350,8 @@ LIBsys          = $(MYLIBsys)
 	read_lidar.o \
 	read_Lightning.o \
 	read_modsbufr.o \
+	read_nasa_larc.o  \
 	read_nsstbufr.o \
-	read_NASA_LaRC.o \
         read_NASA_LaRC_cloud.o \
 	read_obs.o \
 	read_obsdiags.o \
@@ -359,7 +360,7 @@ LIBsys          = $(MYLIBsys)
 	read_pcp.o \
 	read_prepbufr.o \
 	read_radar.o \
-	read_RadarRef_mosaic.o \
+	read_radarref_mosaic.o  \
 	read_satwnd.o \
 	read_seviri.o \
 	read_sfcwnd.o  \
