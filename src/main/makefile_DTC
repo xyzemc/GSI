@@ -128,6 +128,7 @@ LIBsys          = $(MYLIBsys)
 	converr.o \
 	convinfo.o \
 	convthin.o \
+	convthin_time.o  \
         correlated_obsmod.o \
 	crtm_interface.o \
 	cwhydromod.o \
