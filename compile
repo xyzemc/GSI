@@ -30,6 +30,6 @@ echo " "
 mkdir -p ./lib
 mkdir -p ./include
 
-( make -i -f makefile all )
+( make -i -f makefile_DTC all )
 
 exit(0)

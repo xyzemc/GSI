@@ -8,12 +8,12 @@ SUBDIRS = src
 
 all: $(SUBDIRS)
 	@for dir in $(SUBDIRS); do \
-           ( cd $$dir; echo "Making $@ in `pwd`" ; make); \
+           ( cd $$dir; echo "Making $@ in `pwd`" ; make -f makefile_DTC ); \
         done
 
 clean: $(SUBDIRS)
 	echo "subdirs is: $(SUBDIRS)"
 	@for dir in $(SUBDIRS); do \
            ( cd $$dir; echo "Making $@ in `pwd`" ; \
-                make $@) ; \
+                make -f makefile_DTC $@) ; \
         done

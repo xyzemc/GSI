@@ -110,7 +110,7 @@ include $(MAKE_CONF)
 # This makefile
 # -------------
 
-  MAKE_FILE = Makefile
+  MAKE_FILE = makefile_EMC
 
 
 # -----------

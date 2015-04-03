@@ -4,14 +4,15 @@ SUBDIRS = libs
 
 all: $(SUBDIRS)
 	@for dir in $(SUBDIRS); do \
-           ( cd $$dir; echo "Making $@ in `pwd`" ; make ) ; \
+           ( cd $$dir; echo "Making $@ in `pwd`" ; make -f makefile_DTC ) ; \
         done
 	( cd main; echo "Making $@ in `pwd`" ; make -f makefile_DTC ) ;
+	( cd main/enkf; ls; echo "Making $@ in `pwd`" ; make -f makefile_EMC ) ;
 
 clean: $(SUBDIRS) clean_main
 	@for dir in $(SUBDIRS); do \
            ( cd $$dir; echo "Making $@ in `pwd`" ; \
-                make $@ ) ; \
+                make -f makefile_DTC $@ ) ; \
         done
 
 clean_main:
