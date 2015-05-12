@@ -104,6 +104,9 @@ include Makefile.dependency
 	$(RM) $*.fpp
 
 
+%.o : %.mod
+
+
 clean:
 	$(RM) -f *.o *.exe $(LIB)
 

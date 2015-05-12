@@ -102,6 +102,7 @@
 	get_pseudo_ensperts.o \
 	get_semimp_mats.o \
 	get_wrf_nmm_ensperts.o \
+	getcount_bufr.o  \
 	getprs.o \
 	getsiga.o \
 	get_wrf_mass_ensperts_netcdf.o \
