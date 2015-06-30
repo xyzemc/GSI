@@ -259,7 +259,9 @@
 	rapidrefresh_cldsurf_mod.o \
 	rdgrbsst.o \
 	read_aerosol.o \
+	read_ahi.o \
 	read_airs.o \
+	read_amsr2.o \
 	read_amsre.o \
 	read_anowbufr.o \
 	read_atms.o \
@@ -272,6 +274,7 @@
 	read_files.o \
 	read_fl_hdob.o  \
 	read_gfs_ozone_for_regional.o \
+	read_gmi.o \
 	read_goesimg.o \
 	read_goesimgr_skycover.o \
 	read_goesndr.o \
@@ -294,6 +297,8 @@
 	read_prepbufr.o \
 	read_radar.o \
 	read_radarref_mosaic.o  \
+	read_rapidscat.o \
+	read_saphir.o \
 	read_satwnd.o \
 	read_seviri.o \
 	read_sfcwnd.o  \
