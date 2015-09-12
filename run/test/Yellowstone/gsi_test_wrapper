@@ -13,8 +13,10 @@
 ######################################################################
 ulimit -s 512000
 export GSI_ROOT=/glade/scratch/stark/GSI/
-export TEST_SRCS=ticket_444
-export VERSION=20150413
+export TEST_SRCS=com_trunk
+export VERSION=20150911
+#export VERSION=20150413
+#export VERSION=20140527
 #export COMPILER=pgi intel
 export COMPILER=intel
 export ARCH=LINUX_LSF
