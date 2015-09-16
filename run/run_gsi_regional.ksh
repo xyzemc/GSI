@@ -1,4 +1,3 @@
-#
 #!/bin/ksh
 #####################################################
 # machine set up (users should change this part)
@@ -14,12 +13,16 @@
 ##BSUB -q premium             # queue
 #BSUB -q small               # queue
 
-set -x
 
+#
+
+set -x
+#
 # GSIPROC = processor number used for GSI analysis
 #------------------------------------------------
   GSIPROC=8
   ARCH='LINUX_LSF'
+
 # Supported configurations:
             # IBM_LSF,
             # LINUX, LINUX_LSF, LINUX_PBS,
@@ -29,70 +32,49 @@ set -x
 # case set up (users should change this part)
 #####################################################
 #
-# GFSCASE = cases used for DTC test
-#           T574, T254, T126, T62, enkf_glb_t254 
 # ANAL_TIME= analysis time  (YYYYMMDDHH)
 # WORK_ROOT= working directory, where GSI runs
 # PREPBURF = path of PreBUFR conventional obs
-# BK_ROOT  = path of background files
+# BK_FILE  = path and name of background file
 # OBS_ROOT = path of observations files
 # FIX_ROOT = path of fix files
 # GSI_EXE  = path and name of the gsi executable 
-  ANAL_TIME=2014080400
-#  GUESS_TIME=2014080318
-  GFSCASE=T126
-  WORK_ROOT=/glade/p/work/mhu/gsi/code/trunk_r1558/run/${GFSCASE}
-  BK_ROOT=/glade/p/ral/jnt/DAtask/data/gfs/${GFSCASE}
-  OBS_ROOT=/glade/p/ral/jnt/DAtask/data/gfs/${GFSCASE}
-  PREPBUFR=${OBS_ROOT}/prepbufr
+  ANAL_TIME=2014061700
+  HH=`echo $ANAL_TIME | cut -c9-10`
+  WORK_ROOT=/glade/p/work/mhu/gsi/code/trunk_r1558/run/testarw
+  OBS_ROOT=/glade/p/ral/jnt/GSI_DTC/data/20140617/obs
+  PREPBUFR=${OBS_ROOT}/nam.t${HH}z.prepbufr.tm00.nr
+  BK_ROOT=/glade/p/ral/jnt/GSI_DTC/data/20140617/2014061700/arw
+  BK_FILE=${BK_ROOT}/wrfinput_d01.${ANAL_TIME}
   CRTM_ROOT=/glade/p/work/mhu/gsi/crtm/fix_2.2.3
   GSI_ROOT=/glade/p/work/mhu/gsi/code/trunk_r1558
   FIX_ROOT=${GSI_ROOT}/fix
   GSI_EXE=${GSI_ROOT}/run/gsi.exe
-  GSI_NAMELIST=${GSI_ROOT}/run/comgsi_namelist_gfs.sh
+  GSI_NAMELIST=${GSI_ROOT}/run/comgsi_namelist.sh
 
 #------------------------------------------------
+# bk_core= which WRF core is used as background (NMM or ARW or NMMB)
+# bkcv_option= which background error covariance and parameter will be used 
+#              (GLOBAL or NAM)
 # if_clean = clean  : delete temperal files in working directory (default)
 #            no     : leave running directory as is (this is for debug only)
+  bk_core=ARW
+  bkcv_option=NAM
   if_clean=clean
-
 # if_observer = Yes  : only used as observation operater for enkf
 # no_member     number of ensemble members
 # BK_FILE_mem   path and base for ensemble members
   if_observer=No
-  no_member=10
-  BK_FILE_mem=${BK_ROOT}/sfg_2014040506
+  no_member=20
+  BK_FILE_mem=${BK_ROOT}/wrfarw.mem
 #
-# Set the JCAP resolution which you want.
-# All resolutions use LEVS=64
-if [[ "$GFSCASE" = "T62" ]]; then
-  JCAP=62
-  JCAP_B=62
-elif [[ "$GFSCASE" = "T126" ]]; then
-  JCAP=126
-  JCAP_B=126
-elif [[ "$GFSCASE" = "enkf_glb_t254" ]]; then
-  JCAP=254
-  JCAP_B=254
-elif [[ "$GFSCASE" = "T254" ]]; then
-  JCAP=254
-  JCAP_B=574
-elif [[ "$GFSCASE" = "T574" ]]; then
-  JCAP=574
-  JCAP_B=1534
-else
-   echo "INVALID case = $GFSCASE"
-   exit
-fi
-  LEVS=64
-#
-#
-  BYTE_ORDER=Big_Endian
 #
 #####################################################
 # Users should NOT change script after this point
 #####################################################
 #
+BYTE_ORDER=Big_Endian
+# BYTE_ORDER=Little_Endian
 
 case $ARCH in
    'IBM_LSF')
@@ -149,8 +131,8 @@ if [ ! "${WORK_ROOT}" ]; then
 fi
 
 # Make sure the background file exists
-if [ ! -r "${BK_ROOT}" ]; then
-  echo "ERROR: ${BK_ROOT} does not exist!"
+if [ ! -r "${BK_FILE}" ]; then
+  echo "ERROR: ${BK_FILE} does not exist!"
   exit 1
 fi
 
@@ -197,13 +179,6 @@ if [ -z "${GSIPROC}" ]; then
   exit 1
 fi
 
-################################################################################
-## Given the analysis date, compute the date from which the
-# first guess comes.  Extract cycle and set prefix
-# for guess and observation data files
-hha=`echo $ANAL_TIME | cut -c9-10`
-# hhg=`echo $GUESS_TIME | cut -c9-10`
-
 #
 ##################################################################################
 # Create the ram work directory and cd into it
@@ -219,146 +194,6 @@ cd ${workdir}
 
 #
 ##################################################################################
-# Set some parameters for use by the GSI executable and to build the namelist
-echo " Build the namelist "
-
-# Given the requested resolution, set dependent resolution parameters
-if [[ "$JCAP" = "382" ]]; then
-   LONA=768
-   LATA=384
-   DELTIM=180
-   resol=1
-elif [[ "$JCAP" = "574" ]]; then
-   LONA=1152
-   LATA=576
-   DELTIM=1200
-   resol=2
-elif [[ "$JCAP" = "254" ]]; then
-   LONA=512
-   LATA=256
-   DELTIM=1200
-   resol=2
-elif [[ "$JCAP" = "126" ]]; then
-   LONA=256
-   LATA=128
-   DELTIM=1200
-   resol=2
-elif [[ "$JCAP" = "62" ]]; then
-   LONA=192
-   LATA=94
-   DELTIM=1200
-   resol=2
-else
-   echo "INVALID JCAP = $JCAP"
-   exit
-fi
-NLAT=` expr $LATA + 2 `
-
-# CO2 namelist and file decisions
-ICO2=${ICO2:-0}
-if [ $ICO2 -gt 0 ] ; then
-        # Copy co2 files to $workdir
-        co2dir=${FIX_ROOT}
-        yyyy=`echo $ANAL_TIME | cut -c1-4`
-        rm ./global_co2_data.txt
-        co2=$co2dir/global_co2.gcmscl_$yyyy.txt
-        while [ ! -s $co2 ] ; do
-                ((yyyy-=1))
-                co2=$co2dir/global_co2.gcmscl_$yyyy.txt
-        done
-        if [ -s $co2 ] ; then
-                cp $co2 ./global_co2_data.txt
-        fi
-        if [ ! -s ./global_co2_data.txt ] ; then
-                echo "\./global_co2_data.txt" not created
-                exit 1
-        fi
-fi
-#CH4 file decision
-ICH4=${ICH4:-0}
-if [ $ICH4 -gt 0 ] ; then
-#        # Copy ch4 files to $workdir
-        ch4dir=${FIX_ROOT}
-        yyyy=`echo $ANAL_TIME | cut -c1-4`
-        rm ./ch4globaldata.txt
-        ch4=$ch4dir/global_ch4_esrlctm_$yyyy.txt
-        while [ ! -s $ch4 ] ; do
-                ((yyyy-=1))
-                ch4=$ch4dir/global_ch4_esrlctm_$yyyy.txt
-        done
-        if [ -s $ch4 ] ; then
-                cp $ch4 ./ch4globaldata.txt
-        fi
-        if [ ! -s ./ch4globaldata.txt ] ; then
-                echo "\./ch4globaldata.txt" not created
-                exit 1
-        fi
-fi
-IN2O=${IN2O:-0}
-if [ $IN2O -gt 0 ] ; then
-#        # Copy ch4 files to $workdir
-        n2odir=${FIX_ROOT}
-        yyyy=`echo $ANAL_TIME | cut -c1-4`
-        rm ./n2oglobaldata.txt
-        n2o=$n2odir/global_n2o_esrlctm_$yyyy.txt
-        while [ ! -s $n2o ] ; do
-                ((yyyy-=1))
-                n2o=$n2odir/global_n2o_esrlctm_$yyyy.txt
-        done
-        if [ -s $n2o ] ; then
-                cp $n2o ./n2oglobaldata.txt
-        fi
-        if [ ! -s ./n2oglobaldata.txt ] ; then
-                echo "\./n2oglobaldata.txt" not created
-                exit 1
-        fi
-fi
-ICO=${ICO:-0}
-if [ $ICO -gt 0 ] ; then
-#        # Copy CO files to $workdir
-        codir=${FIX_ROOT}
-        yyyy=`echo $ANAL_TIME | cut -c1-4`
-        rm ./coglobaldata.txt
-        co=$codir/global_co_esrlctm_$yyyy.txt
-        while [ ! -s $co ] ; do
-                ((yyyy-=1))
-                co=$codir/global_co_esrlctm_$yyyy.txt
-        done
-        if [ -s $co ] ; then
-                cp $co ./coglobaldata.txt
-        fi
-        if [ ! -s ./coglobaldata.txt ] ; then
-                echo "\./coglobaldata.txt" not created
-                exit 1
-        fi
-fi
-
-##################################################################################
-# Set some parameters for use by the GSI executable and to build the namelist
-echo " Build the namelist "
-
-vs_op='0.7,'
-hzscl_op='1.7,0.8,0.5,'
-
-if [ ${if_observer} = Yes ] ; then
-  nummiter=0
-  if_read_obs_save='.true.'
-  if_read_obs_skip='.false.'
-else
-  nummiter=2
-  if_read_obs_save='.false.'
-  if_read_obs_skip='.false.'
-fi
-
-# Build the GSI namelist on-the-fly
-. $GSI_NAMELIST
-cat << EOF > gsiparm.anl
-
- $comgsi_namelist
-
-EOF
-
-##################################################################################
 
 echo " Copy GSI executable, background file, and link observation bufr to working directory"
 
@@ -366,124 +201,20 @@ echo " Copy GSI executable, background file, and link observation bufr to workin
 cp ${GSI_EXE} gsi.exe
 
 # Bring over background field (it's modified by GSI so we can't link to it)
-# Copy bias correction, atmospheric and surface files
-if [[ "$GFSCASE" = "enkf_glb_t254" ]]; then
-  cp $OBS_ROOT/gdas1.t12z.abias      ./satbias_in
-  cp $OBS_ROOT/gdas1.t12z.satang     ./satbias_angle
+cp ${BK_FILE} ./wrf_inout
 
-  cp $BK_ROOT/sfcanl_2014040506_fhr03_ensmean  ./sfcf03
-  cp $BK_ROOT/sfcanl_2014040506_fhr06_ensmean  ./sfcf06
-  cp $BK_ROOT/sfcanl_2014040506_fhr06_ensmean  ./sfcf09
-
-  cp $BK_ROOT/sfg_2014040506_fhr03_mem001    ./sigf03
-  cp $BK_ROOT/sfg_2014040506_fhr06_mem001    ./sigf06
-  cp $BK_ROOT/sfg_2014040506_fhr09_mem001    ./sigf09
-else
-  cp $OBS_ROOT/satbias_in            ./satbias_in
-  cp $OBS_ROOT/satbias_angle         ./satbias_angle
-
-  cp $BK_ROOT/sfcf03  ./sfcf03
-  cp $BK_ROOT/sfcf06  ./sfcf06
-  cp $BK_ROOT/sfcf09  ./sfcf09
-
-  cp $BK_ROOT/sigf03  ./sigf03
-  cp $BK_ROOT/sigf06  ./sigf06
-  cp $BK_ROOT/sigf09  ./sigf09
-fi
 
 # Link to the prepbufr data
 ln -s ${PREPBUFR} ./prepbufr
 
-# Link to the other observation data
-
-if [[ "$GFSCASE" = "enkf_glb_t254" ]]; then
-  obsfile_amua=gdas1.t12z.1bamua.tm00.bufr_d
-  obsfile_amub=gdas1.t12z.1bamub.tm00.bufr_d
-else
-  obsfile_amua=amsuabufr
-  obsfile_amub=amsubbufr
-fi
-
-if [ -r "${OBS_ROOT}/satwnd" ]; then
-   ln -s ${OBS_ROOT}/satwnd .
-fi
-if [ -r "${OBS_ROOT}/gpsrobufr" ]; then
-   ln -s ${OBS_ROOT}/gpsrobufr .
-fi
-if [ -r "${OBS_ROOT}/ssmirrbufr" ]; then
-   ln -s ${OBS_ROOT}/ssmirrbufr .
-fi
-if [ -r "${OBS_ROOT}/tmirrbufr" ]; then
-   ln -s ${OBS_ROOT}/tmirrbufr .
-fi
-if [ -r "${OBS_ROOT}/sbuvbufr" ]; then
-   ln -s ${OBS_ROOT}/sbuvbufr .
-fi
-if [ -r "${OBS_ROOT}/gsnd1bufr" ]; then
-   ln -s ${OBS_ROOT}/gsnd1bufr .
-fi
-if [ -r "${OBS_ROOT}/${obsfile_amua}" ]; then
-   ln -s ${OBS_ROOT}/${obsfile_amua} amsuabufr 
-fi
-if [ -r "${OBS_ROOT}/${obsfile_amub}" ]; then
-   ln -s ${OBS_ROOT}/${obsfile_amub} amsubbufr 
-fi
-if [ -r "${OBS_ROOT}/hirs2bufr" ]; then
-   ln -s ${OBS_ROOT}/hirs2bufr .
-fi
-if [ -r "${OBS_ROOT}/hirs3bufr" ]; then
-   ln -s ${OBS_ROOT}/hirs3bufr .
-fi
-if [ -r "${OBS_ROOT}/hirs4bufr" ]; then
-   ln -s ${OBS_ROOT}/hirs4bufr .
-fi
-if [ -r "${OBS_ROOT}/mhsbufr" ]; then
-   ln -s ${OBS_ROOT}/mhsbufr .
-fi
-if [ -r "${OBS_ROOT}//msubufr" ]; then
-   ln -s ${OBS_ROOT}/msubufr .
-fi
-if [ -r "${OBS_ROOT}//airsbufr" ]; then
-   ln -s ${OBS_ROOT}/airsbufr .
-fi
-if [ -r "${OBS_ROOT}//seviribufr" ]; then
-   ln -s ${OBS_ROOT}/seviribufr .
-fi
-if [ -r "${OBS_ROOT}//iasibufr" ]; then
-   ln -s ${OBS_ROOT}/iasibufr .
-fi
-if [ -r "${OBS_ROOT}//ssmitbufr" ]; then
-   ln -s ${OBS_ROOT}/ssmitbufr .
-fi
-if [ -r "${OBS_ROOT}//amsrebufr" ]; then
-   ln -s ${OBS_ROOT}/amsrebufr .
-fi
-if [ -r "${OBS_ROOT}//ssmisbufr" ]; then
-   ln -s ${OBS_ROOT}/ssmisbufr .
-fi
-if [ -r "${OBS_ROOT}//gomebufr" ]; then
-   ln -s ${OBS_ROOT}/gomebufr .
-fi
-if [ -r "${OBS_ROOT}//omibufr" ]; then
-   ln -s ${OBS_ROOT}/omibufr .
-fi
-if [ -r "${OBS_ROOT}/mlsbufr" ]; then
-   ln -s ${OBS_ROOT}/mlsbufr .
-fi
-if [ -r "${OBS_ROOT}/hirs3bufrears" ]; then
-   ln -s ${OBS_ROOT}/hirs3bufrears .
-fi
-if [ -r "${OBS_ROOT}/amsuabufrears" ]; then
-   ln -s ${OBS_ROOT}/amsuabufrears .
-fi
-if [ -r "${OBS_ROOT}/amsubbufrears" ]; then
-   ln -s ${OBS_ROOT}/amsubbufrears .
-fi
-if [ -r "${OBS_ROOT}/tcvitl" ]; then
-   ln -s ${OBS_ROOT}/tcvitl .
-fi
-
-
+# ln -s ${OBS_ROOT}/gdas1.t${HH}z.sptrmm.tm00.bufr_d tmirrbufr
+# Link to the radiance data
+ ln -s ${OBS_ROOT}/gdas1.t${HH}z.1bamua.tm00.bufr_d amsuabufr
+ ln -s ${OBS_ROOT}/nam.t${HH}z.1bamub.tm00.bufr_d amsubbufr
+ ln -s ${OBS_ROOT}/nam.t${HH}z.1bhrs3.tm00.bufr_d hirs3bufr
+ ln -s ${OBS_ROOT}/gdas1.t${HH}z.1bhrs4.tm00.bufr_d hirs4bufr
+ ln -s ${OBS_ROOT}/nam.t${HH}z.1bmhs.tm00.bufr_d mhsbufr
+ ln -s ${OBS_ROOT}/nam.t${HH}z.gpsro.tm00.bufr_d gpsrobufr
 #
 ##################################################################################
 
@@ -505,53 +236,63 @@ echo " Copy fixed files and link CRTM coefficient files to working directory"
 #   bufrtable= text file ONLY needed for single obs test (oneobstest=.true.)
 #   bftab_sst= bufr table for sst ONLY needed for sst retrieval (retrieval=.true.)
 
-ANAVINFO=${FIX_ROOT}/global_anavinfo.l64.txt
-#BERROR=${FIX_ROOT}/${BYTE_ORDER}/global_berror.l${LEVS}y${NLAT}.f77
-BERROR=${FIX_ROOT}/global_berror.l${LEVS}y${NLAT}.f77
-SATINFO=${FIX_ROOT}/global_satinfo_reg_test.txt
-scaninfo=${FIX_ROOT}/global_scaninfo.txt
+if [ ${bkcv_option} = GLOBAL ] ; then
+  echo ' Use global background error covariance'
+  BERROR=${FIX_ROOT}/${BYTE_ORDER}/nam_glb_berror.f77.gcv
+  OBERROR=${FIX_ROOT}/prepobs_errtable.global
+  if [ ${bk_core} = NMM ] ; then
+     ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf_glbe
+  fi
+  if [ ${bk_core} = ARW ] ; then
+    ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf_glbe
+  fi
+  if [ ${bk_core} = NMMB ] ; then
+    ANAVINFO=${FIX_ROOT}/anavinfo_nems_nmmb_glb
+  fi
+else
+  echo ' Use NAM background error covariance'
+  BERROR=${FIX_ROOT}/${BYTE_ORDER}/nam_nmmstat_na.gcv
+  OBERROR=${FIX_ROOT}/nam_errtable.r3dv
+  if [ ${bk_core} = NMM ] ; then
+     ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf
+  fi
+  if [ ${bk_core} = ARW ] ; then
+     ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf
+  fi
+  if [ ${bk_core} = NMMB ] ; then
+     ANAVINFO=${FIX_ROOT}/anavinfo_nems_nmmb
+  fi
+fi
+
 SATANGL=${FIX_ROOT}/global_satangbias.txt
-atmsbeamdat=${FIX_ROOT}/atms_beamwidth.txt
+SATINFO=${FIX_ROOT}/global_satinfo.txt
 CONVINFO=${FIX_ROOT}/global_convinfo.txt
 OZINFO=${FIX_ROOT}/global_ozinfo.txt
 PCPINFO=${FIX_ROOT}/global_pcpinfo.txt
-OBERROR=${FIX_ROOT}/prepobs_errtable.global
-
-# Only need this file for single obs test
-bufrtable=${FIX_ROOT}/prepobs_prep.bufrtable
-
-# Only need this file for sst retrieval
-bftab_sst=${FIX_ROOT}/bufrtab.012
 
 #  copy Fixed fields to working directory
  cp $ANAVINFO anavinfo
  cp $BERROR   berror_stats
  cp $SATANGL  satbias_angle
- cp $atmsbeamdat  atms_beamwidth.txt
  cp $SATINFO  satinfo
- cp $scaninfo scaninfo
  cp $CONVINFO convinfo
  cp $OZINFO   ozinfo
  cp $PCPINFO  pcpinfo
  cp $OBERROR  errtable
-
- cp $bufrtable ./prepobs_prep.bufrtable
- cp $bftab_sst ./bftab_sstphr
-
 #
-# CRTM Spectral and Transmittance coefficients
-RTMFIX=${CRTM_ROOT}/${BYTE_ORDER}
-emiscoef_IRwater=${RTMFIX}/Nalli.IRwater.EmisCoeff.bin
-emiscoef_IRice=${RTMFIX}/NPOESS.IRice.EmisCoeff.bin
-emiscoef_IRland=${RTMFIX}/NPOESS.IRland.EmisCoeff.bin
-emiscoef_IRsnow=${RTMFIX}/NPOESS.IRsnow.EmisCoeff.bin
-emiscoef_VISice=${RTMFIX}/NPOESS.VISice.EmisCoeff.bin
-emiscoef_VISland=${RTMFIX}/NPOESS.VISland.EmisCoeff.bin
-emiscoef_VISsnow=${RTMFIX}/NPOESS.VISsnow.EmisCoeff.bin
-emiscoef_VISwater=${RTMFIX}/NPOESS.VISwater.EmisCoeff.bin
-emiscoef_MWwater=${RTMFIX}/FASTEM6.MWwater.EmisCoeff.bin
-aercoef=${RTMFIX}/AerosolCoeff.bin
-cldcoef=${RTMFIX}/CloudCoeff.bin
+#    # CRTM Spectral and Transmittance coefficients
+CRTM_ROOT_ORDER=${CRTM_ROOT}/${BYTE_ORDER}
+emiscoef_IRwater=${CRTM_ROOT_ORDER}/Nalli.IRwater.EmisCoeff.bin
+emiscoef_IRice=${CRTM_ROOT_ORDER}/NPOESS.IRice.EmisCoeff.bin
+emiscoef_IRland=${CRTM_ROOT_ORDER}/NPOESS.IRland.EmisCoeff.bin
+emiscoef_IRsnow=${CRTM_ROOT_ORDER}/NPOESS.IRsnow.EmisCoeff.bin
+emiscoef_VISice=${CRTM_ROOT_ORDER}/NPOESS.VISice.EmisCoeff.bin
+emiscoef_VISland=${CRTM_ROOT_ORDER}/NPOESS.VISland.EmisCoeff.bin
+emiscoef_VISsnow=${CRTM_ROOT_ORDER}/NPOESS.VISsnow.EmisCoeff.bin
+emiscoef_VISwater=${CRTM_ROOT_ORDER}/NPOESS.VISwater.EmisCoeff.bin
+emiscoef_MWwater=${CRTM_ROOT_ORDER}/FASTEM6.MWwater.EmisCoeff.bin
+aercoef=${CRTM_ROOT_ORDER}/AerosolCoeff.bin
+cldcoef=${CRTM_ROOT_ORDER}/CloudCoeff.bin
 
 ln -s $emiscoef_IRwater ./Nalli.IRwater.EmisCoeff.bin
 ln -s $emiscoef_IRice ./NPOESS.IRice.EmisCoeff.bin
@@ -566,9 +307,70 @@ ln -s $aercoef  ./AerosolCoeff.bin
 ln -s $cldcoef  ./CloudCoeff.bin
 # Copy CRTM coefficient files based on entries in satinfo file
 for file in `awk '{if($1!~"!"){print $1}}' ./satinfo | sort | uniq` ;do
-   ln -s ${RTMFIX}/${file}.SpcCoeff.bin ./
-   ln -s ${RTMFIX}/${file}.TauCoeff.bin ./
+   ln -s ${CRTM_ROOT_ORDER}/${file}.SpcCoeff.bin ./
+   ln -s ${CRTM_ROOT_ORDER}/${file}.TauCoeff.bin ./
 done
+
+# Only need this file for single obs test
+ bufrtable=${FIX_ROOT}/prepobs_prep.bufrtable
+ cp $bufrtable ./prepobs_prep.bufrtable
+
+# for satellite bias correction
+cp ${FIX_ROOT}/sample.satbias ./satbias_in
+
+#
+##################################################################################
+# Set some parameters for use by the GSI executable and to build the namelist
+echo " Build the namelist "
+
+# default is NAM
+#   as_op='1.0,1.0,0.5 ,0.7,0.7,0.5,1.0,1.0,'
+vs_op='1.0,'
+hzscl_op='0.373,0.746,1.50,'
+if [ ${bkcv_option} = GLOBAL ] ; then
+#   as_op='0.6,0.6,0.75,0.75,0.75,0.75,1.0,1.0'
+   vs_op='0.7,'
+   hzscl_op='1.7,0.8,0.5,'
+fi
+if [ ${bk_core} = NMMB ] ; then
+   vs_op='0.6,'
+fi
+
+# default is NMM
+   bk_core_arw='.false.'
+   bk_core_nmm='.true.'
+   bk_core_nmmb='.false.'
+   bk_if_netcdf='.true.'
+if [ ${bk_core} = ARW ] ; then
+   bk_core_arw='.true.'
+   bk_core_nmm='.false.'
+   bk_core_nmmb='.false.'
+   bk_if_netcdf='.true.'
+fi
+if [ ${bk_core} = NMMB ] ; then
+   bk_core_arw='.false.'
+   bk_core_nmm='.false.'
+   bk_core_nmmb='.true.'
+   bk_if_netcdf='.false.'
+fi
+
+if [ ${if_observer} = Yes ] ; then
+  nummiter=0
+  if_read_obs_save='.true.'
+  if_read_obs_skip='.false.'
+else
+  nummiter=2
+  if_read_obs_save='.false.'
+  if_read_obs_skip='.false.'
+fi
+
+# Build the GSI namelist on-the-fly
+. $GSI_NAMELIST
+cat << EOF > gsiparm.anl
+
+ $comgsi_namelist
+
+EOF
 
 #
 ###################################################
@@ -593,11 +395,17 @@ if [ ${error} -ne 0 ]; then
   echo "ERROR: ${GSI} crashed  Exit status=${error}"
   exit ${error}
 fi
+
 #
 ##################################################################
 #
+#   GSI updating satbias_in
+#
+# GSI updating satbias_in (only for cycling assimilation)
+
 # Copy the output to more understandable names
 ln -s stdout      stdout.anl.${ANAL_TIME}
+ln -s wrf_inout   wrfanl.${ANAL_TIME}
 ln -s fort.201    fit_p1.${ANAL_TIME}
 ln -s fort.202    fit_w1.${ANAL_TIME}
 ln -s fort.203    fit_t1.${ANAL_TIME}
@@ -615,7 +423,6 @@ ln -s fort.207    fit_rad1.${ANAL_TIME}
 #        innovation files.
 #
 
-echo "Time before diagnostic loop is `date` "
 loops="01 03"
 for loop in $loops; do
 
@@ -639,6 +446,7 @@ esac
 #          ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16 mhs_metop_b \
 #          hirs4_metop_b hirs4_n19 amusa_n19 mhs_n19"
  listall=`ls pe* | cut -f2 -d"." | awk '{print substr($0, 0, length($0)-3)}' | sort | uniq `
+
    for type in $listall; do
       count=`ls pe*${type}_${loop}* | wc -l`
       if [[ $count -gt 0 ]]; then
@@ -648,15 +456,17 @@ esac
 done
 
 #  Clean working directory to save only important files 
+ls -l * > list_run_directory
 if [[ ${if_clean} = clean  &&  ${if_observer} != Yes ]]; then
   echo ' Clean working directory after GSI run'
   rm -f *Coeff.bin     # all CRTM coefficient files
-  rm -fr pe0*          # diag files on each processor
+  rm -f pe0*           # diag files on each processor
   rm -f obs_input.*    # observation middle files
-  rm -f sigf* sfcf*    # background  files
+  rm -f siganl sigf03  # background middle files
   rm -f fsize_*        # delete temperal file for bufr size
 fi
-
+#
+#
 #################################################
 # start to calculate diag files for each member
 #################################################
@@ -669,6 +479,7 @@ if [ ${if_observer} = Yes ] ; then
        mv diag_${type}_${string}.${ANAL_TIME} diag_${type}_${string}.ensmean
     fi
   done
+  mv wrf_inout wrf_inout_ensmean
 
 # Build the GSI namelist on-the-fly for each member
   nummiter=0
@@ -692,23 +503,13 @@ EOF
      ensmemid=`printf %3.3i $ensmem`
 
 # get new background for each member
-     if [[ -f sigf03 ]]; then
-       rm sigf03
-     fi
-     if [[ -f sigf06 ]]; then
-       rm sigf06
-     fi
-     if [[ -f sigf09 ]]; then
-       rm sigf09
+     if [[ -f wrf_inout ]]; then
+       rm wrf_inout
      fi
 
-     BK_FILE03=${BK_FILE_mem}_fhr03_mem${ensmemid}
-     BK_FILE06=${BK_FILE_mem}_fhr06_mem${ensmemid}
-     BK_FILE09=${BK_FILE_mem}_fhr09_mem${ensmemid}
-     echo $BK_FILE06
-     ln -s $BK_FILE03 ./sigf03
-     ln -s $BK_FILE06 ./sigf06
-     ln -s $BK_FILE09 ./sigf09
+     BK_FILE=${BK_FILE_mem}${ensmemid}
+     echo $BK_FILE
+     ln -s $BK_FILE wrf_inout
 
 #  run  GSI
      echo ' Run GSI with' ${bk_core} 'for member ', ${ensmemid}
@@ -742,11 +543,9 @@ EOF
 
 # next member
      (( ensmem += 1 ))
-
+      
   done
 
 fi
-
-exit 0
 
 exit 0
