@@ -519,12 +519,13 @@ subroutine read_obs(ndata,mype)
     use obsmod, only: iadate,ndat,time_window,dplat,dsfcalc,dfile,dthin, &
            dtype,dval,dmesh,obsfile_all,ref_obs,nprof_gps,dsis,ditype,&
            oberrflg,perturb_obs,lobserver,lread_obs_save,obs_input_common,reduce_diag
+    use qcmod, only: njqc
     use gsi_4dvar, only: l4dvar
     use satthin, only: super_val,super_val1,superp,makegvals,getsfc,destroy_sfc
     use mpimod, only: ierror,mpi_comm_world,mpi_sum,mpi_rtype,mpi_integer,npe,&
          setcomm
     use constants, only: one,zero
-!    use converr, only: converr_read
+    use converr, only: converr_read
     use converr_ps, only: converr_ps_read
     use converr_q, only: converr_q_read
     use converr_t, only: converr_t_read
@@ -605,20 +606,19 @@ subroutine read_obs(ndata,mype)
     npem1=npe-1
     nprof_gps1=0
 
-!    if(oberrflg .or. perturb_obs) then
-!       call converr_read(mype)
-!    endif
-
-     call converr_ps_read(mype)
-     call converr_q_read(mype)
-     call converr_t_read(mype)
-     call converr_uv_read(mype)
-     call converr_pw_read(mype)
-
-     call convb_ps_read(mype)
-     call convb_q_read(mype)
-     call convb_t_read(mype)
-     call convb_uv_read(mype)
+    if( njqc == .true.) then     
+       call converr_ps_read(mype)
+       call converr_q_read(mype)
+       call converr_t_read(mype)
+       call converr_uv_read(mype)
+       call converr_pw_read(mype)
+       call convb_ps_read(mype)
+       call convb_q_read(mype)
+       call convb_t_read(mype)
+       call convb_uv_read(mype)
+    else
+       call converr_read(mype)
+    endif
 
 
 

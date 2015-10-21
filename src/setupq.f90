@@ -73,6 +73,7 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 !                           to calculate O-B for the surface moisture observations
 !   2014-04-04  todling - revist q2m implementation (slightly)
 !   2014-04-12       su - add non linear qc from Purser's scheme
+!   2015-02-26       su - add njqc as an option to chose new non linear qc 
 !
 !   input argument list:
 !     lunin    - unit from which to read observations
@@ -104,11 +105,12 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   use constants, only: zero,one,r1000,r10,r100
   use constants, only: huge_single,wgtlim,three
   use constants, only: tiny_r_kind,five,half,two,huge_r_kind,cg_term,r0_01
-  use qcmod, only: npres_print,ptopq,pbotq,dfact,dfact1
+  use qcmod, only: npres_print,ptopq,pbotq,dfact,dfact1,njqc,vqc
   use jfunc, only: jiter,last,jiterstart,miter
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype
   use convinfo, only: icsubtype
   use converr_q, only: ptabl_q 
+  use converr, only: ptabl 
   use m_dtime, only: dtime_setup, dtime_check, dtime_show
   use rapidrefresh_cldsurf_mod, only: l_sfcobserror_ramp_q
   use rapidrefresh_cldsurf_mod, only: l_PBL_pseudo_SurfobsQ,pblH_ration,pps_press_incr, &
@@ -162,6 +164,7 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   real(r_kind),dimension(lat2,lon2,nfldsig):: qg2m
   real(r_kind),dimension(nsig):: prsltmp
   real(r_single),allocatable,dimension(:,:)::rdiagbuf
+  real(r_kind),dimension(34) :: ptablq
 
   integer(i_kind) i,nchar,nreal,ii,l,jj,mm1,itemp
   integer(i_kind) jsig,itype,k,nn,ikxx,iptrb,ibin,ioff,ioff0,icat,ijb
@@ -507,16 +510,7 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         val2     = val*val
         exp_arg  = -half*val2
         rat_err2 = ratio_errors**2
-        if (cvar_pg(ikx) > tiny_r_kind .and. error >tiny_r_kind) then
-           arg  = exp(exp_arg)
-           wnotgross= one-cvar_pg(ikx)
-           cg_q=cvar_b(ikx)
-           wgross = cg_term*cvar_pg(ikx)/(cg_q*wnotgross)
-           term =log((arg+wgross)/(one+wgross))
-           wgt  = one-wgross/(arg+wgross)
-           rwgt = wgt/wgtlim
-           valqc = -two*rat_err2*term
-        else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind .and. var_jb <10.0_r_kind) then
+        if(njqc== .true. .and. var_jb >tiny_r_kind .and.  error >tiny_r_kind .and. var_jb <10.0_r_kind) then
            if(exp_arg  == zero) then
               wgt=one
            else
@@ -527,9 +521,17 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 !           term=-two*var_jb*log(cosh((val*ratio_errors)/sqrt(two*var_jb)))
            term=-two*var_jb*ratio_errors*log(cosh((val)/sqrt(two*var_jb)))
 !           term=-two*var_jb*rat_err2*log(cosh((val)/sqrt(two*var_jb)))
-           wgt  = wgtlim
            rwgt = wgt/wgtlim
            valqc = -two*term
+        else if (vqc == .true. .and. cvar_pg(ikx) > tiny_r_kind .and. error >tiny_r_kind) then
+           arg  = exp(exp_arg)
+           wnotgross= one-cvar_pg(ikx)
+           cg_q=cvar_b(ikx)
+           wgross = cg_term*cvar_pg(ikx)/(cg_q*wnotgross)
+           term =log((arg+wgross)/(one+wgross))
+           wgt  = one-wgross/(arg+wgross)
+           rwgt = wgt/wgtlim
+           valqc = -two*rat_err2*term
         else
            term = exp_arg
            wgt  = wgtlim
@@ -606,13 +608,18 @@ subroutine setupq(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         if(oberror_tune) then
            qtail(ibin)%head%qpertb=data(iptrb,i)/error/ratio_errors
            qtail(ibin)%head%kx=ikx
-           if(presq > ptabl_q(2))then
+           if (njqc == .true.) then
+              ptablq=ptabl_q
+           else
+             ptablq=ptabl
+           endif
+           if(presq > ptablq(2))then
               qtail(ibin)%head%k1=1
-           else if( presq <= ptabl_q(33)) then
+           else if( presq <= ptablq(33)) then
               qtail(ibin)%head%k1=33
            else
               k_loop: do k=2,32
-                 if(presq > ptabl_q(k+1) .and. presq <= ptabl_q(k)) then
+                 if(presq > ptablq(k+1) .and. presq <= ptablq(k)) then
                     qtail(ibin)%head%k1=k
                     exit k_loop
                  endif

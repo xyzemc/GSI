@@ -20,7 +20,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   use obsmod, only: w_ob_type
   use obsmod, only: obs_diag
   use gsi_4dvar, only: nobs_bins,hr_obsbin
-  use qcmod, only: npres_print,ptop,pbot,dfact,dfact1,qc_satwnds
+  use qcmod, only: npres_print,ptop,pbot,dfact,dfact1,qc_satwnds,njqc,vqc
   use oneobmod, only: oneobtest,oneob_type,magoberr,maginnov 
   use gridmod, only: get_ijk,nsig,twodvar_regional,regional,rotate_wind_xy2ll
   use guess_grids, only: nfldsig,hrdifsig,geop_hgtl,sfcmod_gfs
@@ -34,6 +34,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype
   use convinfo, only: icsubtype
   use converr_uv, only: ptabl_uv
+  use converr, only: ptabl
   use rapidrefresh_cldsurf_mod, only: l_PBL_pseudo_SurfobsUV, pblH_ration,pps_press_incr
 
   use m_dtime, only: dtime_setup, dtime_check, dtime_show
@@ -140,6 +141,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 !   2013-10-19  todling - metguess now holds background
 !   2014-01-28  todling - write sensitivity slot indicator (ioff) to header of diagfile
 !   2014-04-12       su - add non linear qc from Purser's scheme
+!   2015-02-26       su - add njqc as an option to chose new non linear qc
 !
 ! REMARKS:
 !   language: f90
@@ -193,6 +195,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   real(r_kind),dimension(nsig)::prsltmp,tges,zges
   real(r_kind) wdirob,wdirgesin,wdirdiffmax
   real(r_single),allocatable,dimension(:,:)::rdiagbuf
+  real(r_kind),dimension(34):: ptabluv
 
   integer(i_kind) i,nchar,nreal,k,j,l,ii,itype,ijb
   integer(i_kind) jsig,mm1,iptrbu,iptrbv,jj,icat
@@ -312,7 +315,6 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            tfact=min(one,abs(data(itime,k)-data(itime,l))/dfact1)
            dup(k)=dup(k)+one-tfact*tfact*(one-dfact)
            dup(l)=dup(l)+one-tfact*tfact*(one-dfact)
-
         end if
      end do
   end do
@@ -897,16 +899,7 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         val      = valu*valu+valv*valv
         exp_arg  = -half*val
         rat_err2 = ratio_errors**2
-        if (cvar_pg(ikx) > tiny_r_kind .and. error > tiny_r_kind) then
-           arg  = exp(exp_arg)
-           wnotgross= one-cvar_pg(ikx)
-           cg_w=cvar_b(ikx)
-           wgross = cg_term*cvar_pg(ikx)/(cg_w*wnotgross)
-           term =log((arg+wgross)/(one+wgross))
-           wgt  = one-wgross/(arg+wgross)
-           rwgt = wgt/wgtlim
-           valqc = -two*rat_err2*term
-        else if(var_jb >tiny_r_kind .and.  var_jb <10.0_r_kind .and. error >tiny_r_kind) then
+        if(njqc == .true. .and. var_jb >tiny_r_kind .and.  var_jb <10.0_r_kind .and. error >tiny_r_kind) then
            if(exp_arg  == zero) then
               wgt=one
            else
@@ -919,6 +912,15 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 !           term=-two*var_jb*rat_err2*log(cosh((sqrt(val))/sqrt(two*var_jb)))
            rwgt = wgt/wgtlim
            valqc = -two*term
+        else if (vqc ==.true. .and. cvar_pg(ikx) > tiny_r_kind .and. error > tiny_r_kind) then
+           arg  = exp(exp_arg)
+           wnotgross= one-cvar_pg(ikx)
+           cg_w=cvar_b(ikx)
+           wgross = cg_term*cvar_pg(ikx)/(cg_w*wnotgross)
+           term =log((arg+wgross)/(one+wgross))
+           wgt  = one-wgross/(arg+wgross)
+           rwgt = wgt/wgtlim
+           valqc = -two*rat_err2*term
         else
            term = exp_arg
            wgt  = wgtlim
@@ -1027,13 +1029,18 @@ subroutine setupw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
            wtail(ibin)%head%upertb=data(iptrbu,i)/error/ratio_errors
            wtail(ibin)%head%vpertb=data(iptrbv,i)/error/ratio_errors
            wtail(ibin)%head%kx=ikx
-           if(presw > ptabl_uv(2))then
+           if (njqc == .true.) then
+              ptabluv=ptabl_uv
+           else
+             ptabluv=ptabl
+           endif
+           if(presw > ptabluv(2))then
               wtail(ibin)%head%k1=1
-           else if( presw <= ptabl_uv(33)) then
+           else if( presw <= ptabluv(33)) then
               wtail(ibin)%head%k1=33
            else
               k_loop: do k=2,32
-                 if(presw > ptabl_uv(k+1) .and. presw <= ptabl_uv(k)) then
+                 if(presw > ptabluv(k+1) .and. presw <= ptabluv(k)) then
                     wtail(ibin)%head%k1=k
                     exit k_loop
                  endif

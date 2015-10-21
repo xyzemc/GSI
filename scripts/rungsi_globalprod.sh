@@ -17,11 +17,12 @@
 ## Below are PBS (Linux queueing system) commands
 #PBS -o gsi_global.e${jobid} 
 #PBS -N gsi_global
+##PBS -q debug 
 #PBS -q batch 
 #PBS -l walltime=00:40:00 
 #PBS -l nodes=2:ppn=12
 #PBS -j eo                
-#PBS -A cloud 
+#PBS -A aircraft 
 #PBS -V
 #=======================================================
 
@@ -46,14 +47,15 @@ fi
 #=================================================================================================
 
 # Set experiment name and analysis date
-adate=2015021812
-expnm=nqctest    
-exp=nqctest
+adate=2015063000
+expnm=nqc2    
+exp=nqc
 expid=${expnm}.$adate
 
 # Set path/file for gsi executable
-#gsiexec=/u/Xiujuan.Su/home/gsi/xsu_nqc/src/global_gsi
 gsiexec=/scratch1/portfolios/NCEPDEV/da/save/Xiujuan.Su/gsi/xsu_nqc/src/global_gsi
+#gsiexec=/scratch1/portfolios/NCEPDEV/da/save/Xiujuan.Su/gsi/xsu_nqc/src_nqc2/global_gsi
+#gsiexec=/scratch1/portfolios/NCEPDEV/da/save/Xiujuan.Su/gsi/xsu_nqc/src_nqc3/global_gsi
 
 
 # Specify GSI fixed field
@@ -364,7 +366,7 @@ SINGLEOB=""
 cat << EOF > gsiparm.anl
  &SETUP
    miter=2,niter(1)=100,niter(2)=150,
-   niter_no_qc(1)=150,niter_no_qc(2)=200,
+   niter_no_qc(1)=20,niter_no_qc(2)=0,
    write_diag(1)=.true.,write_diag(2)=.false.,write_diag(3)=.true.,
    qoption=2,
    gencode=$IGEN,factqmin=5.0,factqmax=5.0,deltim=$DELTIM,
@@ -404,8 +406,8 @@ cat << EOF > gsiparm.anl
    $STRONGOPTS
  /
  &OBSQC
-   dfact=0.75,dfact1=3.0,noiqc=.true.,oberrflg=.true.,c_varqc=0.02,
-   use_poq7=.true.,
+   dfact=0.0,dfact1=1.0,noiqc=.true.,oberrflg=.true.,c_varqc=0.02,
+   use_poq7=.true.,njqc=.true.,vqc=.false.,
    $OBSQC
  /
  &OBS_INPUT
@@ -541,15 +543,15 @@ convinfo=$fixgsi/global_convinfo.txt
 atmsbeamdat=$fixgsi/atms_beamwidth.txt
 
 #errtable=$fixgsi/prepobs_errtable.global
-errtable_ps=$fixgsi/prepobs_errtable_ps.global
+errtable_ps=$fixgsi/prepobs_errtable_ps.global_nqcf
 errtable_pw=$fixgsi/prepobs_errtable_pw.global
-errtable_q=$fixgsi/prepobs_errtable_q.global
-errtable_t=$fixgsi/prepobs_errtable_t.global
-errtable_uv=$fixgsi/prepobs_errtable_uv.global
-btable_uv=$fixgsi/nqc_b_uv.global
-btable_ps=$fixgsi/nqc_b_ps.global
-btable_q=$fixgsi/nqc_b_q.global
-btable_t=$fixgsi/nqc_b_t.global
+errtable_q=$fixgsi/prepobs_errtable_q.global_nqcf
+errtable_t=$fixgsi/prepobs_errtable_t.global_nqcf
+errtable_uv=$fixgsi/prepobs_errtable_uv.global_nqcf
+btable_uv=$fixgsi/nqc_b_uv.global_nqcf
+btable_ps=$fixgsi/nqc_b_ps.global_nqcf
+btable_q=$fixgsi/nqc_b_q.global_nqcf
+btable_t=$fixgsi/nqc_b_t.global_nqcf
 
 
 

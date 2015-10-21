@@ -20,7 +20,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   use obsmod, only: obs_diag
   use gsi_4dvar, only: nobs_bins,hr_obsbin
 
-  use qcmod, only: npres_print,dfact,dfact1,ptop,pbot
+  use qcmod, only: npres_print,dfact,dfact1,ptop,pbot,njqc,vqc
 
   use oneobmod, only: oneobtest
   use oneobmod, only: maginnov
@@ -39,6 +39,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   use constants, only: one_quad
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype,icsubtype
   use converr_t, only: ptabl_t 
+  use converr, only: ptabl 
   use rapidrefresh_cldsurf_mod, only: l_gsd_terrain_match_surfTobs,l_sfcobserror_ramp_t
   use rapidrefresh_cldsurf_mod, only: l_PBL_pseudo_SurfobsT, pblH_ration,pps_press_incr
 
@@ -145,6 +146,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 !   2014-01-28  todling - write sensitivity slot indicator (idia) to header of diagfile
 !   2014-03-04  sienkiewicz - implementation of option aircraft_t_bc_ext (external table)
 !   2014-04-12       su - add non linear qc from Purser's scheme
+!   2015-02-26       su - add njqc as an option to chose new non linear qc
 ! !REMARKS:
 !   language: f90
 !   machine:  ibm RS/6000 SP; SGI Origin 2000; Compaq/HP
@@ -194,6 +196,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   real(r_kind) tgges,roges
   real(r_kind),dimension(nsig):: tvtmp,qtmp,utmp,vtmp,hsges
   real(r_kind) u10ges,v10ges,t2ges,q2ges,psges2,f10ges
+  real(r_kind),dimension(34) :: ptablt 
 
   real(r_kind),dimension(nsig):: prsltmp2
 
@@ -647,16 +650,7 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         val2     = val*val
         exp_arg  = -half*val2
         rat_err2 = ratio_errors**2
-        if (cvar_pg(ikx) > tiny_r_kind .and. error >tiny_r_kind) then
-           arg  = exp(exp_arg)
-           wnotgross= one-cvar_pg(ikx)
-           cg_t=cvar_b(ikx)
-           wgross = cg_term*cvar_pg(ikx)/(cg_t*wnotgross)
-           term =log((arg+wgross)/(one+wgross))
-           wgt  = one-wgross/(arg+wgross)
-           rwgt = wgt/wgtlim
-           valqc = -two*rat_err2*term
-        else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind .and. var_jb <10.0_r_kind) then
+        if(njqc ==.true. .and. var_jb >tiny_r_kind .and.  error >tiny_r_kind .and. var_jb <10.0_r_kind) then
            if(exp_arg  == zero) then
               wgt=one
            else
@@ -669,6 +663,15 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 !           term=-two*var_jb*rat_err2*log(cosh((val)/sqrt(two*var_jb)))
            rwgt = wgt/wgtlim
            valqc = -two*term
+        else if (vqc == .true. .and. cvar_pg(ikx) > tiny_r_kind .and. error >tiny_r_kind) then
+           arg  = exp(exp_arg)
+           wnotgross= one-cvar_pg(ikx)
+           cg_t=cvar_b(ikx)
+           wgross = cg_term*cvar_pg(ikx)/(cg_t*wnotgross)
+           term =log((arg+wgross)/(one+wgross))
+           wgt  = one-wgross/(arg+wgross)
+           rwgt = wgt/wgtlim
+           valqc = -two*rat_err2*term
         else
            term = exp_arg
            wgt  = wgtlim
@@ -793,13 +796,18 @@ subroutine setupt(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         if(oberror_tune) then
            ttail(ibin)%head%kx=ikx
            ttail(ibin)%head%tpertb=data(iptrb,i)/error/ratio_errors
-           if(prest > ptabl_t(2))then
+           if (njqc == .true.) then
+              ptablt=ptabl_t
+           else
+             ptablt=ptabl
+           endif
+           if(prest > ptablt(2))then
               ttail(ibin)%head%k1=1
-           else if( prest <= ptabl_t(33)) then
+           else if( prest <= ptablt(33)) then
               ttail(ibin)%head%k1=33
            else
               k_loop: do k=2,32
-                 if(prest > ptabl_t(k+1) .and. prest <= ptabl_t(k)) then
+                 if(prest > ptablt(k+1) .and. prest <= ptablt(k)) then
                     ttail(ibin)%head%k1=k
                     exit k_loop
                  endif

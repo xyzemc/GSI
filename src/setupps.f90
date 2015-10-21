@@ -61,6 +61,8 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 !   2013-10-19  todling - metguess now holds background 
 !   2014-01-28  todling - write sensitivity slot indicator (ioff) to header of diagfile
 !   2014-04-12       su - add non linear qc from Purser's scheme
+!   2015-02-26       su - add njqc as an option to chose new non linear qc,vqc
+!                         as previous variational qc 
 !
 !   input argument list:
 !     lunin    - unit from which to read observations
@@ -91,7 +93,7 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
              huge_r_kind,tiny_r_kind,two,cg_term,huge_single, &
              r1000,wgtlim,tiny_single,r10,three
   use jfunc, only: jiter,last,jiterstart,miter
-  use qcmod, only: dfact,dfact1,npres_print
+  use qcmod, only: dfact,dfact1,npres_print,njqc,vqc
   use guess_grids, only: hrdifsig,ges_lnprsl,nfldsig,ntguessig
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype,icsubtype
 
@@ -265,6 +267,10 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         dtemp=data(itemp,i)
         ikx  = nint(data(ikxx,i))
         var_jb=data(ijb,i)
+!        if( ictype(ikx) ==120) then
+!          write(6,100),data(ier2,i),var_jb,pob
+!        endif
+!100    format('SETUPPS:error,var_jb,pob',3f10.3)
      endif
  
 !    Link observation to appropriate observation bin
@@ -464,16 +470,7 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         val2     = val*val
         exp_arg  = -half*val2
         rat_err2 = ratio_errors**2
-        if (cvar_pg(ikx) > tiny_r_kind .and. error >tiny_r_kind) then
-           arg  = exp(exp_arg)
-           wnotgross= one-cvar_pg(ikx)
-           cg_ps=cvar_b(ikx)
-           wgross = cg_term*cvar_pg(ikx)/(cg_ps*wnotgross)
-           term =log((arg+wgross)/(one+wgross))
-           wgt  = one-wgross/(arg+wgross)
-           rwgt = wgt/wgtlim
-           valqc = -two*rat_err2*term
-        else if(var_jb >tiny_r_kind .and.  error >tiny_r_kind .and. var_jb < 10.0_r_kind)  then
+        if(njqc == .true. .and. var_jb >tiny_r_kind .and.  error >tiny_r_kind .and. var_jb < 10.0_r_kind)  then
            if(exp_arg  == zero) then
               wgt=one
             else
@@ -486,6 +483,15 @@ subroutine setupps(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 !           term=-two*var_jb*rat_err2*log(cosh((val)/sqrt(two*var_jb)))
            rwgt = wgt/wgtlim
            valqc = -two*term
+        else if ( vqc == .true. .and. cvar_pg(ikx) > tiny_r_kind .and. error >tiny_r_kind) then
+           arg  = exp(exp_arg)
+           wnotgross= one-cvar_pg(ikx)
+           cg_ps=cvar_b(ikx)
+           wgross = cg_term*cvar_pg(ikx)/(cg_ps*wnotgross)
+           term =log((arg+wgross)/(one+wgross))
+           wgt  = one-wgross/(arg+wgross)
+           rwgt = wgt/wgtlim
+           valqc = -two*rat_err2*term
         else
            term = exp_arg
            wgt  = wgtlim

@@ -14,6 +14,7 @@ module stptmod
 !   2009-08-12  lueken - update documentation
 !   2013-10-28  todling - rename p3d to prse
 !   2014-04-12       su - add non linear qc from Purser's scheme
+!   2015-02-26       su - add njqc as an option to chose new non linear qc
 !
 ! subroutines included:
 !   sub stpt
@@ -98,7 +99,7 @@ subroutine stpt(thead,dval,xval,out,sges,nstep,rpred,spred)
 !$$$
   use kinds, only: r_kind,i_kind,r_quad
   use obsmod, only: t_ob_type
-  use qcmod, only: nlnqc_iter,varqc_iter
+  use qcmod, only: nlnqc_iter,varqc_iter,njqc
   use constants, only: zero,half,one,two,tiny_r_kind,cg_term,zero_quad,r3600
   use gridmod, only: latlon1n,latlon11,latlon1n1
   use jfunc, only: l_foto,xhat_dt,dhat_dt
@@ -324,14 +325,14 @@ subroutine stpt(thead,dval,xval,out,sges,nstep,rpred,spred)
 !              reduces to the linear case (no qc)
 !  Puser's non linear QC scheme
 
-       if( tptr%jb  > tiny_r_kind .and. tptr%jb <10.0_r_kind) then
+       if( njqc ==.true. .and. tptr%jb  > tiny_r_kind .and. tptr%jb <10.0_r_kind) then
            do kk=1,max(1,nstep)
 !              pen(kk) = two*two*tptr%jb*log(cosh(sqrt(pen(kk)*tptr%raterr2/(two*tptr%jb))))
               pen(kk) = two*two*tptr%jb*log(cosh(sqrt(pen(kk)/(two*tptr%jb))))
            enddo
         endif
-        if( tptr%jb  > tiny_r_kind .and. tptr%jb <10.0_r_kind) then
-          out(1) = out(1)+pen(1)**sqrt(tptr%raterr2)
+        if( njqc ==.true. .and. tptr%jb  > tiny_r_kind .and. tptr%jb <10.0_r_kind) then
+          out(1) = out(1)+pen(1)*sqrt(tptr%raterr2)
 !          out(1) = out(1)+pen(1)*tptr%raterr2
           do kk=2,nstep
 !             out(kk) = out(kk)+(pen(kk)-pen(1))

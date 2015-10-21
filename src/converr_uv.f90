@@ -97,7 +97,7 @@ contains
      loopd : do 
         read(ietabl_uv,100,IOSTAT=iflag,end=120) itypey
         if( iflag /= 0 ) exit loopd
-        if (mype == 0) write(6,*)'CONVERR_UV:itypey=',itypey
+!        if (mype == 0) write(6,*)'CONVERR_UV:itypey=',itypey
 100     format(1x,i3)
         lcount=lcount+1
         itypex=itypey-199
