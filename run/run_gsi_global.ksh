@@ -59,7 +59,7 @@ set -x
 # if_observer = Yes  : only used as observation operater for enkf
 # no_member     number of ensemble members
 # BK_FILE_mem   path and base for ensemble members
-  if_observer=No
+  if_observer=No  # Yes ,or, No -- case sensitive!!!
   no_member=10
   BK_FILE_mem=${BK_ROOT}/sfg_2014040506
 #

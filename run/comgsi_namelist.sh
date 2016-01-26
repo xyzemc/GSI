@@ -50,7 +50,7 @@ OBS_INPUT::
    prepbufr       sst         null      sst                  1.0     0     0
    gpsrobufr      gps_ref     null      gps                  1.0     0     0
    ssmirrbufr     pcp_ssmi    dmsp      pcp_ssmi             1.0    -1     0
-   tmirrbufr      pcp_tmi     trmm      pcp_tmi              1.0     1     0
+   tmirrbufr      pcp_tmi     trmm      pcp_tmi              1.0    -1     0
    sbuvbufr       sbuv2       n16       sbuv8_n16            1.0     0     0
    sbuvbufr       sbuv2       n17       sbuv8_n17            1.0     0     0
    sbuvbufr       sbuv2       n18       sbuv8_n18            1.0     0     0
