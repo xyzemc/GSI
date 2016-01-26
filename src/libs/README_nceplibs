@@ -1,5 +1,18 @@
 The DTC GSI provides its own copy of the needed NCEPLIBS for compilation.
 
+As of Janaury 26, 2015 the NCEPLIBS are the following
+All libs from 
+/scratch3/NCEPDEV/nwprod/lib/sorc/
+   BACIO  verions is v2.0.1
+   BUFR   version is v10.2.5
+   NEMSIO version is v2.2.1
+   SFCIO  version is v1.1.0
+   SIGIO  version is v2.0.1  
+   SP     version is v2.0.2
+   W3EMC  version is v2.0.5
+   W3NCO  version is v2.0.6
+
+
 As of April 21, 2015 the NCEPLIBS are the following
 
 BACIO      

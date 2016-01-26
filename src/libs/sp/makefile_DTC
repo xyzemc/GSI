@@ -5,7 +5,7 @@ LIB = $(LIBDIR)/libsp_i4r8.a
 INCMOD  = ../../../include
 
 
-OBJ_F77 = bll2ps.o spanaly.o spdz2uv.o speps.o spfft.o spfft1.o \
+OBJ_F77 = spanaly.o spdz2uv.o speps.o spfft.o spfft1.o \
 spffte.o spfftpt.o spgradq.o spgradx.o spgrady.o splaplac.o \
 splegend.o sppad.o spsynth.o sptez.o sptezd.o sptezm.o sptezmd.o sptezmv.o \
 sptezv.o sptgpm.o sptgpmd.o sptgpmv.o sptgps.o sptgpsd.o sptgpsv.o sptgpt.o \
