@@ -7,7 +7,7 @@ all: $(SUBDIRS)
            ( cd $$dir; echo "Making $@ in `pwd`" ; make -f makefile_DTC ) ; \
         done
 	( cd main; echo "Making $@ in `pwd`" ; make -f makefile_DTC ) ;
-	( cd main/enkf; ls; echo "Making $@ in `pwd`" ; make -f makefile_EMC ) ;
+	( cd main/enkf; ls; echo "Making $@ in `pwd`" ; make -f Makefile ) ;
 
 clean: $(SUBDIRS) clean_main
 	@for dir in $(SUBDIRS); do \
@@ -17,5 +17,6 @@ clean: $(SUBDIRS) clean_main
 
 clean_main:
 	( cd main; echo "Making $@ in `pwd`" ; make -f makefile_DTC clean ) ;
+	( cd main/enkf; echo "Making $@ in `pwd`" ; make -f Makefile clean ) ;
 
 

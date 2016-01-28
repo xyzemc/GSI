@@ -359,6 +359,7 @@ module gridinfo
   use enkf_obsmod,    only: obloc, obloclat, obloclon, nobstot
   use params,    only: datapath, nlevs, nvars, ndim, nlons, nlats,           &
                        arw, nmm
+  use params,    only:  nbackgrounds,fgfileprefixes
   use mpisetup
   use netcdf_io
 

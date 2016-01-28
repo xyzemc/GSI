@@ -124,9 +124,19 @@ LIBsys          = $(MYLIBsys)
 	control2state.o \
         control2state_ad.o \
 	control_vectors.o \
+        convb_ps.o \
+        convb_q.o \
+        convb_t.o \
+        convb_uv.o \
 	converr.o \
+        converr_ps.o \
+        converr_pw.o \
+        converr_q.o \
+        converr_t.o \
+        converr_uv.o \
 	convinfo.o \
 	convthin.o \
+	convthin_time.o \
         correlated_obsmod.o \
 	crtm_interface.o \
 	cwhydromod.o \
@@ -160,6 +170,7 @@ LIBsys          = $(MYLIBsys)
 	genqsat.o \
 	genstats_gps.o \
 	gesinfo.o \
+        getcount_bufr.o \
 	get_derivatives.o \
 	get_derivatives2.o \
 	get_gefs_ensperts_dualres.o \
@@ -323,8 +334,10 @@ LIBsys          = $(MYLIBsys)
 	rapidrefresh_cldsurf_mod.o \
 	rdgrbsst.o \
 	read_aerosol.o \
+        read_ahi.o \
 	read_airs.o \
 	read_amsre.o \
+	read_amsr2.o \
 	read_anowbufr.o \
 	read_atms.o \
 	read_avhrr.o \
@@ -336,6 +349,7 @@ LIBsys          = $(MYLIBsys)
 	read_files.o \
         read_fl_hdob.o \
 	read_gfs_ozone_for_regional.o \
+	read_gmi.o \
 	read_goesimg.o \
         read_goesimgr_skycover.o \
 	read_goesndr.o \
@@ -346,8 +360,10 @@ LIBsys          = $(MYLIBsys)
 	read_lag.o \
 	read_lidar.o \
 	read_Lightning.o \
+        read_mitm_mxtm.o \
 	read_modsbufr.o \
-	read_NASA_LaRC.o \
+        read_nasa_larc.o \
+	read_NASA_LaRC_cloud.o \
         read_nsstbufr.o \
 	read_obs.o \
 	read_obsdiags.o \
@@ -356,7 +372,9 @@ LIBsys          = $(MYLIBsys)
 	read_pcp.o \
 	read_prepbufr.o \
 	read_radar.o \
-	read_RadarRef_mosaic.o \
+	read_radarref_mosaic.o \
+        read_rapidscat.o \
+        read_saphir.o \
 	read_satwnd.o \
 	read_seviri.o \
         read_sfcwnd.o \
@@ -490,7 +508,6 @@ LIBsys          = $(MYLIBsys)
 	unhalf_nmm_grid2.o \
 	update_guess.o \
 	update_geswtend.o \
-	ut_gsibundle.o \
 	wind_fft.o \
 	wrf_binary_interface.o \
 	wrf_mass_guess_mod.o \
