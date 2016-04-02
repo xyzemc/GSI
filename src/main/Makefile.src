@@ -56,7 +56,16 @@
 	control2state_ad.o \
 	control2model_ad.o \
 	control_vectors.o \
+        convb_ps.o \
+        convb_q.o \
+        convb_t.o \
+        convb_uv.o \
 	converr.o \
+        converr_ps.o \
+        converr_pw.o \
+        converr_q.o \
+        converr_t.o \
+        converr_uv.o \
 	convinfo.o \
 	convthin.o \
 	convthin_time.o  \
@@ -155,6 +164,7 @@
 	intpblh.o \
 	intpcp.o \
 	intpm2_5.o \
+	intpm10.o \
 	intps.o \
 	intpw.o \
 	intq.o \
@@ -285,6 +295,7 @@
 	read_lag.o \
 	read_lidar.o \
 	read_Lightning.o \
+        read_mitm_mxtm.o \
 	read_modsbufr.o \
 	read_nasa_larc.o  \
 	read_nsstbufr.o \
@@ -332,6 +343,7 @@
 	setuppblh.o \
 	setuppcp.o \
 	setuppm2_5.o \
+        setuppm10.o \
 	setuppmsl.o \
 	setupps.o \
 	setuppw.o \
@@ -372,6 +384,7 @@
 	statsrad.o \
 	stop1.o \
 	stp3dvar.o \
+        stpaod.o \
 	stpcalc.o \
 	stpco.o \
 	stpdw.o \
@@ -387,6 +400,7 @@
 	stppblh.o \
 	stppcp.o \
 	stppm2_5.o \
+	stppm10.o \
 	stppmsl.o \
 	stpps.o \
 	stppw.o \
