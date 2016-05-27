@@ -186,7 +186,7 @@ if ( $iflinux  )
         printf " required \nwhen building with Intel ifort. The library path variable ";
         printf "\$LAPACK_PATH has not \nbeen set. Typically the required path is ";
         printf " available through a system variable such as: \n"; 
-        printf " $MKLROOT on Jet and Zeus \n";
+        printf "\$MKLROOT on NOAA and NCAR machines \n";
         printf "Please set the path, and rerun the configure script. \n";
         printf "Configuration unsuccessful. \n" ;
         printf "----------------------------------------------------------";
