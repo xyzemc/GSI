@@ -1031,7 +1031,6 @@ module gridio
   use params,   only: nlevs, nvars, nlons, nlats, cliptracers, datapath,     &
                       arw, nmm, datestring, pseudo_rh,                       &
                       nbackgrounds,fgfileprefixes,anlfileprefixes
-  use params,   only:  nbackgrounds,fgfileprefixes,anlfileprefixes
   use constants, only: zero,one,cp,fv,rd,grav,zero
 
   implicit none
