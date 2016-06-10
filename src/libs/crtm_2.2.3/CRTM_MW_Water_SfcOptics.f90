@@ -52,7 +52,7 @@ MODULE CRTM_MW_Water_SfcOptics
   ! Everything private by default
   PRIVATE
   ! Data types
-  PUBLIC :: iVar_type
+  PUBLIC :: iVar_type_
   ! Science routines
   PUBLIC :: Compute_MW_Water_SfcOptics
   PUBLIC :: Compute_MW_Water_SfcOptics_TL
@@ -73,7 +73,7 @@ MODULE CRTM_MW_Water_SfcOptics
   ! Structure definition to hold forward
   ! variables across FWD, TL, and AD calls
   ! --------------------------------------
-  TYPE :: iVar_type
+  TYPE :: iVar_type_
     PRIVATE
     ! FastemX model internal variable structure
     TYPE(FastemX_type) :: FastemX_Var
@@ -84,7 +84,7 @@ MODULE CRTM_MW_Water_SfcOptics
     REAL(fp), DIMENSION(MAX_N_ANGLES) :: dEH_dWindSpeed = ZERO
     REAL(fp), DIMENSION(MAX_N_ANGLES) :: dEV_dTs        = ZERO
     REAL(fp), DIMENSION(MAX_N_ANGLES) :: dEV_dWindSpeed = ZERO
-  END TYPE iVar_type
+  END TYPE iVar_type_
 
 CONTAINS
 
@@ -159,7 +159,7 @@ CONTAINS
 !                        The contents of this structure are NOT accessible
 !                        outside of the CRTM_MW_Water_SfcOptics module.
 !                        UNITS:      N/A
-!                        TYPE:       iVar_type
+!                        TYPE:       iVar_type_
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(OUT)
 !
@@ -193,7 +193,7 @@ CONTAINS
     INTEGER,                      INTENT(IN)     :: SensorIndex
     INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics
-    TYPE(iVar_type),              INTENT(IN OUT) :: iVar
+    TYPE(iVar_type_),             INTENT(IN OUT) :: iVar
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -352,7 +352,7 @@ CONTAINS
 !                        The contents of this structure are NOT accessible
 !                        outside of the CRTM_MW_Water_SfcOptics module.
 !                        UNITS:      N/A
-!                        TYPE:       iVar_type
+!                        TYPE:       iVar_type_
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -398,7 +398,7 @@ CONTAINS
     INTEGER,                      INTENT(IN)     :: SensorIndex
     INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_SfcOptics_type),    INTENT(IN OUT) :: SfcOptics_TL
-    TYPE(iVar_type),              INTENT(IN)     :: iVar
+    TYPE(iVar_type_),             INTENT(IN)     :: iVar
     ! Function result
     INTEGER :: err_stat
     ! Local parameters
@@ -548,7 +548,7 @@ CONTAINS
 !                        The contents of this structure are NOT accessible
 !                        outside of the CRTM_MW_Water_SfcOptics module.
 !                        UNITS:      N/A
-!                        TYPE:       iVar_type
+!                        TYPE:       iVar_type_
 !                        DIMENSION:  Scalar
 !                        ATTRIBUTES: INTENT(IN)
 !
@@ -596,7 +596,7 @@ CONTAINS
     INTEGER,                      INTENT(IN)     :: SensorIndex
     INTEGER,                      INTENT(IN)     :: ChannelIndex
     TYPE(CRTM_Surface_type),      INTENT(IN OUT) :: Surface_AD
-    TYPE(iVar_type),              INTENT(IN)     :: iVar
+    TYPE(iVar_type_),             INTENT(IN)     :: iVar
     ! Function result
     INTEGER :: err_stat
     ! Local parameters

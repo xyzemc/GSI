@@ -51,7 +51,7 @@ MODULE CRTM_SfcOptics
                                       Compute_MW_Land_SfcOptics, &
                                       Compute_MW_Land_SfcOptics_TL, &
                                       Compute_MW_Land_SfcOptics_AD
-  USE CRTM_MW_Water_SfcOptics,  ONLY: MWWSOVar_type => iVar_type   , &
+  USE CRTM_MW_Water_SfcOptics,  ONLY: MWWSOVar_type => iVar_type_   , &
                                       Compute_MW_Water_SfcOptics   , &
                                       Compute_MW_Water_SfcOptics_TL, &
                                       Compute_MW_Water_SfcOptics_AD

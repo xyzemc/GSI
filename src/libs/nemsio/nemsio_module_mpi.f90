@@ -125,10 +125,11 @@ module nemsio_module_mpi
 !
 !$$$ end module document block
 !
-  use mpi
+! use mpi
 !
   implicit none
   private
+  include "mpif.h"
 !------------------------------------------------------------------------------
 ! private variables and type needed by nemsio_gfile
   integer,parameter:: nemsio_lmeta1=48,nemsio_lmeta3=40

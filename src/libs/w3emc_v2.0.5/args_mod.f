@@ -20,10 +20,10 @@ C   MACHINE:  IBM SP
 C
 C$$$
       module args_mod
-        interface iargc
+        interface iargc_
           module procedure iargc_8
         end interface
-        interface getarg
+        interface getarg_
           subroutine getarg(k,c)
             integer(4) k
             character*(*) c

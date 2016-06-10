@@ -14,7 +14,7 @@ $(LIB): $(OBJS)
 	$(CP) *.mod $(INCMOD)
 
 gblevents.o:
-	$(SFC) -c $(FFLAGS_W3) $(FFLAGS_i4r8) -module $(INCMOD) gblevents.f
+	$(SFC) -c $(FFLAGS_W3) $(FFLAGS_i4r8) $(INC_FLAGS) gblevents.f
 
 
 # Dependency include file

@@ -79,7 +79,7 @@ MODULE NLTECoeff_Define
   INTEGER, PARAMETER :: NLTECOEFF_RELEASE = 2   ! This determines structure and file formats.
   INTEGER, PARAMETER :: NLTECOEFF_VERSION = 1   ! This is just the data version.
   ! Number of layers for which mean temperatures are computed
-  INTEGER, PARAMETER :: N_LAYERS = 2
+  INTEGER, PARAMETER :: N_LAYERS2 = 2
   ! Integer flags corresponding to logical false/true
   INTEGER, PARAMETER :: FALSE = 0
   INTEGER, PARAMETER :: TRUE  = 1
@@ -101,19 +101,19 @@ MODULE NLTECoeff_Define
     INTEGER(Long) :: n_NLTE_Channels  = 0  ! n4 dimension
     INTEGER(Long) :: n_Channels       = 0  ! n5 dimension
     ! ..."Internal" dimension
-    INTEGER(Long) :: n_Layers = N_LAYERS
+    INTEGER(Long) :: n_Layers = N_LAYERS2
     ! Sensor info
     CHARACTER(SL)              :: Sensor_Id        = ''
     INTEGER(Long)              :: WMO_Satellite_ID = INVALID_WMO_SATELLITE_ID
     INTEGER(Long)              :: WMO_Sensor_ID    = INVALID_WMO_SENSOR_ID
     INTEGER(Long), ALLOCATABLE :: Sensor_Channel(:)        ! n5  
     ! Pressure levels used for computing mean temperatures in the two layers
-    REAL(Double) :: Upper_Plevel(N_LAYERS) = ZERO
-    REAL(Double) :: Lower_Plevel(N_LAYERS) = ZERO
+    REAL(Double) :: Upper_Plevel(N_LAYERS2) = ZERO
+    REAL(Double) :: Lower_Plevel(N_LAYERS2) = ZERO
     ! Min., max. and mean layer temperatures used as the temperature predictor limits 
-    REAL(Double) :: Min_Tm(N_LAYERS)  = ZERO
-    REAL(Double) :: Max_Tm(N_LAYERS)  = ZERO
-    REAL(Double) :: Mean_Tm(N_LAYERS) = ZERO
+    REAL(Double) :: Min_Tm(N_LAYERS2)  = ZERO
+    REAL(Double) :: Max_Tm(N_LAYERS2)  = ZERO
+    REAL(Double) :: Mean_Tm(N_LAYERS2) = ZERO
     ! Coefficient table dimension vectors
     REAL(Double) , ALLOCATABLE :: Secant_Sensor_Zenith(:)  ! n2  
     REAL(Double) , ALLOCATABLE :: Secant_Solar_Zenith(:)   ! n3  
