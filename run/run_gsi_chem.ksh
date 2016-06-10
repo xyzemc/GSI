@@ -2,31 +2,48 @@
 #####################################################
 # machine set up (users should change this part)
 #####################################################
-
-#BSUB -P P48503002             # project code
-#BSUB -W 00:30                 # wall-clock time (hrs:mins)
-#BSUB -n 8                  # number of tasks in job         
-#BSUB -R "span[ptile=16]"      # run 16 MPI tasks per node
-#BSUB -J gsi                   # job name
-#BSUB -o gsi.%J.out          # output file name in which %J is replaced by the job ID
-#BSUB -e gsi.%J.err          # error file name in which %J is replaced by the job ID
-##BSUB -q premium             # queue
-#BSUB -q small               # queue
-
-
+# LSF batch script to run an MPI application
 #
+# Set the queueing options 
+#PBS -l procs=24
+#PBS -l walltime=0:10:00
+#PBS -A wrfruc
+#PBS -N gsi_aod
+#PBS -q debug
+#PBS -o /scratch3/BMC/wrfruc/mhu/code/comGSI/releaseV35/release_V3.5beta_1635/run/chem_run.log
+#PBS -e /scratch3/BMC/wrfruc/mhu/code/comGSI/releaseV35/release_V3.5beta_1635/run/chem_run.log
+
 
 set -x
+np=$PBS_NP
+
 #
 # GSIPROC = processor number used for GSI analysis
 #------------------------------------------------
-  GSIPROC=8
-  ARCH='LINUX_LSF'
+  GSIPROC=$PBS_NP
+  ARCH='LINUX_PBS'
 
 # Supported configurations:
             # IBM_LSF,
             # LINUX, LINUX_LSF, LINUX_PBS,
             # DARWIN_PGI
+# this script can run 4 GSI chem cases
+#  1. WRF-Chem GOCART with MODIS AOD observation 
+#         bk_core=WRFCHEM_GOCART and obs_type=MODISAOD
+#         background= wrfinput_enkf_d01_2012-06-03_18:00:00
+#         observations=Aqua_Terra_AOD_BUFR:2012-06-03_00:00:00
+#  2. WRF-Chem GOCART with PM25 observation 
+#         bk_core=WRFCHEM_GOCART and obs_type=PM25
+#         background= wrfinput_enkf_d01_2012-06-03_18:00:00
+#         observations=anow.2012060318.bufr
+#  3. WRF-Chem PM25 with MP25 observation
+#         bk_core=WRFCHEM_PM25 and obs_type=PM25
+#         background= wrfinput_enkf_d01_2012-06-03_18:00:00
+#         observations=anow.2012060318.bufr
+#  4. CMAQ with MP25 observation 
+#         bk_core=CMAQ and obs_type=PM25
+#         background= cmaq2gsi_4.7_20130621_120000.bin
+#         observations=anow.2013062112.bufr
 #
 #####################################################
 # case set up (users should change this part)
@@ -36,37 +53,32 @@ set -x
 # WORK_ROOT= working directory, where GSI runs
 # PREPBURF = path of PreBUFR conventional obs
 # BK_FILE  = path and name of background file
-# OBS_ROOT = path of observations files
+# DATA_ROOT = path of observations and background files
 # FIX_ROOT = path of fix files
 # GSI_EXE  = path and name of the gsi executable 
-  ANAL_TIME=2014061700
-  HH=`echo $ANAL_TIME | cut -c9-10`
-  WORK_ROOT=/glade/p/work/mhu/gsi/code/trunk_r1558/run/testarw
-  OBS_ROOT=/glade/p/ral/jnt/GSI_DTC/data/20140617/obs
-  PREPBUFR=${OBS_ROOT}/nam.t${HH}z.prepbufr.tm00.nr
-  BK_ROOT=/glade/p/ral/jnt/GSI_DTC/data/20140617/2014061700/arw
-  BK_FILE=${BK_ROOT}/wrfinput_d01.${ANAL_TIME}
-  CRTM_ROOT=/glade/p/work/mhu/gsi/crtm/fix_2.2.3
-  GSI_ROOT=/glade/p/work/mhu/gsi/code/trunk_r1558
+  ANAL_TIME=2012060318
+  GSI_ROOT=/scratch3/BMC/wrfruc/mhu/code/comGSI/releaseV35/release_V3.5beta_1635
+  WORK_ROOT=${GSI_ROOT}/run/testchem_cmaq_pm25
+  DATA_ROOT=/scratch3/BMC/wrfruc/mhu/code/comGSI/releaseV35/release_V3.5beta_1635/run/chemdata
+  BK_ROOT=${DATA_ROOT}/bk
+#  PREPBUFR=${DATA_ROOT}/obs/Aqua_Terra_AOD_BUFR:2012-06-03_00:00:00
+#  PREPBUFR=${DATA_ROOT}/obs/anow.2012060318.bufr
+   PREPBUFR=${DATA_ROOT}/obs/anow.2013062112.bufr
+#  BK_FILE=${BK_ROOT}/wrfinput_enkf_d01_2012-06-03_18:00:00
+  BK_FILE=${BK_ROOT}/cmaq2gsi_4.7_20130621_120000.bin
+  CRTM_ROOT=/scratch3/BMC/wrfruc/mhu/data/crtm/CRTM_2.2.3
   FIX_ROOT=${GSI_ROOT}/fix
   GSI_EXE=${GSI_ROOT}/run/gsi.exe
-  GSI_NAMELIST=${GSI_ROOT}/run/comgsi_namelist.sh
+  GSI_NAMELIST=${GSI_ROOT}/run/comgsi_namelist_chem.sh
 
 #------------------------------------------------
-# bk_core= which WRF core is used as background (NMM or ARW or NMMB)
-# bkcv_option= which background error covariance and parameter will be used 
-#              (GLOBAL or NAM)
+# bk_core= set background (WRFCHEM_GOCART WRFCHEM_PM25 or CMAQ)
+# obs_type= set observation type (MODISAOD or PM25)
 # if_clean = clean  : delete temperal files in working directory (default)
 #            no     : leave running directory as is (this is for debug only)
-  bk_core=ARW
-  bkcv_option=NAM
+  bk_core=CMAQ
+  obs_type=PM25
   if_clean=clean
-# if_observer = Yes  : only used as observation operater for enkf
-# no_member     number of ensemble members
-# BK_FILE_mem   path and base for ensemble members
-  if_observer=No   # Yes, or, No -- case sensitive !
-  no_member=20
-  BK_FILE_mem=${BK_ROOT}/wrfarw.mem
 #
 #
 #####################################################
@@ -136,13 +148,13 @@ if [ ! -r "${BK_FILE}" ]; then
   exit 1
 fi
 
-# Make sure OBS_ROOT is defined and exists
-if [ ! "${OBS_ROOT}" ]; then
-  echo "ERROR: \$OBS_ROOT is not defined!"
+# Make sure DATA_ROOT is defined and exists
+if [ ! "${DATA_ROOT}" ]; then
+  echo "ERROR: \$DATA_ROOT is not defined!"
   exit 1
 fi
-if [ ! -d "${OBS_ROOT}" ]; then
-  echo "ERROR: OBS_ROOT directory '${OBS_ROOT}' does not exist!"
+if [ ! -d "${DATA_ROOT}" ]; then
+  echo "ERROR: DATA_ROOT directory '${DATA_ROOT}' does not exist!"
   exit 1
 fi
 
@@ -201,20 +213,24 @@ echo " Copy GSI executable, background file, and link observation bufr to workin
 cp ${GSI_EXE} gsi.exe
 
 # Bring over background field (it's modified by GSI so we can't link to it)
-cp ${BK_FILE} ./wrf_inout
 
+if [ ${bk_core} = WRFCHEM_GOCART ] ; then
+   cp ${BK_FILE} ./wrf_inout
+fi
+if [ ${bk_core} = WRFCHEM_PM25 ] ; then
+   cp ${BK_FILE} ./wrf_inout
+fi
+if [ ${bk_core} = CMAQ ] ; then
+   cp ${BK_FILE} ./cmaq_in.bin
+fi
 
-# Link to the prepbufr data
-ln -s ${PREPBUFR} ./prepbufr
-
-# ln -s ${OBS_ROOT}/gdas1.t${HH}z.sptrmm.tm00.bufr_d tmirrbufr
-# Link to the radiance data
- ln -s ${OBS_ROOT}/gdas1.t${HH}z.1bamua.tm00.bufr_d amsuabufr
- ln -s ${OBS_ROOT}/nam.t${HH}z.1bamub.tm00.bufr_d amsubbufr
- ln -s ${OBS_ROOT}/nam.t${HH}z.1bhrs3.tm00.bufr_d hirs3bufr
- ln -s ${OBS_ROOT}/gdas1.t${HH}z.1bhrs4.tm00.bufr_d hirs4bufr
- ln -s ${OBS_ROOT}/nam.t${HH}z.1bmhs.tm00.bufr_d mhsbufr
- ln -s ${OBS_ROOT}/nam.t${HH}z.gpsro.tm00.bufr_d gpsrobufr
+# Link to the observation data
+if [ ${obs_type} = MODISAOD ] ; then
+ ln -s ${PREPBUFR} ./modisbufr
+fi
+if [ ${obs_type} = PM25 ] ; then
+ ln -s ${PREPBUFR} ./pm25bufr
+fi
 #
 ##################################################################################
 
@@ -236,34 +252,25 @@ echo " Copy fixed files and link CRTM coefficient files to working directory"
 #   bufrtable= text file ONLY needed for single obs test (oneobstest=.true.)
 #   bftab_sst= bufr table for sst ONLY needed for sst retrieval (retrieval=.true.)
 
-if [ ${bkcv_option} = GLOBAL ] ; then
-  echo ' Use global background error covariance'
-  BERROR=${FIX_ROOT}/${BYTE_ORDER}/nam_glb_berror.f77.gcv
-  OBERROR=${FIX_ROOT}/prepobs_errtable.global
-  if [ ${bk_core} = NMM ] ; then
-     ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf_glbe
-  fi
-  if [ ${bk_core} = ARW ] ; then
-    ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf_glbe
-  fi
-  if [ ${bk_core} = NMMB ] ; then
-    ANAVINFO=${FIX_ROOT}/anavinfo_nems_nmmb_glb
-  fi
-else
-  echo ' Use NAM background error covariance'
-  BERROR=${FIX_ROOT}/${BYTE_ORDER}/nam_nmmstat_na.gcv
-  OBERROR=${FIX_ROOT}/nam_errtable.r3dv
-  if [ ${bk_core} = NMM ] ; then
-     ANAVINFO=${FIX_ROOT}/anavinfo_ndas_netcdf
-  fi
-  if [ ${bk_core} = ARW ] ; then
-     ANAVINFO=${FIX_ROOT}/anavinfo_arw_netcdf
-  fi
-  if [ ${bk_core} = NMMB ] ; then
-     ANAVINFO=${FIX_ROOT}/anavinfo_nems_nmmb
-  fi
+if [ ${bk_core} = WRFCHEM_GOCART ] ; then
+  BERROR=${FIX_ROOT}/wrf_chem_berror_little_endian
+  BERROR_CHEM=${FIX_ROOT}/wrf_chem_berror_little_endian
+  ANAVINFO=${FIX_ROOT}/anavinfo_wrfchem_gocart
+fi
+if [ ${bk_core} = WRFCHEM_PM25 ] ; then
+  BERROR=${FIX_ROOT}/wrf_chem_berror_little_endian
+  BERROR_CHEM=${FIX_ROOT}/wrf_chem_berror_little_endian
+  ANAVINFO=${FIX_ROOT}/anavinfo_wrfchem_pm25
+fi
+if [ ${bk_core} = CMAQ ] ; then
+  BERROR=${FIX_ROOT}/cmaq_berror_little_endian
+  BERROR_CHEM=${FIX_ROOT}/cmaq_berror_little_endian
+  ANAVINFO=${FIX_ROOT}/anavinfo_cmaq_pm25
 fi
 
+AEROINFO=${FIX_ROOT}/aeroinfo_aod.txt
+OBERROR=${FIX_ROOT}/nam_errtable.r3dv
+SATANGL=${FIX_ROOT}/global_satangbias.txt
 SATINFO=${FIX_ROOT}/global_satinfo.txt
 CONVINFO=${FIX_ROOT}/global_convinfo.txt
 OZINFO=${FIX_ROOT}/global_ozinfo.txt
@@ -272,11 +279,14 @@ PCPINFO=${FIX_ROOT}/global_pcpinfo.txt
 #  copy Fixed fields to working directory
  cp $ANAVINFO anavinfo
  cp $BERROR   berror_stats
+ cp $BERROR_CHEM   berror_stats_chem
+ cp $SATANGL  satbias_angle
  cp $SATINFO  satinfo
  cp $CONVINFO convinfo
  cp $OZINFO   ozinfo
  cp $PCPINFO  pcpinfo
  cp $OBERROR  errtable
+ cp $AEROINFO aeroinfo
 #
 #    # CRTM Spectral and Transmittance coefficients
 CRTM_ROOT_ORDER=${CRTM_ROOT}/${BYTE_ORDER}
@@ -288,7 +298,7 @@ emiscoef_VISice=${CRTM_ROOT_ORDER}/NPOESS.VISice.EmisCoeff.bin
 emiscoef_VISland=${CRTM_ROOT_ORDER}/NPOESS.VISland.EmisCoeff.bin
 emiscoef_VISsnow=${CRTM_ROOT_ORDER}/NPOESS.VISsnow.EmisCoeff.bin
 emiscoef_VISwater=${CRTM_ROOT_ORDER}/NPOESS.VISwater.EmisCoeff.bin
-emiscoef_MWwater=${CRTM_ROOT_ORDER}/FASTEM6.MWwater.EmisCoeff.bin
+emiscoef_MWwater=${CRTM_ROOT_ORDER}/FASTEM5.MWwater.EmisCoeff.bin
 aercoef=${CRTM_ROOT_ORDER}/AerosolCoeff.bin
 cldcoef=${CRTM_ROOT_ORDER}/CloudCoeff.bin
 
@@ -300,11 +310,16 @@ ln -s $emiscoef_VISice ./NPOESS.VISice.EmisCoeff.bin
 ln -s $emiscoef_VISland ./NPOESS.VISland.EmisCoeff.bin
 ln -s $emiscoef_VISsnow ./NPOESS.VISsnow.EmisCoeff.bin
 ln -s $emiscoef_VISwater ./NPOESS.VISwater.EmisCoeff.bin
-ln -s $emiscoef_MWwater ./FASTEM6.MWwater.EmisCoeff.bin
+ln -s $emiscoef_MWwater ./FASTEM5.MWwater.EmisCoeff.bin
 ln -s $aercoef  ./AerosolCoeff.bin
 ln -s $cldcoef  ./CloudCoeff.bin
 # Copy CRTM coefficient files based on entries in satinfo file
 for file in `awk '{if($1!~"!"){print $1}}' ./satinfo | sort | uniq` ;do
+   ln -s ${CRTM_ROOT_ORDER}/${file}.SpcCoeff.bin ./
+   ln -s ${CRTM_ROOT_ORDER}/${file}.TauCoeff.bin ./
+done
+
+for file in `awk '{if($1!~"!"){print $1}}' ./aeroinfo | sort | uniq` ;do
    ln -s ${CRTM_ROOT_ORDER}/${file}.SpcCoeff.bin ./
    ln -s ${CRTM_ROOT_ORDER}/${file}.TauCoeff.bin ./
 done
@@ -314,53 +329,33 @@ done
  cp $bufrtable ./prepobs_prep.bufrtable
 
 # for satellite bias correction
-cp ${FIX_ROOT}/gdas1.t00z.abias.20150617 ./satbias_in
-cp ${FIX_ROOT}/gdas1.t00z.abias_pc.20150617  ./satbias_pc
+cp ${FIX_ROOT}/sample.satbias ./satbias_in
 
 #
 ##################################################################################
 # Set some parameters for use by the GSI executable and to build the namelist
 echo " Build the namelist "
 
-# default is NAM
-#   as_op='1.0,1.0,0.5 ,0.7,0.7,0.5,1.0,1.0,'
-vs_op='1.0,'
-hzscl_op='0.373,0.746,1.50,'
-if [ ${bkcv_option} = GLOBAL ] ; then
-#   as_op='0.6,0.6,0.75,0.75,0.75,0.75,1.0,1.0'
-   vs_op='0.7,'
-   hzscl_op='1.7,0.8,0.5,'
+if [ ${bk_core} = WRFCHEM_GOCART ] ; then
+ bk_core_arw='.true.'
+ bk_if_netcdf='.true.'
+ bk_core_cmaq='.false.'
+ bk_wrf_pm2_5='.false.'
+ bk_laeroana_gocart='.true.'
 fi
-if [ ${bk_core} = NMMB ] ; then
-   vs_op='0.6,'
+if [ ${bk_core} = WRFCHEM_PM25 ] ; then
+ bk_core_arw='.true.'
+ bk_if_netcdf='.true.'
+ bk_core_cmaq='.false.'
+ bk_wrf_pm2_5='.true.'
+ bk_laeroana_gocart='.false.'
 fi
-
-# default is NMM
-   bk_core_arw='.false.'
-   bk_core_nmm='.true.'
-   bk_core_nmmb='.false.'
-   bk_if_netcdf='.true.'
-if [ ${bk_core} = ARW ] ; then
-   bk_core_arw='.true.'
-   bk_core_nmm='.false.'
-   bk_core_nmmb='.false.'
-   bk_if_netcdf='.true.'
-fi
-if [ ${bk_core} = NMMB ] ; then
-   bk_core_arw='.false.'
-   bk_core_nmm='.false.'
-   bk_core_nmmb='.true.'
-   bk_if_netcdf='.false.'
-fi
-
-if [ ${if_observer} = Yes ] ; then
-  nummiter=0
-  if_read_obs_save='.true.'
-  if_read_obs_skip='.false.'
-else
-  nummiter=2
-  if_read_obs_save='.false.'
-  if_read_obs_skip='.false.'
+if [ ${bk_core} = CMAQ ] ; then
+ bk_core_arw='.false.'
+ bk_if_netcdf='.false.'
+ bk_core_cmaq='.true.'
+ bk_wrf_pm2_5='.false.'
+ bk_laeroana_gocart='.false.'
 fi
 
 # Build the GSI namelist on-the-fly
@@ -376,6 +371,8 @@ EOF
 #  run  GSI
 ###################################################
 echo ' Run GSI with' ${bk_core} 'background'
+
+export F_UFMTENDIAN='little:22'
 
 case $ARCH in
    'IBM_LSF')
@@ -394,6 +391,9 @@ if [ ${error} -ne 0 ]; then
   echo "ERROR: ${GSI} crashed  Exit status=${error}"
   exit ${error}
 fi
+
+ncdiff -O wrf_inout $BK_FILE ../outdata/diff.nc
+
 
 #
 ##################################################################
@@ -432,20 +432,18 @@ case $loop in
 esac
 
 #  Collect diagnostic files for obs types (groups) below
-#   listall="conv amsua_metop-a mhs_metop-a hirs4_metop-a hirs2_n14 msu_n14 \
-#          sndr_g08 sndr_g10 sndr_g12 sndr_g08_prep sndr_g10_prep sndr_g12_prep \
-#          sndrd1_g08 sndrd2_g08 sndrd3_g08 sndrd4_g08 sndrd1_g10 sndrd2_g10 \
-#          sndrd3_g10 sndrd4_g10 sndrd1_g12 sndrd2_g12 sndrd3_g12 sndrd4_g12 \
-#          hirs3_n15 hirs3_n16 hirs3_n17 amsua_n15 amsua_n16 amsua_n17 \
-#          amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua \
-#          goes_img_g08 goes_img_g10 goes_img_g11 goes_img_g12 \
-#          pcp_ssmi_dmsp pcp_tmi_trmm sbuv2_n16 sbuv2_n17 sbuv2_n18 \
-#          omi_aura ssmi_f13 ssmi_f14 ssmi_f15 hirs4_n18 amsua_n18 mhs_n18 \
-#          amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 \
-#          ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16 mhs_metop_b \
-#          hirs4_metop_b hirs4_n19 amusa_n19 mhs_n19"
- listall=`ls pe* | cut -f2 -d"." | awk '{print substr($0, 0, length($0)-3)}' | sort | uniq `
-
+   listall="conv amsua_metop-a mhs_metop-a hirs4_metop-a hirs2_n14 msu_n14 \
+          sndr_g08 sndr_g10 sndr_g12 sndr_g08_prep sndr_g10_prep sndr_g12_prep \
+          sndrd1_g08 sndrd2_g08 sndrd3_g08 sndrd4_g08 sndrd1_g10 sndrd2_g10 \
+          sndrd3_g10 sndrd4_g10 sndrd1_g12 sndrd2_g12 sndrd3_g12 sndrd4_g12 \
+          hirs3_n15 hirs3_n16 hirs3_n17 amsua_n15 amsua_n16 amsua_n17 \
+          amsub_n15 amsub_n16 amsub_n17 hsb_aqua airs_aqua amsua_aqua \
+          goes_img_g08 goes_img_g10 goes_img_g11 goes_img_g12 \
+          pcp_ssmi_dmsp pcp_tmi_trmm sbuv2_n16 sbuv2_n17 sbuv2_n18 \
+          omi_aura ssmi_f13 ssmi_f14 ssmi_f15 hirs4_n18 amsua_n18 mhs_n18 \
+          amsre_low_aqua amsre_mid_aqua amsre_hig_aqua ssmis_las_f16 \
+          ssmis_uas_f16 ssmis_img_f16 ssmis_env_f16 mhs_metop_b \
+          hirs4_metop_b hirs4_n19 amusa_n19 mhs_n19"
    for type in $listall; do
       count=`ls pe*${type}_${loop}* | wc -l`
       if [[ $count -gt 0 ]]; then
@@ -456,7 +454,7 @@ done
 
 #  Clean working directory to save only important files 
 ls -l * > list_run_directory
-if [[ ${if_clean} = clean  &&  ${if_observer} != Yes ]]; then
+if [[ ${if_clean} = clean  ]]; then
   echo ' Clean working directory after GSI run'
   rm -f *Coeff.bin     # all CRTM coefficient files
   rm -f pe0*           # diag files on each processor
@@ -466,85 +464,4 @@ if [[ ${if_clean} = clean  &&  ${if_observer} != Yes ]]; then
 fi
 #
 #
-#################################################
-# start to calculate diag files for each member
-#################################################
-#
-if [ ${if_observer} = Yes ] ; then
-  string=ges
-  for type in $listall; do
-    count=0
-    if [[ -f diag_${type}_${string}.${ANAL_TIME} ]]; then
-       mv diag_${type}_${string}.${ANAL_TIME} diag_${type}_${string}.ensmean
-    fi
-  done
-  mv wrf_inout wrf_inout_ensmean
-
-# Build the GSI namelist on-the-fly for each member
-  nummiter=0
-  if_read_obs_save='.false.'
-  if_read_obs_skip='.true.'
-. $GSI_NAMELIST
-cat << EOF > gsiparm.anl
-
- $comgsi_namelist
-
-EOF
-
-# Loop through each member
-  loop="01"
-  ensmem=1
-  while [[ $ensmem -le $no_member ]];do
-
-     rm pe0*
-
-     print "\$ensmem is $ensmem"
-     ensmemid=`printf %3.3i $ensmem`
-
-# get new background for each member
-     if [[ -f wrf_inout ]]; then
-       rm wrf_inout
-     fi
-
-     BK_FILE=${BK_FILE_mem}${ensmemid}
-     echo $BK_FILE
-     ln -s $BK_FILE wrf_inout
-
-#  run  GSI
-     echo ' Run GSI with' ${bk_core} 'for member ', ${ensmemid}
-
-     case $ARCH in
-        'IBM_LSF')
-           ${RUN_COMMAND} ./gsi.exe < gsiparm.anl > stdout_mem${ensmemid} 2>&1  ;;
-
-        * )
-           ${RUN_COMMAND} ./gsi.exe > stdout_mem${ensmemid} 2>&1 ;;
-     esac
-
-#  run time error check and save run time file status
-     error=$?
-
-     if [ ${error} -ne 0 ]; then
-       echo "ERROR: ${GSI} crashed for member ${ensmemid} Exit status=${error}"
-       exit ${error}
-     fi
-
-     ls -l * > list_run_directory_mem${ensmemid}
-
-# generate diag files
-
-     for type in $listall; do
-           count=`ls pe*${type}_${loop}* | wc -l`
-        if [[ $count -gt 0 ]]; then
-           cat pe*${type}_${loop}* > diag_${type}_${string}.mem${ensmemid}
-        fi
-     done
-
-# next member
-     (( ensmem += 1 ))
-      
-  done
-
-fi
-
 exit 0

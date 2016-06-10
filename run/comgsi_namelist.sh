@@ -12,6 +12,9 @@ export comgsi_namelist="
    nhr_assimilation=3,l_foto=.false.,
    use_pbl=.false.,
    lread_obs_save=${if_read_obs_save},lread_obs_skip=${if_read_obs_skip},
+   newpc4pred=.true.,adp_anglebc=.true.,angord=4,
+   passive_bc=.true.,use_edges=.false.,emiss_bc=.true.,
+   diag_precon=.true.,step_start=1.e-3,
  /
  &GRIDOPTS
    JCAP=62,JCAP_B=62,NLAT=60,NLON=60,nsig=60,regional=.true.,

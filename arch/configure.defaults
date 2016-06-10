@@ -131,7 +131,7 @@ FFLAGS_BUFR    =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 CFLAGS_BUFR    =  -O3 -DUNDERSCORE
 ARFLAGS_BUFR   =  
 FFLAGS_CLOUD   =  -O3 $(FFLAGS_DEFAULT)
-FFLAGS_CRTM    =  -fast $(FFLAGS_DEFAULT) 
+FFLAGS_CRTM    =  $(FFLAGS_DEFAULT) 
 LFLAGS_CRTM    =
 FFLAGS_GFSIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_GFSIO  =  
@@ -185,7 +185,7 @@ FFLAGS_BUFR    =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 CFLAGS_BUFR    =  -O3 -DUNDERSCORE
 ARFLAGS_BUFR   =  
 FFLAGS_CLOUD   =  -O3 $(FFLAGS_DEFAULT)
-FFLAGS_CRTM    =  -fast $(FFLAGS_DEFAULT)
+FFLAGS_CRTM    =  $(FFLAGS_DEFAULT)
 LFLAGS_CRTM    =
 FFLAGS_GFSIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_GFSIO  =
@@ -239,7 +239,7 @@ FFLAGS_BUFR    =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 CFLAGS_BUFR    =  -O3 -DUNDERSCORE
 ARFLAGS_BUFR   =  
 FFLAGS_CLOUD   =  -O3 $(FFLAGS_DEFAULT)
-FFLAGS_CRTM    =  -fast $(FFLAGS_DEFAULT)
+FFLAGS_CRTM    =  $(FFLAGS_DEFAULT)
 LFLAGS_CRTM    =
 FFLAGS_GFSIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_GFSIO  =
@@ -270,20 +270,128 @@ NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
 
 
 ###########################################################
-#ARCH	Linux x86_64, GNU compilers (gfortran & gcc) # distributed memory parallel (dmpar,optimize)
+#ARCH	Linux x86_64, PGI compilers (pgf90 & gcc) Supercomp (w/o -f90=SFC) # distributed memory parallel (dmpar,optimize)
 #
 LDFLAGS        =  -Wl,-noinhibit-exec 
 
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
-SFC            =  gfortran
-SF90           =  gfortran -ffree-form
+SFC            =  pgf90
+SF90           =  pgf90 -Mfree
 SCC            =  gcc
-INC_FLAGS      =  -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
+INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
+FFLAGS_i4r4    =  -i4 -r4
+FFLAGS_i4r8    =  -i4 -r8
+FFLAGS_i8r8    =  -i8 -r8
+FFLAGS_DEFAULT =  -Kieee -pc 64 -Ktrap=fp -byteswapio
+FFLAGS_DEBUG   =  -O0 -q -C
+FFLAGS_OPT     =  -O3
+FFLAGS         =  -fast $(FFLAGS_DEFAULT) -DLANGUAGE_FORTRAN -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX -DPGI
+# Library build flags
+FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
+ARFLAGS_BACIO  =
+FFLAGS_BUFR    =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+CFLAGS_BUFR    =  -O3 -DUNDERSCORE
+ARFLAGS_BUFR   =  
+FFLAGS_CLOUD   =  -O3 $(FFLAGS_DEFAULT)
+FFLAGS_CRTM    =  $(FFLAGS_DEFAULT)
+LFLAGS_CRTM    =
+FFLAGS_GFSIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+ARFLAGS_GFSIO  =
+FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+ARFLAGS_SIGIO  =
+FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT)
+#
+CPP            =  cpp 
+CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX -DPGI
+CPP_F90FLAGS   =  -traditional-cpp 
+
+DM_FC          =  mpif90 
+DM_F90         =  mpif90 -Mfree 
+DM_CC          =  gcc 
+
+FC             =  CONFIGURE_FC
+F90            =  CONFIGURE_F90
+CC             =  CONFIGURE_CC
+
+CFLAGS         =  -O0 -DLINUX -DUNDERSCORE
+CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
+
+
+MYLIBsys       =  -llapack -lblas
+NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
+
+
+###########################################################
+#ARCH	Linux x86_64, PGI compilers (pgf90 & pgcc) Supercomp (w/o -f90=SFC) # distributed memory parallel (dmpar,optimize)
+#
+LDFLAGS        =  -Wl,-noinhibit-exec 
+
+COREDIR        =  CONFIGURE_CORE_PATH
+INC_DIR        =  $(COREDIR)/include
+SFC            =  pgf90
+SF90           =  pgf90 -Mfree
+SCC            =  pgcc
+INC_FLAGS      =  -module $(INC_DIR) -I $(INC_DIR) -I CONFIGURE_NETCDF_PATH/include
+FFLAGS_i4r4    =  -i4 -r4
+FFLAGS_i4r8    =  -i4 -r8
+FFLAGS_i8r8    =  -i8 -r8
+FFLAGS_DEFAULT =  -Kieee -pc 64 -Ktrap=fp -byteswapio
+FFLAGS_DEBUG   =  -O0 -q -C
+FFLAGS_OPT     =  -O3
+FFLAGS         =  -fast $(FFLAGS_DEFAULT) -DLANGUAGE_FORTRAN -DsysLinux $(INC_FLAGS) $(LDFLAGS) -DLINUX -DPGI
+# Library build flags
+FFLAGS_BACIO   =  -O3 $(FFLAGS_DEFAULT)
+ARFLAGS_BACIO  =
+FFLAGS_BUFR    =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+CFLAGS_BUFR    =  -O3 -DUNDERSCORE
+ARFLAGS_BUFR   =  
+FFLAGS_CLOUD   =  -O3 $(FFLAGS_DEFAULT)
+FFLAGS_CRTM    =  $(FFLAGS_DEFAULT)
+LFLAGS_CRTM    =
+FFLAGS_GFSIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+ARFLAGS_GFSIO  =
+FFLAGS_SFCIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+FFLAGS_SIGIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
+ARFLAGS_SIGIO  =
+FFLAGS_SP      =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
+FFLAGS_W3      =  -O3 $(FFLAGS_DEFAULT)
+#
+CPP            =  cpp 
+CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX -DPGI 
+CPP_F90FLAGS   =  -traditional-cpp 
+
+DM_FC          =  mpif90 
+DM_F90         =  mpif90 -Mfree 
+DM_CC          =  mpicc 
+
+FC             =  CONFIGURE_FC
+F90            =  CONFIGURE_F90
+CC             =  CONFIGURE_CC
+
+CFLAGS         =  -O0 -DLINUX -DUNDERSCORE
+CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
+
+
+MYLIBsys       =  -llapack -lblas
+NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
+###########################################################
+#ARCH	Linux x86_64, GNU compilers (gfortran & gcc) # distributed memory parallel (dmpar,optimize)
+#
+LDFLAGS        =  -Wl,-noinhibit-exec
+OMP            =  -fopenmp
+COREDIR        =  CONFIGURE_CORE_PATH
+INC_DIR        =  $(COREDIR)/include
+SFC            =  gfortran
+SF90           =  gfortran -ffree-form -ffree-line-length-none
+SCC            =  gcc
+INC_FLAGS      =  -J$(INC_DIR) -I$(INC_DIR) -ICONFIGURE_NETCDF_PATH/include
 FFLAGS_i4r4    =
 FFLAGS_i4r8    =  -fdefault-real-8
 FFLAGS_i8r8    =  -fdefault-integer-8 -fdefault-real-8
-FFLAGS_DEFAULT =  -fno-second-underscore -fno-range-check
+FFLAGS_DEFAULT =  -fno-second-underscore -fno-range-check -fconvert=big-endian -frecord-marker=4
 #FFLAGS_DEBUG   =  -O0 -q -C
 #FFLAGS_OPT     =  -O3
 FFLAGS         =   $(FFLAGS_DEFAULT) $(INC_FLAGS) $(LDFLAGS)
@@ -294,7 +402,7 @@ FFLAGS_BUFR    =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r8)
 CFLAGS_BUFR    =  -O3 -DUNDERSCORE
 ARFLAGS_BUFR   =  
 FFLAGS_CLOUD   =  -O3 $(FFLAGS_DEFAULT)
-FFLAGS_CRTM    =  -fast $(FFLAGS_DEFAULT)
+FFLAGS_CRTM    =  -O3 $(FFLAGS_DEFAULT)
 LFLAGS_CRTM    =
 FFLAGS_GFSIO   =  -O3 $(FFLAGS_DEFAULT) $(FFLAGS_i4r4)
 ARFLAGS_GFSIO  =
@@ -308,8 +416,8 @@ CPP            =  cpp
 CPP_FLAGS      =  -C -P -D_REAL8_ -DWRF -DLINUX -DPGI
 CPP_F90FLAGS   =  -traditional-cpp 
 
-DM_FC          =  mpif90 -f90=$(SFC)
-DM_F90         =  mpif90 -Mfree -f90=$(SFC)
+DM_FC          =  mpif90 
+DM_F90         =  mpif90 -ffree-form -ffree-line-length-none
 DM_CC          =  gcc 
 
 FC             =  CONFIGURE_FC
@@ -320,15 +428,15 @@ CFLAGS         =  -O0 -DLINUX -DUNDERSCORE
 CFLAGS2        =  -DLINUX -Dfunder -DFortranByte=char -DFortranInt=int -DFortranLlong='long long'
 
 
-MYLIBsys       =  -llapack -lblas
-NETCDF_PATH    =  -rpath,CONFIGURE_NETCDF_PATH/lib
+MYLIBsys       =  -L$(LAPACK_PATH) -llapack -lblas
+NETCDF_PATH    =  -LCONFIGURE_NETCDF_PATH/lib
 
 
 ###########################################################
 #ARCH	Linux i486 i586 i686, Intel compiler (ifort & icc) # (dmpar,optimize)
 #
-LDFLAGS        =  -Wl,-noinhibit-exec -openmp
-
+LDFLAGS        =  -Wl,-noinhibit-exec
+OMP            =  -openmp
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
 SFC            =  ifort
@@ -381,8 +489,8 @@ NETCDF_PATH    =
 ###########################################################
 #ARCH	Linux x86_64, Intel/gnu compiler (ifort & gcc)	# (dmpar,optimize)
 #
-LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -openmp
-
+LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib
+OMP            =  -openmp
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
 SFC            =  ifort
@@ -435,8 +543,8 @@ NETCDF_PATH    =
 ###########################################################
 #ARCH	Linux x86_64, Intel compiler (ifort & icc) # (dmpar,optimize)
 #
-LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -openmp
-
+LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib
+OMP            = -openmp
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
 SFC            =  ifort
@@ -490,8 +598,8 @@ NETCDF_PATH    =
 ###########################################################
 #ARCH	Linux x86_64, Intel compiler (ifort & icc), IBM POE (EXPERIMENTAL)  # (dmpar,optimize)
 #
-LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -L$MPI_ROOT/lib -openmp
-
+LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -L$MPI_ROOT/lib
+OMP            =  -openmp
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
 SFC            =  ifort
@@ -544,8 +652,8 @@ NETCDF_PATH    =
 ###########################################################
 #ARCH	Linux x86_64, Intel compiler (ifort & icc), SGI MPT (EXPERIMENTAL) # (dmpar,optimize) 
 #
-LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -L$MPI_ROOT/lib -lmpi -openmp
-
+LDFLAGS        =  -Wl,-rpath,CONFIGURE_NETCDF_PATH/lib -L$MPI_ROOT/lib -lmpi
+OMP            =  -openmp
 COREDIR        =  CONFIGURE_CORE_PATH
 INC_DIR        =  $(COREDIR)/include
 SFC            =  ifort

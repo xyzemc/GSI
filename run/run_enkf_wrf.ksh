@@ -37,7 +37,7 @@ set -x
   GSI_ROOT=/enkf/code/comGSIv3.4_EnKFv1.0
   FIX_ROOT=${GSI_ROOT}/fix
   ENKF_EXE=${GSI_ROOT}/src/main/enkf/wrf_enkf
-  CRTM_ROOT=CRTM_REL-2.1.3
+  CRTM_ROOT=CRTM_REL-2.2.3
   ENKF_NAMELIST=${GSI_ROOT}/run/enkf_wrf_namelist.sh
 
 # ensemble parameters
@@ -128,7 +128,7 @@ cp $OZINFO          ./ozinfo
 # cp $LOCINFO         ./hybens_locinfo
 
 cp $diag_ROOT/satbias_in ./satbias_in
-cp $diag_ROOT/satbias_angle ./satbias_angle
+cp $diag_ROOT/satbias_pc ./satbias_pc
 
 # get mean
 ln -s ${BK_FILE_mem}.ensmean ./firstguess.ensmean

@@ -5,6 +5,17 @@ arg1=$1
 CORE_DIR=`pwd`
 echo "$CORE_DIR"
 export CORE_DIR
+# Report system settings
+echo " Modules Loaded "
+if [ "${HOSTNAME:0:2}" == "ys" ] ; then
+  echo " "
+  /glade/apps/opt/lmod/lmod/libexec/lmod sh list
+elif [ `grep -c 'E5-2690 v3' /proc/cpuinfo` -gt 0 ]; then
+  /apps/lmod/lmod/libexec/lmod sh list | grep echo
+elif [ "${REMOTEHOST:0:11}" == "bastion-jet"  ] ; then
+  /apps/lmod/lmod/libexec/lmod sh list | grep echo
+fi
+  echo " "
 
 # Look for netcdf
 if test -z "$NETCDF" ; then

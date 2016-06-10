@@ -49,7 +49,7 @@ export enkf_namelist="
   sortinc             = .true.,
   univaroz            = .true.,
   regional            = .true., 
-  adp_anglebc         = .false.,
+  adp_anglebc         = .true.,
   angord              = 4,
   use_edges           = .false.,
   emiss_bc            = .true.,
@@ -128,6 +128,5 @@ export enkf_namelist="
 &nam_wrf
   arw                 = $IF_ARW,
   nmm                 = $IF_NMM,
-  doubly_periodic     = .false.
  / 
 "
