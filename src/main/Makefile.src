@@ -148,6 +148,7 @@
 	int3dvar.o \
 	intall.o \
 	intaod.o \
+	intcldch.o \
         intco.o \
 	intdw.o \
 	intgps.o \
@@ -193,6 +194,7 @@
 	lagmod.o \
 	lanczos.o \
 	loglcbas_to_lcbas.o \
+	logcldch_to_cldch.o \
 	logvis_to_vis.o \
 	looplimits.o \
 	m_berror_stats.o \
@@ -331,6 +333,7 @@
 	setupaod.o \
         setupbend.o \
         setupco.o \
+	setupcldch.o \
 	setupdw.o \
 	setupgust.o \
 	setuphowv.o \
@@ -385,6 +388,7 @@
 	stp3dvar.o \
         stpaod.o \
 	stpcalc.o \
+	stpcldch.o \
 	stpco.o \
 	stpdw.o \
 	stpgps.o \
