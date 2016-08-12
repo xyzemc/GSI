@@ -1,0 +1,4 @@
+\select@language {english}
+\contentsline {chapter}{\numberline {1}Overview}{1}{chapter.1}
+\contentsline {section}{\numberline {1.1}Purpose of the Advanced GSI User\textquotesingle s Guide}{1}{section.1.1}
+\contentsline {section}{\numberline {1.2}Structure of this User\textquotesingle s Guide}{1}{section.1.2}

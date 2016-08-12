@@ -1,0 +1,53 @@
+\documentclass[12pt,letterpaper,oneside]{scrbook}
+
+\usepackage{import}
+%\usepackage{graphicx}
+%\usepackage{amssymb}
+%\usepackage{epstopdf}
+%\DeclareGraphicsRule{.tiff}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tiff`.png}
+
+\usepackage{dtcdoc}
+
+% Local Commands
+\newcommand{\quotes}[1]{``#1''}
+
+\usepackage{longtable}
+
+\usepackage{morefloats}
+
+\usepackage{multirow}
+
+\usepackage{hanging}
+
+\makeindex
+
+\setcounter{tocdepth}{5}
+
+\setcounter{secnumdepth}{5} 
+
+\begin{document}
+
+\frontmatter
+%\pagecolor{blue} #change title page background color to blue
+\import{./}{title.tex}
+%\newpage
+%\pagecolor{white} #change the background color to white for rest of pages
+\clearpage
+\thispagestyle{empty}
+\import{./}{ack.tex}
+\import{./}{forward.tex}
+
+\tableofcontents
+
+
+\mainmatter
+% Chapter 1: Overview
+\import{./}{advgsi_ch1.tex}
+
+\backmatter
+
+\bibliographystyle{abbrv}
+\bibliography{references}
+
+\end{document}
+
