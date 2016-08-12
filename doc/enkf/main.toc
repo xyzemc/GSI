@@ -1,0 +1,73 @@
+\select@language {english}
+\contentsline {chapter}{\numberline {1}Overview}{1}{chapter.1}
+\contentsline {section}{\numberline {1.1}EnKF History and Background}{1}{section.1.1}
+\contentsline {section}{\numberline {1.2}EnKF Becomes Community Code}{2}{section.1.2}
+\contentsline {subsection}{\numberline {1.2.1}EnKF Code Management and Review Committee}{2}{subsection.1.2.1}
+\contentsline {subsection}{\numberline {1.2.2}Community Code Contributions}{3}{subsection.1.2.2}
+\contentsline {section}{\numberline {1.3}About This EnKF Release}{3}{section.1.3}
+\contentsline {subsection}{\numberline {1.3.1}What Is New in This Release Version}{4}{subsection.1.3.1}
+\contentsline {subsection}{\numberline {1.3.2}Observations Used by This Version }{4}{subsection.1.3.2}
+\contentsline {chapter}{\numberline {2}Software Installation}{6}{chapter.2}
+\contentsline {section}{\numberline {2.1}Introduction}{6}{section.2.1}
+\contentsline {section}{\numberline {2.2}Obtaining the Source Code}{7}{section.2.2}
+\contentsline {section}{\numberline {2.3}Compiling EnKF}{7}{section.2.3}
+\contentsline {subsection}{\numberline {2.3.1}Versions of EnKF}{8}{subsection.2.3.1}
+\contentsline {section}{\numberline {2.4}System Requirements and External Libraries}{9}{section.2.4}
+\contentsline {section}{\numberline {2.5}Compilers Tested for Release}{9}{section.2.5}
+\contentsline {section}{\numberline {2.6}Getting Help and Reporting Problems}{9}{section.2.6}
+\contentsline {chapter}{\numberline {3}Running EnKF}{11}{chapter.3}
+\contentsline {section}{\numberline {3.1}Input Data Required to Run EnKF}{11}{section.3.1}
+\contentsline {subsection}{\numberline {3.1.1}Input Data Required to Run EnKF}{11}{subsection.3.1.1}
+\contentsline {section}{\numberline {3.2}EnKF and GSI Observer Run Scripts}{13}{section.3.2}
+\contentsline {subsection}{\numberline {3.2.1}General Introduction to the Run Scripts}{13}{subsection.3.2.1}
+\contentsline {subsection}{\numberline {3.2.2}GSI Observer Run Scripts}{14}{subsection.3.2.2}
+\contentsline {subsubsection}{Setting up a case}{14}{subsubsection*.6}
+\contentsline {subsubsection}{Loop through ensemble members}{15}{subsubsection*.7}
+\contentsline {subsection}{\numberline {3.2.3}Sample Regional EnKF Run Scripts}{18}{subsection.3.2.3}
+\contentsline {section}{\numberline {3.3}Understanding Resulting Files in GSI Observer and EnKF Run Directory}{21}{section.3.3}
+\contentsline {subsection}{\numberline {3.3.1}The GSI Observer Run Directory}{21}{subsection.3.3.1}
+\contentsline {subsection}{\numberline {3.3.2}Files in the EnKF Run Directory}{23}{subsection.3.3.2}
+\contentsline {chapter}{\numberline {4}EnKF Diagnostics and Tuning}{25}{chapter.4}
+\contentsline {section}{\numberline {4.1}Understanding the Standard Output from EnKF (stdout)}{25}{section.4.1}
+\contentsline {section}{\numberline {4.2}Tuning of Inflation and Localization}{32}{section.4.2}
+\contentsline {section}{\numberline {4.3}Tuning EnKF through Key Namelist Options}{33}{section.4.3}
+\contentsline {subsection}{\numberline {4.3.1}Set Up the Analyses Time and Data Location}{33}{subsection.4.3.1}
+\contentsline {subsection}{\numberline {4.3.2}Set Up Analysis Algorithm}{33}{subsection.4.3.2}
+\contentsline {subsection}{\numberline {4.3.3}Set Up the Analyses Variables}{34}{subsection.4.3.3}
+\contentsline {subsection}{\numberline {4.3.4}Set Up the Ensemble Backgrounds}{34}{subsection.4.3.4}
+\contentsline {subsection}{\numberline {4.3.5}Set Up Localization Distances}{35}{subsection.4.3.5}
+\contentsline {subsection}{\numberline {4.3.6}Set Up Adaptive Posterior Inflation Parameters}{36}{subsection.4.3.6}
+\contentsline {subsection}{\numberline {4.3.7}Satellite Observations Related Parameters}{37}{subsection.4.3.7}
+\contentsline {subsection}{\numberline {4.3.8}Observation QC Parameters}{37}{subsection.4.3.8}
+\contentsline {chapter}{\numberline {5}Applications for Regional and Global EnKF}{38}{chapter.5}
+\contentsline {section}{\numberline {5.1}Running GSI Observer for Regional Applications}{41}{section.5.1}
+\contentsline {subsection}{\numberline {5.1.1}Run Script}{41}{subsection.5.1.1}
+\contentsline {subsection}{\numberline {5.1.2}Run GSI Observer and Check Run Status}{43}{subsection.5.1.2}
+\contentsline {subsection}{\numberline {5.1.3}Check for Successful GSI Completion}{45}{subsection.5.1.3}
+\contentsline {section}{\numberline {5.2}Running EnKF for Regional Applications}{48}{section.5.2}
+\contentsline {subsection}{\numberline {5.2.1}Run Script}{48}{subsection.5.2.1}
+\contentsline {subsection}{\numberline {5.2.2}Run EnKF and Check Run Status}{49}{subsection.5.2.2}
+\contentsline {subsection}{\numberline {5.2.3}Check for Successful EnKF Completion}{51}{subsection.5.2.3}
+\contentsline {subsection}{\numberline {5.2.4}Diagnose EnKF Analysis Results}{53}{subsection.5.2.4}
+\contentsline {section}{\numberline {5.3}Running GSI Observer for Global Applications}{54}{section.5.3}
+\contentsline {subsection}{\numberline {5.3.1}Run Script}{54}{subsection.5.3.1}
+\contentsline {subsection}{\numberline {5.3.2}Run GSI Observer and Check Run Status}{57}{subsection.5.3.2}
+\contentsline {subsection}{\numberline {5.3.3}Check for Successful GSI Completion}{58}{subsection.5.3.3}
+\contentsline {section}{\numberline {5.4}Running EnKF for Global Applications}{60}{section.5.4}
+\contentsline {subsection}{\numberline {5.4.1}Run Script}{60}{subsection.5.4.1}
+\contentsline {subsection}{\numberline {5.4.2}Run EnKF and Check Run Status}{62}{subsection.5.4.2}
+\contentsline {subsection}{\numberline {5.4.3}Check for Successful EnKF Completion}{63}{subsection.5.4.3}
+\contentsline {subsection}{\numberline {5.4.4}Diagnose EnKF Analysis Results}{65}{subsection.5.4.4}
+\contentsline {chapter}{\numberline {6}EnKF Basic Concepts and Code Structure}{67}{chapter.6}
+\contentsline {section}{\numberline {6.1}Basic Concepts (in the Form of EnSRF)}{67}{section.6.1}
+\contentsline {subsection}{\numberline {6.1.1}Analysis Variables}{67}{subsection.6.1.1}
+\contentsline {subsection}{\numberline {6.1.2}Update of Analysis Variables}{68}{subsection.6.1.2}
+\contentsline {subsection}{\numberline {6.1.3}Updates of Observation Priors}{69}{subsection.6.1.3}
+\contentsline {subsection}{\numberline {6.1.4}Assimilation Order and Adaptive Thinning of Observations}{70}{subsection.6.1.4}
+\contentsline {subsection}{\numberline {6.1.5}Ensemble Spread Inflation}{70}{subsection.6.1.5}
+\contentsline {subsection}{\numberline {6.1.6}Covariance Localization}{71}{subsection.6.1.6}
+\contentsline {subsection}{\numberline {6.1.7}Adaptive Radiance Bias Correction with EnSRF}{72}{subsection.6.1.7}
+\contentsline {section}{\numberline {6.2}EnSRF Code Structure and Key Functions}{72}{section.6.2}
+\contentsline {subsection}{\numberline {6.2.1}Main Code Tree}{72}{subsection.6.2.1}
+\contentsline {subsection}{\numberline {6.2.2}Driver of Serial Ensemble Square Root Filter}{73}{subsection.6.2.2}
+\contentsline {chapter}{\numberline {A}Content of Namelist}{75}{appendix.A}

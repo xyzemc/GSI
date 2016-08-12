@@ -1,0 +1,70 @@
+\BOOKMARK [0][-]{chapter.1}{1 Overview}{}% 1
+\BOOKMARK [1][-]{section.1.1}{1.1 EnKF History and Background}{chapter.1}% 2
+\BOOKMARK [1][-]{section.1.2}{1.2 EnKF Becomes Community Code}{chapter.1}% 3
+\BOOKMARK [2][-]{subsection.1.2.1}{1.2.1 EnKF Code Management and Review Committee}{section.1.2}% 4
+\BOOKMARK [2][-]{subsection.1.2.2}{1.2.2 Community Code Contributions}{section.1.2}% 5
+\BOOKMARK [1][-]{section.1.3}{1.3 About This EnKF Release}{chapter.1}% 6
+\BOOKMARK [2][-]{subsection.1.3.1}{1.3.1 What Is New in This Release Version}{section.1.3}% 7
+\BOOKMARK [2][-]{subsection.1.3.2}{1.3.2 Observations Used by This Version }{section.1.3}% 8
+\BOOKMARK [0][-]{chapter.2}{2 Software Installation}{}% 9
+\BOOKMARK [1][-]{section.2.1}{2.1 Introduction}{chapter.2}% 10
+\BOOKMARK [1][-]{section.2.2}{2.2 Obtaining the Source Code}{chapter.2}% 11
+\BOOKMARK [1][-]{section.2.3}{2.3 Compiling EnKF}{chapter.2}% 12
+\BOOKMARK [2][-]{subsection.2.3.1}{2.3.1 Versions of EnKF}{section.2.3}% 13
+\BOOKMARK [1][-]{section.2.4}{2.4 System Requirements and External Libraries}{chapter.2}% 14
+\BOOKMARK [1][-]{section.2.5}{2.5 Compilers Tested for Release}{chapter.2}% 15
+\BOOKMARK [1][-]{section.2.6}{2.6 Getting Help and Reporting Problems}{chapter.2}% 16
+\BOOKMARK [0][-]{chapter.3}{3 Running EnKF}{}% 17
+\BOOKMARK [1][-]{section.3.1}{3.1 Input Data Required to Run EnKF}{chapter.3}% 18
+\BOOKMARK [2][-]{subsection.3.1.1}{3.1.1 Input Data Required to Run EnKF}{section.3.1}% 19
+\BOOKMARK [1][-]{section.3.2}{3.2 EnKF and GSI Observer Run Scripts}{chapter.3}% 20
+\BOOKMARK [2][-]{subsection.3.2.1}{3.2.1 General Introduction to the Run Scripts}{section.3.2}% 21
+\BOOKMARK [2][-]{subsection.3.2.2}{3.2.2 GSI Observer Run Scripts}{section.3.2}% 22
+\BOOKMARK [2][-]{subsection.3.2.3}{3.2.3 Sample Regional EnKF Run Scripts}{section.3.2}% 23
+\BOOKMARK [1][-]{section.3.3}{3.3 Understanding Resulting Files in GSI Observer and EnKF Run Directory}{chapter.3}% 24
+\BOOKMARK [2][-]{subsection.3.3.1}{3.3.1 The GSI Observer Run Directory}{section.3.3}% 25
+\BOOKMARK [2][-]{subsection.3.3.2}{3.3.2 Files in the EnKF Run Directory}{section.3.3}% 26
+\BOOKMARK [0][-]{chapter.4}{4 EnKF Diagnostics and Tuning}{}% 27
+\BOOKMARK [1][-]{section.4.1}{4.1 Understanding the Standard Output from EnKF \(stdout\)}{chapter.4}% 28
+\BOOKMARK [1][-]{section.4.2}{4.2 Tuning of Inflation and Localization}{chapter.4}% 29
+\BOOKMARK [1][-]{section.4.3}{4.3 Tuning EnKF through Key Namelist Options}{chapter.4}% 30
+\BOOKMARK [2][-]{subsection.4.3.1}{4.3.1 Set Up the Analyses Time and Data Location}{section.4.3}% 31
+\BOOKMARK [2][-]{subsection.4.3.2}{4.3.2 Set Up Analysis Algorithm}{section.4.3}% 32
+\BOOKMARK [2][-]{subsection.4.3.3}{4.3.3 Set Up the Analyses Variables}{section.4.3}% 33
+\BOOKMARK [2][-]{subsection.4.3.4}{4.3.4 Set Up the Ensemble Backgrounds}{section.4.3}% 34
+\BOOKMARK [2][-]{subsection.4.3.5}{4.3.5 Set Up Localization Distances}{section.4.3}% 35
+\BOOKMARK [2][-]{subsection.4.3.6}{4.3.6 Set Up Adaptive Posterior Inflation Parameters}{section.4.3}% 36
+\BOOKMARK [2][-]{subsection.4.3.7}{4.3.7 Satellite Observations Related Parameters}{section.4.3}% 37
+\BOOKMARK [2][-]{subsection.4.3.8}{4.3.8 Observation QC Parameters}{section.4.3}% 38
+\BOOKMARK [0][-]{chapter.5}{5 Applications for Regional and Global EnKF}{}% 39
+\BOOKMARK [1][-]{section.5.1}{5.1 Running GSI Observer for Regional Applications}{chapter.5}% 40
+\BOOKMARK [2][-]{subsection.5.1.1}{5.1.1 Run Script}{section.5.1}% 41
+\BOOKMARK [2][-]{subsection.5.1.2}{5.1.2 Run GSI Observer and Check Run Status}{section.5.1}% 42
+\BOOKMARK [2][-]{subsection.5.1.3}{5.1.3 Check for Successful GSI Completion}{section.5.1}% 43
+\BOOKMARK [1][-]{section.5.2}{5.2 Running EnKF for Regional Applications}{chapter.5}% 44
+\BOOKMARK [2][-]{subsection.5.2.1}{5.2.1 Run Script}{section.5.2}% 45
+\BOOKMARK [2][-]{subsection.5.2.2}{5.2.2 Run EnKF and Check Run Status}{section.5.2}% 46
+\BOOKMARK [2][-]{subsection.5.2.3}{5.2.3 Check for Successful EnKF Completion}{section.5.2}% 47
+\BOOKMARK [2][-]{subsection.5.2.4}{5.2.4 Diagnose EnKF Analysis Results}{section.5.2}% 48
+\BOOKMARK [1][-]{section.5.3}{5.3 Running GSI Observer for Global Applications}{chapter.5}% 49
+\BOOKMARK [2][-]{subsection.5.3.1}{5.3.1 Run Script}{section.5.3}% 50
+\BOOKMARK [2][-]{subsection.5.3.2}{5.3.2 Run GSI Observer and Check Run Status}{section.5.3}% 51
+\BOOKMARK [2][-]{subsection.5.3.3}{5.3.3 Check for Successful GSI Completion}{section.5.3}% 52
+\BOOKMARK [1][-]{section.5.4}{5.4 Running EnKF for Global Applications}{chapter.5}% 53
+\BOOKMARK [2][-]{subsection.5.4.1}{5.4.1 Run Script}{section.5.4}% 54
+\BOOKMARK [2][-]{subsection.5.4.2}{5.4.2 Run EnKF and Check Run Status}{section.5.4}% 55
+\BOOKMARK [2][-]{subsection.5.4.3}{5.4.3 Check for Successful EnKF Completion}{section.5.4}% 56
+\BOOKMARK [2][-]{subsection.5.4.4}{5.4.4 Diagnose EnKF Analysis Results}{section.5.4}% 57
+\BOOKMARK [0][-]{chapter.6}{6 EnKF Basic Concepts and Code Structure}{}% 58
+\BOOKMARK [1][-]{section.6.1}{6.1 Basic Concepts \(in the Form of EnSRF\)}{chapter.6}% 59
+\BOOKMARK [2][-]{subsection.6.1.1}{6.1.1 Analysis Variables}{section.6.1}% 60
+\BOOKMARK [2][-]{subsection.6.1.2}{6.1.2 Update of Analysis Variables}{section.6.1}% 61
+\BOOKMARK [2][-]{subsection.6.1.3}{6.1.3 Updates of Observation Priors}{section.6.1}% 62
+\BOOKMARK [2][-]{subsection.6.1.4}{6.1.4 Assimilation Order and Adaptive Thinning of Observations}{section.6.1}% 63
+\BOOKMARK [2][-]{subsection.6.1.5}{6.1.5 Ensemble Spread Inflation}{section.6.1}% 64
+\BOOKMARK [2][-]{subsection.6.1.6}{6.1.6 Covariance Localization}{section.6.1}% 65
+\BOOKMARK [2][-]{subsection.6.1.7}{6.1.7 Adaptive Radiance Bias Correction with EnSRF}{section.6.1}% 66
+\BOOKMARK [1][-]{section.6.2}{6.2 EnSRF Code Structure and Key Functions}{chapter.6}% 67
+\BOOKMARK [2][-]{subsection.6.2.1}{6.2.1 Main Code Tree}{section.6.2}% 68
+\BOOKMARK [2][-]{subsection.6.2.2}{6.2.2 Driver of Serial Ensemble Square Root Filter}{section.6.2}% 69
+\BOOKMARK [0][-]{appendix.A}{A Content of Namelist}{}% 70
