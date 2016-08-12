@@ -1,0 +1,101 @@
+\select@language {english}
+\contentsline {chapter}{\numberline {1}Overview}{1}{chapter.1}
+\contentsline {section}{\numberline {1.1}GSI History and Background}{1}{section.1.1}
+\contentsline {section}{\numberline {1.2}GSI Becomes Community Code}{2}{section.1.2}
+\contentsline {subsection}{\numberline {1.2.1}GSI Code Management and Review Committee}{2}{subsection.1.2.1}
+\contentsline {subsection}{\numberline {1.2.2}Community Code Contributions}{3}{subsection.1.2.2}
+\contentsline {section}{\numberline {1.3}About This GSI Release}{3}{section.1.3}
+\contentsline {subsection}{\numberline {1.3.1}What Is New in This Release Version}{4}{subsection.1.3.1}
+\contentsline {subsection}{\numberline {1.3.2}Observations Used by This Version}{4}{subsection.1.3.2}
+\contentsline {chapter}{\numberline {2}Software Installation}{7}{chapter.2}
+\contentsline {section}{\numberline {2.1}Introduction}{7}{section.2.1}
+\contentsline {section}{\numberline {2.2}Obtaining and Setting Up the Source Code}{8}{section.2.2}
+\contentsline {section}{\numberline {2.3}Directory Structure, Source Code and Supplemental Libraries}{9}{section.2.3}
+\contentsline {section}{\numberline {2.4}Compiling GSI}{10}{section.2.4}
+\contentsline {subsection}{\numberline {2.4.1}Build Overview}{10}{subsection.2.4.1}
+\contentsline {subsection}{\numberline {2.4.2}Environment Variables}{10}{subsection.2.4.2}
+\contentsline {subsection}{\numberline {2.4.3}Configure and Compile}{12}{subsection.2.4.3}
+\contentsline {section}{\numberline {2.5}Example of Build}{13}{section.2.5}
+\contentsline {subsection}{\numberline {2.5.1}Intel Build}{13}{subsection.2.5.1}
+\contentsline {subsection}{\numberline {2.5.2}PGI Build}{14}{subsection.2.5.2}
+\contentsline {subsection}{\numberline {2.5.3}GNU Build}{14}{subsection.2.5.3}
+\contentsline {section}{\numberline {2.6}System Requirements and External Libraries}{15}{section.2.6}
+\contentsline {subsection}{\numberline {2.6.1}Compilers Tested for Release}{15}{subsection.2.6.1}
+\contentsline {section}{\numberline {2.7}Getting Help and Reporting Problems}{16}{section.2.7}
+\contentsline {chapter}{\numberline {3}Running GSI}{17}{chapter.3}
+\contentsline {section}{\numberline {3.1}Input Data Required to Run GSI}{17}{section.3.1}
+\contentsline {subsection}{\numberline {3.1.1}Background or First Guess Field}{17}{subsection.3.1.1}
+\contentsline {subsection}{\numberline {3.1.2}Observations}{18}{subsection.3.1.2}
+\contentsline {subsection}{\numberline {3.1.3}Fixed Files (Statistics and Control Files)}{19}{subsection.3.1.3}
+\contentsline {section}{\numberline {3.2}GSI Run Script}{22}{section.3.2}
+\contentsline {subsection}{\numberline {3.2.1}Steps in the GSI Run Script}{23}{subsection.3.2.1}
+\contentsline {subsection}{\numberline {3.2.2}Customization of the GSI Run Script}{24}{subsection.3.2.2}
+\contentsline {subsection}{\numberline {3.2.3}Description of the Sample Regional Run Script to Run GSI}{27}{subsection.3.2.3}
+\contentsline {section}{\numberline {3.3}GSI Analysis Result Files in Run Directory}{38}{section.3.3}
+\contentsline {section}{\numberline {3.4}Introduction to Frequently Used GSI Namelist Options}{40}{section.3.4}
+\contentsline {subsection}{\numberline {3.4.1}Set Up the Number of Outer Loop and Inner Loop}{40}{subsection.3.4.1}
+\contentsline {subsection}{\numberline {3.4.2}Set Up the Analysis Variable for Moisture}{41}{subsection.3.4.2}
+\contentsline {subsection}{\numberline {3.4.3}Set Up the Background File}{41}{subsection.3.4.3}
+\contentsline {subsection}{\numberline {3.4.4}Set Up the Output of Diagnostic Files}{42}{subsection.3.4.4}
+\contentsline {subsection}{\numberline {3.4.5}Set Up the GSI Recognized Observation Files}{42}{subsection.3.4.5}
+\contentsline {subsection}{\numberline {3.4.6}Set Up Observation Time Window}{43}{subsection.3.4.6}
+\contentsline {subsection}{\numberline {3.4.7}Set Up Data Thinning}{43}{subsection.3.4.7}
+\contentsline {subsection}{\numberline {3.4.8}Set Up Background Error Factor}{44}{subsection.3.4.8}
+\contentsline {subsection}{\numberline {3.4.9}Single Observation Test}{44}{subsection.3.4.9}
+\contentsline {chapter}{\numberline {4}GSI Diagnostics and Tuning}{45}{chapter.4}
+\contentsline {section}{\numberline {4.1}Understanding Standard Output (\textit {stdout})}{45}{section.4.1}
+\contentsline {section}{\numberline {4.2}Single Observation Test}{60}{section.4.2}
+\contentsline {subsection}{\numberline {4.2.1}Setup a Single Observation Test}{61}{subsection.4.2.1}
+\contentsline {subsection}{\numberline {4.2.2}Examples of Single Observation Tests for GSI}{61}{subsection.4.2.2}
+\contentsline {section}{\numberline {4.3}Control Data Usage}{63}{section.4.3}
+\contentsline {section}{\numberline {4.4}Domain Partition for Parallelization and Observation Distribution}{67}{section.4.4}
+\contentsline {section}{\numberline {4.5}Observation Innovation Statistics}{68}{section.4.5}
+\contentsline {subsection}{\numberline {4.5.1}Conventional observations}{68}{subsection.4.5.1}
+\contentsline {subsection}{\numberline {4.5.2}Satellite Radiance}{73}{subsection.4.5.2}
+\contentsline {section}{\numberline {4.6}Convergence Information}{77}{section.4.6}
+\contentsline {section}{\numberline {4.7}Conventional Observation Errors}{79}{section.4.7}
+\contentsline {subsection}{\numberline {4.7.1}Getting Original Observation Errors}{79}{subsection.4.7.1}
+\contentsline {subsection}{\numberline {4.7.2}Observation Rrror Gross Error Check within GSI}{80}{subsection.4.7.2}
+\contentsline {section}{\numberline {4.8}Background Error Covariance}{81}{section.4.8}
+\contentsline {subsection}{\numberline {4.8.1}Tuning Background Error Covariance through Namelist and Anavinfo}{81}{subsection.4.8.1}
+\contentsline {section}{\numberline {4.9}Analysis Increments}{82}{section.4.9}
+\contentsline {section}{\numberline {4.10}Running Time and Memory Usage}{82}{section.4.10}
+\contentsline {chapter}{\numberline {5}GSI Applications for Regional 3DVar and 3D Hybrid EnVar}{84}{chapter.5}
+\contentsline {section}{\numberline {5.1}Assimilating Conventional Observations with Regional GSI}{86}{section.5.1}
+\contentsline {subsection}{\numberline {5.1.1}Run Script}{86}{subsection.5.1.1}
+\contentsline {subsection}{\numberline {5.1.2}Run GSI and Check the Run Status}{87}{subsection.5.1.2}
+\contentsline {subsection}{\numberline {5.1.3}Check for Successful GSI Completion}{88}{subsection.5.1.3}
+\contentsline {subsection}{\numberline {5.1.4}Diagnose GSI Analysis Results}{91}{subsection.5.1.4}
+\contentsline {subsubsection}{\numberline {5.1.4.1}Check Analysis Fit to Observations}{91}{subsubsection.5.1.4.1}
+\contentsline {subsubsection}{\numberline {5.1.4.2}Check the Minimization}{93}{subsubsection.5.1.4.2}
+\contentsline {subsubsection}{\numberline {5.1.4.3}Check the Analysis Increment}{95}{subsubsection.5.1.4.3}
+\contentsline {section}{\numberline {5.2}Assimilating Radiance Data with Regional GSI}{95}{section.5.2}
+\contentsline {subsection}{\numberline {5.2.1}Run Script}{95}{subsection.5.2.1}
+\contentsline {subsection}{\numberline {5.2.2}Run GSI and Check Run Status}{97}{subsection.5.2.2}
+\contentsline {subsection}{\numberline {5.2.3}Diagnose GSI Analysis Results}{98}{subsection.5.2.3}
+\contentsline {subsubsection}{\numberline {5.2.3.1}Check File fort.207}{98}{subsubsection.5.2.3.1}
+\contentsline {subsubsection}{\numberline {5.2.3.2}Check the Analysis Increment}{99}{subsubsection.5.2.3.2}
+\contentsline {section}{\numberline {5.3}Assimilating GPS Radio Occultation Data with Regional GSI}{101}{section.5.3}
+\contentsline {subsection}{\numberline {5.3.1}Run Script}{101}{subsection.5.3.1}
+\contentsline {subsection}{\numberline {5.3.2}Run GSI and Check the Run Status}{101}{subsection.5.3.2}
+\contentsline {subsection}{\numberline {5.3.3}Diagnose GSI Analysis Results}{102}{subsection.5.3.3}
+\contentsline {subsubsection}{\numberline {5.3.3.1}Check File \textit {fort.212}}{102}{subsubsection.5.3.3.1}
+\contentsline {subsubsection}{\numberline {5.3.3.2}Check the Analysis Increment}{102}{subsubsection.5.3.3.2}
+\contentsline {section}{\numberline {5.4}Introduction to GSI 3D Hybrid EnVar Analysis}{103}{section.5.4}
+\contentsline {section}{\numberline {5.5}Summary}{104}{section.5.5}
+\contentsline {chapter}{\numberline {6}Introduction to more GSI Applications}{107}{chapter.6}
+\contentsline {section}{\numberline {6.1}Introduction to Global GSI analysis}{107}{section.6.1}
+\contentsline {subsection}{\numberline {6.1.1}The Difference between Global and Regional GSI}{108}{subsection.6.1.1}
+\contentsline {subsection}{\numberline {6.1.2}Global GFS Scripts}{109}{subsection.6.1.2}
+\contentsline {subsection}{\numberline {6.1.3}Sample Results}{112}{subsection.6.1.3}
+\contentsline {section}{\numberline {6.2}Introduction to Chemical Analysis}{113}{section.6.2}
+\contentsline {subsection}{\numberline {6.2.1}Setup GSI Run Scripts for Chemical Analysis}{113}{subsection.6.2.1}
+\contentsline {subsection}{\numberline {6.2.2}Sample Results}{115}{subsection.6.2.2}
+\contentsline {chapter}{\numberline {A}GSI Community Tools}{117}{appendix.A}
+\contentsline {section}{\numberline {A.1}BUFR Format and BUFR Tools}{117}{section.A.1}
+\contentsline {section}{\numberline {A.2}Read GSI Diagnostic Files}{117}{section.A.2}
+\contentsline {section}{\numberline {A.3}Read and Plot Convergence Information from fort.220}{121}{section.A.3}
+\contentsline {section}{\numberline {A.4}Plot Single Observation Test Result and Analysis Increment}{122}{section.A.4}
+\contentsline {chapter}{\numberline {B}Contents of Namelist Section OBS\_INPUT}{123}{appendix.B}
+\contentsline {chapter}{\numberline {C}GSI Namelist: Name, Default Value, Explanation}{125}{appendix.C}
+\contentsline {chapter}{Bibliography}{125}{table.caption.60}
