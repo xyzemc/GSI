@@ -2,7 +2,7 @@
 # Source files
 # ------------
 
-  OBJS	= \
+  OBJS  = \
 	adjtest.o \
 	adjtest_obs.o \
 	adjust_cloudobs_mod.o \
@@ -52,8 +52,8 @@
 	constants.o \
 	control2model.o \
 	control2state.o \
-	control2state_ad.o \
 	control2model_ad.o \
+	control2state_ad.o \
 	control_vectors.o \
         convb_ps.o \
         convb_q.o \
@@ -69,6 +69,8 @@
 	convthin.o \
 	convthin_time.o  \
         correlated_obsmod.o \
+	cplr_gfs_ensmod.o \
+	cplr_gfs_nstmod.o \
 	crtm_interface.o \
 	cwhydromod.o \
 	cvsection.o \
@@ -97,8 +99,8 @@
 	general_sub2grid_mod.o \
 	general_tll2xy_mod.o \
 	general_transform.o \
-	gengrid_vars.o \
 	general_write_gfsatm.o \
+	gengrid_vars.o \
 	genqsat.o \
 	genstats_gps.o \
 	gesinfo.o \
@@ -109,11 +111,11 @@
 	get_nmmb_ensperts.o \
 	get_pseudo_ensperts.o \
 	get_semimp_mats.o \
+	get_wrf_mass_ensperts_netcdf.o \
 	get_wrf_nmm_ensperts.o \
 	getcount_bufr.o  \
 	getprs.o \
 	getsiga.o \
-	get_wrf_mass_ensperts_netcdf.o \
 	getuv.o \
 	getvvel.o \
         gfs_stratosphere.o \
@@ -131,10 +133,12 @@
 	gsi_bundlemod.o \
 	gsi_chemguess_mod.o \
 	gsi_enscouplermod.o \
-	gsi_metguess_mod.o \
-	gsi_nstcouplermod.o \
 	gsi_io.o \
+	gsi_metguess_mod.o \
 	gsi_nemsio_mod.o \
+	gsi_nstcouplermod.o \
+	gsi_unformatted.o \
+	gsimain.o \
 	gsimod.o \
 	gsisub.o \
 	guess_grids.o \
@@ -165,6 +169,7 @@
 	intpcp.o \
 	intpm2_5.o \
 	intpm10.o \
+	intpmsl.o \
 	intps.o \
 	intpw.o \
 	intq.o \
@@ -173,8 +178,6 @@
 	intrp2a.o \
 	intrp3oz.o \
 	intrw.o \
-	intpmsl.o \
-        intvis.o   \
 	intspd.o \
 	intsrw.o \
 	intsst.o \
@@ -182,6 +185,7 @@
 	inttcamt.o \
 	inttcp.o \
 	inttd2m.o \
+        intvis.o   \
 	intw.o \
 	intwspd10m.o \
 	jcmod.o \
@@ -193,8 +197,8 @@
 	lag_traj.o \
 	lagmod.o \
 	lanczos.o \
-	loglcbas_to_lcbas.o \
 	logcldch_to_cldch.o \
+	loglcbas_to_lcbas.o \
 	logvis_to_vis.o \
 	looplimits.o \
 	m_berror_stats.o \
@@ -230,6 +234,7 @@
 	ncepgfs_ghg.o \
 	ncepgfs_io.o \
 	ncepnems_io.o \
+	netcdf_mod.o \
 	nlmsas_ad.o \
 	normal_rh_to_q.o \
 	nstio_module.o \
@@ -376,8 +381,6 @@
 	sqrtmin.o \
 	ssmis_spatial_average_mod.o  \
 	sst_retrieval.o \
-	control2model_ad.o \
-	ensctl2state_ad.o \
 	state_vectors.o \
 	statsco.o \
 	statsconv.o \
@@ -393,9 +396,9 @@
 	stpdw.o \
 	stpgps.o \
 	stpgust.o \
+	stphowv.o \
 	stpjcmod.o \
 	stpjo.o \
-	stphowv.o \
 	stplcbas.o \
 	stpmitm.o \
 	stpmxtm.o \
@@ -425,10 +428,8 @@
 	strong_fast_global_mod.o \
 	sub2fslab_mod.o \
 	support_2dvar.o \
-	stub_ensmod.o \
-	stub_nstmod.o \
-	stub_set_crtm_aerosol.o \
 	stub_pertmod.o \
+	stub_set_crtm_aerosol.o \
         stub_timermod.o \
 	tendsmod.o \
 	test_obsens.o \
@@ -460,3 +461,7 @@
 	wrwrfnmma.o \
 	xhat_vordivmod.o \
 	zrnmi_mod.o
+#
+# These are still in the source directory but are not built. 
+# stub_ensmod.o \
+# stub_nstmod.o \
