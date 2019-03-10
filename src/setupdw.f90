@@ -11,7 +11,7 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 
 ! !USES:
 
-  use mpeu_util, only: die,perr
+  use mpeu_util, only: die,perr,getindex,luavail,gettable,gettablesize
   use kinds, only: r_kind,r_single,r_double,i_kind
 
 
@@ -20,14 +20,18 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   use gridmod, only: nsig,get_ijk
 
   use guess_grids, only: hrdifsig,geop_hgtl,ges_lnprsl,&
-       nfldsig,sfcmod_gfs,sfcmod_mm5,comp_fact10
+       nfldsig,sfcmod_gfs,sfcmod_mm5,comp_fact10,ges_tsen
 
   use constants, only: grav_ratio,flattening,grav,zero,rad2deg,deg2rad, &
        grav_equator,one,two,somigliana,semi_major_axis,eccentricity,r1000,&
        wgtlim
   use constants, only: tiny_r_kind,half,cg_term,huge_single
 
-  use obsmod, only: rmiss_single,i_dw_ob_type,obsdiags
+  use obsmod, only: rmiss_single,i_dw_ob_type,obsdiags,lobsdiag_forenkf
+  use obsmod, only: netcdf_diag, binary_diag, dirname, ianldate
+  use nc_diag_write_mod, only: nc_diag_init, nc_diag_header, nc_diag_metadata, &
+       nc_diag_write, nc_diag_data2d
+  use nc_diag_read_mod, only: nc_diag_read_init, nc_diag_read_get_dim, nc_diag_read_close
   use m_obsdiags, only: dwhead
   use obsmod, only: lobsdiagsave,nobskeep,lobsdiag_allocated,time_offset
   use m_obsNode, only: obsNode
@@ -35,8 +39,9 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   use m_obsLList, only: obsLList_appendNode
   use obsmod, only: obs_diag,luse_obsdiag
   use gsi_4dvar, only: nobs_bins,hr_obsbin
+  use state_vectors, only: svars3d, levels, nsdim
 
-  use jfunc, only: last, jiter, miter
+  use jfunc, only: last, jiter, miter, jiterstart
   use convinfo, only: nconvtype,cermin,cermax,cgross,cvar_b,cvar_pg,ictype
   use convinfo, only: icsubtype
 
@@ -44,6 +49,7 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 
   use gsi_bundlemod, only : gsi_bundlegetpointer
   use gsi_metguess_mod, only : gsi_metguess_get,gsi_metguess_bundle
+  use sparsearr, only: sparr2, new, size, writearray, fullarray
 
   implicit none
 
@@ -120,6 +126,10 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 !   2016-05-18  guo     - replaced ob_type with polymorphic obsNode through type casting
 !   2016-06-24  guo     - fixed the default value of obsdiags(:,:)%tail%luse to luse(i)
 !                       . removed (%dlat,%dlon) debris.
+!   2016-11-29  shlyaeva - save linearized H(x) for EnKF
+!   2017-02-06  todling - add netcdf_diag capability; hidden as contained code
+!   2019-02-22  mccarty - a number of updates for Aeolus, including error tuning capability
+!                         via anavinfo tables
 !
 ! !REMARKS:
 !   language: f90
@@ -152,6 +162,7 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   real(r_kind) zob,termrg,dz,termr,sin2,termg
   real(r_kind) sfcchk,slat,psges,dwwind
   real(r_kind) ugesindw,vgesindw,factw,presw
+  real(r_kind) tsgesindw,qgesindw
   real(r_kind) residual,obserrlm,obserror,ratio,val2
   real(r_kind) ress,ressw
   real(r_kind) val,valqc,ddiff,rwgt,sfcr,skint
@@ -166,10 +177,16 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   integer(i_kind) mm1,ikxx,nn,isli,ibin,ioff,ioff0
   integer(i_kind) jsig
   integer(i_kind) i,nchar,nreal,k,j,k1,jj,l,ii,k2
-  integer(i_kind) ier,ilon,ilat,ihgt,ilob,id,itime,ikx,iatd,inls,incls
+  integer(i_kind) ier,ilon,ilat,ihgt,ilob,id,itime,ikx,iatd,inls,incls,isatid
   integer(i_kind) iazm,ielva,iuse,ilate,ilone,istat
+  integer(i_kind) ipres,idwdp,itemp,idwdT,iback,idwdB
+
   integer(i_kind) idomsfc,isfcr,iff10,iskint
 
+  real(r_kind) :: delz
+  type(sparr2) :: dhx_dx
+  real(r_single), dimension(nsdim) :: dhx_dx_array
+  integer(i_kind) :: iz, u_ind, v_ind, nind, nnz
 
   character(8) station_id
   character(8),allocatable,dimension(:):: cdiagbuf
@@ -178,7 +195,7 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   integer(i_kind),dimension(nobs):: ioid ! initial (pre-distribution) obs ID
   logical proceed
 
-  logical:: in_curbin,in_anybin
+  logical:: in_curbin,in_anybin, save_jacobian
   integer(i_kind),dimension(nobs_bins):: n_alloc
   integer(i_kind),dimension(nobs_bins):: m_alloc
   class(obsNode),pointer:: my_node
@@ -191,6 +208,22 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   real(r_kind),allocatable,dimension(:,:,:  ) :: ges_z
   real(r_kind),allocatable,dimension(:,:,:,:) :: ges_u
   real(r_kind),allocatable,dimension(:,:,:,:) :: ges_v
+  real(r_kind),allocatable,dimension(:,:,:,:) :: ges_q
+
+! variables added for errtable handling
+  real(r_kind),allocatable,dimension(:,:,:) :: errtable
+  integer(i_kind),allocatable,dimension(:) :: types
+
+  integer(i_kind),parameter :: ierr_hght = 1
+  integer(i_kind),parameter :: ierr_m = 2
+  integer(i_kind),parameter :: ierr_b = 3
+
+  integer(i_kind) ntypes, max_errlev
+
+  logical errtable_defined
+
+
+  save_jacobian = conv_diagsave .and. jiter==jiterstart .and. lobsdiag_forenkf
 
 ! Check to see if required guess fields are available
   call check_vars_(proceed)
@@ -198,6 +231,7 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 
 ! If require guess vars available, extract from bundle ...
   call init_vars_
+  call initialize_error_table_
 
   n_alloc(:)=0
   m_alloc(:)=0
@@ -207,26 +241,33 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   read(lunin)data,luse,ioid
 
 !    index information for data array (see reading routine)
-  ikxx=1      ! index of ob type
-  ilon=2      ! index of grid relative obs location (x)
-  ilat=3      ! index of grid relative obs location (y)
-  itime=4     ! index of observation time in data array
-  ihgt=5      ! index of obs vertical coordinate in data array(height-m)
-  ielva=6     ! index of elevation angle(radians)
-  iazm=7      ! index of azimuth angle(radians) in data array
-  inls=8      ! index of number of laser shots
-  incls=9     ! index of number of cloud laser shots
-  iatd=10     ! index of atmospheric depth     
-  ilob=11     ! index of lidar observation
-  ier=12      ! index of obs error
-  id=13       ! index of station id
-  iuse=14     ! index of use parameter
-  idomsfc=15  ! index of dominate surface type
-  iskint=16   ! index of skin temperature
-  iff10 = 17  ! index of 10 m wind factor
-  isfcr = 18  ! index of surface roughness
-  ilone=19    ! index of longitude (degrees)
-  ilate=20    ! index of latitude (degrees)
+  ikxx   =  1  ! index of ob type
+  ilon   =  2  ! index of grid relative obs location (x)
+  ilat   =  3  ! index of grid relative obs location (y)
+  itime  =  4  ! index of observation time in data array
+  ihgt   =  5  ! index of obs vertical coordinate in data array(height-m)
+  ielva  =  6  ! index of elevation angle(radians)
+  iazm   =  7  ! index of azimuth angle(radians) in data array
+  inls   =  8  ! index of number of laser shots
+  incls  =  9  ! index of number of cloud laser shots
+  iatd   = 10  ! index of atmospheric depth     
+  ilob   = 11  ! index of lidar observation
+  ier    = 12  ! index of obs error
+  id     = 13  ! index of station id
+  isatid = 14  ! index of satellite id
+  iuse   = 15  ! index of use parameter
+  idomsfc= 16  ! index of dominate surface type
+  iskint = 17  ! index of skin temperature
+  iff10  = 18  ! index of 10 m wind factor
+  isfcr  = 19  ! index of surface roughness
+  ilone  = 20  ! index of longitude (degrees)
+  ilate  = 21  ! index of latitude (degrees)
+  ipres  = 22  ! index of Retr. Pressure
+  idwdp  = 23  ! index of Deriv. of wind w.r.t. Pressure
+  itemp  = 24  ! index of Retr. Pressure
+  idwdT  = 25  ! index of Deriv. of wind w.r.t. Pressure
+  iback  = 26  ! index of Retr. Pressure
+  idwdB  = 27  ! index of Deriv. of wind w.r.t. Pressure
 
   do i=1,nobs
      muse(i)=nint(data(iuse,i)) <= jiter
@@ -254,10 +295,17 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   if(conv_diagsave)then
      ii=0
      nchar=1
-     ioff0=26
+     ioff0=27
      nreal=ioff0
      if (lobsdiagsave) nreal=nreal+4*miter+1
+     if (save_jacobian) then
+       nnz   = 2                   ! number of non-zero elements in dH(x)/dx profile
+       nind   = 1
+       call new(dhx_dx, nnz, nind)
+       nreal = nreal + size(dhx_dx)
+     endif
      allocate(cdiagbuf(nobs),rdiagbuf(nreal,nobs))
+     if(netcdf_diag) call init_netcdf_diag_
   end if
 
   scale=one
@@ -285,7 +333,7 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
      else
         ibin = 1
      endif
-     IF (ibin<1.OR.ibin>nobs_bins) write(6,*)mype,'Error nobs_bins,ibin= ',nobs_bins,ibin
+     IF (ibin<1.OR.ibin>nobs_bins) write(6,*)mype,'Error nobs_bins,ibin= ',nobs_bins,ibin,dtime,hr_obsbin
 
 !    Link obs to diagnostics structure
      if (luse_obsdiag) then
@@ -458,6 +506,7 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 
 ! Set initial obs error to that supplied in BUFR stream.
      error = data(ier,i)
+    
 ! Removed repe_dw, but retained the "+ one" for reproducibility
 !  for ikx=100 or 101 - wm
      if (ictype(ikx)==100 .or. ictype(ikx)==101)error = error + one
@@ -471,8 +520,15 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         endif
      endif    
 
-     ratio_errors = error/abs(error + 1.0e6_r_kind*rhgh + r8*rlow)
-     error = one/error
+     if (errtable_defined) error = get_error_(ictype(ikx),icsubtype(ikx),data(ihgt,i),error)
+     if (error > tiny_r_kind) then     
+         ratio_errors = error/abs(error + 1.0e6_r_kind*rhgh + r8*rlow)
+         error = one/error
+     else
+         ratio_errors = zero
+         error = zero
+         muse(i) = .false.
+     endif
 
      if(dpres < zero .or. dpres > rsig)ratio_errors = zero
  
@@ -482,11 +538,15 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         hrdifsig,mype,nfldsig)
      call tintrp31(ges_v,vgesindw,dlat,dlon,dpres,dtime,&
         hrdifsig,mype,nfldsig) 
-
+     call tintrp31(ges_tsen,tsgesindw,dlat,dlon,dpres,dtime,&
+        hrdifsig,mype,nfldsig)
+     call tintrp31(ges_q,qgesindw,dlat,dlon,dpres,dtime,&
+        hrdifsig,mype,nfldsig)
 
 ! Next, convert wind components to line of sight value
-!wm     if (nint(data(isubtype,i))==100.or.nint(data(isubtype,i))==101) then
-     if (ictype(ikx)==100 .or. ictype(ikx)==101) then
+!    Note:  Aeolus defines type differently than old DWLDAT spec;
+!           hence this logic.
+     if (ictype(ikx)==100 .or. ictype(ikx)==101 .or. ictype(ikx)==48) then
 !     KNMI  product  msq
         cosazm  = -cos(data(iazm,i))  ! cos(azimuth)  ! mccarty msq 
         sinazm  = -sin(data(iazm,i))  ! sin(azimuth)  ! mccarty msq
@@ -496,6 +556,34 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
      endif
 
      dwwind=(ugesindw*sinazm+vgesindw*cosazm)*factw
+
+     iz = max(1, min( int(dpres), nsig))
+     delz = max(zero, min(dpres - float(iz), one))
+
+     if (save_jacobian) then
+        u_ind = getindex(svars3d, 'u')
+        if (u_ind < 0) then
+           print *, 'Error: no variable u in state vector. Exiting.'
+           call stop2(1300)
+        endif
+        v_ind = getindex(svars3d, 'v')
+        if (v_ind < 0) then
+           print *, 'Error: no variable v in state vector. Exiting.'
+           call stop2(1300)
+        endif
+
+        dhx_dx%st_ind(1)  = iz               + sum(levels(1:u_ind-1))
+        dhx_dx%end_ind(1) = min(iz + 1,nsig) + sum(levels(1:u_ind-1))
+
+        dhx_dx%val(1) = (one - delz) * sinazm * factw
+        dhx_dx%val(2) = delz * sinazm * factw
+
+        dhx_dx%st_ind(2)  = iz               + sum(levels(1:v_ind-1))
+        dhx_dx%end_ind(2) = min(iz + 1,nsig) + sum(levels(1:v_ind-1))
+
+        dhx_dx%val(3) = (one - delz) * cosazm * factw
+        dhx_dx%val(4) = delz * cosazm * factw
+     endif
 
      ddiff = data(ilob,i) - dwwind
 
@@ -632,30 +720,9 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
 ! Save select output for diagnostic file  
      if(conv_diagsave)then
         ii=ii+1
-        rstation_id     = data(id,i)
-        cdiagbuf(ii)    = station_id         ! station id
-
-        rdiagbuf(1,ii)  = ictype(ikx)        ! observation type
-        rdiagbuf(2,ii)  = icsubtype(ikx)     ! observation subtype
-
-        rdiagbuf(3,ii)  = data(ilate,i)      ! observation latitude (degrees)
-        rdiagbuf(4,ii)  = data(ilone,i)      ! observation longitude (degrees)
-        rdiagbuf(5,ii)  = rmiss_single       ! station elevation (meters)
-        rdiagbuf(6,ii)  = presw              ! observation pressure (hPa)
-        rdiagbuf(7,ii)  = data(ihgt,i)       ! observation height (meters)
-        rdiagbuf(8,ii)  = dtime-time_offset  ! obs time (hours relative to analysis time)
-
-        rdiagbuf(9,ii)  = rmiss_single       ! input prepbufr qc or event mark
-        rdiagbuf(10,ii) = rmiss_single       ! setup qc or event mark
-        rdiagbuf(11,ii) = data(iuse,i)       ! read_prepbufr data usage flag
-        if(muse(i)) then
-           rdiagbuf(12,ii) = one             ! analysis usage flag (1=use, -1=not used)
-        else
-           rdiagbuf(12,ii) = -one
-        endif
-
-        err_input = data(ier,i)
-        err_adjst = data(ier,i)
+        rstation_id = data(id,i)
+        err_input   = data(ier,i)
+        err_adjst   = data(ier,i)
         if (ratio_errors*error>tiny_r_kind) then
            err_final = one/(ratio_errors*error)
         else
@@ -669,46 +736,8 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
         if (err_adjst>tiny_r_kind) errinv_adjst=one/err_adjst
         if (err_final>tiny_r_kind) errinv_final=one/err_final
 
-        rdiagbuf(13,ii) = rwgt                 ! nonlinear qc relative weight
-        rdiagbuf(14,ii) = errinv_input         ! prepbufr inverse obs error
-        rdiagbuf(15,ii) = errinv_adjst         ! read_prepbufr inverse obs error
-        rdiagbuf(16,ii) = errinv_final         ! final inverse observation error
-
-        rdiagbuf(17,ii) = data(ilob,i)         ! observation
-        rdiagbuf(18,ii) = ddiff                ! obs-ges used in analysis 
-        rdiagbuf(19,ii) = data(ilob,i)-dwwind  ! obs-ges w/o bias correction (future slot)
- 
-        rdiagbuf(20,ii) = factw                ! 10m wind reduction factor
-        rdiagbuf(21,ii) = data(ielva,i)*rad2deg! elevation angle (degrees)
-        rdiagbuf(22,ii) = data(iazm,i)*rad2deg ! bearing or azimuth (degrees)
-        rdiagbuf(23,ii) = data(inls,i)         ! number of laser shots
-        rdiagbuf(24,ii) = data(incls,i)        ! number of cloud laser shots
-        rdiagbuf(25,ii) = data(iatd,i)         ! atmospheric depth
-        rdiagbuf(26,ii) = data(ilob,i)         ! line of sight component of wind orig.
-
-        ioff=ioff0
-        if (lobsdiagsave) then
-           do jj=1,miter 
-              ioff=ioff+1 
-              if (obsdiags(i_dw_ob_type,ibin)%tail%muse(jj)) then
-                 rdiagbuf(ioff,ii) = one
-              else
-                 rdiagbuf(ioff,ii) = -one
-              endif
-           enddo
-           do jj=1,miter+1
-              ioff=ioff+1
-              rdiagbuf(ioff,ii) = obsdiags(i_dw_ob_type,ibin)%tail%nldepart(jj)
-           enddo
-           do jj=1,miter
-              ioff=ioff+1
-              rdiagbuf(ioff,ii) = obsdiags(i_dw_ob_type,ibin)%tail%tldepart(jj)
-           enddo
-           do jj=1,miter
-              ioff=ioff+1
-              rdiagbuf(ioff,ii) = obsdiags(i_dw_ob_type,ibin)%tail%obssen(jj)
-           enddo
-        endif
+        if (binary_diag) call contents_binary_diag_
+        if (netcdf_diag) call contents_netcdf_diag_
 
      end if
 
@@ -718,11 +747,14 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   call final_vars_
 
 ! Write information to diagnostic file
-  if(conv_diagsave .and. ii>0)then
-     call dtime_show('setupdw','diagsave:dw',i_dw_ob_type)
-     write(7)' dw',nchar,nreal,ii,mype,ioff0
-     write(7)cdiagbuf(1:ii),rdiagbuf(:,1:ii)
-     deallocate(cdiagbuf,rdiagbuf)
+  if(conv_diagsave) then
+    if(netcdf_diag) call nc_diag_write
+    if(binary_diag .and. ii>0)then
+       call dtime_show('setupdw','diagsave:dw',i_dw_ob_type)
+       write(7)' dw',nchar,nreal,ii,mype,ioff0
+       write(7)cdiagbuf(1:ii),rdiagbuf(:,1:ii)
+       deallocate(cdiagbuf,rdiagbuf)
+     end if
   end if
   
 ! End of routine
@@ -742,6 +774,11 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   proceed=proceed.and.ivar>0
   call gsi_metguess_get ('var::v', ivar, istatus )
   proceed=proceed.and.ivar>0
+  call gsi_metguess_get ('var::tv', ivar, istatus )
+  proceed=proceed.and.ivar>0
+  call gsi_metguess_get ('var::q', ivar, istatus )
+  proceed=proceed.and.ivar>0
+
   end subroutine check_vars_ 
 
   subroutine init_vars_
@@ -825,6 +862,24 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
          write(6,*) trim(myname),': ', trim(varname), ' not found in met bundle, ier= ',istatus
          call stop2(999)
      endif
+!    get q ...
+     varname='q'
+     call gsi_bundlegetpointer(gsi_metguess_bundle(1),trim(varname),rank3,istatus)
+     if (istatus==0) then
+         if(allocated(ges_q))then
+            write(6,*) trim(myname), ': ', trim(varname), ' already incorrectly alloc '
+            call stop2(999)
+         endif
+         allocate(ges_q(size(rank3,1),size(rank3,2),size(rank3,3),nfldsig))
+         ges_q(:,:,:,1)=rank3
+         do ifld=2,nfldsig
+            call gsi_bundlegetpointer(gsi_metguess_bundle(ifld),trim(varname),rank3,istatus)
+            ges_q(:,:,:,ifld)=rank3
+         enddo
+     else
+         write(6,*) trim(myname),': ', trim(varname), ' not found in met bundle, ier= ',istatus
+         call stop2(999)
+     endif
   else
      write(6,*) trim(myname), ': inconsistent vector sizes (nfldsig,size(metguess_bundle) ',&
                  nfldsig,size(gsi_metguess_bundle)
@@ -832,11 +887,326 @@ subroutine setupdw(lunin,mype,bwork,awork,nele,nobs,is,conv_diagsave)
   endif
   end subroutine init_vars_
 
+  subroutine init_netcdf_diag_
+  character(len=80) string
+  character(len=128) diag_conv_file
+  integer(i_kind) ncd_fileid,ncd_nobs
+  logical append_diag
+  logical,parameter::verbose=.false. 
+     write(string,900) jiter
+900  format('conv_dw_',i2.2,'.nc4')
+     diag_conv_file=trim(dirname) // trim(string)
+
+     inquire(file=diag_conv_file, exist=append_diag)
+
+     if (append_diag) then
+        call nc_diag_read_init(diag_conv_file,ncd_fileid)
+        ncd_nobs = nc_diag_read_get_dim(ncd_fileid,'nobs')
+        call nc_diag_read_close(diag_conv_file)
+
+        if (ncd_nobs > 0) then
+           if(verbose) print *,'file ' // trim(diag_conv_file) // ' exists.  Appending.  nobs,mype=',ncd_nobs,mype
+        else
+           if(verbose) print *,'file ' // trim(diag_conv_file) // ' exists but contains no obs.  Not appending. nobs,mype=',ncd_nobs,mype
+           append_diag = .false. ! if there are no obs in existing file, then do not try to append
+        endif
+     end if
+
+     call nc_diag_init(diag_conv_file, append=append_diag)
+
+     if (.not. append_diag) then ! don't write headers on append - the module will break?
+        call nc_diag_header("date_time",ianldate )
+        call nc_diag_header("Number_of_state_vars", nsdim          )
+     endif
+  end subroutine init_netcdf_diag_
+  subroutine contents_binary_diag_
+        cdiagbuf(ii)    = station_id         ! station id
+
+        rdiagbuf(1,ii)  = ictype(ikx)        ! observation type
+        rdiagbuf(2,ii)  = icsubtype(ikx)     ! observation subtype
+
+        rdiagbuf(3,ii)  = data(ilate,i)      ! observation latitude (degrees)
+        rdiagbuf(4,ii)  = data(ilone,i)      ! observation longitude (degrees)
+        rdiagbuf(5,ii)  = rmiss_single       ! station elevation (meters)
+        rdiagbuf(6,ii)  = presw              ! observation pressure (hPa)
+        rdiagbuf(7,ii)  = data(ihgt,i)       ! observation height (meters)
+        rdiagbuf(8,ii)  = dtime-time_offset  ! obs time (hours relative to analysis time)
+
+        rdiagbuf(9,ii)  = rmiss_single       ! input prepbufr qc or event mark
+        rdiagbuf(10,ii) = rmiss_single       ! setup qc or event mark
+        rdiagbuf(11,ii) = data(iuse,i)       ! read_prepbufr data usage flag
+        if(muse(i)) then
+           rdiagbuf(12,ii) = one             ! analysis usage flag (1=use, -1=not used)
+        else
+           rdiagbuf(12,ii) = -one
+        endif
+
+        rdiagbuf(13,ii) = rwgt                 ! nonlinear qc relative weight
+        rdiagbuf(14,ii) = errinv_input         ! prepbufr inverse obs error
+        rdiagbuf(15,ii) = errinv_adjst         ! read_prepbufr inverse obs error
+        rdiagbuf(16,ii) = errinv_final         ! final inverse observation error
+
+        rdiagbuf(17,ii) = data(ilob,i)         ! observation
+        rdiagbuf(18,ii) = ddiff                ! obs-ges used in analysis 
+        rdiagbuf(19,ii) = data(ilob,i)-dwwind  ! obs-ges w/o bias correction (future slot)
+ 
+        rdiagbuf(20,ii) = factw                ! 10m wind reduction factor
+        rdiagbuf(21,ii) = data(ielva,i)*rad2deg! elevation angle (degrees)
+        rdiagbuf(22,ii) = data(iazm,i)*rad2deg ! bearing or azimuth (degrees)
+        rdiagbuf(23,ii) = data(inls,i)         ! number of laser shots
+        rdiagbuf(24,ii) = data(incls,i)        ! number of cloud laser shots
+        rdiagbuf(25,ii) = data(iatd,i)         ! atmospheric depth
+        rdiagbuf(26,ii) = data(ilob,i)         ! line of sight component of wind orig.
+
+        rdiagbuf(27,ii) = 1.e+10_r_single      ! ges ensemble spread (filled in by EnKF)
+
+        ioff=ioff0
+        if (lobsdiagsave) then
+           do jj=1,miter 
+              ioff=ioff+1 
+              if (obsdiags(i_dw_ob_type,ibin)%tail%muse(jj)) then
+                 rdiagbuf(ioff,ii) = one
+              else
+                 rdiagbuf(ioff,ii) = -one
+              endif
+           enddo
+           do jj=1,miter+1
+              ioff=ioff+1
+              rdiagbuf(ioff,ii) = obsdiags(i_dw_ob_type,ibin)%tail%nldepart(jj)
+           enddo
+           do jj=1,miter
+              ioff=ioff+1
+              rdiagbuf(ioff,ii) = obsdiags(i_dw_ob_type,ibin)%tail%tldepart(jj)
+           enddo
+           do jj=1,miter
+              ioff=ioff+1
+              rdiagbuf(ioff,ii) = obsdiags(i_dw_ob_type,ibin)%tail%obssen(jj)
+           enddo
+        endif
+        if (save_jacobian) then
+           call writearray(dhx_dx, rdiagbuf(ioff+1:nreal,ii))
+           ioff = ioff + size(dhx_dx)
+        endif
+
+  end subroutine contents_binary_diag_
+  subroutine contents_netcdf_diag_
+! Observation class
+  character(7),parameter     :: obsclass = '     dw'
+  real(r_single),parameter::     missing = -9.99e9_r_single
+  real(r_kind),dimension(miter) :: obsdiag_iuse
+           call nc_diag_metadata("Station_ID",              station_id                        )
+           call nc_diag_metadata("Observation_Class",       obsclass                          )
+           call nc_diag_metadata("Observation_Type",        ictype(ikx)                       )
+           call nc_diag_metadata("Observation_Subtype",     icsubtype(ikx)                    )
+           call nc_diag_metadata("Latitude",                sngl(data(ilate,i))               )
+           call nc_diag_metadata("Longitude",               sngl(data(ilone,i))               )
+           call nc_diag_metadata("Station_Elevation",       missing                           )
+           call nc_diag_metadata("Pressure",                sngl(presw)                       )
+           call nc_diag_metadata("Height",                  sngl(data(ihgt,i))                )
+           call nc_diag_metadata("Time",                    sngl(dtime-time_offset)           )
+           call nc_diag_metadata("Prep_QC_Mark",            missing                           )
+           call nc_diag_metadata("Prep_Use_Flag",           sngl(data(iuse,i))                )
+!          call nc_diag_metadata("Nonlinear_QC_Var_Jb",     var_jb                            )
+           call nc_diag_metadata("Nonlinear_QC_Rel_Wgt",    sngl(rwgt)                        )                 
+           if(muse(i)) then
+              call nc_diag_metadata("Analysis_Use_Flag",    sngl(one)                         )
+           else
+              call nc_diag_metadata("Analysis_Use_Flag",    sngl(-one)                        )              
+           endif
+
+           call nc_diag_metadata("Errinv_Input",            sngl(errinv_input)                )
+           call nc_diag_metadata("Errinv_Adjust",           sngl(errinv_adjst)                )
+           call nc_diag_metadata("Errinv_Final",            sngl(errinv_final)                )
+
+           call nc_diag_metadata("Observation",                   sngl(data(ilob,i))          )
+           call nc_diag_metadata("Obs_Minus_Forecast_adjusted",   sngl(ddiff)                 )
+           call nc_diag_metadata("Obs_Minus_Forecast_unadjusted", sngl(data(ilob,i)-dwwind)   )
+
+           call nc_diag_metadata("Wind_Reduction_Factor_at_10m", sngl(factw)                  )
+           call nc_diag_metadata("Elevation_Angle",              sngl(data(ielva,i)*rad2deg)  )
+           call nc_diag_metadata("Wind_Azimuth_Angle",           sngl(data(iazm,i)*rad2deg)   )
+           call nc_diag_metadata("Laser_Shot_Count",             sngl(data(inls,i))           )
+           call nc_diag_metadata("Cloud_Laser_Shot_Count",       sngl(data(incls,i))          )
+           call nc_diag_metadata("Atmospheric_Depth",            sngl(data(iatd,i))           )
+
+           call nc_diag_metadata("Retrieval_Pressure",           sngl(data(ipres,i)/100._r_kind) )  ! convert from Pa ot hPa
+           call nc_diag_metadata("Deriv_Wind_wrt_Pressure",      sngl(data(idwdp,i)*100._r_kind) )  ! convert from ms-1/Pa to /hPa
+           call nc_diag_metadata("Retrieval_Temperature",           sngl(data(itemp,i))          )
+           call nc_diag_metadata("Deriv_Wind_wrt_Temperature",      sngl(data(idwdT,i))          )  !currentl tv; may need to be tsen
+           call nc_diag_metadata("Retrieval_Backscatter",           sngl(data(iback,i))          )
+           call nc_diag_metadata("Deriv_Wind_wrt_Backscatter",      sngl(data(idwdB,i))          )
+
+           call nc_diag_metadata("Background_Temperature",          sngl(tsgesindw)              )
+           call nc_diag_metadata("Background_Specific_Humidity",    sngl(qgesindw)               )
+
+!_RT_NC4_TODO
+!_RT    rdiagbuf(20,ii) = factw                ! 10m wind reduction factor
+!_RT    rdiagbuf(21,ii) = data(ielva,i)*rad2deg! elevation angle (degrees)
+!_RT    rdiagbuf(22,ii) = data(iazm,i)*rad2deg ! bearing or azimuth (degrees)
+!_RT    rdiagbuf(23,ii) = data(inls,i)         ! number of laser shots
+!_RT    rdiagbuf(24,ii) = data(incls,i)        ! number of cloud laser shots
+!_RT    rdiagbuf(25,ii) = data(iatd,i)         ! atmospheric depth
+!_RT    rdiagbuf(26,ii) = data(ilob,i)         ! line of sight component of wind orig.
+ 
+           if (lobsdiagsave) then
+              do jj=1,miter
+                 if (obsdiags(i_dw_ob_type,ibin)%tail%muse(jj)) then
+                       obsdiag_iuse(jj) =  one
+                 else
+                       obsdiag_iuse(jj) = -one
+                 endif
+              enddo
+   
+              call nc_diag_data2d("ObsDiagSave_iuse",     obsdiag_iuse                             )
+              call nc_diag_data2d("ObsDiagSave_nldepart", obsdiags(i_dw_ob_type,ibin)%tail%nldepart )
+              call nc_diag_data2d("ObsDiagSave_tldepart", obsdiags(i_dw_ob_type,ibin)%tail%tldepart )
+              call nc_diag_data2d("ObsDiagSave_obssen",   obsdiags(i_dw_ob_type,ibin)%tail%obssen   )             
+           endif
+
+           if (save_jacobian) then
+              call fullarray(dhx_dx, dhx_dx_array)
+              call nc_diag_data2d("Observation_Operator_Jacobian", dhx_dx_array)
+           endif
+   
+  end subroutine contents_netcdf_diag_
+
+  subroutine initialize_error_table_
+     character(len=*),parameter:: myname_=myname//'initialize_error_table_'
+     character(len=*),parameter:: rcname='anavinfo'
+     character(len=*),parameter:: tbname='dw_error::'
+     character(len=256),allocatable,dimension(:):: error_driver_tbl, error_tbl
+     character(len=40) cur_table
+
+     integer(i_kind) cur_kx, cur_sub, ityp, irow, lu_err, ntot, nrows
+
+
+
+     lu_err = luavail()
+
+     open(lu_err,file=rcname,form='formatted')
+
+     call gettablesize(tbname,lu_err,ntot,ntypes)
+     if(ntypes==0) then
+        close(lu_err)
+        errtable_defined = .false.
+        return
+     endif
+
+     errtable_defined = .true.
+
+     allocate(error_driver_tbl(ntypes),&
+              types(ntypes)            )
+
+     ! get error driver table dw_error
+     call gettable(tbname,lu_err,ntot,ntypes,error_driver_tbl)
+
+     max_errlev = 0
+     ! get error tables defined in driver
+     ! first, get max # of levels for all types
+     do ityp=1,ntypes
+        read(error_driver_tbl(ityp),*)cur_kx,cur_sub,cur_table
+        types(ityp) = type_ref_(cur_kx,cur_sub)
+        ! read error table cur_table
+        rewind(lu_err)
+        cur_table = trim(cur_table)//'::'
+        call gettablesize(cur_table,lu_err,ntot,nrows)
+        max_errlev = max(max_errlev, nrows+1)
+     enddo !ityp        
+     ! second, allocate and read tables
+
+     allocate(errtable(3, ntypes, max_errlev) )
+     errtable = 9.0e9
+
+     do ityp=1,ntypes
+        read(error_driver_tbl(ityp),*)cur_kx,cur_sub,cur_table
+        rewind(lu_err)
+        cur_table = trim(cur_table)//'::'
+        call gettablesize(cur_table,lu_err,ntot,nrows)
+        allocate(error_tbl(nrows))
+        call gettable(cur_table,lu_err,ntot,nrows,error_tbl)
+        do irow=1,nrows
+           read(error_tbl(irow),*)errtable(ierr_hght,ityp,irow), errtable(ierr_m,ityp,irow), errtable(ierr_b,ityp,irow)
+        enddo !irow
+
+        !quickly scan through read error table to ensure height increases w/ each row (starts at surface), die if not
+        do irow=1,nrows
+            if (errtable(ierr_hght,ityp,irow) > errtable(ierr_hght,ityp,irow+1)) then
+                call die(myname_,'heights in dw error table not ascending, die')
+            endif
+        enddo !irow
+        deallocate(error_tbl)
+     enddo !ityp
+
+
+     deallocate(error_driver_tbl)
+
+     close(lu_err)
+
+     return
+  end subroutine initialize_error_table_
+
+  function type_ref_(kx,sub)
+     ! this function converts the kxtype and subtype into a single number for simple referencing
+     integer(i_kind),intent(in)  :: kx, sub
+     integer(i_kind) type_ref_
+
+     type_ref_ = kx*1000 + sub
+
+     return
+  end function type_ref_
+
+  function error_index_(kx,sub)
+     ! this function get the index of the 'type' dimension of the errtable array based on kx & subtype
+     integer(i_kind),intent(in)  :: kx, sub
+     integer(i_kind) error_index_
+     integer(i_kind) i, idx
+
+     idx = -1
+     do i=1,ntypes
+         if (types(i) == type_ref_(kx,sub))idx = i
+     enddo
+     error_index_ = idx
+
+     return
+  end function error_index_
+
+  function get_error_(kx,sub,hght,in_error)
+     ! this function get the error value based on the specified error tables.
+     integer(i_kind),intent(in)  :: kx,sub
+     real(r_kind),intent(in)     :: hght, in_error
+     real(r_kind)                :: get_error_
+
+     integer(i_kind) i,idx
+     real(r_kind) out_error
+
+     if (errtable_defined) then
+         idx = error_index_(kx,sub)
+
+         out_error=0.0
+         do i=1,max_errlev-1
+             if (hght >= errtable(ierr_hght,idx,i) .and. hght < errtable(ierr_hght,idx,i+1)) then
+                 out_error=errtable(ierr_m,idx,i)*in_error + errtable(ierr_b,idx,i)
+             endif
+         enddo
+
+         get_error_ = out_error
+     else
+         get_error_ = in_error !return input value if no error table defined
+     endif
+    
+     return
+  end function get_error_
+
+
+
   subroutine final_vars_
-    if(allocated(ges_v )) deallocate(ges_v )
-    if(allocated(ges_u )) deallocate(ges_u )
-    if(allocated(ges_z )) deallocate(ges_z )
-    if(allocated(ges_ps)) deallocate(ges_ps)
+    if(allocated(ges_q ))   deallocate(ges_q )
+    if(allocated(ges_v ))   deallocate(ges_v )
+    if(allocated(ges_u ))   deallocate(ges_u )
+    if(allocated(ges_z ))   deallocate(ges_z )
+    if(allocated(ges_ps))   deallocate(ges_ps)
+    if(allocated(errtable)) deallocate(errtable)
+    if(allocated(types))    deallocate(types)
   end subroutine final_vars_
 
 end subroutine setupdw
