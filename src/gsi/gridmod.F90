@@ -414,6 +414,7 @@ contains
 !                         between analysis grids and others
 !   2019-04-19  martin  - add use_fv3_aero option for NGAC vs FV3-Chem
 !   2019-09-23  martin  - add flag use_gfs_ncio to determine whether to use netCDF to read global first gues field
+!   2021-01-05  x.zhang/lei  - add code for updating delz analysis in regional da
 !
 ! !REMARKS:
 !   language: f90

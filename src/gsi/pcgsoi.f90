@@ -107,6 +107,7 @@ subroutine pcgsoi()
 !   2016-03-25  todling - beta-mult param now within cov (following Dave Parrish corrections)
 !   2016-05-13  parrish -  remove beta12mult.  Replace with sqrt_beta_s_mult, sqrt_beta_e_mult, inside
 !                          bkerror and bkerror_a_en.
+!   2021-01-05  x.zhang/lei  - add code for updating delz analysis in regional da
 !
 ! input argument list:
 !

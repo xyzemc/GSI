@@ -451,6 +451,7 @@ contains
 !   2014-06-09  carley/zhu - add wgt_lcbas
 !   2019-03-21  Wei/Martin - add capability to read external aerosol file
 !   2019-09-10  martin  - added new fields to save guess tsen/geop_hgt for writing increment
+!   2021-01-05  x.zhang/lei  - add code for updating delz analysis in regional da
 !
 ! !REMARKS:
 !   language: f90
@@ -835,6 +836,7 @@ contains
 !   2007-03-15  todling - merged in da Silva/Cruz ESMF changes
 !   2012-05-14  todling - revist cw check to check also on some hyrometeors
 !   2019-09-10  martin  - added new fields to save guess tsen/geop_hgt for writing increment
+!   2021-01-05  x.zhang/lei  - add code for updating delz analysis in regional da
 !
 ! !REMARKS:
 !   language: f90
@@ -1414,6 +1416,7 @@ contains
 !                         Cucurull's GPS work)
 !   2005-05-24  pondeca - add regional surface analysis option
 !   2010-08-27  cucurull - add option to compute and use compressibility factors in geopot heights
+!   2021-01-05  x.zhang/lei  - add code for updating delz analysis in regional da
 !
 ! !REMARKS:
 !   language: f90

@@ -1507,6 +1507,7 @@ subroutine wrfv3_netcdf(fv3filenamegin)
 ! abstract:  write FV3 analysis  in netcdf format
 !
 ! program history log:
+! 2021-01-05  x.zhang/lei  - add code for updating delz analysis in regional da
 !
 !   input argument list:
 !
@@ -1959,9 +1960,9 @@ subroutine gsi_fv3ncdf_writeuv_v1(dynvars,varu,varv,mype_io,add_saved)
           enddo
        enddo
        deallocate(work,work_sub)
-!clt u and v would contain winds at either D-grid or A-grid
-!clt do not diretly use them in between fv3uv2eath and fv3_h_to_ll unless paying
-!attent to the actual storage layout
+! u and v would contain winds at either D-grid or A-grid
+! do not diretly use them in between fv3uv2eath and fv3_h_to_ll unless paying
+!attention to the actual storage layout
        call check( nf90_open(trim(dynvars ),nf90_write,gfile_loc) )
 
        allocate( u(nlon_regional,nlat_regional)) 

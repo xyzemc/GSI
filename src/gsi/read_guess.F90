@@ -75,6 +75,7 @@ subroutine read_guess(iyear,month,idd,mype)
 !   2017-10-10  Wu W    - add code for FV3 netcdf guess input 
 !   2019-09-18  martin  - added new fields to save guess tsen, q, geop_hgt for writing increment
 !   2019-09-23  martin  - add code for FV3 GFS netcdf guess input
+!   2021-01-05  x.zhang/lei  - add code for updating delz analysis in regional da 
 !
 !   input argument list:
 !     mype     - mpi task id
