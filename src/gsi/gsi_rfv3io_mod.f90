@@ -74,12 +74,14 @@ module gsi_rfv3io_mod
   public :: wrfv3_netcdf
   public :: gsi_fv3ncdf2d_read_v1
 
-  public :: mype_u,mype_v,mype_t,mype_q,mype_p,mype_oz,mype_ql
+  public :: mype_u,mype_v,mype_t,mype_q,mype_p,mype_oz,mype_ql,&
+            mype_qi,mype_qr,mype_qs,mype_qg
   public :: k_slmsk,k_tsea,k_vfrac,k_vtype,k_stype,k_zorl,k_smc,k_stc
   public :: k_snwdph,k_f10m,mype_2d,n2d,k_orog,k_psfc
   public :: ijns,ijns2d,displss,displss2d,ijnz,displsz_g
 
-  integer(i_kind) mype_u,mype_v,mype_t,mype_q,mype_p,mype_delz,mype_oz,mype_ql
+  integer(i_kind) mype_u,mype_v,mype_t,mype_q,mype_p,mype_delz,mype_oz,mype_ql,&
+                  mype_qi,mype_qr,mype_qs,mype_qg
   integer(i_kind) k_slmsk,k_tsea,k_vfrac,k_vtype,k_stype,k_zorl,k_smc,k_stc
   integer(i_kind) k_snwdph,k_f10m,mype_2d,n2d,k_orog,k_psfc
   parameter(                   &  
