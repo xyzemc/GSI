@@ -639,7 +639,11 @@ subroutine read_fv3_netcdf_guess(fv3filenamegin)
     real(r_kind),dimension(:,:,:),pointer::ges_u=>NULL()
     real(r_kind),dimension(:,:,:),pointer::ges_v=>NULL()
     real(r_kind),dimension(:,:,:),pointer::ges_q=>NULL()
-!   real(r_kind),dimension(:,:,:),pointer::ges_ql=>NULL()
+    real(r_kind),dimension(:,:,:),pointer::ges_ql=>NULL()
+    real(r_kind),dimension(:,:,:),pointer::ges_qi=>NULL()
+    real(r_kind),dimension(:,:,:),pointer::ges_qr=>NULL()
+    real(r_kind),dimension(:,:,:),pointer::ges_qs=>NULL()
+    real(r_kind),dimension(:,:,:),pointer::ges_qg=>NULL()
     real(r_kind),dimension(:,:,:),pointer::ges_oz=>NULL()
     real(r_kind),dimension(:,:,:),pointer::ges_tv=>NULL()
             
@@ -663,6 +667,10 @@ subroutine read_fv3_netcdf_guess(fv3filenamegin)
     mype_oz=6
     mype_2d=7 
     mype_delz=8
+    mype_qi=9
+    mype_qr=10
+    mype_qs=11
+    mype_qg=12
       
     allocate(ijns(npe),ijns2d(npe),ijnz(npe) )
     allocate(displss(npe),displss2d(npe),displsz_g(npe) )
@@ -692,7 +700,11 @@ subroutine read_fv3_netcdf_guess(fv3filenamegin)
     call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'v' , ges_v ,istatus );ier=ier+istatus
     call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'tv' ,ges_tv ,istatus );ier=ier+istatus
     call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'q'  ,ges_q ,istatus );ier=ier+istatus
-!   call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'ql'  ,ges_ql ,istatus );ier=ier+istatus
+    call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'ql'  ,ges_ql ,istatus );ier=ier+istatus
+    call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'qi'  ,ges_qi ,istatus );ier=ier+istatus
+    call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'qr'  ,ges_qr ,istatus );ier=ier+istatus
+    call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'qs'  ,ges_qs ,istatus );ier=ier+istatus
+    call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'qg'  ,ges_qg ,istatus );ier=ier+istatus
     call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'oz'  ,ges_oz ,istatus );ier=ier+istatus
     if (ier/=0) call die(trim(myname),'cannot get pointers for fv3 met-fields, ier =',ier)
      
@@ -729,10 +741,19 @@ subroutine read_fv3_netcdf_guess(fv3filenamegin)
 
     if( fv3sar_bg_opt == 0) then 
       call gsi_fv3ncdf_read(tracers,'SPHUM','sphum',ges_q,mype_q)
-!     call gsi_fv3ncdf_read(tracers,'LIQ_WAT','liq_wat',ges_ql,mype_ql)
+      call gsi_fv3ncdf_read(tracers,'LIQ_WAT','liq_wat',ges_ql,mype_ql)
+      call gsi_fv3ncdf_read(tracers,'ICE_WAT','ice_wat',ges_qi,mype_qi)
+      call gsi_fv3ncdf_read(tracers,'RAINWAT','rainwat',ges_qr,mype_qr)
+      call gsi_fv3ncdf_read(tracers,'SNOWWAT','snowwat',ges_qs,mype_qs)
+      call gsi_fv3ncdf_read(tracers,'GRAUPEL','graupel',ges_qg,mype_qg)
       call gsi_fv3ncdf_read(tracers,'O3MR','o3mr',ges_oz,mype_oz)
     else
       call gsi_fv3ncdf_read_v1(tracers,'sphum','SPHUM',ges_q,mype_q)
+      call gsi_fv3ncdf_read_v1(tracers,'LIQ_WAT','liq_wat',ges_ql,mype_ql)
+      call gsi_fv3ncdf_read_v1(tracers,'ICE_WAT','ice_wat',ges_qi,mype_qi)
+      call gsi_fv3ncdf_read_v1(tracers,'RAINWAT','rainwat',ges_qr,mype_qr)
+      call gsi_fv3ncdf_read_v1(tracers,'SNOWWAT','snowwat',ges_qs,mype_qs)
+      call gsi_fv3ncdf_read_v1(tracers,'GRAUPEL','graupel',ges_qg,mype_qg)
       call gsi_fv3ncdf_read_v1(tracers,'o3mr','O3MR',ges_oz,mype_oz)
     endif
 
@@ -1600,6 +1621,11 @@ subroutine wrfv3_netcdf(fv3filenamegin)
     real(r_kind),pointer,dimension(:,:,:):: ges_u   =>NULL()
     real(r_kind),pointer,dimension(:,:,:):: ges_v   =>NULL()
     real(r_kind),pointer,dimension(:,:,:):: ges_q   =>NULL()
+    real(r_kind),dimension(:,:,:),pointer::ges_ql=>NULL()
+    real(r_kind),dimension(:,:,:),pointer::ges_qi=>NULL()
+    real(r_kind),dimension(:,:,:),pointer::ges_qr=>NULL()
+    real(r_kind),dimension(:,:,:),pointer::ges_qs=>NULL()
+    real(r_kind),dimension(:,:,:),pointer::ges_qg=>NULL()
    
     real(r_kind),allocatable,dimension(:,:,:)::ges_delzinc
     integer(i_kind) k
@@ -1613,6 +1639,12 @@ subroutine wrfv3_netcdf(fv3filenamegin)
     call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'u' , ges_u ,istatus);ier=ier+istatus
     call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'v' , ges_v ,istatus);ier=ier+istatus
     call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'q'  ,ges_q ,istatus);ier=ier+istatus
+    call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'ql'  ,ges_ql ,istatus);ier=ier+istatus
+    call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'qi'  ,ges_qi ,istatus);ier=ier+istatus
+    call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'qr'  ,ges_qr ,istatus);ier=ier+istatus
+    call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'qs'  ,ges_qs ,istatus);ier=ier+istatus
+    call GSI_BundleGetPointer ( GSI_MetGuess_Bundle(it), 'qg'  ,ges_qg ,istatus);ier=ier+istatus
+
     if (ier/=0) call die('get ges','cannot get pointers for fv3 met-fields, ier =',ier)
 
     add_saved=.true.
@@ -1621,6 +1653,11 @@ subroutine wrfv3_netcdf(fv3filenamegin)
     if(fv3sar_bg_opt == 0) then
        call gsi_fv3ncdf_write(dynvars,'T',ges_tsen(1,1,1,it),mype_t,add_saved)
        call gsi_fv3ncdf_write(tracers,'sphum',ges_q   ,mype_q,add_saved)
+       call gsi_fv3ncdf_write(tracers,'liq_wat',ges_ql,mype_ql,add_saved)
+       call gsi_fv3ncdf_write(tracers,'ice_wat',ges_qi,mype_qi,add_saved)
+       call gsi_fv3ncdf_write(tracers,'rainwat',ges_qr,mype_qr,add_saved)
+       call gsi_fv3ncdf_write(tracers,'snowwat',ges_qs,mype_qs,add_saved)
+       call gsi_fv3ncdf_write(tracers,'graupel',ges_qg,mype_qg,add_saved)
        call gsi_fv3ncdf_writeuv(dynvars,ges_u,ges_v,mype_v,add_saved)
        call gsi_fv3ncdf_writeps(dynvars,'delp',ges_ps,mype_p,add_saved)
        if(l_reg_update_hydro_delz) then
@@ -1635,6 +1672,11 @@ subroutine wrfv3_netcdf(fv3filenamegin)
     else
        call gsi_fv3ncdf_write_v1(dynvars,'t',ges_tsen(1,1,1,it),mype_t,add_saved)
        call gsi_fv3ncdf_write_v1(tracers,'sphum',ges_q   ,mype_q,add_saved)
+       call gsi_fv3ncdf_write_v1(tracers,'liq_wat',ges_ql,mype_ql,add_saved)
+       call gsi_fv3ncdf_write_v1(tracers,'ice_wat',ges_qi,mype_qi,add_saved)
+       call gsi_fv3ncdf_write_v1(tracers,'rainwat',ges_qr,mype_qr,add_saved)
+       call gsi_fv3ncdf_write_v1(tracers,'snowwat',ges_qs,mype_qs,add_saved)
+       call gsi_fv3ncdf_write_v1(tracers,'graupel',ges_qg,mype_qg,add_saved)
        call gsi_fv3ncdf_writeuv_v1(dynvars,ges_u,ges_v,mype_v,add_saved)
        call gsi_fv3ncdf_writeps_v1(dynvars,'ps',ges_ps,mype_p,add_saved)
     
